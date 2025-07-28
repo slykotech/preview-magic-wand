@@ -40,7 +40,7 @@ export const AICoach = () => {
     try {
       // Create or get existing chat session
       const { data: session, error } = await supabase
-        .from('ai_chat_sessions')
+        .from('ai_coach_sessions')
         .insert({
           user_id: user?.id,
           title: 'Daily Check-in Chat'
@@ -64,7 +64,7 @@ export const AICoach = () => {
 
       // Save welcome message to database
       await supabase
-        .from('ai_chat_messages')
+        .from('ai_coach_messages')
         .insert({
           session_id: session.id,
           content: welcomeMessage.content,
@@ -106,7 +106,7 @@ export const AICoach = () => {
     try {
       // Save user message to database
       await supabase
-        .from('ai_chat_messages')
+        .from('ai_coach_messages')
         .insert({
           session_id: sessionId,
           content: userMessage.content,
@@ -134,7 +134,7 @@ export const AICoach = () => {
 
         // Save AI response to database
         await supabase
-          .from('ai_chat_messages')
+          .from('ai_coach_messages')
           .insert({
             session_id: sessionId,
             content: aiResponse.content,

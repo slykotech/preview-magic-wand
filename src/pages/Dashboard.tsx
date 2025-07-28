@@ -7,6 +7,7 @@ import { BottomNavigation } from "@/components/BottomNavigation";
 import { StreakDisplay } from "@/components/StreakDisplay";
 import { CoupleMoodDisplay } from "@/components/CoupleMoodDisplay";
 import { MoodCheckin } from "@/components/MoodCheckin";
+import { DailyCheckinFlow } from "@/components/DailyCheckinFlow";
 import { Calendar, Heart, MessageCircle, Sparkles, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -24,6 +25,7 @@ export const Dashboard = () => {
   const [userMood, setUserMood] = useState<string>();
   const [partnerMood, setPartnerMood] = useState<string>();
   const [coupleId, setCoupleId] = useState<string>();
+  const [showDailyCheckin, setShowDailyCheckin] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user, loading } = useAuth();
@@ -79,22 +81,13 @@ export const Dashboard = () => {
       
       const partnerId = coupleData?.user1_id === user?.id ? coupleData?.user2_id : coupleData?.user1_id;
 
-      // Fetch sync score
-      const { data: syncData } = await supabase
-        .from('sync_scores')
-        .select('score')
-        .eq('couple_id', currentCoupleId)
-        .order('calculated_date', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      // Fetch upcoming planned date
+      // Fetch upcoming date idea
       const { data: dateData } = await supabase
-        .from('planned_dates')
+        .from('date_ideas')
         .select('*')
         .eq('couple_id', currentCoupleId)
-        .gte('scheduled_date', new Date().toISOString())
-        .order('scheduled_date', { ascending: true })
+        .eq('is_completed', false)
+        .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
 
@@ -170,7 +163,10 @@ export const Dashboard = () => {
         .eq('checkin_date', today)
         .maybeSingle();
 
-      setSyncScore(syncData?.score || 75);
+      // Calculate a basic sync score based on recent check-ins
+      const syncScore = checkinData ? 
+        Math.min(95, 65 + (streak * 3)) : 75;
+      setSyncScore(syncScore);
       setUpcomingDate(dateData);
       setRecentMemory(memoryData);
       setLastCheckin(checkinData);
@@ -207,11 +203,15 @@ export const Dashboard = () => {
   }, [user]);
 
   const handleCheckinClick = () => {
-    navigate('/coach');
-    toast({
-      title: "Starting Daily Check-in! 💕",
-      description: "Let's see how you're both feeling today",
-    });
+    if (coupleId) {
+      setShowDailyCheckin(true);
+    } else {
+      toast({
+        title: "Setup Required",
+        description: "Please complete your couple setup first",
+        variant: "destructive"
+      });
+    }
   };
 
   const handlePlanDateClick = () => {
@@ -325,7 +325,7 @@ export const Dashboard = () => {
           {/* Mood Check */}
           <div 
             className="bg-card border rounded-xl p-4 text-center cursor-pointer hover:shadow-sm transition-all shadow-sm"
-            onClick={() => navigate('/coach')}
+            onClick={handleCheckinClick}
           >
             <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center mx-auto mb-3">
               <Heart className="text-accent-foreground" size={24} />
@@ -370,6 +370,20 @@ export const Dashboard = () => {
           </Button>
         </div>
       </div>
+
+      {/* Daily Check-in Flow Modal */}
+      {showDailyCheckin && coupleId && user && (
+        <DailyCheckinFlow
+          userId={user.id}
+          coupleId={coupleId}
+          currentStreak={checkinStreak}
+          onComplete={() => {
+            setShowDailyCheckin(false);
+            refreshDashboard();
+          }}
+          onClose={() => setShowDailyCheckin(false)}
+        />
+      )}
 
       <BottomNavigation />
     </div>
