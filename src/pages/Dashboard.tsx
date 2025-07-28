@@ -55,6 +55,8 @@ export const Dashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
+      console.log('Fetching dashboard data for user:', user?.id);
+      
       // First, get user's couple relationship
       const { data: coupleData } = await supabase
         .from('couples')
@@ -62,6 +64,7 @@ export const Dashboard = () => {
         .or(`user1_id.eq.${user?.id},user2_id.eq.${user?.id}`)
         .maybeSingle();
 
+      console.log('Couple data fetched:', coupleData);
       const currentCoupleId = coupleData?.id;
       setCoupleId(currentCoupleId);
       
@@ -203,9 +206,12 @@ export const Dashboard = () => {
   }, [user]);
 
   const handleCheckinClick = () => {
+    console.log('Checkin clicked!', { coupleId, user: user?.id });
     if (coupleId) {
+      console.log('Opening daily check-in flow');
       setShowDailyCheckin(true);
     } else {
+      console.log('No couple ID found, showing setup message');
       toast({
         title: "Setup Required",
         description: "Please complete your couple setup first",
