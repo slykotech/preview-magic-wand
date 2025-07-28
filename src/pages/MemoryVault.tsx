@@ -22,6 +22,16 @@ interface Memory {
   created_by: string;
   created_at: string;
   updated_at: string;
+  images?: MemoryImage[];
+}
+
+interface MemoryImage {
+  id: string;
+  memory_id: string;
+  image_url: string;
+  file_name: string | null;
+  upload_order: number;
+  created_at: string;
 }
 
 export const MemoryVault = () => {
@@ -37,7 +47,7 @@ export const MemoryVault = () => {
     image_url: ""
   });
   const [coupleId, setCoupleId] = useState<string | null>(null);
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -80,7 +90,10 @@ export const MemoryVault = () => {
     try {
       const { data, error } = await supabase
         .from('memories')
-        .select('*')
+        .select(`
+          *,
+          images:memory_images(*)
+        `)
         .eq('couple_id', couple_id)
         .order('created_at', { ascending: false });
 
@@ -91,35 +104,39 @@ export const MemoryVault = () => {
     }
   };
 
-  const uploadImage = async (file: File): Promise<string | null> => {
+  const uploadImages = async (files: File[]): Promise<Array<{url: string, fileName: string}>> => {
     try {
       setUploading(true);
-      
-      // Create unique file name
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user?.id}/${Date.now()}.${fileExt}`;
-      
-      // Upload file to Supabase Storage
-      const { data, error } = await supabase.storage
-        .from('memory-images')
-        .upload(fileName, file);
+      const uploadPromises = files.map(async (file, index) => {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${user?.id}/${Date.now()}_${index}.${fileExt}`;
+        
+        const { data, error } = await supabase.storage
+          .from('memory-images')
+          .upload(fileName, file);
 
-      if (error) throw error;
+        if (error) throw error;
 
-      // Get public URL
-      const { data: urlData } = supabase.storage
-        .from('memory-images')
-        .getPublicUrl(fileName);
+        const { data: urlData } = supabase.storage
+          .from('memory-images')
+          .getPublicUrl(fileName);
 
-      return urlData.publicUrl;
+        return {
+          url: urlData.publicUrl,
+          fileName: file.name
+        };
+      });
+
+      const results = await Promise.all(uploadPromises);
+      return results;
     } catch (error) {
-      console.error('Error uploading image:', error);
+      console.error('Error uploading images:', error);
       toast({
         title: "Upload Error",
-        description: "Failed to upload image. Please try again.",
+        description: "Failed to upload some images. Please try again.",
         variant: "destructive"
       });
-      return null;
+      return [];
     } finally {
       setUploading(false);
     }
@@ -136,37 +153,59 @@ export const MemoryVault = () => {
     }
 
     try {
-      let imageUrl = newMemory.image_url;
-      
-      // Upload image if file is selected
-      if (uploadedFile) {
-        imageUrl = await uploadImage(uploadedFile);
-        if (!imageUrl) return; // Upload failed
-      }
-
-      const { data, error } = await supabase
+      // Create the memory first
+      const { data: memoryData, error: memoryError } = await supabase
         .from('memories')
         .insert({
           title: newMemory.title,
           description: newMemory.description || null,
           memory_date: newMemory.memory_date || null,
-          image_url: imageUrl || null,
+          image_url: null, // Keep for backward compatibility
           couple_id: coupleId,
           created_by: user?.id
         })
         .select()
         .single();
 
-      if (error) throw error;
+      if (memoryError) throw memoryError;
 
-      setMemories([data, ...memories]);
+      // Upload images if files are selected
+      if (uploadedFiles.length > 0) {
+        const uploadResults = await uploadImages(uploadedFiles);
+        
+        // Insert memory images
+        const memoryImages = uploadResults.map((result, index) => ({
+          memory_id: memoryData.id,
+          image_url: result.url,
+          file_name: result.fileName,
+          upload_order: index
+        }));
+
+        const { error: imagesError } = await supabase
+          .from('memory_images')
+          .insert(memoryImages);
+
+        if (imagesError) throw imagesError;
+      }
+
+      // Fetch updated memory with images
+      const { data: updatedMemory } = await supabase
+        .from('memories')
+        .select(`
+          *,
+          images:memory_images(*)
+        `)
+        .eq('id', memoryData.id)
+        .single();
+
+      setMemories([updatedMemory, ...memories]);
       setNewMemory({ title: "", description: "", memory_date: "", image_url: "" });
-      setUploadedFile(null);
+      setUploadedFiles([]);
       setShowCreateForm(false);
 
       toast({
         title: "Memory Created! 💕",
-        description: "Your special moment has been saved",
+        description: `Your special moment with ${uploadedFiles.length} ${uploadedFiles.length === 1 ? 'image' : 'images'} has been saved`,
       });
     } catch (error) {
       console.error('Error creating memory:', error);
@@ -193,23 +232,26 @@ export const MemoryVault = () => {
     e.stopPropagation();
     setDragActive(false);
     
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFileSelect(e.dataTransfer.files[0]);
+    if (e.dataTransfer.files) {
+      const files = Array.from(e.dataTransfer.files);
+      handleFilesSelect(files);
     }
   };
 
-  const handleFileSelect = (file: File) => {
-    if (file.type.startsWith('image/')) {
-      setUploadedFile(file);
-      // Clear any URL input
-      setNewMemory({ ...newMemory, image_url: "" });
-    } else {
+  const handleFilesSelect = (files: File[]) => {
+    const imageFiles = files.filter(file => file.type.startsWith('image/'));
+    if (imageFiles.length !== files.length) {
       toast({
-        title: "Invalid file type",
-        description: "Please select an image file",
+        title: "Some files skipped",
+        description: "Only image files are supported",
         variant: "destructive"
       });
     }
+    setUploadedFiles(prev => [...prev, ...imageFiles]);
+  };
+
+  const removeFile = (index: number) => {
+    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   const triggerFileInput = () => {
@@ -274,7 +316,7 @@ export const MemoryVault = () => {
           </div>
           <div className="bg-card rounded-xl p-4 text-center shadow-soft">
             <p className="text-2xl font-extrabold font-poppins text-secondary">
-              {memories.filter(m => m.image_url).length}
+              {memories.reduce((total, memory) => total + (memory.images?.length || (memory.image_url ? 1 : 0)), 0)}
             </p>
             <p className="text-xs text-muted-foreground font-inter font-bold">Photos</p>
           </div>
@@ -307,15 +349,32 @@ export const MemoryVault = () => {
                 onClick={() => setSelectedMemory(memory)}
               >
                 <div className="flex items-start gap-4 mb-3">
-                  {/* Image or Icon */}
+                  {/* Images or Icon */}
                   <div className="flex-shrink-0">
-                    {memory.image_url ? (
-                      <div className="w-16 h-16 rounded-lg overflow-hidden">
-                        <img 
-                          src={memory.image_url} 
-                          alt={memory.title}
-                          className="w-full h-full object-cover"
-                        />
+                    {(memory.images && memory.images.length > 0) || memory.image_url ? (
+                      <div className="relative">
+                        {memory.images && memory.images.length > 0 ? (
+                          <div className="w-16 h-16 rounded-lg overflow-hidden">
+                            <img 
+                              src={memory.images[0].image_url} 
+                              alt={memory.title}
+                              className="w-full h-full object-cover"
+                            />
+                            {memory.images.length > 1 && (
+                              <div className="absolute -top-1 -right-1 bg-primary text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                                {memory.images.length}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="w-16 h-16 rounded-lg overflow-hidden">
+                            <img 
+                              src={memory.image_url} 
+                              alt={memory.title}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <div className="w-16 h-16 bg-sunrise-coral/20 text-sunrise-coral rounded-lg flex items-center justify-center">
@@ -400,7 +459,7 @@ export const MemoryVault = () => {
               />
             </div>
             <div>
-              <Label>Photo</Label>
+              <Label>Photos</Label>
               <div 
                 className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer ${
                   dragActive ? 'border-primary bg-primary/10' : 'border-muted hover:border-primary'
@@ -415,33 +474,53 @@ export const MemoryVault = () => {
                   ref={fileInputRef}
                   type="file"
                   accept="image/*"
-                  onChange={(e) => e.target.files && handleFileSelect(e.target.files[0])}
+                  multiple
+                  onChange={(e) => e.target.files && handleFilesSelect(Array.from(e.target.files))}
                   className="hidden"
                 />
-                {uploadedFile ? (
-                  <div className="space-y-2">
+                {uploadedFiles.length > 0 ? (
+                  <div className="space-y-3">
                     <ImageIcon className="mx-auto text-green-600" size={24} />
-                    <p className="text-sm font-medium text-green-600">{uploadedFile.name}</p>
+                    <p className="text-sm font-medium text-green-600">{uploadedFiles.length} files selected</p>
+                    <div className="grid grid-cols-3 gap-2 max-h-32 overflow-y-auto">
+                      {uploadedFiles.map((file, index) => (
+                        <div key={index} className="relative bg-muted rounded p-2">
+                          <p className="text-xs truncate">{file.name}</p>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute -top-1 -right-1 h-5 w-5 p-0 bg-destructive text-white hover:bg-destructive/80"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeFile(index);
+                            }}
+                          >
+                            <X size={12} />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setUploadedFile(null);
+                        setUploadedFiles([]);
                       }}
                     >
-                      Remove
+                      Clear All
                     </Button>
                   </div>
                 ) : (
                   <div className="space-y-2">
                     <Upload className="mx-auto text-muted-foreground" size={24} />
                     <p className="text-sm text-muted-foreground">
-                      Drag & drop an image here, or click to browse
+                      Drag & drop multiple images here, or click to browse
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      JPG, PNG, GIF up to 10MB
+                      JPG, PNG, GIF up to 10MB each
                     </p>
                   </div>
                 )}
@@ -465,7 +544,7 @@ export const MemoryVault = () => {
                 {uploading ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Uploading...
+                    Uploading {uploadedFiles.length} files...
                   </>
                 ) : (
                   'Create Memory'
@@ -511,13 +590,32 @@ export const MemoryVault = () => {
               </div>
             </DialogHeader>
             <div className="space-y-4">
-              {selectedMemory.image_url && (
-                <div className="w-full h-64 bg-gradient-romance rounded-xl overflow-hidden">
-                  <img 
-                    src={selectedMemory.image_url} 
-                    alt={selectedMemory.title}
-                    className="w-full h-full object-cover"
-                  />
+              {/* Display multiple images */}
+              {((selectedMemory.images && selectedMemory.images.length > 0) || selectedMemory.image_url) && (
+                <div className="space-y-3">
+                  {selectedMemory.images && selectedMemory.images.length > 0 ? (
+                    <div className="grid grid-cols-1 gap-3">
+                      {selectedMemory.images
+                        .sort((a, b) => a.upload_order - b.upload_order)
+                        .map((image, index) => (
+                          <div key={image.id} className="w-full h-64 bg-gradient-romance rounded-xl overflow-hidden">
+                            <img 
+                              src={image.image_url} 
+                              alt={`${selectedMemory.title} - Image ${index + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        ))}
+                    </div>
+                  ) : selectedMemory.image_url && (
+                    <div className="w-full h-64 bg-gradient-romance rounded-xl overflow-hidden">
+                      <img 
+                        src={selectedMemory.image_url} 
+                        alt={selectedMemory.title}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
                 </div>
               )}
               

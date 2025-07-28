@@ -295,6 +295,41 @@ export type Database = {
           },
         ]
       }
+      memory_images: {
+        Row: {
+          created_at: string
+          file_name: string | null
+          id: string
+          image_url: string
+          memory_id: string
+          upload_order: number | null
+        }
+        Insert: {
+          created_at?: string
+          file_name?: string | null
+          id?: string
+          image_url: string
+          memory_id: string
+          upload_order?: number | null
+        }
+        Update: {
+          created_at?: string
+          file_name?: string | null
+          id?: string
+          image_url?: string
+          memory_id?: string
+          upload_order?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "memory_images_memory_id_fkey"
+            columns: ["memory_id"]
+            isOneToOne: false
+            referencedRelation: "memories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
