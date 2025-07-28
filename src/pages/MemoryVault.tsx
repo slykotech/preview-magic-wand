@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { BottomNavigation } from "@/components/BottomNavigation";
-import { Plus, Heart, Camera, X, Star, Upload } from "lucide-react";
+import { Plus, Heart, Camera, X, Star, Upload, Image as ImageIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
@@ -37,6 +37,10 @@ export const MemoryVault = () => {
     image_url: ""
   });
   const [coupleId, setCoupleId] = useState<string | null>(null);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -87,6 +91,40 @@ export const MemoryVault = () => {
     }
   };
 
+  const uploadImage = async (file: File): Promise<string | null> => {
+    try {
+      setUploading(true);
+      
+      // Create unique file name
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user?.id}/${Date.now()}.${fileExt}`;
+      
+      // Upload file to Supabase Storage
+      const { data, error } = await supabase.storage
+        .from('memory-images')
+        .upload(fileName, file);
+
+      if (error) throw error;
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('memory-images')
+        .getPublicUrl(fileName);
+
+      return urlData.publicUrl;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      toast({
+        title: "Upload Error",
+        description: "Failed to upload image. Please try again.",
+        variant: "destructive"
+      });
+      return null;
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const createMemory = async () => {
     if (!coupleId || !newMemory.title.trim()) {
       toast({
@@ -98,13 +136,21 @@ export const MemoryVault = () => {
     }
 
     try {
+      let imageUrl = newMemory.image_url;
+      
+      // Upload image if file is selected
+      if (uploadedFile) {
+        imageUrl = await uploadImage(uploadedFile);
+        if (!imageUrl) return; // Upload failed
+      }
+
       const { data, error } = await supabase
         .from('memories')
         .insert({
           title: newMemory.title,
           description: newMemory.description || null,
           memory_date: newMemory.memory_date || null,
-          image_url: newMemory.image_url || null,
+          image_url: imageUrl || null,
           couple_id: coupleId,
           created_by: user?.id
         })
@@ -115,6 +161,7 @@ export const MemoryVault = () => {
 
       setMemories([data, ...memories]);
       setNewMemory({ title: "", description: "", memory_date: "", image_url: "" });
+      setUploadedFile(null);
       setShowCreateForm(false);
 
       toast({
@@ -129,6 +176,44 @@ export const MemoryVault = () => {
         variant: "destructive"
       });
     }
+  };
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFileSelect(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleFileSelect = (file: File) => {
+    if (file.type.startsWith('image/')) {
+      setUploadedFile(file);
+      // Clear any URL input
+      setNewMemory({ ...newMemory, image_url: "" });
+    } else {
+      toast({
+        title: "Invalid file type",
+        description: "Please select an image file",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
   };
 
   const filteredMemories = memories.filter(memory =>
@@ -298,13 +383,69 @@ export const MemoryVault = () => {
               />
             </div>
             <div>
-              <Label htmlFor="image_url">Image URL (optional)</Label>
-              <Input
-                id="image_url"
-                placeholder="https://example.com/photo.jpg"
-                value={newMemory.image_url}
-                onChange={(e) => setNewMemory({ ...newMemory, image_url: e.target.value })}
-              />
+              <Label>Photo</Label>
+              <div 
+                className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer ${
+                  dragActive ? 'border-primary bg-primary/10' : 'border-muted hover:border-primary'
+                }`}
+                onDragEnter={handleDrag}
+                onDragLeave={handleDrag}
+                onDragOver={handleDrag}
+                onDrop={handleDrop}
+                onClick={triggerFileInput}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => e.target.files && handleFileSelect(e.target.files[0])}
+                  className="hidden"
+                />
+                {uploadedFile ? (
+                  <div className="space-y-2">
+                    <ImageIcon className="mx-auto text-green-600" size={24} />
+                    <p className="text-sm font-medium text-green-600">{uploadedFile.name}</p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setUploadedFile(null);
+                      }}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Upload className="mx-auto text-muted-foreground" size={24} />
+                    <p className="text-sm text-muted-foreground">
+                      Drag & drop an image here, or click to browse
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      JPG, PNG, GIF up to 10MB
+                    </p>
+                  </div>
+                )}
+              </div>
+              
+              {/* Alternative: URL input */}
+              <div className="mt-4">
+                <Label htmlFor="image_url" className="text-sm text-muted-foreground">
+                  Or paste image URL
+                </Label>
+                <Input
+                  id="image_url"
+                  placeholder="https://example.com/photo.jpg"
+                  value={newMemory.image_url}
+                  onChange={(e) => {
+                    setNewMemory({ ...newMemory, image_url: e.target.value });
+                    if (e.target.value) setUploadedFile(null); // Clear file if URL is entered
+                  }}
+                  disabled={!!uploadedFile}
+                />
+              </div>
             </div>
             <div className="flex gap-3">
               <Button
@@ -317,9 +458,16 @@ export const MemoryVault = () => {
               <Button
                 onClick={createMemory}
                 className="flex-1"
-                disabled={!newMemory.title.trim()}
+                disabled={!newMemory.title.trim() || uploading}
               >
-                Create Memory
+                {uploading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Uploading...
+                  </>
+                ) : (
+                  'Create Memory'
+                )}
               </Button>
             </div>
           </div>
