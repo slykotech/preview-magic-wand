@@ -306,37 +306,54 @@ export const MemoryVault = () => {
                 style={{ animationDelay: `${index * 100}ms` }}
                 onClick={() => setSelectedMemory(memory)}
               >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-full bg-sunrise-coral/20 text-sunrise-coral`}>
-                      <Camera size={16} />
+                <div className="flex items-start gap-4 mb-3">
+                  {/* Image or Icon */}
+                  <div className="flex-shrink-0">
+                    {memory.image_url ? (
+                      <div className="w-16 h-16 rounded-lg overflow-hidden">
+                        <img 
+                          src={memory.image_url} 
+                          alt={memory.title}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-16 h-16 bg-sunrise-coral/20 text-sunrise-coral rounded-lg flex items-center justify-center">
+                        <Camera size={24} />
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Content */}
+                  <div className="flex-1">
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <h3 className="font-poppins font-bold text-foreground">{memory.title}</h3>
+                        <p className="text-sm text-muted-foreground font-inter font-semibold">
+                          {memory.memory_date ? new Date(memory.memory_date).toLocaleDateString('en-US', { 
+                            year: 'numeric', 
+                            month: 'long', 
+                            day: 'numeric' 
+                          }) : new Date(memory.created_at).toLocaleDateString('en-US', { 
+                            year: 'numeric', 
+                            month: 'long', 
+                            day: 'numeric' 
+                          })}
+                        </p>
+                      </div>
+                      <Star className="text-gold-accent animate-pulse" size={20} fill="currentColor" />
                     </div>
-                    <div>
-                      <h3 className="font-poppins font-bold text-foreground">{memory.title}</h3>
-                      <p className="text-sm text-muted-foreground font-inter font-semibold">
-                        {memory.memory_date ? new Date(memory.memory_date).toLocaleDateString('en-US', { 
-                          year: 'numeric', 
-                          month: 'long', 
-                          day: 'numeric' 
-                        }) : new Date(memory.created_at).toLocaleDateString('en-US', { 
-                          year: 'numeric', 
-                          month: 'long', 
-                          day: 'numeric' 
-                        })}
-                      </p>
+
+                    <p className="text-muted-foreground font-inter text-sm leading-relaxed mb-3 line-clamp-2 font-medium">
+                      {memory.description || 'A special memory'}
+                    </p>
+
+                    <div className="flex flex-wrap gap-2">
+                      <span className="px-2 py-1 bg-muted rounded-full text-xs text-muted-foreground">
+                        #memory
+                      </span>
                     </div>
                   </div>
-                  <Star className="text-gold-accent animate-pulse" size={20} fill="currentColor" />
-                </div>
-
-                <p className="text-muted-foreground font-inter text-sm leading-relaxed mb-3 line-clamp-2 font-medium">
-                  {memory.description || 'A special memory'}
-                </p>
-
-                <div className="flex flex-wrap gap-2">
-                  <span className="px-2 py-1 bg-muted rounded-full text-xs text-muted-foreground">
-                    #memory
-                  </span>
                 </div>
               </div>
             ))}
@@ -430,22 +447,7 @@ export const MemoryVault = () => {
                 )}
               </div>
               
-              {/* Alternative: URL input */}
-              <div className="mt-4">
-                <Label htmlFor="image_url" className="text-sm text-muted-foreground">
-                  Or paste image URL
-                </Label>
-                <Input
-                  id="image_url"
-                  placeholder="https://example.com/photo.jpg"
-                  value={newMemory.image_url}
-                  onChange={(e) => {
-                    setNewMemory({ ...newMemory, image_url: e.target.value });
-                    if (e.target.value) setUploadedFile(null); // Clear file if URL is entered
-                  }}
-                  disabled={!!uploadedFile}
-                />
-              </div>
+              {/* Alternative: URL input - REMOVED */}
             </div>
             <div className="flex gap-3">
               <Button
@@ -508,10 +510,9 @@ export const MemoryVault = () => {
                 </Button>
               </div>
             </DialogHeader>
-            
             <div className="space-y-4">
               {selectedMemory.image_url && (
-                <div className="w-full h-48 bg-gradient-romance rounded-xl mb-4 overflow-hidden">
+                <div className="w-full h-64 bg-gradient-romance rounded-xl overflow-hidden">
                   <img 
                     src={selectedMemory.image_url} 
                     alt={selectedMemory.title}
