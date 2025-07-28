@@ -10,12 +10,13 @@ import { supabase } from "@/integrations/supabase/client";
 interface Memory {
   id: string;
   title: string;
-  content: string;
-  memory_date: string;
-  type: 'photo' | 'journal' | 'milestone';
-  is_favorite: boolean;
-  tags: string[];
+  description: string | null;
+  memory_date: string | null;
+  image_url: string | null;
+  couple_id: string;
+  created_by: string;
   created_at: string;
+  updated_at: string;
 }
 
 export const MemoryVault = () => {
@@ -98,10 +99,8 @@ export const MemoryVault = () => {
             >
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-full ${
-                    memory.type === 'photo' ? 'bg-sunrise-coral/20 text-sunrise-coral' : 'bg-gold-accent/20 text-gold-accent'
-                  }`}>
-                    {memory.type === 'photo' ? <Camera size={16} /> : <Edit3 size={16} />}
+                  <div className={`p-2 rounded-full bg-sunrise-coral/20 text-sunrise-coral`}>
+                    <Camera size={16} />
                   </div>
                   <div>
                     <h3 className="font-poppins font-bold text-foreground">{memory.title}</h3>
@@ -114,24 +113,17 @@ export const MemoryVault = () => {
                     </p>
                   </div>
                 </div>
-                {memory.is_favorite && (
-                  <Star className="text-gold-accent animate-pulse" size={20} fill="currentColor" />
-                )}
+                <Star className="text-gold-accent animate-pulse" size={20} fill="currentColor" />
               </div>
 
               <p className="text-muted-foreground font-inter text-sm leading-relaxed mb-3 line-clamp-2 font-medium">
-                {memory.content}
+                {memory.description || 'A special memory'}
               </p>
 
               <div className="flex flex-wrap gap-2">
-                {memory.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="px-2 py-1 bg-muted rounded-full text-xs text-muted-foreground"
-                  >
-                    #{tag}
-                  </span>
-                ))}
+                <span className="px-2 py-1 bg-muted rounded-full text-xs text-muted-foreground">
+                  #memory
+                </span>
               </div>
             </div>
           ))}
@@ -182,10 +174,8 @@ export const MemoryVault = () => {
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-border">
               <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-full ${
-                  selectedMemory.type === 'photo' ? 'bg-sunrise-coral/20 text-sunrise-coral' : 'bg-gold-accent/20 text-gold-accent'
-                }`}>
-                  {selectedMemory.type === 'photo' ? <Camera size={20} /> : <Edit3 size={20} />}
+                <div className={`p-2 rounded-full bg-sunrise-coral/20 text-sunrise-coral`}>
+                  <Camera size={20} />
                 </div>
                 <div>
                   <h2 className="text-xl font-extrabold font-poppins text-foreground">{selectedMemory.title}</h2>
@@ -210,31 +200,30 @@ export const MemoryVault = () => {
 
             {/* Content */}
             <div className="p-6">
-              {selectedMemory.type === 'photo' && (
-                <div className="w-full h-48 bg-gradient-romance rounded-xl mb-4 flex items-center justify-center">
-                  <Heart className="text-white opacity-50" size={48} />
+              {selectedMemory.image_url && (
+                <div className="w-full h-48 bg-gradient-romance rounded-xl mb-4 overflow-hidden">
+                  <img 
+                    src={selectedMemory.image_url} 
+                    alt={selectedMemory.title}
+                    className="w-full h-full object-cover"
+                  />
                 </div>
               )}
 
               <p className="text-foreground font-inter leading-relaxed mb-6 font-medium">
-                {selectedMemory.content}
+                {selectedMemory.description || 'A special memory to cherish together.'}
               </p>
 
               <div className="flex flex-wrap gap-2 mb-6">
-                {selectedMemory.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="px-3 py-1 bg-muted rounded-full text-sm text-muted-foreground"
-                  >
-                    #{tag}
-                  </span>
-                ))}
+                <span className="px-3 py-1 bg-muted rounded-full text-sm text-muted-foreground">
+                  #memory
+                </span>
               </div>
 
               <div className="flex gap-3">
                 <Button variant="romantic" className="flex-1">
                   <Heart className="mr-2" size={16} />
-                  {selectedMemory.is_favorite ? 'Favorited' : 'Add to Favorites'}
+                  Add to Favorites
                 </Button>
                 <Button variant="outline" className="flex-1">
                   <Edit3 className="mr-2" size={16} />

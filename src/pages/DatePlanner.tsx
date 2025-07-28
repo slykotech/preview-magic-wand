@@ -15,12 +15,17 @@ interface DateIdea {
   title: string;
   description: string;
   category: string;
-  duration_hours?: number;
+  estimated_duration?: string;
   estimated_cost?: string;
-  location_type?: string;
-  is_public?: boolean;
-  created_by?: string;
-  created_at?: string;
+  location?: string;
+  couple_id: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  is_completed?: boolean;
+  completed_date?: string;
+  notes?: string;
+  rating?: number;
 }
 
 const categories = ['All', 'outdoor', 'indoor', 'adventure', 'relaxing', 'creative'];
@@ -49,42 +54,55 @@ export const DatePlanner = () => {
 
   const fetchDateIdeas = async () => {
     try {
+      // Get user's couple ID first
+      const { data: coupleData } = await supabase
+        .from('couples')
+        .select('id')
+        .or(`user1_id.eq.${user?.id},user2_id.eq.${user?.id}`)
+        .maybeSingle();
+
       const { data, error } = await supabase
         .from('date_ideas')
         .select('*')
-        .eq('is_public', true)
+        .eq('couple_id', coupleData?.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
       if (data && data.length > 0) {
         setDateIdeas(data);
-      } else {
+      } else if (coupleData?.id) {
         // Insert some default date ideas if none exist
         const defaultIdeas = [
           {
             title: 'Sunset Picnic in the Park',
             description: 'Pack your favorite snacks and watch the sunset together in a beautiful park setting.',
-            category: 'outdoor' as any,
-            duration_hours: 3,
+            category: 'outdoor',
+            estimated_duration: '3 hours',
             estimated_cost: '$',
-            location_type: 'Local Park'
+            location: 'Local Park',
+            couple_id: coupleData.id,
+            created_by: user?.id
           },
           {
             title: 'Cooking Class for Two',
             description: 'Learn to make pasta from scratch while enjoying wine and each other\'s company.',
-            category: 'indoor' as any,
-            duration_hours: 4,
+            category: 'indoor',
+            estimated_duration: '4 hours',
             estimated_cost: '$$$',
-            location_type: 'Culinary Studio'
+            location: 'Culinary Studio',
+            couple_id: coupleData.id,
+            created_by: user?.id
           },
           {
             title: 'Stargazing Adventure',
             description: 'Drive to a dark sky location with blankets and hot cocoa for a romantic night under the stars.',
-            category: 'outdoor' as any,
-            duration_hours: 5,
+            category: 'outdoor',
+            estimated_duration: '5 hours',
             estimated_cost: '$',
-            location_type: 'Dark Sky Area'
+            location: 'Dark Sky Area',
+            couple_id: coupleData.id,
+            created_by: user?.id
           }
         ];
 
@@ -139,16 +157,13 @@ export const DatePlanner = () => {
       const scheduledDateTime = new Date(`${selectedDate}T${selectedTime}`);
 
       const { error } = await supabase
-        .from('planned_dates')
-        .insert({
-          couple_id: coupleData?.id,
-          created_by: user?.id,
-          title: selectedIdea.title,
-          description: selectedIdea.description,
-          scheduled_date: scheduledDateTime.toISOString(),
-          location: selectedIdea.location_type || 'TBD',
-          date_idea_id: selectedIdea.id
-        });
+        .from('date_ideas')
+        .update({
+          is_completed: true,
+          completed_date: new Date().toISOString().split('T')[0],
+          notes: `Scheduled for ${scheduledDateTime.toLocaleDateString()}`
+        })
+        .eq('id', selectedIdea.id);
 
       if (error) throw error;
       
@@ -244,7 +259,7 @@ export const DatePlanner = () => {
                 <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <Clock size={16} />
-                    <span className="font-bold">{idea.duration_hours || 2}-{(idea.duration_hours || 2) + 1} hours</span>
+                    <span className="font-bold">{idea.estimated_duration || '2-3 hours'}</span>
                   </div>
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <DollarSign size={16} />
@@ -252,7 +267,7 @@ export const DatePlanner = () => {
                   </div>
                   <div className="flex items-center gap-2 text-muted-foreground col-span-2">
                     <MapPin size={16} />
-                    <span className="font-bold">{idea.location_type || 'Various locations'}</span>
+                    <span className="font-bold">{idea.location || 'Various locations'}</span>
                   </div>
                 </div>
 
