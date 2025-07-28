@@ -53,21 +53,20 @@ Deno.serve(async (req) => {
 
     console.log('Seeding data for user:', userId)
 
-    // Create demo partner
-    const demoPartnerId = crypto.randomUUID()
+    // For demo purposes, we'll create a couple where the user is both partners
+    // In a real app, you'd invite an actual partner
     
-    // Create profiles
+    // Create/update user profile
     await supabase.from('profiles').upsert([
-      { user_id: userId, display_name: 'You' },
-      { user_id: demoPartnerId, display_name: 'Your Partner' }
+      { user_id: userId, display_name: 'You' }
     ])
 
-    // Create couple relationship
+    // Create couple relationship (user with themselves for demo)
     const { data: couple, error: coupleError } = await supabase
       .from('couples')
       .insert({
         user1_id: userId,
-        user2_id: demoPartnerId,
+        user2_id: userId, // Same user for demo purposes
         relationship_status: 'dating',
         anniversary_date: new Date().toISOString().split('T')[0]
       })
@@ -115,8 +114,10 @@ Deno.serve(async (req) => {
       }
     ])
 
-    // Add sample checkins
+    // Add sample checkins for both "partners" (same user)
     const today = new Date().toISOString().split('T')[0]
+    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    
     await supabase.from('daily_checkins').insert([
       {
         user_id: userId,
@@ -126,6 +127,15 @@ Deno.serve(async (req) => {
         energy_level: 4,
         relationship_feeling: 'connected',
         gratitude: 'Grateful for this beautiful relationship'
+      },
+      {
+        user_id: userId,
+        couple_id: coupleId,
+        checkin_date: yesterday,
+        mood: 'content',
+        energy_level: 3,
+        relationship_feeling: 'neutral',
+        gratitude: 'Thankful for a peaceful day together'
       }
     ])
 
