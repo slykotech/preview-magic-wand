@@ -40,6 +40,9 @@ export const MemoryVault = () => {
   const [selectedMemory, setSelectedMemory] = useState<Memory | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [editingMemory, setEditingMemory] = useState<Memory | null>(null);
   const [newMemory, setNewMemory] = useState({
     title: "",
     description: "",
@@ -50,6 +53,7 @@ export const MemoryVault = () => {
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
@@ -256,6 +260,203 @@ export const MemoryVault = () => {
 
   const triggerFileInput = () => {
     fileInputRef.current?.click();
+  };
+
+  const startEdit = (memory: Memory) => {
+    setEditingMemory(memory);
+    setNewMemory({
+      title: memory.title,
+      description: memory.description || "",
+      memory_date: memory.memory_date || "",
+      image_url: memory.image_url || ""
+    });
+    setUploadedFiles([]);
+    setShowEditForm(true);
+    setSelectedMemory(null);
+  };
+
+  const updateMemory = async () => {
+    if (!editingMemory || !newMemory.title.trim()) {
+      toast({
+        title: "Missing information",
+        description: "Please enter at least a title for your memory",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      // Update the memory
+      const { error: memoryError } = await supabase
+        .from('memories')
+        .update({
+          title: newMemory.title,
+          description: newMemory.description || null,
+          memory_date: newMemory.memory_date || null,
+        })
+        .eq('id', editingMemory.id);
+
+      if (memoryError) throw memoryError;
+
+      // Upload new images if files are selected
+      if (uploadedFiles.length > 0) {
+        const uploadResults = await uploadImages(uploadedFiles);
+        
+        // Get current max upload order
+        const { data: existingImages } = await supabase
+          .from('memory_images')
+          .select('upload_order')
+          .eq('memory_id', editingMemory.id)
+          .order('upload_order', { ascending: false })
+          .limit(1);
+
+        const maxOrder = existingImages && existingImages.length > 0 ? existingImages[0].upload_order : -1;
+
+        // Insert new memory images
+        const memoryImages = uploadResults.map((result, index) => ({
+          memory_id: editingMemory.id,
+          image_url: result.url,
+          file_name: result.fileName,
+          upload_order: maxOrder + 1 + index
+        }));
+
+        const { error: imagesError } = await supabase
+          .from('memory_images')
+          .insert(memoryImages);
+
+        if (imagesError) throw imagesError;
+      }
+
+      // Fetch updated memory with images
+      const { data: updatedMemory } = await supabase
+        .from('memories')
+        .select(`
+          *,
+          images:memory_images(*)
+        `)
+        .eq('id', editingMemory.id)
+        .single();
+
+      // Update memories list
+      setMemories(prev => prev.map(m => m.id === editingMemory.id ? updatedMemory : m));
+      
+      setNewMemory({ title: "", description: "", memory_date: "", image_url: "" });
+      setUploadedFiles([]);
+      setEditingMemory(null);
+      setShowEditForm(false);
+
+      toast({
+        title: "Memory Updated! 💕",
+        description: "Your changes have been saved",
+      });
+    } catch (error) {
+      console.error('Error updating memory:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update memory",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const deleteMemory = async () => {
+    if (!selectedMemory) return;
+
+    setDeleting(true);
+    try {
+      // Delete images from storage first
+      if (selectedMemory.images && selectedMemory.images.length > 0) {
+        const filePaths = selectedMemory.images.map(img => {
+          const url = new URL(img.image_url);
+          return url.pathname.split('/').pop() || '';
+        }).filter(path => path);
+
+        if (filePaths.length > 0) {
+          await supabase.storage
+            .from('memory-images')
+            .remove(filePaths);
+        }
+      }
+
+      // Delete memory images from database (will cascade)
+      const { error: deleteError } = await supabase
+        .from('memories')
+        .delete()
+        .eq('id', selectedMemory.id);
+
+      if (deleteError) throw deleteError;
+
+      // Update memories list
+      setMemories(prev => prev.filter(m => m.id !== selectedMemory.id));
+      
+      setSelectedMemory(null);
+      setShowDeleteConfirm(false);
+
+      toast({
+        title: "Memory Deleted",
+        description: "The memory has been permanently removed",
+      });
+    } catch (error) {
+      console.error('Error deleting memory:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete memory",
+        variant: "destructive"
+      });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const removeImageFromMemory = async (imageId: string, imageUrl: string) => {
+    try {
+      // Delete from storage
+      const url = new URL(imageUrl);
+      const filePath = url.pathname.split('/').pop();
+      if (filePath) {
+        await supabase.storage
+          .from('memory-images')
+          .remove([filePath]);
+      }
+
+      // Delete from database
+      await supabase
+        .from('memory_images')
+        .delete()
+        .eq('id', imageId);
+
+      // Update selected memory if it's open
+      if (selectedMemory) {
+        const updatedImages = selectedMemory.images?.filter(img => img.id !== imageId) || [];
+        setSelectedMemory({
+          ...selectedMemory,
+          images: updatedImages
+        });
+      }
+
+      // Update memories list
+      setMemories(prev => prev.map(memory => {
+        if (memory.id === selectedMemory?.id) {
+          return {
+            ...memory,
+            images: memory.images?.filter(img => img.id !== imageId) || []
+          };
+        }
+        return memory;
+      }));
+
+      toast({
+        title: "Image Removed",
+        description: "The image has been deleted",
+      });
+    } catch (error) {
+      console.error('Error removing image:', error);
+      toast({
+        title: "Error",
+        description: "Failed to remove image",
+        variant: "destructive"
+      });
+    }
   };
 
   const filteredMemories = memories.filter(memory =>
@@ -598,12 +799,22 @@ export const MemoryVault = () => {
                       {selectedMemory.images
                         .sort((a, b) => a.upload_order - b.upload_order)
                         .map((image, index) => (
-                          <div key={image.id} className="w-full h-64 bg-gradient-romance rounded-xl overflow-hidden">
-                            <img 
-                              src={image.image_url} 
-                              alt={`${selectedMemory.title} - Image ${index + 1}`}
-                              className="w-full h-full object-cover"
-                            />
+                          <div key={image.id} className="relative group">
+                            <div className="w-full h-64 bg-gradient-romance rounded-xl overflow-hidden">
+                              <img 
+                                src={image.image_url} 
+                                alt={`${selectedMemory.title} - Image ${index + 1}`}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => removeImageFromMemory(image.id, image.image_url)}
+                            >
+                              <X size={16} />
+                            </Button>
                           </div>
                         ))}
                     </div>
@@ -630,15 +841,208 @@ export const MemoryVault = () => {
               </div>
               
               <div className="flex gap-3">
-                <Button variant="romantic" className="flex-1">
-                  <Heart className="mr-2" size={16} />
-                  Add to Favorites
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => startEdit(selectedMemory)}
+                >
+                  <Camera className="mr-2" size={16} />
+                  Edit Memory
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => setShowDeleteConfirm(true)}
+                >
+                  <X className="mr-2" size={16} />
+                  Delete
                 </Button>
               </div>
             </div>
           </DialogContent>
         </Dialog>
-      )}
+        )}
+
+      {/* Edit Memory Dialog */}
+      <Dialog open={showEditForm} onOpenChange={setShowEditForm}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Heart size={20} />
+              Edit Memory
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="edit-title">Title *</Label>
+              <Input
+                id="edit-title"
+                placeholder="Our special moment..."
+                value={newMemory.title}
+                onChange={(e) => setNewMemory({ ...newMemory, title: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-description">Description</Label>
+              <Textarea
+                id="edit-description"
+                placeholder="Tell the story of this memory..."
+                value={newMemory.description}
+                onChange={(e) => setNewMemory({ ...newMemory, description: e.target.value })}
+                rows={3}
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-memory_date">Date</Label>
+              <Input
+                id="edit-memory_date"
+                type="date"
+                value={newMemory.memory_date}
+                onChange={(e) => setNewMemory({ ...newMemory, memory_date: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label>Add More Photos</Label>
+              <div 
+                className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer ${
+                  dragActive ? 'border-primary bg-primary/10' : 'border-muted hover:border-primary'
+                }`}
+                onDragEnter={handleDrag}
+                onDragLeave={handleDrag}
+                onDragOver={handleDrag}
+                onDrop={handleDrop}
+                onClick={triggerFileInput}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={(e) => e.target.files && handleFilesSelect(Array.from(e.target.files))}
+                  className="hidden"
+                />
+                {uploadedFiles.length > 0 ? (
+                  <div className="space-y-3">
+                    <ImageIcon className="mx-auto text-green-600" size={24} />
+                    <p className="text-sm font-medium text-green-600">{uploadedFiles.length} new files selected</p>
+                    <div className="grid grid-cols-3 gap-2 max-h-32 overflow-y-auto">
+                      {uploadedFiles.map((file, index) => (
+                        <div key={index} className="relative bg-muted rounded p-2">
+                          <p className="text-xs truncate">{file.name}</p>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute -top-1 -right-1 h-5 w-5 p-0 bg-destructive text-white hover:bg-destructive/80"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeFile(index);
+                            }}
+                          >
+                            <X size={12} />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setUploadedFiles([]);
+                      }}
+                    >
+                      Clear All
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Upload className="mx-auto text-muted-foreground" size={24} />
+                    <p className="text-sm text-muted-foreground">
+                      Add more images to this memory
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      JPG, PNG, GIF up to 10MB each
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowEditForm(false);
+                  setUploadedFiles([]);
+                  setEditingMemory(null);
+                }}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={updateMemory}
+                className="flex-1"
+                disabled={!newMemory.title.trim() || uploading}
+              >
+                {uploading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Updating...
+                  </>
+                ) : (
+                  'Update Memory'
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <X size={20} />
+              Delete Memory
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-foreground">
+              Are you sure you want to delete "<strong>{selectedMemory?.title}</strong>"? 
+            </p>
+            <p className="text-sm text-muted-foreground">
+              This action cannot be undone. All images associated with this memory will also be permanently deleted.
+            </p>
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setShowDeleteConfirm(false)}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={deleteMemory}
+                className="flex-1"
+                disabled={deleting}
+              >
+                {deleting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Deleting...
+                  </>
+                ) : (
+                  'Delete Forever'
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <BottomNavigation />
     </div>
