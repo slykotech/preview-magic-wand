@@ -84,6 +84,36 @@ export const Dashboard = () => {
       
       const partnerId = coupleData?.user1_id === user?.id ? coupleData?.user2_id : coupleData?.user1_id;
 
+      // Fetch or calculate sync score
+      let syncScore = 75; // Default
+      const { data: syncData } = await supabase
+        .from('sync_scores')
+        .select('score')
+        .eq('couple_id', currentCoupleId)
+        .order('calculated_date', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (syncData) {
+        syncScore = syncData.score;
+      } else if (currentCoupleId) {
+        // Calculate and store new sync score
+        const { data: calculatedScore } = await supabase
+          .rpc('calculate_sync_score', { p_couple_id: currentCoupleId });
+        
+        if (calculatedScore) {
+          syncScore = calculatedScore;
+          // Store the calculated score
+          await supabase
+            .from('sync_scores')
+            .upsert({
+              couple_id: currentCoupleId,
+              score: syncScore,
+              calculated_date: new Date().toISOString().split('T')[0]
+            });
+        }
+      }
+
       // Fetch upcoming date idea
       const { data: dateData } = await supabase
         .from('date_ideas')
@@ -166,10 +196,12 @@ export const Dashboard = () => {
         .eq('checkin_date', today)
         .maybeSingle();
 
-      // Calculate a basic sync score based on recent check-ins
-      const syncScore = checkinData ? 
-        Math.min(95, 65 + (streak * 3)) : 75;
       setSyncScore(syncScore);
+      
+      // Generate insights based on activity
+      if (currentCoupleId) {
+        await supabase.rpc('generate_relationship_insights', { p_couple_id: currentCoupleId });
+      }
       setUpcomingDate(dateData);
       setRecentMemory(memoryData);
       setLastCheckin(checkinData);

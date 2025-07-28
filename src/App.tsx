@@ -12,6 +12,7 @@ import { DatePlanner } from "./pages/DatePlanner";
 import { MemoryVault } from "./pages/MemoryVault";
 import { Profile } from "./pages/Profile";
 import { CoupleSetup } from "./pages/CoupleSetup";
+import { RelationshipInsights } from "./pages/RelationshipInsights";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +33,7 @@ const App = () => (
             <Route path="/vault" element={<MemoryVault />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/couple-setup" element={<CoupleSetup />} />
+            <Route path="/insights" element={<RelationshipInsights />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

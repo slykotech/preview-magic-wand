@@ -70,6 +70,39 @@ export type Database = {
         }
         Relationships: []
       }
+      couple_preferences: {
+        Row: {
+          couple_id: string
+          created_at: string
+          id: string
+          love_languages: Json | null
+          notification_time: string | null
+          relationship_goals: Json | null
+          reminder_frequency: string | null
+          updated_at: string
+        }
+        Insert: {
+          couple_id: string
+          created_at?: string
+          id?: string
+          love_languages?: Json | null
+          notification_time?: string | null
+          relationship_goals?: Json | null
+          reminder_frequency?: string | null
+          updated_at?: string
+        }
+        Update: {
+          couple_id?: string
+          created_at?: string
+          id?: string
+          love_languages?: Json | null
+          notification_time?: string | null
+          relationship_goals?: Json | null
+          reminder_frequency?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       couples: {
         Row: {
           anniversary_date: string | null
@@ -112,9 +145,11 @@ export type Database = {
           couple_id: string
           created_at: string
           energy_level: number | null
+          gratitude: string | null
           id: string
           mood: Database["public"]["Enums"]["mood_type"]
           notes: string | null
+          relationship_feeling: string | null
           updated_at: string
           user_id: string
         }
@@ -123,9 +158,11 @@ export type Database = {
           couple_id: string
           created_at?: string
           energy_level?: number | null
+          gratitude?: string | null
           id?: string
           mood: Database["public"]["Enums"]["mood_type"]
           notes?: string | null
+          relationship_feeling?: string | null
           updated_at?: string
           user_id: string
         }
@@ -134,9 +171,11 @@ export type Database = {
           couple_id?: string
           created_at?: string
           energy_level?: number | null
+          gratitude?: string | null
           id?: string
           mood?: Database["public"]["Enums"]["mood_type"]
           notes?: string | null
+          relationship_feeling?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -286,12 +325,85 @@ export type Database = {
         }
         Relationships: []
       }
+      relationship_insights: {
+        Row: {
+          couple_id: string
+          created_at: string
+          description: string
+          expires_at: string | null
+          id: string
+          insight_type: string
+          is_read: boolean | null
+          priority: number | null
+          title: string
+        }
+        Insert: {
+          couple_id: string
+          created_at?: string
+          description: string
+          expires_at?: string | null
+          id?: string
+          insight_type: string
+          is_read?: boolean | null
+          priority?: number | null
+          title: string
+        }
+        Update: {
+          couple_id?: string
+          created_at?: string
+          description?: string
+          expires_at?: string | null
+          id?: string
+          insight_type?: string
+          is_read?: boolean | null
+          priority?: number | null
+          title?: string
+        }
+        Relationships: []
+      }
+      sync_scores: {
+        Row: {
+          calculated_date: string
+          couple_id: string
+          created_at: string
+          factors: Json | null
+          id: string
+          score: number
+          updated_at: string
+        }
+        Insert: {
+          calculated_date?: string
+          couple_id: string
+          created_at?: string
+          factors?: Json | null
+          id?: string
+          score: number
+          updated_at?: string
+        }
+        Update: {
+          calculated_date?: string
+          couple_id?: string
+          created_at?: string
+          factors?: Json | null
+          id?: string
+          score?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      calculate_sync_score: {
+        Args: { p_couple_id: string }
+        Returns: number
+      }
+      generate_relationship_insights: {
+        Args: { p_couple_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       mood_type:

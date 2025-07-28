@@ -94,7 +94,9 @@ export const DailyCheckinFlow: React.FC<DailyCheckinFlowProps> = ({
       const checkinData = {
         mood: selectedMood,
         energy_level: energyLevel,
-        notes: `Gratitude: ${gratitude}${additionalThoughts ? `\n\nAdditional thoughts: ${additionalThoughts}` : ''}`,
+        relationship_feeling: relationshipFeeling,
+        gratitude: gratitude,
+        notes: additionalThoughts || null,
       };
 
       if (existingCheckin) {
