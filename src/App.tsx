@@ -11,6 +11,7 @@ import { AICoach } from "./pages/AICoach";
 import { DatePlanner } from "./pages/DatePlanner";
 import { MemoryVault } from "./pages/MemoryVault";
 import { Profile } from "./pages/Profile";
+import { CoupleSetup } from "./pages/CoupleSetup";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
             <Route path="/planner" element={<DatePlanner />} />
             <Route path="/vault" element={<MemoryVault />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/couple-setup" element={<CoupleSetup />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

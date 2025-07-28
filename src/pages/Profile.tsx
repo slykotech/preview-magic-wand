@@ -135,9 +135,9 @@ export const Profile = () => {
           <div className="bg-card rounded-2xl p-2 shadow-soft">
             <ProfileMenuItem
               icon={<User size={20} />}
-              title="Edit Profile"
-              subtitle="Update your avatar and info"
-              onClick={() => handleMenuClick("Edit Profile")}
+              title="Setup Couple Profile"
+              subtitle="Required for daily check-ins"
+              onClick={() => handleMenuClick("Setup Couple", "/couple-setup")}
             />
             <ProfileMenuItem
               icon={<Heart size={20} />}
