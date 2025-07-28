@@ -14,7 +14,278 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      ai_coach_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          role: string
+          session_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          role: string
+          session_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          role?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_coach_messages_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "ai_coach_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_coach_sessions: {
+        Row: {
+          created_at: string
+          id: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      couples: {
+        Row: {
+          anniversary_date: string | null
+          created_at: string
+          id: string
+          relationship_status:
+            | Database["public"]["Enums"]["relationship_status"]
+            | null
+          updated_at: string
+          user1_id: string
+          user2_id: string
+        }
+        Insert: {
+          anniversary_date?: string | null
+          created_at?: string
+          id?: string
+          relationship_status?:
+            | Database["public"]["Enums"]["relationship_status"]
+            | null
+          updated_at?: string
+          user1_id: string
+          user2_id: string
+        }
+        Update: {
+          anniversary_date?: string | null
+          created_at?: string
+          id?: string
+          relationship_status?:
+            | Database["public"]["Enums"]["relationship_status"]
+            | null
+          updated_at?: string
+          user1_id?: string
+          user2_id?: string
+        }
+        Relationships: []
+      }
+      daily_checkins: {
+        Row: {
+          checkin_date: string
+          couple_id: string
+          created_at: string
+          energy_level: number | null
+          id: string
+          mood: Database["public"]["Enums"]["mood_type"]
+          notes: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          checkin_date?: string
+          couple_id: string
+          created_at?: string
+          energy_level?: number | null
+          id?: string
+          mood: Database["public"]["Enums"]["mood_type"]
+          notes?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          checkin_date?: string
+          couple_id?: string
+          created_at?: string
+          energy_level?: number | null
+          id?: string
+          mood?: Database["public"]["Enums"]["mood_type"]
+          notes?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_checkins_couple_id_fkey"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      date_ideas: {
+        Row: {
+          category: string | null
+          completed_date: string | null
+          couple_id: string
+          created_at: string
+          created_by: string
+          description: string | null
+          estimated_cost: string | null
+          estimated_duration: string | null
+          id: string
+          is_completed: boolean | null
+          location: string | null
+          notes: string | null
+          rating: number | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          completed_date?: string | null
+          couple_id: string
+          created_at?: string
+          created_by: string
+          description?: string | null
+          estimated_cost?: string | null
+          estimated_duration?: string | null
+          id?: string
+          is_completed?: boolean | null
+          location?: string | null
+          notes?: string | null
+          rating?: number | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          completed_date?: string | null
+          couple_id?: string
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          estimated_cost?: string | null
+          estimated_duration?: string | null
+          id?: string
+          is_completed?: boolean | null
+          location?: string | null
+          notes?: string | null
+          rating?: number | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "date_ideas_couple_id_fkey"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      memories: {
+        Row: {
+          couple_id: string
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          image_url: string | null
+          memory_date: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          couple_id: string
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          memory_date?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          couple_id?: string
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          memory_date?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "memories_couple_id_fkey"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +294,14 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      mood_type:
+        | "excited"
+        | "happy"
+        | "content"
+        | "anxious"
+        | "sad"
+        | "stressed"
+      relationship_status: "dating" | "engaged" | "married" | "partnered"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +428,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      mood_type: ["excited", "happy", "content", "anxious", "sad", "stressed"],
+      relationship_status: ["dating", "engaged", "married", "partnered"],
+    },
   },
 } as const
