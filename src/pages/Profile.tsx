@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { User, Heart, Settings, Award, Calendar, LogOut, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import coupleImage from "@/assets/couple-avatars.jpg";
 
@@ -54,9 +55,34 @@ export const Profile = () => {
     dateCount: 23,
     questsCompleted: 12
   });
+  const [coupleData, setCoupleData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (user) {
+      fetchCoupleData();
+    }
+  }, [user]);
+
+  const fetchCoupleData = async () => {
+    try {
+      const { data } = await supabase
+        .from('couples')
+        .select('*')
+        .or(`user1_id.eq.${user?.id},user2_id.eq.${user?.id}`)
+        .maybeSingle();
+      
+      setCoupleData(data);
+    } catch (error) {
+      console.error('Error fetching couple data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleMenuClick = (action: string, route?: string) => {
     if (route) {
@@ -135,8 +161,8 @@ export const Profile = () => {
           <div className="bg-card rounded-2xl p-2 shadow-soft">
             <ProfileMenuItem
               icon={<User size={20} />}
-              title="Setup Couple Profile"
-              subtitle="Required for daily check-ins"
+              title={coupleData ? "Manage Couple Profile" : "Setup Couple Profile"}
+              subtitle={coupleData ? "Edit your relationship settings" : "Required for daily check-ins"}
               onClick={() => handleMenuClick("Setup Couple", "/couple-setup")}
             />
             <ProfileMenuItem

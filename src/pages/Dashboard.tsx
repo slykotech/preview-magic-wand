@@ -68,7 +68,7 @@ export const Dashboard = () => {
       const currentCoupleId = coupleData?.id;
       setCoupleId(currentCoupleId);
       
-      // If no couple relationship exists, set defaults and return
+      // If no couple relationship exists, show setup message
       if (!currentCoupleId) {
         setSyncScore(75);
         setUpcomingDate(null);

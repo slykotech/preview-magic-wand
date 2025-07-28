@@ -56,33 +56,6 @@ export const CoupleSetup = () => {
     }
   };
 
-  const createProfile = async () => {
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .upsert({
-          user_id: user?.id,
-          display_name: displayName
-        });
-
-      if (error) throw error;
-
-      toast({
-        title: "Profile Updated! ✨",
-        description: "Your profile has been saved successfully",
-      });
-
-      fetchUserData();
-    } catch (error) {
-      console.error('Error creating profile:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update profile",
-        variant: "destructive"
-      });
-    }
-  };
-
   const createCouple = async () => {
     if (!displayName.trim()) {
       toast({
@@ -96,7 +69,14 @@ export const CoupleSetup = () => {
     setCreating(true);
     
     try {
-      // First create/update profile
+      // Use the seed-data edge function to create complete test data
+      const { data, error } = await supabase.functions.invoke('seed-data', {
+        body: { userId: user?.id }
+      });
+
+      if (error) throw error;
+
+      // Update the user's display name in their profile
       await supabase
         .from('profiles')
         .upsert({
@@ -104,20 +84,9 @@ export const CoupleSetup = () => {
           display_name: displayName
         });
 
-      // Create couple relationship
-      const { error } = await supabase
-        .from('couples')
-        .insert({
-          user1_id: user?.id,
-          user2_id: user?.id, // For now, using same user ID - in real app you'd invite partner
-          relationship_status: 'dating'
-        });
-
-      if (error) throw error;
-
       toast({
         title: "Couple Profile Created! 💕",
-        description: "You can now start using daily check-ins",
+        description: "Sample data has been added. You can now use all features!",
       });
 
       fetchUserData();
@@ -213,7 +182,7 @@ export const CoupleSetup = () => {
                     placeholder="partner@example.com"
                   />
                   <p className="text-sm text-muted-foreground mt-1">
-                    For now, you can start using the app solo. Partner features coming soon!
+                    For now, we'll create demo data so you can explore all features!
                   </p>
                 </div>
                 <Button 
@@ -242,8 +211,8 @@ export const CoupleSetup = () => {
                 <h3 className="font-semibold text-blue-800 mb-2">Getting Started</h3>
                 <p className="text-blue-700 text-sm">
                   Creating your couple profile will enable daily check-ins, mood tracking, 
-                  relationship insights, and all other LoveSync features. You can invite your 
-                  partner later when that feature is available.
+                  relationship insights, sample memories, date ideas, and all other LoveSync features. 
+                  We'll add demo data so you can explore everything immediately.
                 </p>
               </CardContent>
             </Card>
