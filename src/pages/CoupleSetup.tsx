@@ -4,10 +4,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BottomNavigation } from "@/components/BottomNavigation";
-import { Heart, Users, Plus, ArrowLeft, Edit, User, Mail, Calendar, Trash2, Save, X } from "lucide-react";
+import { Heart, Users, Plus, ArrowLeft, Edit, User, Mail, Calendar, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { useCoupleData } from '@/hooks/useCoupleData';
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -15,39 +14,22 @@ export const CoupleSetup = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
-  const { 
-    coupleData, 
-    getUserDisplayName, 
-    getPartnerDisplayName, 
-    updateNicknames,
-    loading: coupleLoading 
-  } = useCoupleData();
   
   const [loading, setLoading] = useState(true);
   const [partnerEmail, setPartnerEmail] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [partnerDisplayName, setPartnerDisplayName] = useState("");
   const [profileData, setProfileData] = useState<any>(null);
   const [partnerProfile, setPartnerProfile] = useState<any>(null);
+  const [coupleData, setCoupleData] = useState<any>(null);
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState(false);
   const [updating, setUpdating] = useState(false);
-  const [isEditingNames, setIsEditingNames] = useState(false);
-  const [tempUserNickname, setTempUserNickname] = useState('');
-  const [tempPartnerNickname, setTempPartnerNickname] = useState('');
 
   useEffect(() => {
-    if (user && !coupleLoading) {
+    if (user) {
       fetchUserData();
     }
-  }, [user, coupleLoading]);
-
-  useEffect(() => {
-    if (!coupleLoading) {
-      setTempUserNickname(getUserDisplayName());
-      setTempPartnerNickname(getPartnerDisplayName());
-    }
-  }, [coupleLoading, getUserDisplayName, getPartnerDisplayName]);
+  }, [user]);
 
   const fetchUserData = async () => {
     try {
@@ -63,9 +45,18 @@ export const CoupleSetup = () => {
         setDisplayName(profile.display_name || '');
       }
 
+      // Check if user is in a couple
+      const { data: couple } = await supabase
+        .from('couples')
+        .select('*')
+        .or(`user1_id.eq.${user?.id},user2_id.eq.${user?.id}`)
+        .maybeSingle();
+
+      setCoupleData(couple);
+
       // If couple exists, fetch partner profile
-      if (coupleData) {
-        const partnerId = coupleData.user1_id === user?.id ? coupleData.user2_id : coupleData.user1_id;
+      if (couple) {
+        const partnerId = couple.user1_id === user?.id ? couple.user2_id : couple.user1_id;
         const { data: partner } = await supabase
           .from('profiles')
           .select('*')
@@ -73,7 +64,6 @@ export const CoupleSetup = () => {
           .maybeSingle();
         
         setPartnerProfile(partner);
-        setPartnerDisplayName(partner?.display_name || '');
       }
     } catch (error) {
       console.error('Error fetching user data:', error);
@@ -118,31 +108,6 @@ export const CoupleSetup = () => {
     } finally {
       setUpdating(false);
     }
-  };
-
-  const updateNicknamesHandler = async () => {
-    try {
-      await updateNicknames(tempUserNickname, tempPartnerNickname);
-      setIsEditingNames(false);
-      
-      toast({
-        title: "Nicknames Updated! 💕",
-        description: "Your custom names have been updated successfully",
-      });
-    } catch (error) {
-      console.error('Error updating nicknames:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update nicknames",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const cancelEditNames = () => {
-    setTempUserNickname(getUserDisplayName());
-    setTempPartnerNickname(getPartnerDisplayName());
-    setIsEditingNames(false);
   };
 
   const updatePartnerConnection = async () => {
@@ -280,7 +245,7 @@ export const CoupleSetup = () => {
     }
   };
 
-  if (loading || coupleLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -345,9 +310,6 @@ export const CoupleSetup = () => {
                     <p className="text-sm text-blue-700">
                       <span className="font-medium">Name:</span> {profileData?.display_name || 'Not set'}
                     </p>
-                    <p className="text-sm text-blue-700">
-                      <span className="font-medium">Nickname:</span> {getUserDisplayName()}
-                    </p>
                     <p className="text-sm text-blue-700 font-mono">
                       <span className="font-medium">User ID:</span> {user?.id?.substring(0, 8)}...
                     </p>
@@ -366,9 +328,6 @@ export const CoupleSetup = () => {
                     <div className="space-y-2">
                       <p className="text-sm text-pink-700">
                         <span className="font-medium">Name:</span> {partnerProfile.display_name || 'Not set'}
-                      </p>
-                      <p className="text-sm text-pink-700">
-                        <span className="font-medium">Your nickname for them:</span> {getPartnerDisplayName()}
                       </p>
                       <p className="text-sm text-pink-700 font-mono">
                         <span className="font-medium">User ID:</span> {partnerProfile.user_id?.substring(0, 8)}...
@@ -418,12 +377,12 @@ export const CoupleSetup = () => {
                      <div>
                        <h4 className="font-semibold text-orange-800 mb-4 flex items-center gap-2">
                          <Edit size={16} />
-                         Edit Profile Name
+                         Edit Your Name
                        </h4>
                        <div className="space-y-4">
                           <div>
                             <Label htmlFor="editDisplayName" className="text-sm font-medium text-orange-800">
-                              Your Name
+                              Your Display Name
                             </Label>
                             <Input
                               id="editDisplayName"
@@ -432,6 +391,9 @@ export const CoupleSetup = () => {
                               placeholder="Enter your name"
                               className="mt-1"
                             />
+                            <p className="text-xs text-orange-600 mt-1">
+                              This is how you'll appear in the app
+                            </p>
                           </div>
                           {partnerProfile && (
                             <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-md">
@@ -439,7 +401,7 @@ export const CoupleSetup = () => {
                                 <span className="font-medium">Partner's Name:</span> {partnerProfile.display_name || 'Not set'}
                               </p>
                               <p className="text-xs text-yellow-600 mt-1">
-                                Your partner needs to update their own name. Only they can change it for security reasons.
+                                Your partner's name is automatically fetched from their profile. They can update it from their own account.
                               </p>
                             </div>
                           )}
@@ -462,87 +424,15 @@ export const CoupleSetup = () => {
                        </div>
                      </div>
 
-                     <div>
-                       <h4 className="font-semibold text-orange-800 mb-4 flex items-center gap-2">
-                         <Edit size={16} />
-                         Custom Nicknames
-                       </h4>
-                       {isEditingNames ? (
-                         <div className="space-y-4">
-                           <div>
-                             <Label htmlFor="userNickname" className="text-sm font-medium text-orange-800">
-                               What you call yourself
-                             </Label>
-                             <Input
-                               id="userNickname"
-                               value={tempUserNickname}
-                               onChange={(e) => setTempUserNickname(e.target.value)}
-                               placeholder="Your nickname"
-                               className="mt-1"
-                             />
-                           </div>
-                           <div>
-                             <Label htmlFor="partnerNickname" className="text-sm font-medium text-orange-800">
-                               What you call your partner
-                             </Label>
-                             <Input
-                               id="partnerNickname"
-                               value={tempPartnerNickname}
-                               onChange={(e) => setTempPartnerNickname(e.target.value)}
-                               placeholder="Your partner's nickname"
-                               className="mt-1"
-                             />
-                           </div>
-                           <div className="flex gap-3">
-                             <Button
-                               onClick={updateNicknamesHandler}
-                               disabled={updating}
-                               className="flex-1 bg-blue-600 hover:bg-blue-700"
-                             >
-                               <Save size={16} className="mr-2" />
-                               Save Nicknames
-                             </Button>
-                             <Button
-                               variant="outline"
-                               onClick={cancelEditNames}
-                               disabled={updating}
-                             >
-                               <X size={16} className="mr-2" />
-                               Cancel
-                             </Button>
-                           </div>
-                         </div>
-                       ) : (
-                         <div className="space-y-3">
-                           <div className="space-y-2">
-                             <p className="text-sm text-orange-800">
-                               <span className="font-medium">You:</span> {getUserDisplayName()}
-                             </p>
-                             <p className="text-sm text-orange-800">
-                               <span className="font-medium">Your Partner:</span> {getPartnerDisplayName()}
-                             </p>
-                           </div>
-                           <Button
-                             variant="outline"
-                             onClick={() => setIsEditingNames(true)}
-                             className="w-full"
-                           >
-                             <Edit size={16} className="mr-2" />
-                             Edit Nicknames
-                           </Button>
-                         </div>
-                       )}
-                     </div>
-
                     <div>
                       <h4 className="font-semibold text-orange-800 mb-4 flex items-center gap-2">
                         <Mail size={16} />
-                        Update Partner Connection
+                        Connect to Different Partner
                       </h4>
                       <div className="space-y-4">
                         <div>
                           <Label htmlFor="newPartnerEmail" className="text-sm font-medium text-orange-800">
-                            New Partner's Email
+                            Partner's Email
                           </Label>
                           <Input
                             id="newPartnerEmail"
@@ -553,7 +443,7 @@ export const CoupleSetup = () => {
                             className="mt-1"
                           />
                           <p className="text-xs text-orange-600 mt-1">
-                            Enter the email of someone who already has a LoveSync account
+                            Enter the email of someone who already has a LoveSync account. Their name will be automatically fetched from their profile.
                           </p>
                         </div>
                         <div className="flex gap-3">
@@ -565,10 +455,10 @@ export const CoupleSetup = () => {
                             {updating ? (
                               <>
                                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                                Updating...
+                                Connecting...
                               </>
                             ) : (
-                              'Update Partner'
+                              'Connect to Partner'
                             )}
                           </Button>
                         </div>
@@ -581,12 +471,8 @@ export const CoupleSetup = () => {
                          onClick={() => {
                            setEditing(false);
                            setPartnerEmail("");
-                           setIsEditingNames(false);
-                           // Reset names to original values
+                           // Reset name to original value
                            setDisplayName(profileData?.display_name || '');
-                           setPartnerDisplayName(partnerProfile?.display_name || '');
-                           setTempUserNickname(getUserDisplayName());
-                           setTempPartnerNickname(getPartnerDisplayName());
                          }}
                         className="px-6"
                       >
@@ -635,6 +521,9 @@ export const CoupleSetup = () => {
                     onChange={(e) => setDisplayName(e.target.value)}
                     placeholder="Enter your name"
                   />
+                  <p className="text-sm text-muted-foreground mt-1">
+                    This is how you'll appear in the app
+                  </p>
                 </div>
                 <div>
                   <Label htmlFor="partnerEmail">Partner's Email (Optional)</Label>
@@ -646,7 +535,7 @@ export const CoupleSetup = () => {
                     placeholder="partner@example.com"
                   />
                   <p className="text-sm text-muted-foreground mt-1">
-                    For now, we'll create demo data so you can explore all features!
+                    For now, we'll create demo data so you can explore all features! Their name will be automatically fetched from their profile when they join.
                   </p>
                 </div>
                 <Button 
@@ -676,7 +565,7 @@ export const CoupleSetup = () => {
                 <p className="text-blue-700 text-sm">
                   Creating your couple profile will enable daily check-ins, mood tracking, 
                   relationship insights, sample memories, date ideas, and all other LoveSync features. 
-                  We'll add demo data so you can explore everything immediately.
+                  We'll add demo data so you can explore everything immediately. Partner names are automatically fetched from their profiles.
                 </p>
               </CardContent>
             </Card>
