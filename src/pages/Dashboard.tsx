@@ -85,6 +85,9 @@ export const Dashboard = () => {
       }
       
       const partnerId = coupleData?.user1_id === user?.id ? coupleData?.user2_id : coupleData?.user1_id;
+      
+      // Handle case where user is paired with themselves (testing scenario)
+      const isTestingWithSelf = partnerId === user?.id;
 
       // Fetch or calculate sync score
       let syncScore = 75; // Default
@@ -200,6 +203,7 @@ export const Dashboard = () => {
 
       console.log('User mood data:', { userId: user?.id, mood: userMoodData?.mood });
       console.log('Partner mood data:', { partnerId, mood: partnerMoodData?.mood });
+      console.log('Is testing with self:', isTestingWithSelf);
 
       setSyncScore(syncScore);
       
@@ -213,7 +217,13 @@ export const Dashboard = () => {
       setCheckinStreak(streak);
       setLoveStreak(streak); // For now, love streak = checkin streak
       setUserMood(userMoodData?.mood);
-      setPartnerMood(partnerMoodData?.mood);
+      
+      // If testing with self, don't show partner mood as the same
+      if (isTestingWithSelf) {
+        setPartnerMood(undefined); // Show no partner mood for testing
+      } else {
+        setPartnerMood(partnerMoodData?.mood);
+      }
       setIsLoaded(true);
 
     } catch (error) {
