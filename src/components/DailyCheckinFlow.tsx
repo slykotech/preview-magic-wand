@@ -19,12 +19,14 @@ interface DailyCheckinFlowProps {
 
 type MoodType = Database['public']['Enums']['mood_type'];
 
-const emotionalStates = [
-  { value: 'excited' as MoodType, label: 'Amazing', emoji: '🤩', color: 'text-yellow-500' },
-  { value: 'happy' as MoodType, label: 'Good', emoji: '😊', color: 'text-green-500' },
-  { value: 'content' as MoodType, label: 'Okay', emoji: '😐', color: 'text-blue-500' },
-  { value: 'anxious' as MoodType, label: 'Struggling', emoji: '😰', color: 'text-orange-500' },
-  { value: 'sad' as MoodType, label: 'Difficult', emoji: '😢', color: 'text-red-500' },
+// Daily Check-in focuses on overall day satisfaction, energy, relationship, and gratitude
+// Mood is handled separately by the Mood Check feature
+const daySatisfactionLevels = [
+  { value: 'amazing', label: 'Amazing Day', emoji: '🌟', description: 'Everything went great!' },
+  { value: 'good', label: 'Good Day', emoji: '😊', description: 'Had a positive day overall' },
+  { value: 'okay', label: 'Okay Day', emoji: '😐', description: 'Nothing special, just average' },
+  { value: 'challenging', label: 'Challenging Day', emoji: '😓', description: 'Had some difficulties' },
+  { value: 'difficult', label: 'Difficult Day', emoji: '😔', description: 'Really tough day' },
 ];
 
 const energyLevels = [1, 2, 3, 4, 5];
@@ -45,7 +47,7 @@ export const DailyCheckinFlow: React.FC<DailyCheckinFlowProps> = ({
   currentStreak = 0
 }) => {
   const [step, setStep] = useState(1);
-  const [selectedMood, setSelectedMood] = useState<MoodType | null>(null);
+  const [selectedDaySatisfaction, setSelectedDaySatisfaction] = useState<string | null>(null);
   const [energyLevel, setEnergyLevel] = useState<number | null>(null);
   const [relationshipFeeling, setRelationshipFeeling] = useState<string | null>(null);
   const [gratitude, setGratitude] = useState('');
@@ -69,7 +71,7 @@ export const DailyCheckinFlow: React.FC<DailyCheckinFlowProps> = ({
   };
 
   const handleComplete = async () => {
-    if (!coupleId || !selectedMood) {
+    if (!coupleId || !selectedDaySatisfaction) {
       toast({
         title: "Please complete all required fields",
         variant: "destructive"
@@ -92,7 +94,7 @@ export const DailyCheckinFlow: React.FC<DailyCheckinFlowProps> = ({
         .maybeSingle();
 
       const checkinData = {
-        mood: selectedMood,
+        mood: 'content' as MoodType, // Default mood since Daily Check-in focuses on other aspects
         energy_level: energyLevel,
         relationship_feeling: relationshipFeeling,
         gratitude: gratitude,
@@ -115,19 +117,51 @@ export const DailyCheckinFlow: React.FC<DailyCheckinFlowProps> = ({
           });
       }
 
-      // Calculate new streak for celebration
-      const newStreak = currentStreak + (existingCheckin ? 0 : 1);
+      // Calculate proper streak by checking both partners
+      let newStreak = currentStreak;
+      if (!existingCheckin) {
+        // Get couple data to find partner ID
+        const { data: coupleData } = await supabase
+          .from('couples')
+          .select('user1_id, user2_id')
+          .eq('id', coupleId)
+          .single();
+
+        if (coupleData) {
+          const partnerId = coupleData.user1_id === userId ? coupleData.user2_id : coupleData.user1_id;
+          
+          // Check if partner has also checked in today
+          const { data: partnerCheckin } = await supabase
+            .from('daily_checkins')
+            .select('id')
+            .eq('user_id', partnerId)
+            .eq('couple_id', coupleId)
+            .eq('checkin_date', today)
+            .maybeSingle();
+
+          // If both partners have checked in today, increment streak
+          if (partnerCheckin) {
+            newStreak = currentStreak + 1;
+          }
+        }
+      }
       
-      // Show celebration toast based on streak milestones
+      // Show celebration toast based on completion and streak milestones
       let celebrationMessage = "Daily check-in completed! 💕";
-      if (newStreak === 1 && !existingCheckin) {
-        celebrationMessage = "Great start! You've begun your streak! 🔥";
-      } else if (newStreak === 7 && !existingCheckin) {
-        celebrationMessage = "Amazing! 7-day streak! You're on fire! 🔥🔥";
-      } else if (newStreak === 30 && !existingCheckin) {
-        celebrationMessage = "Incredible! 30-day streak! You're a champion! 🏆";
-      } else if (newStreak > 0 && !existingCheckin) {
-        celebrationMessage = `Fantastic! ${newStreak}-day streak! Keep it up! 🔥`;
+      if (!existingCheckin) {
+        celebrationMessage = "Daily check-in saved! Your partner will see your update! 🌟";
+      }
+      
+      if (newStreak > currentStreak) {
+        if (newStreak === 1) {
+          celebrationMessage = "Great start! You both checked in today! 🔥";
+        } else if (newStreak === 7) {
+          celebrationMessage = "Amazing! 7-day couple streak! You're on fire! 🔥🔥";
+        } else if (newStreak === 30) {
+          celebrationMessage = "Incredible! 30-day couple streak! You're champions! 🏆";
+        } else {
+          celebrationMessage = `Fantastic! ${newStreak}-day couple streak! Keep it up! 🔥`;
+        }
       }
 
       toast({
@@ -154,7 +188,7 @@ export const DailyCheckinFlow: React.FC<DailyCheckinFlowProps> = ({
 
   const canProceed = () => {
     switch (step) {
-      case 1: return selectedMood !== null;
+      case 1: return selectedDaySatisfaction !== null;
       case 2: return energyLevel !== null;
       case 3: return relationshipFeeling !== null;
       case 4: return gratitude.trim().length > 0;
@@ -168,24 +202,27 @@ export const DailyCheckinFlow: React.FC<DailyCheckinFlowProps> = ({
         return (
           <div className="space-y-6">
             <div className="text-center">
-              <h3 className="text-xl font-semibold text-foreground mb-2">How are you feeling today?</h3>
-              <p className="text-sm text-muted-foreground">Your daily emotional check-in</p>
+              <h3 className="text-xl font-semibold text-foreground mb-2">How was your day overall?</h3>
+              <p className="text-sm text-muted-foreground">Your daily satisfaction check-in</p>
             </div>
             <div className="space-y-3">
-              {emotionalStates.map((state) => (
+              {daySatisfactionLevels.map((level) => (
                 <Button
-                  key={state.value}
-                  variant={selectedMood === state.value ? "default" : "outline"}
+                  key={level.value}
+                  variant={selectedDaySatisfaction === level.value ? "default" : "outline"}
                   className={`w-full flex items-center justify-between p-4 h-auto ${
-                    selectedMood === state.value 
+                    selectedDaySatisfaction === level.value 
                       ? 'bg-secondary text-white border-secondary' 
                       : 'hover:bg-muted'
                   }`}
-                  onClick={() => setSelectedMood(state.value)}
+                  onClick={() => setSelectedDaySatisfaction(level.value)}
                 >
                   <div className="flex items-center space-x-3">
-                    <span className="text-2xl">{state.emoji}</span>
-                    <span className="font-medium">{state.label}</span>
+                    <span className="text-2xl">{level.emoji}</span>
+                    <div className="text-left">
+                      <div className="font-medium">{level.label}</div>
+                      <div className="text-xs opacity-70">{level.description}</div>
+                    </div>
                   </div>
                   <span className="text-sm text-muted-foreground">Tap to select</span>
                 </Button>
