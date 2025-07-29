@@ -8,14 +8,15 @@ interface MoodBitmojiProps {
 }
 
 const moodEmojis: Record<string, string> = {
+  excited: '🤩',
   happy: '😊',
-  excited: '🤗',
-  love: '😍',
   content: '😌',
+  anxious: '😰',
+  sad: '😢',
+  stressed: '😵',
+  love: '😍',
   neutral: '😐',
   tired: '😴',
-  stressed: '😰',
-  sad: '😢',
   angry: '😠',
   romantic: '🥰'
 };

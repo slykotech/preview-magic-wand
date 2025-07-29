@@ -4,32 +4,50 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BottomNavigation } from "@/components/BottomNavigation";
-import { Heart, Users, Plus, ArrowLeft, Edit, User, Mail, Calendar, Trash2 } from "lucide-react";
+import { Heart, Users, Plus, ArrowLeft, Edit, User, Mail, Calendar, Trash2, Save, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { useCoupleData } from '@/hooks/useCoupleData';
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
 export const CoupleSetup = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const { 
+    coupleData, 
+    getUserDisplayName, 
+    getPartnerDisplayName, 
+    updateNicknames,
+    loading: coupleLoading 
+  } = useCoupleData();
+  
   const [loading, setLoading] = useState(true);
   const [partnerEmail, setPartnerEmail] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [partnerDisplayName, setPartnerDisplayName] = useState("");
-  const [coupleData, setCoupleData] = useState<any>(null);
   const [profileData, setProfileData] = useState<any>(null);
   const [partnerProfile, setPartnerProfile] = useState<any>(null);
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState(false);
   const [updating, setUpdating] = useState(false);
-  const { toast } = useToast();
-  const { user } = useAuth();
-  const navigate = useNavigate();
+  const [isEditingNames, setIsEditingNames] = useState(false);
+  const [tempUserNickname, setTempUserNickname] = useState('');
+  const [tempPartnerNickname, setTempPartnerNickname] = useState('');
 
   useEffect(() => {
-    if (user) {
+    if (user && !coupleLoading) {
       fetchUserData();
     }
-  }, [user]);
+  }, [user, coupleLoading]);
+
+  useEffect(() => {
+    if (!coupleLoading) {
+      setTempUserNickname(getUserDisplayName());
+      setTempPartnerNickname(getPartnerDisplayName());
+    }
+  }, [coupleLoading, getUserDisplayName, getPartnerDisplayName]);
 
   const fetchUserData = async () => {
     try {
@@ -45,18 +63,9 @@ export const CoupleSetup = () => {
         setDisplayName(profile.display_name || '');
       }
 
-      // Fetch couple relationship
-      const { data: couple } = await supabase
-        .from('couples')
-        .select('*')
-        .or(`user1_id.eq.${user?.id},user2_id.eq.${user?.id}`)
-        .maybeSingle();
-
-      setCoupleData(couple);
-
       // If couple exists, fetch partner profile
-      if (couple) {
-        const partnerId = couple.user1_id === user?.id ? couple.user2_id : couple.user1_id;
+      if (coupleData) {
+        const partnerId = coupleData.user1_id === user?.id ? coupleData.user2_id : coupleData.user1_id;
         const { data: partner } = await supabase
           .from('profiles')
           .select('*')
@@ -109,6 +118,31 @@ export const CoupleSetup = () => {
     } finally {
       setUpdating(false);
     }
+  };
+
+  const updateNicknamesHandler = async () => {
+    try {
+      await updateNicknames(tempUserNickname, tempPartnerNickname);
+      setIsEditingNames(false);
+      
+      toast({
+        title: "Nicknames Updated! 💕",
+        description: "Your custom names have been updated successfully",
+      });
+    } catch (error) {
+      console.error('Error updating nicknames:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update nicknames",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const cancelEditNames = () => {
+    setTempUserNickname(getUserDisplayName());
+    setTempPartnerNickname(getPartnerDisplayName());
+    setIsEditingNames(false);
   };
 
   const updatePartnerConnection = async () => {
@@ -186,8 +220,7 @@ export const CoupleSetup = () => {
         description: "You can now create a new couple profile",
       });
 
-      setCoupleData(null);
-      setPartnerProfile(null);
+      window.location.reload(); // Simple refresh to reset all data
     } catch (error) {
       console.error('Error resetting couple data:', error);
       toast({
@@ -231,7 +264,6 @@ export const CoupleSetup = () => {
         description: "Sample data has been added. You can now use all features!",
       });
 
-      fetchUserData();
       // Redirect to dashboard after successful setup
       setTimeout(() => {
         navigate('/dashboard');
@@ -248,7 +280,7 @@ export const CoupleSetup = () => {
     }
   };
 
-  if (loading) {
+  if (loading || coupleLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -313,6 +345,9 @@ export const CoupleSetup = () => {
                     <p className="text-sm text-blue-700">
                       <span className="font-medium">Name:</span> {profileData?.display_name || 'Not set'}
                     </p>
+                    <p className="text-sm text-blue-700">
+                      <span className="font-medium">Nickname:</span> {getUserDisplayName()}
+                    </p>
                     <p className="text-sm text-blue-700 font-mono">
                       <span className="font-medium">User ID:</span> {user?.id?.substring(0, 8)}...
                     </p>
@@ -331,6 +366,9 @@ export const CoupleSetup = () => {
                     <div className="space-y-2">
                       <p className="text-sm text-pink-700">
                         <span className="font-medium">Name:</span> {partnerProfile.display_name || 'Not set'}
+                      </p>
+                      <p className="text-sm text-pink-700">
+                        <span className="font-medium">Your nickname for them:</span> {getPartnerDisplayName()}
                       </p>
                       <p className="text-sm text-pink-700 font-mono">
                         <span className="font-medium">User ID:</span> {partnerProfile.user_id?.substring(0, 8)}...
@@ -377,52 +415,124 @@ export const CoupleSetup = () => {
                 {/* Edit Section */}
                 {editing && (
                   <div className="bg-orange-50 border border-orange-200 p-6 rounded-lg space-y-6">
-                    <div>
-                      <h4 className="font-semibold text-orange-800 mb-4 flex items-center gap-2">
-                        <Edit size={16} />
-                        Edit Names
-                      </h4>
-                      <div className="space-y-4">
-                         <div>
-                           <Label htmlFor="editDisplayName" className="text-sm font-medium text-orange-800">
-                             Your Name
-                           </Label>
-                           <Input
-                             id="editDisplayName"
-                             value={displayName}
-                             onChange={(e) => setDisplayName(e.target.value)}
-                             placeholder="Enter your name"
-                             className="mt-1"
-                           />
+                     <div>
+                       <h4 className="font-semibold text-orange-800 mb-4 flex items-center gap-2">
+                         <Edit size={16} />
+                         Edit Profile Name
+                       </h4>
+                       <div className="space-y-4">
+                          <div>
+                            <Label htmlFor="editDisplayName" className="text-sm font-medium text-orange-800">
+                              Your Name
+                            </Label>
+                            <Input
+                              id="editDisplayName"
+                              value={displayName}
+                              onChange={(e) => setDisplayName(e.target.value)}
+                              placeholder="Enter your name"
+                              className="mt-1"
+                            />
+                          </div>
+                          {partnerProfile && (
+                            <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-md">
+                              <p className="text-sm text-yellow-800">
+                                <span className="font-medium">Partner's Name:</span> {partnerProfile.display_name || 'Not set'}
+                              </p>
+                              <p className="text-xs text-yellow-600 mt-1">
+                                Your partner needs to update their own name. Only they can change it for security reasons.
+                              </p>
+                            </div>
+                          )}
+                          <div className="flex gap-3">
+                            <Button
+                              onClick={updateNames}
+                              disabled={updating}
+                              className="flex-1 bg-green-600 hover:bg-green-700"
+                            >
+                              {updating ? (
+                                <>
+                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                  Updating...
+                                </>
+                              ) : (
+                                'Update Your Name'
+                              )}
+                            </Button>
+                          </div>
+                       </div>
+                     </div>
+
+                     <div>
+                       <h4 className="font-semibold text-orange-800 mb-4 flex items-center gap-2">
+                         <Edit size={16} />
+                         Custom Nicknames
+                       </h4>
+                       {isEditingNames ? (
+                         <div className="space-y-4">
+                           <div>
+                             <Label htmlFor="userNickname" className="text-sm font-medium text-orange-800">
+                               What you call yourself
+                             </Label>
+                             <Input
+                               id="userNickname"
+                               value={tempUserNickname}
+                               onChange={(e) => setTempUserNickname(e.target.value)}
+                               placeholder="Your nickname"
+                               className="mt-1"
+                             />
+                           </div>
+                           <div>
+                             <Label htmlFor="partnerNickname" className="text-sm font-medium text-orange-800">
+                               What you call your partner
+                             </Label>
+                             <Input
+                               id="partnerNickname"
+                               value={tempPartnerNickname}
+                               onChange={(e) => setTempPartnerNickname(e.target.value)}
+                               placeholder="Your partner's nickname"
+                               className="mt-1"
+                             />
+                           </div>
+                           <div className="flex gap-3">
+                             <Button
+                               onClick={updateNicknamesHandler}
+                               disabled={updating}
+                               className="flex-1 bg-blue-600 hover:bg-blue-700"
+                             >
+                               <Save size={16} className="mr-2" />
+                               Save Nicknames
+                             </Button>
+                             <Button
+                               variant="outline"
+                               onClick={cancelEditNames}
+                               disabled={updating}
+                             >
+                               <X size={16} className="mr-2" />
+                               Cancel
+                             </Button>
+                           </div>
                          </div>
-                         {partnerProfile && (
-                           <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-md">
-                             <p className="text-sm text-yellow-800">
-                               <span className="font-medium">Partner's Name:</span> {partnerProfile.display_name || 'Not set'}
+                       ) : (
+                         <div className="space-y-3">
+                           <div className="space-y-2">
+                             <p className="text-sm text-orange-800">
+                               <span className="font-medium">You:</span> {getUserDisplayName()}
                              </p>
-                             <p className="text-xs text-yellow-600 mt-1">
-                               Your partner needs to update their own name. Only they can change it for security reasons.
+                             <p className="text-sm text-orange-800">
+                               <span className="font-medium">Your Partner:</span> {getPartnerDisplayName()}
                              </p>
                            </div>
-                         )}
-                         <div className="flex gap-3">
                            <Button
-                             onClick={updateNames}
-                             disabled={updating}
-                             className="flex-1 bg-green-600 hover:bg-green-700"
+                             variant="outline"
+                             onClick={() => setIsEditingNames(true)}
+                             className="w-full"
                            >
-                             {updating ? (
-                               <>
-                                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                                 Updating...
-                               </>
-                             ) : (
-                               'Update Your Name'
-                             )}
+                             <Edit size={16} className="mr-2" />
+                             Edit Nicknames
                            </Button>
                          </div>
-                      </div>
-                    </div>
+                       )}
+                     </div>
 
                     <div>
                       <h4 className="font-semibold text-orange-800 mb-4 flex items-center gap-2">
@@ -468,13 +578,16 @@ export const CoupleSetup = () => {
                     <div className="flex justify-end">
                       <Button
                         variant="outline"
-                        onClick={() => {
-                          setEditing(false);
-                          setPartnerEmail("");
-                          // Reset names to original values
-                          setDisplayName(profileData?.display_name || '');
-                          setPartnerDisplayName(partnerProfile?.display_name || '');
-                        }}
+                         onClick={() => {
+                           setEditing(false);
+                           setPartnerEmail("");
+                           setIsEditingNames(false);
+                           // Reset names to original values
+                           setDisplayName(profileData?.display_name || '');
+                           setPartnerDisplayName(partnerProfile?.display_name || '');
+                           setTempUserNickname(getUserDisplayName());
+                           setTempPartnerNickname(getPartnerDisplayName());
+                         }}
                         className="px-6"
                       >
                         Cancel

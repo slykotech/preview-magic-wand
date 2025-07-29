@@ -5,6 +5,7 @@ import { User, Heart, Settings, Award, Calendar, LogOut, ChevronRight } from "lu
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useCoupleData } from '@/hooks/useCoupleData';
 import { supabase } from "@/integrations/supabase/client";
 import coupleImage from "@/assets/couple-avatars.jpg";
 
@@ -49,60 +50,67 @@ const ProfileMenuItem = ({ icon, title, subtitle, onClick, variant = 'default' }
 );
 
 export const Profile = () => {
-  const [relationshipStats] = useState({
-    daysConnected: 365,
-    memoryCount: 47,
-    dateCount: 23,
-    questsCompleted: 12
+  const [relationshipStats, setRelationshipStats] = useState({
+    daysConnected: 0,
+    memoryCount: 0,
+    dateCount: 0,
+    averageSync: 0
   });
-  const [coupleData, setCoupleData] = useState<any>(null);
-  const [userProfile, setUserProfile] = useState<any>(null);
-  const [partnerProfile, setPartnerProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { getUserDisplayName, getPartnerDisplayName, coupleData, loading: coupleLoading } = useCoupleData();
 
   useEffect(() => {
-    if (user) {
-      fetchCoupleData();
+    if (user && !coupleLoading) {
+      fetchProfileData();
     }
-  }, [user]);
+  }, [user, coupleLoading]);
 
-  const fetchCoupleData = async () => {
+  const fetchProfileData = async () => {
+    if (!user?.id || !coupleData) return;
+
     try {
-      // Fetch user's own profile
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', user?.id)
-        .maybeSingle();
-      
-      setUserProfile(profile);
+      setLoading(true);
 
-      // Fetch couple relationship
-      const { data: couple } = await supabase
-        .from('couples')
-        .select('*')
-        .or(`user1_id.eq.${user?.id},user2_id.eq.${user?.id}`)
-        .maybeSingle();
-      
-      setCoupleData(couple);
+      // Calculate relationship stats
+      const createdDate = new Date(coupleData.created_at);
+      const today = new Date();
+      const diffTime = Math.abs(today.getTime() - createdDate.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-      // If couple exists, fetch partner profile
-      if (couple) {
-        const partnerId = couple.user1_id === user?.id ? couple.user2_id : couple.user1_id;
-        const { data: partner } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('user_id', partnerId)
-          .maybeSingle();
-        
-        setPartnerProfile(partner);
-      }
+      // Get memories count
+      const { count: memoryCount } = await supabase
+        .from('memories')
+        .select('*', { count: 'exact', head: true })
+        .eq('couple_id', coupleData.id);
+
+      // Get completed dates count
+      const { count: dateCount } = await supabase
+        .from('date_ideas')
+        .select('*', { count: 'exact', head: true })
+        .eq('couple_id', coupleData.id)
+        .eq('is_completed', true);
+
+      // Get latest sync score
+      const { data: syncScore } = await supabase
+        .from('sync_scores')
+        .select('score')
+        .eq('couple_id', coupleData.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      setRelationshipStats({
+        daysConnected: diffDays,
+        memoryCount: memoryCount || 0,
+        dateCount: dateCount || 0,
+        averageSync: syncScore?.score || 0
+      });
     } catch (error) {
-      console.error('Error fetching couple data:', error);
+      console.error('Error fetching profile data:', error);
     } finally {
       setLoading(false);
     }
@@ -158,11 +166,9 @@ export const Profile = () => {
           </div>
           <div className="flex-1">
             <h1 className="text-xl font-extrabold font-poppins">
-              {loading ? 'Loading...' : 
-               userProfile && partnerProfile ? 
-                 `${userProfile.display_name || 'You'} & ${partnerProfile.display_name || 'Partner'}` :
-               userProfile ? 
-                 `${userProfile.display_name || 'You'}` :
+              {loading || coupleLoading ? 'Loading...' : 
+               coupleData ? 
+                 `${getUserDisplayName()} & ${getPartnerDisplayName()}` :
                  'Setup Your Profile'
               }
             </h1>
@@ -216,7 +222,7 @@ export const Profile = () => {
             <ProfileMenuItem
               icon={<Award size={20} />}
               title="Relationship Quests"
-              subtitle={`${relationshipStats.questsCompleted} completed`}
+              subtitle={`Sync Score: ${relationshipStats.averageSync}`}
               onClick={() => handleMenuClick("Quests")}
             />
             <ProfileMenuItem

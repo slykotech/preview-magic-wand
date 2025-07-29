@@ -113,7 +113,11 @@ export type Database = {
             | null
           updated_at: string
           user1_id: string
+          user1_nickname_for_user1: string | null
+          user1_nickname_for_user2: string | null
           user2_id: string
+          user2_nickname_for_user1: string | null
+          user2_nickname_for_user2: string | null
         }
         Insert: {
           anniversary_date?: string | null
@@ -124,7 +128,11 @@ export type Database = {
             | null
           updated_at?: string
           user1_id: string
+          user1_nickname_for_user1?: string | null
+          user1_nickname_for_user2?: string | null
           user2_id: string
+          user2_nickname_for_user1?: string | null
+          user2_nickname_for_user2?: string | null
         }
         Update: {
           anniversary_date?: string | null
@@ -135,7 +143,11 @@ export type Database = {
             | null
           updated_at?: string
           user1_id?: string
+          user1_nickname_for_user1?: string | null
+          user1_nickname_for_user2?: string | null
           user2_id?: string
+          user2_nickname_for_user1?: string | null
+          user2_nickname_for_user2?: string | null
         }
         Relationships: []
       }
