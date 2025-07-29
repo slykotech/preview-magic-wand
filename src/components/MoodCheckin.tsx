@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Heart, Smile, Meh, Frown, Star, Coffee } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
@@ -16,12 +14,12 @@ interface MoodCheckinProps {
 type MoodType = Database['public']['Enums']['mood_type'];
 
 const moods = [
-  { value: 'excited' as MoodType, label: 'Excited', icon: Star, color: 'text-yellow-500' },
-  { value: 'happy' as MoodType, label: 'Happy', icon: Smile, color: 'text-green-500' },
-  { value: 'content' as MoodType, label: 'Content', icon: Meh, color: 'text-blue-500' },
-  { value: 'anxious' as MoodType, label: 'Anxious', icon: Coffee, color: 'text-orange-500' },
-  { value: 'sad' as MoodType, label: 'Sad', icon: Frown, color: 'text-red-500' },
-  { value: 'stressed' as MoodType, label: 'Stressed', icon: Heart, color: 'text-pink-500' },
+  { value: 'excited' as MoodType, label: 'Excited', emoji: '🤩', color: 'from-yellow-400 to-orange-400' },
+  { value: 'happy' as MoodType, label: 'Happy', emoji: '😊', color: 'from-green-400 to-blue-400' },
+  { value: 'content' as MoodType, label: 'Content', emoji: '😌', color: 'from-blue-400 to-purple-400' },
+  { value: 'anxious' as MoodType, label: 'Anxious', emoji: '😰', color: 'from-orange-400 to-red-400' },
+  { value: 'sad' as MoodType, label: 'Sad', emoji: '😢', color: 'from-gray-400 to-blue-400' },
+  { value: 'stressed' as MoodType, label: 'Stressed', emoji: '😵', color: 'from-red-400 to-pink-400' },
 ];
 
 export const MoodCheckin: React.FC<MoodCheckinProps> = ({ 
@@ -100,45 +98,49 @@ export const MoodCheckin: React.FC<MoodCheckinProps> = ({
   };
 
   return (
-    <Card className="bg-card border shadow-sm">
+    <Card className="bg-gradient-to-br from-white to-muted/30 border shadow-lg">
       <CardContent className="p-6">
         <div className="text-center mb-6">
-          <h3 className="text-lg font-semibold text-foreground mb-1">How are you feeling?</h3>
-          <p className="text-sm text-muted-foreground">Share your mood today</p>
+          <h3 className="text-lg font-semibold text-foreground mb-1">Quick Mood Check</h3>
+          <p className="text-sm text-muted-foreground">Tap an emoji to share how you're feeling</p>
         </div>
         
-        <div className="grid grid-cols-3 gap-3">
+        <div className="flex flex-wrap justify-center gap-2">
           {moods.map((mood) => {
-            const Icon = mood.icon;
             const isSelected = selectedMood === mood.value;
             
             return (
-              <Button
+              <button
                 key={mood.value}
-                variant={isSelected ? "default" : "outline"}
-                className={`flex flex-col gap-2 h-auto p-4 ${
-                  isSelected 
-                    ? 'bg-secondary text-white border-secondary' 
-                    : 'hover:bg-muted'
-                } transition-all`}
+                className={`
+                  group relative flex flex-col items-center justify-center 
+                  w-16 h-16 rounded-full transition-all duration-200 
+                  ${isSelected 
+                    ? `bg-gradient-to-br ${mood.color} shadow-lg scale-110 ring-2 ring-white` 
+                    : 'bg-white/60 hover:bg-white/80 hover:scale-105 shadow-sm'
+                  }
+                  ${isSubmitting ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+                `}
                 onClick={() => handleMoodSelect(mood.value)}
                 disabled={isSubmitting}
               >
-                <Icon 
-                  size={20} 
-                  className={isSelected ? 'text-white' : mood.color} 
-                />
-                <span className="text-xs font-medium">{mood.label}</span>
-              </Button>
+                <span className="text-2xl">{mood.emoji}</span>
+                {isSelected && (
+                  <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 bg-black/80 text-white text-xs px-2 py-1 rounded-md whitespace-nowrap">
+                    {mood.label}
+                  </div>
+                )}
+              </button>
             );
           })}
         </div>
         
         {selectedMood && (
-          <div className="mt-4 text-center">
-            <p className="text-sm text-muted-foreground">
-              Thanks for sharing! Your partner will see your mood.
-            </p>
+          <div className="mt-8 text-center">
+            <div className="inline-flex items-center gap-2 bg-green-100 text-green-800 px-3 py-2 rounded-full text-sm">
+              <span>✓</span>
+              Mood shared with your partner!
+            </div>
           </div>
         )}
       </CardContent>
