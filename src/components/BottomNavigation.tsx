@@ -36,7 +36,9 @@ export const BottomNavigation = () => {
     <nav className="fixed bottom-0 left-0 right-0 bg-twilight-blue/95 backdrop-blur-lg border-t border-white/10 z-50">
       <div className="flex items-center justify-around py-2 px-4 max-w-md mx-auto">
         {navItems.map((item) => {
-          const isActive = location.pathname === item.path;
+          const isActive = item.id === 'home' 
+            ? (location.pathname === '/' || location.pathname === '/dashboard')
+            : location.pathname === item.path;
           const Icon = item.icon;
           
           return (
