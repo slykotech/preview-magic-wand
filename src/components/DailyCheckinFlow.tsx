@@ -316,92 +316,98 @@ export const DailyCheckinFlow: React.FC<DailyCheckinFlowProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <Card className="w-full max-w-md max-h-[90vh] flex flex-col">
-        <CardContent className="p-0 flex flex-col h-full">
-          {/* Header with streak display */}
-          <div className="bg-gradient-romance p-6 text-white flex-shrink-0">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-2">
-                <Flame className="text-white" size={24} />
-                <h2 className="text-lg font-bold">Daily Check-in</h2>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onClose}
-                className="text-white hover:bg-white/20"
-              >
-                <X size={20} />
-              </Button>
-            </div>
-            
-            {/* Streak Display */}
-            <div className="bg-white/20 rounded-lg p-4 mb-4">
-              <div className="flex items-center justify-center space-x-3">
-                <Flame className="text-white" size={32} />
-                <div className="text-center">
-                  <div className="text-2xl font-bold">{currentStreak}</div>
-                  <div className="text-sm opacity-90">Day Streak</div>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-hidden">
+      <div className="w-full max-w-md h-full max-h-[90vh] flex flex-col">
+        <Card className="flex-1 flex flex-col overflow-hidden">
+          <CardContent className="p-0 flex flex-col h-full">
+            {/* Header with streak display - Fixed */}
+            <div className="bg-gradient-romance p-6 text-white flex-shrink-0">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-2">
+                  <Flame className="text-white" size={24} />
+                  <h2 className="text-lg font-bold">Daily Check-in</h2>
                 </div>
-              </div>
-              {currentStreak > 0 && (
-                <div className="text-center mt-2">
-                  <p className="text-xs opacity-80">
-                    {currentStreak >= 7 ? "You're on fire! 🔥" : "Keep the momentum going! 💪"}
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {/* Progress Bar */}
-            <div className="space-y-2">
-              <Progress value={progress} className="bg-white/20" />
-              <div className="text-center text-sm opacity-90">
-                Step {step} of {totalSteps}
-              </div>
-            </div>
-          </div>
-
-          {/* Content - Scrollable */}
-          <div className="flex-1 overflow-y-auto p-6">
-            {renderStepContent()}
-          </div>
-
-          {/* Footer - Fixed at bottom */}
-          <div className="p-6 pt-0 flex-shrink-0 border-t bg-background">
-            <div className="flex space-x-3">
-              {step > 1 && (
                 <Button
-                  variant="outline"
-                  onClick={handlePrevious}
-                  className="flex-1"
+                  variant="ghost"
+                  size="sm"
+                  onClick={onClose}
+                  className="text-white hover:bg-white/20"
                 >
-                  Previous
+                  <X size={20} />
                 </Button>
-              )}
+              </div>
               
-              {step < totalSteps ? (
-                <Button
-                  onClick={handleNext}
-                  disabled={!canProceed()}
-                  className="flex-1 bg-secondary hover:bg-secondary/90"
-                >
-                  Next Step
-                </Button>
-              ) : (
-                <Button
-                  onClick={handleComplete}
-                  disabled={!canProceed() || isSubmitting}
-                  className="flex-1 bg-secondary hover:bg-secondary/90"
-                >
-                  {isSubmitting ? 'Saving...' : 'Complete Check-in'}
-                </Button>
-              )}
+              {/* Streak Display */}
+              <div className="bg-white/20 rounded-lg p-4 mb-4">
+                <div className="flex items-center justify-center space-x-3">
+                  <Flame className="text-white" size={32} />
+                  <div className="text-center">
+                    <div className="text-2xl font-bold">{currentStreak}</div>
+                    <div className="text-sm opacity-90">Day Streak</div>
+                  </div>
+                </div>
+                {currentStreak > 0 && (
+                  <div className="text-center mt-2">
+                    <p className="text-xs opacity-80">
+                      {currentStreak >= 7 ? "You're on fire! 🔥" : "Keep the momentum going! 💪"}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Progress Bar */}
+              <div className="space-y-2">
+                <Progress value={progress} className="bg-white/20" />
+                <div className="text-center text-sm opacity-90">
+                  Step {step} of {totalSteps}
+                </div>
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+
+            {/* Content - Scrollable Area */}
+            <div className="flex-1 overflow-y-auto bg-background">
+              <div className="p-6">
+                {renderStepContent()}
+              </div>
+            </div>
+
+            {/* Footer - Fixed at bottom */}
+            <div className="flex-shrink-0 border-t bg-background">
+              <div className="p-6">
+                <div className="flex space-x-3">
+                  {step > 1 && (
+                    <Button
+                      variant="outline"
+                      onClick={handlePrevious}
+                      className="flex-1"
+                    >
+                      Previous
+                    </Button>
+                  )}
+                  
+                  {step < totalSteps ? (
+                    <Button
+                      onClick={handleNext}
+                      disabled={!canProceed()}
+                      className="flex-1 bg-secondary hover:bg-secondary/90"
+                    >
+                      Next Step
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={handleComplete}
+                      disabled={!canProceed() || isSubmitting}
+                      className="flex-1 bg-secondary hover:bg-secondary/90"
+                    >
+                      {isSubmitting ? 'Saving...' : 'Complete Check-in'}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
