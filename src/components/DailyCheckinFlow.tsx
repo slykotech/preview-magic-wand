@@ -22,11 +22,11 @@ type MoodType = Database['public']['Enums']['mood_type'];
 // Daily Check-in focuses on overall day satisfaction, energy, relationship, and gratitude
 // Mood is handled separately by the Mood Check feature
 const daySatisfactionLevels = [
-  { value: 'amazing', label: 'Amazing Day', emoji: '🌟', description: 'Everything went great!' },
-  { value: 'good', label: 'Good Day', emoji: '😊', description: 'Had a positive day overall' },
-  { value: 'okay', label: 'Okay Day', emoji: '😐', description: 'Nothing special, just average' },
-  { value: 'challenging', label: 'Challenging Day', emoji: '😓', description: 'Had some difficulties' },
-  { value: 'difficult', label: 'Difficult Day', emoji: '😔', description: 'Really tough day' },
+  { value: 'amazing', label: 'Amazing Day', emoji: '🎉', description: 'Everything went great!' },
+  { value: 'good', label: 'Good Day', emoji: '✅', description: 'Had a positive day overall' },
+  { value: 'okay', label: 'Okay Day', emoji: '⚖️', description: 'Nothing special, just average' },
+  { value: 'challenging', label: 'Challenging Day', emoji: '⚠️', description: 'Had some difficulties' },
+  { value: 'difficult', label: 'Difficult Day', emoji: '❌', description: 'Really tough day' },
 ];
 
 const energyLevels = [1, 2, 3, 4, 5];
