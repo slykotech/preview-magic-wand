@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BottomNavigation } from "@/components/BottomNavigation";
-import { Heart, Users, Plus, ArrowLeft } from "lucide-react";
+import { Heart, Users, Plus, ArrowLeft, Edit, User, Mail, Calendar, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
@@ -16,7 +16,10 @@ export const CoupleSetup = () => {
   const [displayName, setDisplayName] = useState("");
   const [coupleData, setCoupleData] = useState<any>(null);
   const [profileData, setProfileData] = useState<any>(null);
+  const [partnerProfile, setPartnerProfile] = useState<any>(null);
   const [creating, setCreating] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [updating, setUpdating] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -49,10 +52,80 @@ export const CoupleSetup = () => {
         .maybeSingle();
 
       setCoupleData(couple);
+
+      // If couple exists, fetch partner profile
+      if (couple) {
+        const partnerId = couple.user1_id === user?.id ? couple.user2_id : couple.user1_id;
+        const { data: partner } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', partnerId)
+          .maybeSingle();
+        
+        setPartnerProfile(partner);
+      }
     } catch (error) {
       console.error('Error fetching user data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const updatePartnerConnection = async () => {
+    if (!partnerEmail.trim()) {
+      toast({
+        title: "Email required",
+        description: "Please enter your partner's email",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setUpdating(true);
+    try {
+      // Find partner by email (this would need to be implemented via a function)
+      // For now, we'll just update the display to show the intention
+      toast({
+        title: "Feature Coming Soon",
+        description: "Partner connection updates will be available soon. Currently using demo data.",
+        variant: "default"
+      });
+    } catch (error) {
+      console.error('Error updating partner:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update partner connection",
+        variant: "destructive"
+      });
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const resetCoupleData = async () => {
+    if (!coupleData) return;
+    
+    try {
+      // Delete couple relationship (this will allow them to start fresh)
+      await supabase
+        .from('couples')
+        .delete()
+        .eq('id', coupleData.id);
+
+      toast({
+        title: "Couple Data Reset",
+        description: "You can now create a new couple profile",
+      });
+
+      setCoupleData(null);
+      setPartnerProfile(null);
+    } catch (error) {
+      console.error('Error resetting couple data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to reset couple data",
+        variant: "destructive"
+      });
     }
   };
 
@@ -138,20 +211,139 @@ export const CoupleSetup = () => {
       </div>
 
       <div className="p-6 space-y-6">
-        {/* Success Message */}
         {coupleData ? (
-          <Card className="border-green-200 bg-green-50">
-            <CardContent className="p-6 text-center">
-              <Heart className="mx-auto mb-4 text-green-600" size={48} />
-              <h3 className="text-lg font-bold text-green-800 mb-2">Setup Complete! 🎉</h3>
-              <p className="text-green-700 mb-4">
-                Your couple profile is ready. You can now use all features including daily check-ins!
-              </p>
-              <Button onClick={() => navigate('/dashboard')} className="bg-green-600 hover:bg-green-700">
-                Go to Dashboard
-              </Button>
-            </CardContent>
-          </Card>
+          <>
+            {/* Current Couple Details */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Heart size={20} />
+                    Current Couple Details
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setEditing(!editing)}
+                  >
+                    <Edit size={16} className="mr-2" />
+                    Edit
+                  </Button>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Your Profile */}
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <div className="flex items-center gap-3 mb-3">
+                    <User className="text-blue-600" size={20} />
+                    <h4 className="font-semibold text-blue-800">You</h4>
+                  </div>
+                  <p className="text-sm text-blue-700">
+                    <strong>Name:</strong> {profileData?.display_name || 'Not set'}
+                  </p>
+                  <p className="text-sm text-blue-700">
+                    <strong>User ID:</strong> {user?.id}
+                  </p>
+                </div>
+
+                {/* Partner Profile */}
+                <div className="bg-pink-50 p-4 rounded-lg">
+                  <div className="flex items-center gap-3 mb-3">
+                    <Heart className="text-pink-600" size={20} />
+                    <h4 className="font-semibold text-pink-800">Partner</h4>
+                  </div>
+                  {partnerProfile ? (
+                    <>
+                      <p className="text-sm text-pink-700">
+                        <strong>Name:</strong> {partnerProfile.display_name || 'Not set'}
+                      </p>
+                      <p className="text-sm text-pink-700">
+                        <strong>User ID:</strong> {partnerProfile.user_id}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-sm text-pink-700">Partner profile not found</p>
+                  )}
+                  
+                  {/* Show if user is paired with themselves */}
+                  {coupleData?.user1_id === coupleData?.user2_id && (
+                    <div className="mt-2 p-2 bg-yellow-100 border border-yellow-300 rounded text-yellow-800 text-xs">
+                      ⚠️ You are currently paired with yourself (demo mode)
+                    </div>
+                  )}
+                </div>
+
+                {/* Relationship Details */}
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="flex items-center gap-3 mb-3">
+                    <Calendar className="text-gray-600" size={20} />
+                    <h4 className="font-semibold text-gray-800">Relationship Info</h4>
+                  </div>
+                  <p className="text-sm text-gray-700">
+                    <strong>Status:</strong> {coupleData?.relationship_status || 'Dating'}
+                  </p>
+                  <p className="text-sm text-gray-700">
+                    <strong>Anniversary:</strong> {coupleData?.anniversary_date ? new Date(coupleData.anniversary_date).toLocaleDateString() : 'Not set'}
+                  </p>
+                  <p className="text-sm text-gray-700">
+                    <strong>Created:</strong> {new Date(coupleData.created_at).toLocaleDateString()}
+                  </p>
+                </div>
+
+                {/* Edit Section */}
+                {editing && (
+                  <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+                    <h4 className="font-semibold text-orange-800 mb-3">Update Partner Connection</h4>
+                    <div className="space-y-3">
+                      <div>
+                        <Label htmlFor="newPartnerEmail">New Partner's Email</Label>
+                        <Input
+                          id="newPartnerEmail"
+                          type="email"
+                          value={partnerEmail}
+                          onChange={(e) => setPartnerEmail(e.target.value)}
+                          placeholder="partner@example.com"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={updatePartnerConnection}
+                          disabled={updating}
+                          className="flex-1"
+                        >
+                          {updating ? 'Updating...' : 'Update Partner'}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => setEditing(false)}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="flex gap-3 pt-4">
+                  <Button 
+                    onClick={() => navigate('/dashboard')} 
+                    className="flex-1"
+                  >
+                    Go to Dashboard
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={resetCoupleData}
+                    className="flex items-center gap-2"
+                  >
+                    <Trash2 size={16} />
+                    Reset
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </>
         ) : (
           <>
             {/* Profile Setup */}
