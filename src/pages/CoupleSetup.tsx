@@ -81,15 +81,44 @@ export const CoupleSetup = () => {
       return;
     }
 
+    if (!coupleData) {
+      toast({
+        title: "Error",
+        description: "No couple relationship found",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setUpdating(true);
     try {
-      // Find partner by email (this would need to be implemented via a function)
-      // For now, we'll just update the display to show the intention
-      toast({
-        title: "Feature Coming Soon",
-        description: "Partner connection updates will be available soon. Currently using demo data.",
-        variant: "default"
+      const { data, error } = await supabase.functions.invoke('update-partner', {
+        body: { 
+          partnerEmail: partnerEmail.trim(),
+          coupleId: coupleData.id 
+        }
       });
+
+      if (error) throw error;
+
+      if (!data.success) {
+        toast({
+          title: "Update Failed",
+          description: data.error,
+          variant: "destructive"
+        });
+        return;
+      }
+
+      toast({
+        title: "Partner Updated! 💕",
+        description: data.message,
+      });
+
+      // Refresh the data
+      fetchUserData();
+      setEditing(false);
+      setPartnerEmail("");
     } catch (error) {
       console.error('Error updating partner:', error);
       toast({
@@ -231,91 +260,126 @@ export const CoupleSetup = () => {
                   </Button>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-6">
                 {/* Your Profile */}
-                <div className="bg-blue-50 p-4 rounded-lg">
+                <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
                   <div className="flex items-center gap-3 mb-3">
-                    <User className="text-blue-600" size={20} />
+                    <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                      <User className="text-white" size={16} />
+                    </div>
                     <h4 className="font-semibold text-blue-800">You</h4>
                   </div>
-                  <p className="text-sm text-blue-700">
-                    <strong>Name:</strong> {profileData?.display_name || 'Not set'}
-                  </p>
-                  <p className="text-sm text-blue-700">
-                    <strong>User ID:</strong> {user?.id}
-                  </p>
+                  <div className="space-y-2">
+                    <p className="text-sm text-blue-700">
+                      <span className="font-medium">Name:</span> {profileData?.display_name || 'Not set'}
+                    </p>
+                    <p className="text-sm text-blue-700 font-mono">
+                      <span className="font-medium">User ID:</span> {user?.id?.substring(0, 8)}...
+                    </p>
+                  </div>
                 </div>
 
                 {/* Partner Profile */}
-                <div className="bg-pink-50 p-4 rounded-lg">
+                <div className="bg-pink-50 border border-pink-200 p-4 rounded-lg">
                   <div className="flex items-center gap-3 mb-3">
-                    <Heart className="text-pink-600" size={20} />
+                    <div className="w-8 h-8 bg-pink-600 rounded-full flex items-center justify-center">
+                      <Heart className="text-white" size={16} />
+                    </div>
                     <h4 className="font-semibold text-pink-800">Partner</h4>
                   </div>
                   {partnerProfile ? (
-                    <>
+                    <div className="space-y-2">
                       <p className="text-sm text-pink-700">
-                        <strong>Name:</strong> {partnerProfile.display_name || 'Not set'}
+                        <span className="font-medium">Name:</span> {partnerProfile.display_name || 'Not set'}
                       </p>
-                      <p className="text-sm text-pink-700">
-                        <strong>User ID:</strong> {partnerProfile.user_id}
+                      <p className="text-sm text-pink-700 font-mono">
+                        <span className="font-medium">User ID:</span> {partnerProfile.user_id?.substring(0, 8)}...
                       </p>
-                    </>
+                    </div>
                   ) : (
                     <p className="text-sm text-pink-700">Partner profile not found</p>
                   )}
                   
                   {/* Show if user is paired with themselves */}
                   {coupleData?.user1_id === coupleData?.user2_id && (
-                    <div className="mt-2 p-2 bg-yellow-100 border border-yellow-300 rounded text-yellow-800 text-xs">
-                      ⚠️ You are currently paired with yourself (demo mode)
+                    <div className="mt-3 p-3 bg-yellow-100 border border-yellow-300 rounded-md">
+                      <div className="flex items-center gap-2">
+                        <span className="text-yellow-600">⚠️</span>
+                        <span className="text-yellow-800 text-sm font-medium">
+                          You are currently paired with yourself (demo mode)
+                        </span>
+                      </div>
                     </div>
                   )}
                 </div>
 
                 {/* Relationship Details */}
-                <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="bg-gray-50 border border-gray-200 p-4 rounded-lg">
                   <div className="flex items-center gap-3 mb-3">
-                    <Calendar className="text-gray-600" size={20} />
+                    <div className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center">
+                      <Calendar className="text-white" size={16} />
+                    </div>
                     <h4 className="font-semibold text-gray-800">Relationship Info</h4>
                   </div>
-                  <p className="text-sm text-gray-700">
-                    <strong>Status:</strong> {coupleData?.relationship_status || 'Dating'}
-                  </p>
-                  <p className="text-sm text-gray-700">
-                    <strong>Anniversary:</strong> {coupleData?.anniversary_date ? new Date(coupleData.anniversary_date).toLocaleDateString() : 'Not set'}
-                  </p>
-                  <p className="text-sm text-gray-700">
-                    <strong>Created:</strong> {new Date(coupleData.created_at).toLocaleDateString()}
-                  </p>
+                  <div className="space-y-2">
+                    <p className="text-sm text-gray-700">
+                      <span className="font-medium">Status:</span> {coupleData?.relationship_status || 'Dating'}
+                    </p>
+                    <p className="text-sm text-gray-700">
+                      <span className="font-medium">Anniversary:</span> {coupleData?.anniversary_date ? new Date(coupleData.anniversary_date).toLocaleDateString() : 'Not set'}
+                    </p>
+                    <p className="text-sm text-gray-700">
+                      <span className="font-medium">Created:</span> {new Date(coupleData.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
                 </div>
 
                 {/* Edit Section */}
                 {editing && (
-                  <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
-                    <h4 className="font-semibold text-orange-800 mb-3">Update Partner Connection</h4>
-                    <div className="space-y-3">
+                  <div className="bg-orange-50 border border-orange-200 p-6 rounded-lg">
+                    <h4 className="font-semibold text-orange-800 mb-4 flex items-center gap-2">
+                      <Mail size={16} />
+                      Update Partner Connection
+                    </h4>
+                    <div className="space-y-4">
                       <div>
-                        <Label htmlFor="newPartnerEmail">New Partner's Email</Label>
+                        <Label htmlFor="newPartnerEmail" className="text-sm font-medium text-orange-800">
+                          New Partner's Email
+                        </Label>
                         <Input
                           id="newPartnerEmail"
                           type="email"
                           value={partnerEmail}
                           onChange={(e) => setPartnerEmail(e.target.value)}
                           placeholder="partner@example.com"
+                          className="mt-1"
                         />
+                        <p className="text-xs text-orange-600 mt-1">
+                          Enter the email of someone who already has a LoveSync account
+                        </p>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex gap-3">
                         <Button
                           onClick={updatePartnerConnection}
                           disabled={updating}
-                          className="flex-1"
+                          className="flex-1 bg-orange-600 hover:bg-orange-700"
                         >
-                          {updating ? 'Updating...' : 'Update Partner'}
+                          {updating ? (
+                            <>
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                              Updating...
+                            </>
+                          ) : (
+                            'Update Partner'
+                          )}
                         </Button>
                         <Button
                           variant="outline"
-                          onClick={() => setEditing(false)}
+                          onClick={() => {
+                            setEditing(false);
+                            setPartnerEmail("");
+                          }}
+                          className="px-6"
                         >
                           Cancel
                         </Button>
@@ -325,17 +389,17 @@ export const CoupleSetup = () => {
                 )}
 
                 {/* Action Buttons */}
-                <div className="flex gap-3 pt-4">
+                <div className="flex gap-3 pt-2 border-t border-gray-200">
                   <Button 
                     onClick={() => navigate('/dashboard')} 
-                    className="flex-1"
+                    className="flex-1 bg-primary hover:bg-primary/90"
                   >
                     Go to Dashboard
                   </Button>
                   <Button
                     variant="destructive"
                     onClick={resetCoupleData}
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-2 px-6"
                   >
                     <Trash2 size={16} />
                     Reset
