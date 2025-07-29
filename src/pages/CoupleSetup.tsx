@@ -85,33 +85,25 @@ export const CoupleSetup = () => {
 
     setUpdating(true);
     try {
-      // Update user's own profile
+      // Update user's own profile only
       await supabase
         .from('profiles')
         .update({ display_name: displayName.trim() })
         .eq('user_id', user?.id);
 
-      // Update partner's profile if they exist and partner name is provided
-      if (partnerProfile && partnerDisplayName.trim()) {
-        await supabase
-          .from('profiles')
-          .update({ display_name: partnerDisplayName.trim() })
-          .eq('user_id', partnerProfile.user_id);
-      }
-
       toast({
-        title: "Names Updated! 💕",
-        description: "Display names have been updated successfully",
+        title: "Your Name Updated! 💕",
+        description: "Your display name has been updated successfully",
       });
 
       // Refresh the data
       fetchUserData();
       setEditing(false);
     } catch (error) {
-      console.error('Error updating names:', error);
+      console.error('Error updating name:', error);
       toast({
         title: "Error",
-        description: "Failed to update names",
+        description: "Failed to update your name",
         variant: "destructive"
       });
     } finally {
@@ -391,48 +383,44 @@ export const CoupleSetup = () => {
                         Edit Names
                       </h4>
                       <div className="space-y-4">
-                        <div>
-                          <Label htmlFor="editDisplayName" className="text-sm font-medium text-orange-800">
-                            Your Name
-                          </Label>
-                          <Input
-                            id="editDisplayName"
-                            value={displayName}
-                            onChange={(e) => setDisplayName(e.target.value)}
-                            placeholder="Enter your name"
-                            className="mt-1"
-                          />
-                        </div>
-                        {partnerProfile && (
-                          <div>
-                            <Label htmlFor="editPartnerName" className="text-sm font-medium text-orange-800">
-                              Partner's Name
-                            </Label>
-                            <Input
-                              id="editPartnerName"
-                              value={partnerDisplayName}
-                              onChange={(e) => setPartnerDisplayName(e.target.value)}
-                              placeholder="Enter partner's name"
-                              className="mt-1"
-                            />
-                          </div>
-                        )}
-                        <div className="flex gap-3">
-                          <Button
-                            onClick={updateNames}
-                            disabled={updating}
-                            className="flex-1 bg-green-600 hover:bg-green-700"
-                          >
-                            {updating ? (
-                              <>
-                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                                Updating...
-                              </>
-                            ) : (
-                              'Update Names'
-                            )}
-                          </Button>
-                        </div>
+                         <div>
+                           <Label htmlFor="editDisplayName" className="text-sm font-medium text-orange-800">
+                             Your Name
+                           </Label>
+                           <Input
+                             id="editDisplayName"
+                             value={displayName}
+                             onChange={(e) => setDisplayName(e.target.value)}
+                             placeholder="Enter your name"
+                             className="mt-1"
+                           />
+                         </div>
+                         {partnerProfile && (
+                           <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-md">
+                             <p className="text-sm text-yellow-800">
+                               <span className="font-medium">Partner's Name:</span> {partnerProfile.display_name || 'Not set'}
+                             </p>
+                             <p className="text-xs text-yellow-600 mt-1">
+                               Your partner needs to update their own name. Only they can change it for security reasons.
+                             </p>
+                           </div>
+                         )}
+                         <div className="flex gap-3">
+                           <Button
+                             onClick={updateNames}
+                             disabled={updating}
+                             className="flex-1 bg-green-600 hover:bg-green-700"
+                           >
+                             {updating ? (
+                               <>
+                                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                 Updating...
+                               </>
+                             ) : (
+                               'Update Your Name'
+                             )}
+                           </Button>
+                         </div>
                       </div>
                     </div>
 
