@@ -19,14 +19,14 @@ interface DailyCheckinFlowProps {
 
 type MoodType = Database['public']['Enums']['mood_type'];
 
-// Daily Check-in focuses on overall day satisfaction, energy, relationship, and gratitude
+// Daily Check-in focuses on productivity, energy, relationship, and gratitude
 // Mood is handled separately by the Mood Check feature
-const daySatisfactionLevels = [
-  { value: 'amazing', label: 'Amazing Day', emoji: '🎉', description: 'Everything went great!' },
-  { value: 'good', label: 'Good Day', emoji: '✅', description: 'Had a positive day overall' },
-  { value: 'okay', label: 'Okay Day', emoji: '⚖️', description: 'Nothing special, just average' },
-  { value: 'challenging', label: 'Challenging Day', emoji: '⚠️', description: 'Had some difficulties' },
-  { value: 'difficult', label: 'Difficult Day', emoji: '❌', description: 'Really tough day' },
+const productivityLevels = [
+  { value: 'very_productive', label: 'Very Productive', emoji: '🚀', description: 'Accomplished a lot today' },
+  { value: 'productive', label: 'Productive', emoji: '📈', description: 'Got things done as planned' },
+  { value: 'somewhat_productive', label: 'Somewhat Productive', emoji: '📝', description: 'Made some progress' },
+  { value: 'less_productive', label: 'Less Productive', emoji: '📋', description: 'Struggled to get things done' },
+  { value: 'unproductive', label: 'Unproductive', emoji: '📉', description: 'Difficult to focus today' },
 ];
 
 const energyLevels = [1, 2, 3, 4, 5];
@@ -47,7 +47,7 @@ export const DailyCheckinFlow: React.FC<DailyCheckinFlowProps> = ({
   currentStreak = 0
 }) => {
   const [step, setStep] = useState(1);
-  const [selectedDaySatisfaction, setSelectedDaySatisfaction] = useState<string | null>(null);
+  const [selectedProductivity, setSelectedProductivity] = useState<string | null>(null);
   const [energyLevel, setEnergyLevel] = useState<number | null>(null);
   const [relationshipFeeling, setRelationshipFeeling] = useState<string | null>(null);
   const [gratitude, setGratitude] = useState('');
@@ -71,7 +71,7 @@ export const DailyCheckinFlow: React.FC<DailyCheckinFlowProps> = ({
   };
 
   const handleComplete = async () => {
-    if (!coupleId || !selectedDaySatisfaction) {
+    if (!coupleId || !selectedProductivity) {
       toast({
         title: "Please complete all required fields",
         variant: "destructive"
@@ -195,7 +195,7 @@ export const DailyCheckinFlow: React.FC<DailyCheckinFlowProps> = ({
 
   const canProceed = () => {
     switch (step) {
-      case 1: return selectedDaySatisfaction !== null;
+      case 1: return selectedProductivity !== null;
       case 2: return energyLevel !== null;
       case 3: return relationshipFeeling !== null;
       case 4: return gratitude.trim().length > 0;
@@ -209,20 +209,20 @@ export const DailyCheckinFlow: React.FC<DailyCheckinFlowProps> = ({
         return (
           <div className="space-y-6">
             <div className="text-center">
-              <h3 className="text-xl font-semibold text-foreground mb-2">How was your day overall?</h3>
-              <p className="text-sm text-muted-foreground">Your daily satisfaction check-in</p>
+              <h3 className="text-xl font-semibold text-foreground mb-2">How productive was your day?</h3>
+              <p className="text-sm text-muted-foreground">Your daily productivity check-in</p>
             </div>
             <div className="space-y-3">
-              {daySatisfactionLevels.map((level) => (
+              {productivityLevels.map((level) => (
                 <Button
                   key={level.value}
-                  variant={selectedDaySatisfaction === level.value ? "default" : "outline"}
+                  variant={selectedProductivity === level.value ? "default" : "outline"}
                   className={`w-full flex items-center justify-between p-4 h-auto ${
-                    selectedDaySatisfaction === level.value 
+                    selectedProductivity === level.value 
                       ? 'bg-secondary text-white border-secondary' 
                       : 'hover:bg-muted'
                   }`}
-                  onClick={() => setSelectedDaySatisfaction(level.value)}
+                  onClick={() => setSelectedProductivity(level.value)}
                 >
                   <div className="flex items-center space-x-3">
                     <span className="text-2xl">{level.emoji}</span>
