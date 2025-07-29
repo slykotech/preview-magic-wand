@@ -119,6 +119,8 @@ export const DailyCheckinFlow: React.FC<DailyCheckinFlowProps> = ({
 
       // Calculate proper streak by checking both partners
       let newStreak = currentStreak;
+      let bothCheckedIn = false;
+      
       if (!existingCheckin) {
         // Get couple data to find partner ID
         const { data: coupleData } = await supabase
@@ -141,6 +143,7 @@ export const DailyCheckinFlow: React.FC<DailyCheckinFlowProps> = ({
 
           // If both partners have checked in today, increment streak
           if (partnerCheckin) {
+            bothCheckedIn = true;
             newStreak = currentStreak + 1;
           }
         }
@@ -149,7 +152,11 @@ export const DailyCheckinFlow: React.FC<DailyCheckinFlowProps> = ({
       // Show celebration toast based on completion and streak milestones
       let celebrationMessage = "Daily check-in completed! 💕";
       if (!existingCheckin) {
-        celebrationMessage = "Daily check-in saved! Your partner will see your update! 🌟";
+        if (bothCheckedIn) {
+          celebrationMessage = "Amazing! You both checked in today! 🔥";
+        } else {
+          celebrationMessage = "Check-in saved! Invite your partner to check in too! 🌟";
+        }
       }
       
       if (newStreak > currentStreak) {
