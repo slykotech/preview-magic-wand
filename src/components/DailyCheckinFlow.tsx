@@ -317,10 +317,10 @@ export const DailyCheckinFlow: React.FC<DailyCheckinFlowProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <Card className="w-full max-w-md max-h-[90vh] overflow-hidden">
-        <CardContent className="p-0">
+      <Card className="w-full max-w-md max-h-[90vh] flex flex-col">
+        <CardContent className="p-0 flex flex-col h-full">
           {/* Header with streak display */}
-          <div className="bg-gradient-romance p-6 text-white">
+          <div className="bg-gradient-romance p-6 text-white flex-shrink-0">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center space-x-2">
                 <Flame className="text-white" size={24} />
@@ -363,13 +363,13 @@ export const DailyCheckinFlow: React.FC<DailyCheckinFlowProps> = ({
             </div>
           </div>
 
-          {/* Content */}
-          <div className="p-6">
+          {/* Content - Scrollable */}
+          <div className="flex-1 overflow-y-auto p-6">
             {renderStepContent()}
           </div>
 
-          {/* Footer */}
-          <div className="p-6 pt-0">
+          {/* Footer - Fixed at bottom */}
+          <div className="p-6 pt-0 flex-shrink-0 border-t bg-background">
             <div className="flex space-x-3">
               {step > 1 && (
                 <Button
