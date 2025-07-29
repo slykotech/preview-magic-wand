@@ -16,7 +16,10 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const Dashboard = () => {
   const [syncScore, setSyncScore] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [showDailyCheckin, setShowDailyCheckin] = useState(false);
+  const [showMoodCheckin, setShowMoodCheckin] = useState(false);
   const [upcomingDate, setUpcomingDate] = useState<any>(null);
   const [lastCheckin, setLastCheckin] = useState<any>(null);
   const [recentMemory, setRecentMemory] = useState<any>(null);
@@ -25,7 +28,6 @@ export const Dashboard = () => {
   const [userMood, setUserMood] = useState<string>();
   const [partnerMood, setPartnerMood] = useState<string>();
   const [coupleId, setCoupleId] = useState<string>();
-  const [showDailyCheckin, setShowDailyCheckin] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user, loading } = useAuth();
@@ -252,6 +254,18 @@ export const Dashboard = () => {
     }
   };
 
+  const handleMoodCheckinClick = () => {
+    if (coupleId) {
+      setShowMoodCheckin(true);
+    } else {
+      toast({
+        title: "Setup Required",
+        description: "Please complete your couple setup first",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handlePlanDateClick = () => {
     navigate('/planner');
     toast({
@@ -363,7 +377,7 @@ export const Dashboard = () => {
           {/* Mood Check */}
           <div 
             className="bg-card border rounded-xl p-4 text-center cursor-pointer hover:shadow-sm transition-all shadow-sm"
-            onClick={handleCheckinClick}
+            onClick={handleMoodCheckinClick}
           >
             <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center mx-auto mb-3">
               <Heart className="text-accent-foreground" size={24} />
@@ -421,6 +435,32 @@ export const Dashboard = () => {
           }}
           onClose={() => setShowDailyCheckin(false)}
         />
+      )}
+
+      {/* Mood Check Modal */}
+      {showMoodCheckin && coupleId && user && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="w-full max-w-md">
+            <MoodCheckin
+              userId={user.id}
+              coupleId={coupleId}
+              currentMood={userMood}
+              onMoodUpdate={(mood) => {
+                setUserMood(mood);
+                setShowMoodCheckin(false);
+                refreshDashboard();
+              }}
+            />
+            <div className="mt-4 text-center">
+              <button
+                onClick={() => setShowMoodCheckin(false)}
+                className="text-white hover:text-gray-300 text-sm"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       <BottomNavigation />
