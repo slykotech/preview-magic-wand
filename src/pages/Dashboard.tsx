@@ -198,6 +198,9 @@ export const Dashboard = () => {
         .eq('checkin_date', today)
         .maybeSingle();
 
+      console.log('User mood data:', { userId: user?.id, mood: userMoodData?.mood });
+      console.log('Partner mood data:', { partnerId, mood: partnerMoodData?.mood });
+
       setSyncScore(syncScore);
       
       // Generate insights based on activity
