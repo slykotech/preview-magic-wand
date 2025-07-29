@@ -56,6 +56,8 @@ export const Profile = () => {
     questsCompleted: 12
   });
   const [coupleData, setCoupleData] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [partnerProfile, setPartnerProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   
   const { toast } = useToast();
@@ -70,13 +72,35 @@ export const Profile = () => {
 
   const fetchCoupleData = async () => {
     try {
-      const { data } = await supabase
+      // Fetch user's own profile
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', user?.id)
+        .maybeSingle();
+      
+      setUserProfile(profile);
+
+      // Fetch couple relationship
+      const { data: couple } = await supabase
         .from('couples')
         .select('*')
         .or(`user1_id.eq.${user?.id},user2_id.eq.${user?.id}`)
         .maybeSingle();
       
-      setCoupleData(data);
+      setCoupleData(couple);
+
+      // If couple exists, fetch partner profile
+      if (couple) {
+        const partnerId = couple.user1_id === user?.id ? couple.user2_id : couple.user1_id;
+        const { data: partner } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', partnerId)
+          .maybeSingle();
+        
+        setPartnerProfile(partner);
+      }
     } catch (error) {
       console.error('Error fetching couple data:', error);
     } finally {
@@ -133,9 +157,20 @@ export const Profile = () => {
             </div>
           </div>
           <div className="flex-1">
-            <h1 className="text-xl font-extrabold font-poppins">Alex & Jordan</h1>
+            <h1 className="text-xl font-extrabold font-poppins">
+              {loading ? 'Loading...' : 
+               userProfile && partnerProfile ? 
+                 `${userProfile.display_name || 'You'} & ${partnerProfile.display_name || 'Partner'}` :
+               userProfile ? 
+                 `${userProfile.display_name || 'You'}` :
+                 'Setup Your Profile'
+              }
+            </h1>
             <p className="text-white/80 font-inter text-sm font-bold">
-              Together since July 25, 2023 💕
+              {coupleData?.anniversary_date ? 
+                `Together since ${new Date(coupleData.anniversary_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })} 💕` :
+                coupleData ? 'Together since joining LoveSync 💕' : 'Ready to start your journey? 💕'
+              }
             </p>
           </div>
         </div>

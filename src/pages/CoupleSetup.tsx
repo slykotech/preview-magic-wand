@@ -14,6 +14,7 @@ export const CoupleSetup = () => {
   const [loading, setLoading] = useState(true);
   const [partnerEmail, setPartnerEmail] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [partnerDisplayName, setPartnerDisplayName] = useState("");
   const [coupleData, setCoupleData] = useState<any>(null);
   const [profileData, setProfileData] = useState<any>(null);
   const [partnerProfile, setPartnerProfile] = useState<any>(null);
@@ -63,11 +64,58 @@ export const CoupleSetup = () => {
           .maybeSingle();
         
         setPartnerProfile(partner);
+        setPartnerDisplayName(partner?.display_name || '');
       }
     } catch (error) {
       console.error('Error fetching user data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const updateNames = async () => {
+    if (!displayName.trim()) {
+      toast({
+        title: "Name required",
+        description: "Please enter your display name",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setUpdating(true);
+    try {
+      // Update user's own profile
+      await supabase
+        .from('profiles')
+        .update({ display_name: displayName.trim() })
+        .eq('user_id', user?.id);
+
+      // Update partner's profile if they exist and partner name is provided
+      if (partnerProfile && partnerDisplayName.trim()) {
+        await supabase
+          .from('profiles')
+          .update({ display_name: partnerDisplayName.trim() })
+          .eq('user_id', partnerProfile.user_id);
+      }
+
+      toast({
+        title: "Names Updated! 💕",
+        description: "Display names have been updated successfully",
+      });
+
+      // Refresh the data
+      fetchUserData();
+      setEditing(false);
+    } catch (error) {
+      console.error('Error updating names:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update names",
+        variant: "destructive"
+      });
+    } finally {
+      setUpdating(false);
     }
   };
 
@@ -336,54 +384,113 @@ export const CoupleSetup = () => {
 
                 {/* Edit Section */}
                 {editing && (
-                  <div className="bg-orange-50 border border-orange-200 p-6 rounded-lg">
-                    <h4 className="font-semibold text-orange-800 mb-4 flex items-center gap-2">
-                      <Mail size={16} />
-                      Update Partner Connection
-                    </h4>
-                    <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="newPartnerEmail" className="text-sm font-medium text-orange-800">
-                          New Partner's Email
-                        </Label>
-                        <Input
-                          id="newPartnerEmail"
-                          type="email"
-                          value={partnerEmail}
-                          onChange={(e) => setPartnerEmail(e.target.value)}
-                          placeholder="partner@example.com"
-                          className="mt-1"
-                        />
-                        <p className="text-xs text-orange-600 mt-1">
-                          Enter the email of someone who already has a LoveSync account
-                        </p>
+                  <div className="bg-orange-50 border border-orange-200 p-6 rounded-lg space-y-6">
+                    <div>
+                      <h4 className="font-semibold text-orange-800 mb-4 flex items-center gap-2">
+                        <Edit size={16} />
+                        Edit Names
+                      </h4>
+                      <div className="space-y-4">
+                        <div>
+                          <Label htmlFor="editDisplayName" className="text-sm font-medium text-orange-800">
+                            Your Name
+                          </Label>
+                          <Input
+                            id="editDisplayName"
+                            value={displayName}
+                            onChange={(e) => setDisplayName(e.target.value)}
+                            placeholder="Enter your name"
+                            className="mt-1"
+                          />
+                        </div>
+                        {partnerProfile && (
+                          <div>
+                            <Label htmlFor="editPartnerName" className="text-sm font-medium text-orange-800">
+                              Partner's Name
+                            </Label>
+                            <Input
+                              id="editPartnerName"
+                              value={partnerDisplayName}
+                              onChange={(e) => setPartnerDisplayName(e.target.value)}
+                              placeholder="Enter partner's name"
+                              className="mt-1"
+                            />
+                          </div>
+                        )}
+                        <div className="flex gap-3">
+                          <Button
+                            onClick={updateNames}
+                            disabled={updating}
+                            className="flex-1 bg-green-600 hover:bg-green-700"
+                          >
+                            {updating ? (
+                              <>
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                Updating...
+                              </>
+                            ) : (
+                              'Update Names'
+                            )}
+                          </Button>
+                        </div>
                       </div>
-                      <div className="flex gap-3">
-                        <Button
-                          onClick={updatePartnerConnection}
-                          disabled={updating}
-                          className="flex-1 bg-orange-600 hover:bg-orange-700"
-                        >
-                          {updating ? (
-                            <>
-                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                              Updating...
-                            </>
-                          ) : (
-                            'Update Partner'
-                          )}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          onClick={() => {
-                            setEditing(false);
-                            setPartnerEmail("");
-                          }}
-                          className="px-6"
-                        >
-                          Cancel
-                        </Button>
+                    </div>
+
+                    <div>
+                      <h4 className="font-semibold text-orange-800 mb-4 flex items-center gap-2">
+                        <Mail size={16} />
+                        Update Partner Connection
+                      </h4>
+                      <div className="space-y-4">
+                        <div>
+                          <Label htmlFor="newPartnerEmail" className="text-sm font-medium text-orange-800">
+                            New Partner's Email
+                          </Label>
+                          <Input
+                            id="newPartnerEmail"
+                            type="email"
+                            value={partnerEmail}
+                            onChange={(e) => setPartnerEmail(e.target.value)}
+                            placeholder="partner@example.com"
+                            className="mt-1"
+                          />
+                          <p className="text-xs text-orange-600 mt-1">
+                            Enter the email of someone who already has a LoveSync account
+                          </p>
+                        </div>
+                        <div className="flex gap-3">
+                          <Button
+                            onClick={updatePartnerConnection}
+                            disabled={updating}
+                            className="flex-1 bg-orange-600 hover:bg-orange-700"
+                          >
+                            {updating ? (
+                              <>
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                Updating...
+                              </>
+                            ) : (
+                              'Update Partner'
+                            )}
+                          </Button>
+                        </div>
                       </div>
+                    </div>
+
+                    <div className="flex justify-end">
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setEditing(false);
+                          setPartnerEmail("");
+                          // Reset names to original values
+                          setDisplayName(profileData?.display_name || '');
+                          setPartnerDisplayName(partnerProfile?.display_name || '');
+                        }}
+                        className="px-6"
+                      >
+                        Cancel
+                      </Button>
                     </div>
                   </div>
                 )}
