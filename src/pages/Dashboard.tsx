@@ -321,9 +321,14 @@ export const Dashboard = () => {
           </div>
         </div>
 
-        {/* Mood Display for Both Partners */}
         <div className={`${isLoaded ? 'animate-fade-in' : 'opacity-0'}`} style={{ animationDelay: '450ms' }}>
-          <CoupleMoodDisplay userMood={userMood} partnerMood={partnerMood} />
+          <CoupleMoodDisplay 
+            userMood={userMood} 
+            partnerMood={partnerMood} 
+            userId={user?.id}
+            coupleId={coupleId}
+            onMoodUpdate={refreshDashboard}
+          />
         </div>
 
         {/* Compact Dashboard Cards */}
