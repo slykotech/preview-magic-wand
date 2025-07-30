@@ -119,7 +119,8 @@ All colors MUST be HSL.
       transform: scale(2) translate(0, 0);
     }
     100% {
-      transform: scale(1) translate(0, -180px);
+      transform: scale(1) translate(0, -250px);
+      opacity: 0;
     }
   }
   
@@ -151,5 +152,10 @@ All colors MUST be HSL.
   
   .animate-zoom-to-position {
     animation: zoom-to-position 0.8s ease-out forwards;
+  }
+  
+  /* Ensure sync score transitions smoothly */
+  .sync-score-splash {
+    transition: all 0.8s ease-out;
   }
 }

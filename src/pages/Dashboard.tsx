@@ -305,12 +305,12 @@ export const Dashboard = () => {
                animation: 'fade-out 0.3s ease-out 1.7s forwards' 
              }}>
           <div className="relative w-full h-full flex items-center justify-center">
-            {/* Full Screen Sync Score */}
+            {/* Full Screen Sync Score with precise positioning */}
             <div className="absolute inset-0 flex items-center justify-center"
                  style={{ 
-                   animation: 'scale-in 0.5s ease-out 0.2s both, zoom-to-position 0.8s ease-out 1s both' 
+                   animation: 'scale-in 0.5s ease-out 0.2s both, zoom-to-position 0.8s ease-out 1s both'
                  }}>
-              <div style={{ transform: 'scale(2)' }}>
+              <div className="sync-score-splash" style={{ transform: 'scale(2)' }}>
                 <SyncScoreCircle score={syncScore} animated={true} />
               </div>
             </div>
