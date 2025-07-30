@@ -22,6 +22,7 @@ export const Dashboard = () => {
   const [showDailyCheckin, setShowDailyCheckin] = useState(false);
   const [showMoodCheckin, setShowMoodCheckin] = useState(false);
   const [upcomingDate, setUpcomingDate] = useState<any>(null);
+  const [scheduledDatesCount, setScheduledDatesCount] = useState(0);
   const [lastCheckin, setLastCheckin] = useState<any>(null);
   const [recentMemory, setRecentMemory] = useState<any>(null);
   const [checkinStreak, setCheckinStreak] = useState(0);
@@ -125,15 +126,29 @@ export const Dashboard = () => {
         }
       }
 
-      // Fetch upcoming date idea
+      // Fetch upcoming scheduled date (only dates that have been scheduled but haven't passed yet)
+      const today = new Date().toISOString().split('T')[0];
       const { data: dateData } = await supabase
         .from('date_ideas')
         .select('*')
         .eq('couple_id', currentCoupleId)
-        .eq('is_completed', false)
-        .order('created_at', { ascending: false })
+        .eq('is_completed', true) // Only scheduled dates
+        .gte('completed_date', today) // Future or today's dates only
+        .not('notes', 'is', null) // Must have scheduling notes
+        .ilike('notes', '%scheduled%') // Contains "scheduled" in notes
+        .order('completed_date', { ascending: true })
         .limit(1)
         .maybeSingle();
+
+      // Count all scheduled dates for the "Upcoming dates" card
+      const { count: scheduledCount } = await supabase
+        .from('date_ideas')
+        .select('*', { count: 'exact', head: true })
+        .eq('couple_id', currentCoupleId)
+        .eq('is_completed', true) // Only scheduled dates
+        .gte('completed_date', today) // Future or today's dates only
+        .not('notes', 'is', null) // Must have scheduling notes
+        .ilike('notes', '%scheduled%'); // Contains "scheduled" in notes
 
       // Fetch recent memory
       const { data: memoryData } = await supabase
@@ -163,7 +178,7 @@ export const Dashboard = () => {
 
       let streak = 0;
       if (allCheckins && allCheckins.length > 0) {
-        const today = new Date().toDateString();
+        const todayStr = new Date().toDateString();
         let currentDate = new Date();
         
         // Group checkins by date
@@ -189,14 +204,14 @@ export const Dashboard = () => {
       }
 
       // Get today's moods
-      const today = new Date().toISOString().split('T')[0];
+      const todayForMood = new Date().toISOString().split('T')[0];
       
       const { data: userMoodData } = await supabase
         .from('daily_checkins')
         .select('mood')
         .eq('user_id', user?.id)
         .eq('couple_id', currentCoupleId)
-        .eq('checkin_date', today)
+        .eq('checkin_date', todayForMood)
         .maybeSingle();
 
       const { data: partnerMoodData } = await supabase
@@ -204,7 +219,7 @@ export const Dashboard = () => {
         .select('mood')
         .eq('user_id', partnerId)
         .eq('couple_id', currentCoupleId)
-        .eq('checkin_date', today)
+        .eq('checkin_date', todayForMood)
         .maybeSingle();
 
       console.log('User mood data:', { userId: user?.id, mood: userMoodData?.mood });
@@ -218,6 +233,7 @@ export const Dashboard = () => {
         await supabase.rpc('generate_relationship_insights', { p_couple_id: currentCoupleId });
       }
       setUpcomingDate(dateData);
+      setScheduledDatesCount(scheduledCount || 0);
       setRecentMemory(memoryData);
       setLastCheckin(checkinData);
       setCheckinStreak(streak);
@@ -462,7 +478,9 @@ export const Dashboard = () => {
               <Calendar className="text-accent-foreground" size={24} />
             </div>
             <h3 className="font-semibold text-foreground mb-1">Upcoming dates</h3>
-            <p className="text-xs text-muted-foreground">3 dates planned</p>
+            <p className="text-xs text-muted-foreground">
+              {scheduledDatesCount > 0 ? `${scheduledDatesCount} dates scheduled` : 'No dates scheduled'}
+            </p>
           </div>
 
           {/* Plan Date */}
