@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { TimePicker } from "@/components/ui/time-picker";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { Calendar, MapPin, Clock, DollarSign, Heart, Star, CalendarPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -311,10 +312,9 @@ export const DatePlanner = () => {
                 </div>
                 <div>
                   <label className="text-sm font-bold text-foreground mb-2 block">Select Time</label>
-                  <Input
-                    type="time"
+                  <TimePicker
                     value={selectedTime}
-                    onChange={(e) => setSelectedTime(e.target.value)}
+                    onChange={setSelectedTime}
                     className="w-full"
                   />
                 </div>
