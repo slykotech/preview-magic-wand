@@ -95,8 +95,8 @@ export const CoupleSetup = () => {
         description: "Your display name has been updated successfully",
       });
 
-      // Refresh the data
-      fetchUserData();
+      // Refresh the data and close edit mode
+      await fetchUserData();
       setEditing(false);
     } catch (error) {
       console.error('Error updating name:', error);
@@ -306,14 +306,49 @@ export const CoupleSetup = () => {
                     </div>
                     <h4 className="font-semibold text-blue-800">You</h4>
                   </div>
-                  <div className="space-y-2">
-                    <p className="text-sm text-blue-700">
-                      <span className="font-medium">Name:</span> {profileData?.display_name || 'Not set'}
-                    </p>
-                    <p className="text-sm text-blue-700 font-mono">
-                      <span className="font-medium">User ID:</span> {user?.id?.substring(0, 8)}...
-                    </p>
-                  </div>
+                  {editing ? (
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="editDisplayName" className="text-sm font-medium text-blue-800">
+                          Your Display Name
+                        </Label>
+                        <Input
+                          id="editDisplayName"
+                          value={displayName}
+                          onChange={(e) => setDisplayName(e.target.value)}
+                          placeholder="Enter your name"
+                          className="mt-1 bg-white"
+                        />
+                        <p className="text-xs text-blue-600 mt-1">
+                          This is how you'll appear in the app
+                        </p>
+                      </div>
+                      <Button
+                        onClick={updateNames}
+                        disabled={updating}
+                        className="w-full bg-green-600 hover:bg-green-700"
+                        size="sm"
+                      >
+                        {updating ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            Updating...
+                          </>
+                        ) : (
+                          'Update Your Name'
+                        )}
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <p className="text-sm text-blue-700">
+                        <span className="font-medium">Name:</span> {profileData?.display_name || 'Not set'}
+                      </p>
+                      <p className="text-sm text-blue-700 font-mono">
+                        <span className="font-medium">User ID:</span> {user?.id?.substring(0, 8)}...
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 {/* Partner Profile */}
@@ -324,29 +359,78 @@ export const CoupleSetup = () => {
                     </div>
                     <h4 className="font-semibold text-pink-800">Partner</h4>
                   </div>
-                  {partnerProfile ? (
-                    <div className="space-y-2">
-                      <p className="text-sm text-pink-700">
-                        <span className="font-medium">Name:</span> {partnerProfile.display_name || 'Not set'}
-                      </p>
-                      <p className="text-sm text-pink-700 font-mono">
-                        <span className="font-medium">User ID:</span> {partnerProfile.user_id?.substring(0, 8)}...
-                      </p>
+                  {editing ? (
+                    <div className="space-y-4">
+                      {/* Partner's Name - Read Only */}
+                      <div className="bg-white border border-pink-300 p-3 rounded-md">
+                        <p className="text-sm text-pink-800">
+                          <span className="font-medium">Name:</span> {partnerProfile?.display_name || 'Not available'}
+                        </p>
+                        <p className="text-xs text-pink-600 mt-1">
+                          Partner's name is automatically fetched from their profile
+                        </p>
+                      </div>
+                      
+                      {/* Connect to Different Partner */}
+                      <div>
+                        <Label htmlFor="newPartnerEmail" className="text-sm font-medium text-pink-800">
+                          Connect to Different Partner
+                        </Label>
+                        <Input
+                          id="newPartnerEmail"
+                          type="email"
+                          value={partnerEmail}
+                          onChange={(e) => setPartnerEmail(e.target.value)}
+                          placeholder="partner@example.com"
+                          className="mt-1 bg-white"
+                        />
+                        <p className="text-xs text-pink-600 mt-1">
+                          Enter email of someone with a LoveSync account
+                        </p>
+                      </div>
+                      <Button
+                        onClick={updatePartnerConnection}
+                        disabled={updating}
+                        className="w-full bg-orange-600 hover:bg-orange-700"
+                        size="sm"
+                      >
+                        {updating ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            Connecting...
+                          </>
+                        ) : (
+                          'Connect to Partner'
+                        )}
+                      </Button>
                     </div>
                   ) : (
-                    <p className="text-sm text-pink-700">Partner profile not found</p>
-                  )}
-                  
-                  {/* Show if user is paired with themselves */}
-                  {coupleData?.user1_id === coupleData?.user2_id && (
-                    <div className="mt-3 p-3 bg-yellow-100 border border-yellow-300 rounded-md">
-                      <div className="flex items-center gap-2">
-                        <span className="text-yellow-600">⚠️</span>
-                        <span className="text-yellow-800 text-sm font-medium">
-                          You are currently paired with yourself (demo mode)
-                        </span>
-                      </div>
-                    </div>
+                    <>
+                      {partnerProfile ? (
+                        <div className="space-y-2">
+                          <p className="text-sm text-pink-700">
+                            <span className="font-medium">Name:</span> {partnerProfile.display_name || 'Not set'}
+                          </p>
+                          <p className="text-sm text-pink-700 font-mono">
+                            <span className="font-medium">User ID:</span> {partnerProfile.user_id?.substring(0, 8)}...
+                          </p>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-pink-700">Partner profile not found</p>
+                      )}
+                      
+                      {/* Show if user is paired with themselves */}
+                      {coupleData?.user1_id === coupleData?.user2_id && (
+                        <div className="mt-3 p-3 bg-yellow-100 border border-yellow-300 rounded-md">
+                          <div className="flex items-center gap-2">
+                            <span className="text-yellow-600">⚠️</span>
+                            <span className="text-yellow-800 text-sm font-medium">
+                              You are currently paired with yourself (demo mode)
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
 
@@ -371,120 +455,21 @@ export const CoupleSetup = () => {
                   </div>
                 </div>
 
-                {/* Edit Section */}
+
+                {/* Edit Mode Cancel Button */}
                 {editing && (
-                  <div className="bg-orange-50 border border-orange-200 p-6 rounded-lg space-y-6">
-                     <div>
-                       <h4 className="font-semibold text-orange-800 mb-4 flex items-center gap-2">
-                         <Edit size={16} />
-                         Edit Your Name
-                       </h4>
-                       <div className="space-y-4">
-                          <div>
-                            <Label htmlFor="editDisplayName" className="text-sm font-medium text-orange-800">
-                              Your Display Name
-                            </Label>
-                            <Input
-                              id="editDisplayName"
-                              value={displayName}
-                              onChange={(e) => setDisplayName(e.target.value)}
-                              placeholder="Enter your name"
-                              className="mt-1"
-                            />
-                            <p className="text-xs text-orange-600 mt-1">
-                              This is how you'll appear in the app
-                            </p>
-                          </div>
-                          <div className="flex gap-3">
-                            <Button
-                              onClick={updateNames}
-                              disabled={updating}
-                              className="flex-1 bg-green-600 hover:bg-green-700"
-                            >
-                              {updating ? (
-                                <>
-                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                                  Updating...
-                                </>
-                              ) : (
-                                'Update Your Name'
-                              )}
-                            </Button>
-                          </div>
-                       </div>
-                     </div>
-
-                     {/* Partner's Name - Read Only */}
-                     <div className="bg-purple-50 border border-purple-200 p-4 rounded-lg">
-                       <h4 className="font-semibold text-purple-800 mb-3 flex items-center gap-2">
-                         <Heart size={16} />
-                         Partner's Name (Read Only)
-                       </h4>
-                       <div className="bg-white border border-purple-300 p-3 rounded-md">
-                         <p className="text-sm text-purple-800">
-                           <span className="font-medium">Name:</span> {partnerProfile?.display_name || 'Not available'}
-                         </p>
-                         <p className="text-xs text-purple-600 mt-1">
-                           Your partner's name is automatically fetched from their profile. They can update it from their own account.
-                         </p>
-                       </div>
-                     </div>
-
-                    <div>
-                      <h4 className="font-semibold text-orange-800 mb-4 flex items-center gap-2">
-                        <Mail size={16} />
-                        Connect to Different Partner
-                      </h4>
-                      <div className="space-y-4">
-                        <div>
-                          <Label htmlFor="newPartnerEmail" className="text-sm font-medium text-orange-800">
-                            Partner's Email
-                          </Label>
-                          <Input
-                            id="newPartnerEmail"
-                            type="email"
-                            value={partnerEmail}
-                            onChange={(e) => setPartnerEmail(e.target.value)}
-                            placeholder="partner@example.com"
-                            className="mt-1"
-                          />
-                          <p className="text-xs text-orange-600 mt-1">
-                            Enter the email of someone who already has a LoveSync account. Their name will be automatically fetched from their profile.
-                          </p>
-                        </div>
-                        <div className="flex gap-3">
-                          <Button
-                            onClick={updatePartnerConnection}
-                            disabled={updating}
-                            className="flex-1 bg-orange-600 hover:bg-orange-700"
-                          >
-                            {updating ? (
-                              <>
-                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                                Connecting...
-                              </>
-                            ) : (
-                              'Connect to Partner'
-                            )}
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex justify-end">
-                      <Button
-                        variant="outline"
-                         onClick={() => {
-                           setEditing(false);
-                           setPartnerEmail("");
-                           // Reset name to original value
-                           setDisplayName(profileData?.display_name || '');
-                         }}
-                        className="px-6"
-                      >
-                        Cancel
-                      </Button>
-                    </div>
+                  <div className="flex justify-center">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setEditing(false);
+                        setPartnerEmail("");
+                        setDisplayName(profileData?.display_name || '');
+                      }}
+                      className="px-8"
+                    >
+                      Cancel
+                    </Button>
                   </div>
                 )}
 
