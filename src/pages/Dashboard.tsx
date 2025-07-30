@@ -18,6 +18,7 @@ export const Dashboard = () => {
   const [syncScore, setSyncScore] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [showSplash, setShowSplash] = useState(true);
   const [showDailyCheckin, setShowDailyCheckin] = useState(false);
   const [showMoodCheckin, setShowMoodCheckin] = useState(false);
   const [upcomingDate, setUpcomingDate] = useState<any>(null);
@@ -225,6 +226,9 @@ export const Dashboard = () => {
         setPartnerMood(partnerMoodData?.mood);
       }
       setIsLoaded(true);
+      
+      // Show splash animation for 2 seconds
+      setTimeout(() => setShowSplash(false), 2000);
 
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -289,9 +293,36 @@ export const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden pb-20">
+      {/* Splash Screen Overlay */}
+      {showSplash && isLoaded && (
+        <div className="fixed inset-0 bg-gradient-primary z-50 flex items-center justify-center animate-fade-out" style={{ animationDelay: '1.5s', animationFillMode: 'forwards' }}>
+          <div className="text-center space-y-8">
+            <div className="animate-scale-in" style={{ animationDelay: '0.2s' }}>
+              <SyncScoreCircle score={syncScore} animated={true} />
+            </div>
+            
+            <div className="animate-scale-in" style={{ animationDelay: '0.5s' }}>
+              <CoupleMoodDisplay 
+                userMood={userMood} 
+                partnerMood={partnerMood} 
+                userId={user?.id}
+                coupleId={coupleId}
+                onMoodUpdate={refreshDashboard}
+                splashMode={true}
+              />
+            </div>
+            
+            <div className="text-white text-center animate-fade-in" style={{ animationDelay: '0.8s' }}>
+              <h2 className="text-2xl font-bold mb-2">Welcome Back! 💕</h2>
+              <p className="text-white/80">Your love sync is loading...</p>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <div className="container mx-auto px-6 py-8 space-y-6">
         {/* Header */}
-        <div className={`text-center space-y-2 ${isLoaded ? 'animate-fade-in' : 'opacity-0'}`}>
+        <div className={`text-center space-y-2 ${isLoaded && !showSplash ? 'animate-fade-in' : 'opacity-0'}`}>
           <h1 className="text-2xl font-bold text-foreground">
             Good morning, lovebirds! 💕
           </h1>
@@ -301,16 +332,16 @@ export const Dashboard = () => {
         </div>
 
         {/* Sync Score Section */}
-        <div className={`${isLoaded ? 'animate-fade-in' : 'opacity-0'}`} style={{ animationDelay: '200ms' }}>
-          <SyncScoreCircle score={syncScore} animated={isLoaded} />
+        <div className={`${isLoaded && !showSplash ? 'animate-fade-in' : 'opacity-0'}`} style={{ animationDelay: '200ms' }}>
+          <SyncScoreCircle score={syncScore} animated={isLoaded && !showSplash} />
         </div>
 
         {/* Couple Avatars with Good Sync Status */}
-        <div className={`${isLoaded ? 'animate-fade-in' : 'opacity-0'}`} style={{ animationDelay: '400ms' }}>
-          <CoupleAvatars syncScore={syncScore} animated={isLoaded} />
+        <div className={`${isLoaded && !showSplash ? 'animate-fade-in' : 'opacity-0'}`} style={{ animationDelay: '400ms' }}>
+          <CoupleAvatars syncScore={syncScore} animated={isLoaded && !showSplash} />
         </div>
 
-        <div className={`${isLoaded ? 'animate-fade-in' : 'opacity-0'}`} style={{ animationDelay: '450ms' }}>
+        <div className={`${isLoaded && !showSplash ? 'animate-fade-in' : 'opacity-0'}`} style={{ animationDelay: '450ms' }}>
           <CoupleMoodDisplay 
             userMood={userMood} 
             partnerMood={partnerMood} 
@@ -321,7 +352,7 @@ export const Dashboard = () => {
         </div>
 
         {/* Compact Dashboard Cards */}
-        <div className={`grid grid-cols-2 gap-3 ${isLoaded ? 'animate-fade-in' : 'opacity-0'}`} style={{ animationDelay: '500ms' }}>
+        <div className={`grid grid-cols-2 gap-3 ${isLoaded && !showSplash ? 'animate-fade-in' : 'opacity-0'}`} style={{ animationDelay: '500ms' }}>
           {/* Last Check-in Card - Compact */}
           <div className="bg-card border rounded-lg p-3 shadow-sm">
             <div className="flex items-center gap-2 mb-2">
@@ -359,7 +390,7 @@ export const Dashboard = () => {
         </div>
 
         {/* Streak Banner */}
-        <div className={`bg-gradient-romance rounded-xl p-4 text-center text-white shadow-sm ${isLoaded ? 'animate-fade-in' : 'opacity-0'}`} style={{ animationDelay: '600ms' }}>
+        <div className={`bg-gradient-romance rounded-xl p-4 text-center text-white shadow-sm ${isLoaded && !showSplash ? 'animate-fade-in' : 'opacity-0'}`} style={{ animationDelay: '600ms' }}>
           <div className="flex items-center justify-center gap-2 mb-1">
             <span className="text-2xl font-bold">{checkinStreak || 3}</span>
             <span className="text-lg">day streak!</span>
@@ -368,7 +399,7 @@ export const Dashboard = () => {
         </div>
 
         {/* Action Cards Grid */}
-        <div className={`grid grid-cols-2 gap-4 ${isLoaded ? 'animate-fade-in' : 'opacity-0'}`} style={{ animationDelay: '700ms' }}>
+        <div className={`grid grid-cols-2 gap-4 ${isLoaded && !showSplash ? 'animate-fade-in' : 'opacity-0'}`} style={{ animationDelay: '700ms' }}>
           {/* Daily Check-in */}
           <div 
             className="bg-card border rounded-xl p-4 text-center cursor-pointer hover:shadow-sm transition-all shadow-sm"
@@ -419,7 +450,7 @@ export const Dashboard = () => {
         </div>
 
         {/* Get Relationship Insights Button */}
-        <div className={`${isLoaded ? 'animate-fade-in' : 'opacity-0'}`} style={{ animationDelay: '800ms' }}>
+        <div className={`${isLoaded && !showSplash ? 'animate-fade-in' : 'opacity-0'}`} style={{ animationDelay: '800ms' }}>
           <Button 
             className="w-full rounded-xl py-3 bg-yellow-400 hover:bg-yellow-500 text-black font-medium transition-all"
             onClick={() => navigate('/coach')}
