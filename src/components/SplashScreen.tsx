@@ -23,20 +23,9 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
   }, [onComplete]);
 
   return (
-    <div
-      className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden"
-      style={{
-        background: "linear-gradient(135deg, #932F67, #D92C54)"
-      }}
-    >
+    <div className="min-h-screen bg-gradient-primary flex flex-col items-center justify-center relative overflow-hidden">
       {/* Background Gradient Overlay */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background: "linear-gradient(135deg, #932F67, #D92C54)",
-          opacity: 0.3
-        }}
-      ></div>
+      <div className="absolute inset-0 bg-gradient-secondary opacity-30 pointer-events-none"></div>
 
       {/* Animated Logo with Zoom Out */}
       <div className="mb-8 flex flex-col items-center justify-center">
