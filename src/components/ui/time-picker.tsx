@@ -50,10 +50,13 @@ export const TimePicker: React.FC<TimePickerProps> = ({ value, onChange, classNa
     onChange(timeString);
   }, [hours, minutes, period, onChange]);
 
-  const hourAngles = Array.from({ length: 12 }, (_, i) => i + 1);
+  const hourNumbers = [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
   const minuteAngles = Array.from({ length: 12 }, (_, i) => i * 5);
 
-  const getHourAngle = (hour: number) => (hour % 12) * 30 - 90;
+  const getHourAngle = (hour: number) => {
+    const hourIndex = hour === 12 ? 0 : hour;
+    return hourIndex * 30 - 90;
+  };
   const getMinuteAngle = (minute: number) => (minute / 5) * 30 - 90;
 
   const handleHourClick = (hour: number) => {
@@ -69,7 +72,7 @@ export const TimePicker: React.FC<TimePickerProps> = ({ value, onChange, classNa
       {/* Clock Face */}
       <div className="relative w-52 h-52 bg-muted rounded-full border-2 border-border mx-auto">
         {/* Hour markers */}
-        {hourAngles.map((hour) => (
+        {hourNumbers.map((hour) => (
           <button
             key={`hour-${hour}`}
             className={cn(
