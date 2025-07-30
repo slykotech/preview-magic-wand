@@ -326,7 +326,7 @@ export const CoupleSetup = () => {
                       <Button
                         onClick={updateNames}
                         disabled={updating}
-                        className="w-full bg-green-600 hover:bg-green-700"
+                        className="w-full bg-gradient-primary hover:opacity-90 text-white shadow-romantic"
                         size="sm"
                       >
                         {updating ? (
@@ -397,7 +397,7 @@ export const CoupleSetup = () => {
                       <Button
                         onClick={updatePartnerConnection}
                         disabled={updating}
-                        className="w-full bg-orange-600 hover:bg-orange-700"
+                        className="w-full bg-gradient-secondary hover:opacity-90 text-white shadow-romantic"
                         size="sm"
                       >
                         {updating ? (
