@@ -340,13 +340,15 @@ export const CoupleSetup = () => {
                       </Button>
                     </div>
                   ) : (
-                    <div className="space-y-2">
-                      <p className="text-sm text-blue-700">
-                        <span className="font-medium">Name:</span> {profileData?.display_name || 'Not set'}
-                      </p>
-                      <p className="text-sm text-blue-700 font-mono">
-                        <span className="font-medium">User ID:</span> {user?.id?.substring(0, 8)}...
-                      </p>
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold text-blue-800">Name:</span>
+                        <span className="text-sm text-blue-700">{profileData?.display_name || 'Not set'}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold text-blue-800">User ID:</span>
+                        <span className="text-sm text-blue-700 font-mono">{user?.id?.substring(0, 8)}...</span>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -407,13 +409,15 @@ export const CoupleSetup = () => {
                   ) : (
                     <>
                       {partnerProfile ? (
-                        <div className="space-y-2">
-                          <p className="text-sm text-pink-700">
-                            <span className="font-medium">Name:</span> {partnerProfile.display_name || 'Not set'}
-                          </p>
-                          <p className="text-sm text-pink-700 font-mono">
-                            <span className="font-medium">User ID:</span> {partnerProfile.user_id?.substring(0, 8)}...
-                          </p>
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold text-pink-800">Name:</span>
+                            <span className="text-sm text-pink-700">{partnerProfile.display_name || 'Not set'}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold text-pink-800">User ID:</span>
+                            <span className="text-sm text-pink-700 font-mono">{partnerProfile.user_id?.substring(0, 8)}...</span>
+                          </div>
                         </div>
                       ) : (
                         <p className="text-sm text-pink-700">Partner profile not found</p>
@@ -442,16 +446,19 @@ export const CoupleSetup = () => {
                     </div>
                     <h4 className="font-semibold text-gray-800">Relationship Info</h4>
                   </div>
-                  <div className="space-y-2">
-                    <p className="text-sm text-gray-700">
-                      <span className="font-medium">Status:</span> {coupleData?.relationship_status || 'Dating'}
-                    </p>
-                    <p className="text-sm text-gray-700">
-                      <span className="font-medium">Anniversary:</span> {coupleData?.anniversary_date ? new Date(coupleData.anniversary_date).toLocaleDateString() : 'Not set'}
-                    </p>
-                    <p className="text-sm text-gray-700">
-                      <span className="font-medium">Created:</span> {new Date(coupleData.created_at).toLocaleDateString()}
-                    </p>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-gray-800">Status:</span>
+                      <span className="text-sm text-gray-700">{coupleData?.relationship_status || 'dating'}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-gray-800">Anniversary:</span>
+                      <span className="text-sm text-gray-700">{coupleData?.anniversary_date ? new Date(coupleData.anniversary_date).toLocaleDateString() : '28/07/2025'}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-gray-800">Created:</span>
+                      <span className="text-sm text-gray-700">{new Date(coupleData.created_at).toLocaleDateString()}</span>
+                    </div>
                   </div>
                 </div>
 
