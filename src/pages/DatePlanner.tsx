@@ -289,30 +289,30 @@ export const DatePlanner = () => {
         )}
       </div>
 
-      {/* Schedule Modal (Simple version) */}
+      {/* Schedule Modal (Compact version) */}
       {selectedIdea && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-card rounded-2xl p-6 w-full max-w-md shadow-romantic animate-slide-up">
-            <div className="text-center mb-6">
-              <Heart className="mx-auto text-secondary mb-2" size={32} />
-              <h3 className="text-xl font-extrabold font-poppins mb-2">Schedule Your Date</h3>
-              <p className="text-muted-foreground font-inter font-bold">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-2">
+          <div className="bg-card rounded-xl p-4 w-full max-w-xs shadow-romantic animate-slide-up max-h-[90vh] overflow-y-auto">
+            <div className="text-center mb-4">
+              <Heart className="mx-auto text-secondary mb-2" size={24} />
+              <h3 className="text-lg font-extrabold font-poppins mb-1">Schedule Date</h3>
+              <p className="text-muted-foreground font-inter font-bold text-sm">
                 {selectedIdea.title}
               </p>
             </div>
 
-            <div className="space-y-4">
-              <div className="space-y-3">
+            <div className="space-y-3">
+              <div className="space-y-2">
                 <div>
-                  <label className="text-sm font-bold text-foreground mb-2 block">Select Date</label>
+                  <label className="text-xs font-bold text-foreground mb-1 block">Select Date</label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
-                        className="w-full justify-start text-left font-normal"
+                        className="w-full justify-start text-left font-normal text-sm h-8"
                       >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
+                        <CalendarIcon className="mr-2 h-3 w-3" />
+                        {selectedDate ? format(selectedDate, "MMM d, yyyy") : <span>Pick a date</span>}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
@@ -321,19 +321,21 @@ export const DatePlanner = () => {
                         selected={selectedDate}
                         onSelect={setSelectedDate}
                         initialFocus
-                        className="p-3 pointer-events-auto"
+                        className="p-2 pointer-events-auto text-sm"
                       />
                     </PopoverContent>
                   </Popover>
                 </div>
                 <div>
-                  <label className="text-sm font-bold text-foreground mb-2 block">Select Time</label>
-                  <TimePicker
-                    value={selectedTime}
-                    onChange={setSelectedTime}
-                    onConfirm={confirmSchedule}
-                    onCancel={() => setSelectedIdea(null)}
-                  />
+                  <label className="text-xs font-bold text-foreground mb-1 block">Select Time</label>
+                  <div className="scale-75 origin-top">
+                    <TimePicker
+                      value={selectedTime}
+                      onChange={setSelectedTime}
+                      onConfirm={confirmSchedule}
+                      onCancel={() => setSelectedIdea(null)}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
