@@ -43,19 +43,19 @@ export const SyncScoreCircle = ({ score, animated = true }: SyncScoreCircleProps
           stroke="currentColor"
           strokeWidth="8"
           fill="none"
-          className="text-muted"
+          className="text-white/20"
         />
         {/* Progress circle */}
         <circle
-          cx="65"
-          cy="65"
+          cx="72"
+          cy="72"
           r={radius}
           stroke="currentColor"
           strokeWidth="8"
           fill="none"
           strokeDasharray={strokeDasharray}
           strokeDashoffset={strokeDashoffset}
-          className={`${getScoreColor(displayScore)} transition-all duration-1000 ease-out`}
+          className={`text-white transition-all duration-1000 ease-out`}
           strokeLinecap="round"
         />
       </svg>
