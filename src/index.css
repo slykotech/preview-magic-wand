@@ -114,13 +114,13 @@ All colors MUST be HSL.
 
 @layer utilities {
   /* Sync Score Splash Animation - Precise Dashboard Positioning */
-  @keyframes zoom-to-dashboard {
+  @keyframes zoom-to-position {
     0% {
       transform: scale(2.5) translateY(0);
     }
     100% {
-      transform: scale(1) translateY(-280px) translateX(0);
-      opacity: 0;
+      transform: scale(1) translateY(-200px) translateX(0);
+      opacity: 1;
     }
   }
   

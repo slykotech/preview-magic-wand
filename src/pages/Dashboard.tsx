@@ -297,20 +297,20 @@ export const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden pb-20">
+    <div className="min-h-screen bg-background relative overflow-hidden">
       {/* Splash Screen Overlay with Sync Score Animation */}
       {showSplash && isLoaded && (
-        <div className="fixed inset-0 bg-gradient-primary z-50" 
+        <div className="fixed inset-0 bg-gradient-primary z-[100]" 
              style={{ 
                animation: 'fade-out 0.3s ease-out 1.7s forwards' 
              }}>
           
-          {/* Sync Score - starts center, zooms to dashboard position */}
+          {/* Sync Score - starts center, zooms to exact dashboard position */}
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="sync-score-container"
                  style={{ 
-                   animation: 'zoom-to-dashboard 1.2s ease-out 0.8s forwards',
-                   transform: 'scale(2.5) translateY(0)'
+                   animation: 'zoom-to-position 1.2s ease-out 0.8s forwards',
+                   transform: 'scale(2.5)'
                  }}>
               <SyncScoreCircle score={syncScore} animated={true} />
             </div>
@@ -351,29 +351,31 @@ export const Dashboard = () => {
         </div>
       )}
       
-      {/* Header with gradient background */}
-      <div className="bg-gradient-primary py-12 px-6 -mx-6 -mt-8 mb-8">
-        <div className={`text-center space-y-2 ${isLoaded && !showSplash ? 'animate-fade-in' : 'opacity-0'}`}>
-          <h1 className="text-3xl font-bold text-white">
-            {(() => {
-              const hour = new Date().getHours();
-              if (hour < 12) return "Good Morning";
-              if (hour < 17) return "Good Afternoon";
-              return "Good Evening";
-            })()}
-          </h1>
-          <p className="text-lg text-white/90">
-            Hey lovebirds! Track your relationship harmony and connection
-          </p>
+      {/* Main Content - hidden during splash */}
+      <div className={showSplash ? 'opacity-0' : 'opacity-100'}>
+        {/* Header with gradient background */}
+        <div className="bg-gradient-primary py-12 px-6 -mx-6 -mt-8 mb-8">
+          <div className={`text-center space-y-2 ${isLoaded && !showSplash ? 'animate-fade-in' : 'opacity-0'}`}>
+            <h1 className="text-3xl font-bold text-white">
+              {(() => {
+                const hour = new Date().getHours();
+                if (hour < 12) return "Good Morning";
+                if (hour < 17) return "Good Afternoon";
+                return "Good Evening";
+              })()}
+            </h1>
+            <p className="text-lg text-white/90">
+              Hey lovebirds! Track your relationship harmony and connection
+            </p>
+          </div>
         </div>
-      </div>
-      
-      <div className="container mx-auto px-6 space-y-6">
+        
+        <div className="container mx-auto px-6 space-y-6 pb-20">
 
-        {/* Sync Score Section */}
-        <div className={`${isLoaded && !showSplash ? 'animate-fade-in' : 'opacity-0'}`}>
-          <SyncScoreCircle score={syncScore} animated={isLoaded && !showSplash} />
-        </div>
+          {/* Sync Score Section */}
+          <div className={`${isLoaded && !showSplash ? 'animate-fade-in' : 'opacity-0'}`}>
+            <SyncScoreCircle score={syncScore} animated={isLoaded && !showSplash} />
+          </div>
 
         {/* Couple Avatars with Good Sync Status */}
         <div className={`${isLoaded && !showSplash ? 'animate-fade-in' : 'opacity-0'}`}>
@@ -498,6 +500,7 @@ export const Dashboard = () => {
             Get Relationship Insights
           </Button>
         </div>
+        </div>
       </div>
 
       {/* Daily Check-in Flow Modal */}
@@ -540,7 +543,8 @@ export const Dashboard = () => {
         </div>
       )}
 
-      <BottomNavigation />
+      {/* Bottom Navigation - hidden during splash */}
+      {!showSplash && <BottomNavigation />}
     </div>
   );
 };
