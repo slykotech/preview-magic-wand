@@ -109,8 +109,9 @@ const OnboardingFlow = () => {
     if (currentStep < 1) {
       setCurrentStep(currentStep + 1);
     } else {
-      // Complete onboarding and go to auth
-      navigate('/auth');
+      // Complete onboarding and go to dashboard
+      console.log("Onboarding complete:", { relationshipType, goals });
+      navigate('/dashboard');
     }
   };
 
