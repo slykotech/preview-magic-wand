@@ -65,9 +65,9 @@ export const TimePicker: React.FC<TimePickerProps> = ({ value, onChange, classNa
   };
 
   return (
-    <div className={cn("flex flex-col items-center space-y-4", className)}>
+    <div className={cn("flex flex-col items-center space-y-6", className)}>
       {/* Clock Face */}
-      <div className="relative w-48 h-48 bg-muted rounded-full border-2 border-border">
+      <div className="relative w-52 h-52 bg-muted rounded-full border-2 border-border mx-auto">
         {/* Hour markers */}
         {hourAngles.map((hour) => (
           <button
@@ -77,8 +77,8 @@ export const TimePicker: React.FC<TimePickerProps> = ({ value, onChange, classNa
               hours === hour ? "bg-primary text-primary-foreground" : "hover:bg-accent hover:text-accent-foreground"
             )}
             style={{
-              top: `${50 + 35 * Math.sin((getHourAngle(hour) + 90) * Math.PI / 180) - 16}px`,
-              left: `${50 + 35 * Math.cos((getHourAngle(hour) + 90) * Math.PI / 180) - 16}px`,
+              top: `${50 + 38 * Math.sin((getHourAngle(hour) + 90) * Math.PI / 180) - 16}px`,
+              left: `${50 + 38 * Math.cos((getHourAngle(hour) + 90) * Math.PI / 180) - 16}px`,
             }}
             onClick={() => handleHourClick(hour)}
           >
@@ -87,37 +87,37 @@ export const TimePicker: React.FC<TimePickerProps> = ({ value, onChange, classNa
         ))}
 
         {/* Center dot */}
-        <div className="absolute top-1/2 left-1/2 w-2 h-2 bg-primary rounded-full transform -translate-x-1/2 -translate-y-1/2"></div>
+        <div className="absolute top-1/2 left-1/2 w-3 h-3 bg-primary rounded-full transform -translate-x-1/2 -translate-y-1/2"></div>
 
         {/* Hour hand */}
         <div
-          className="absolute top-1/2 left-1/2 w-0.5 bg-primary origin-bottom"
+          className="absolute top-1/2 left-1/2 w-1 bg-primary origin-bottom rounded-full"
           style={{
-            height: '30px',
+            height: '35px',
             transform: `translate(-50%, -100%) rotate(${getHourAngle(hours)}deg)`,
           }}
         ></div>
 
         {/* Minute hand */}
         <div
-          className="absolute top-1/2 left-1/2 w-0.5 bg-secondary origin-bottom"
+          className="absolute top-1/2 left-1/2 w-0.5 bg-secondary origin-bottom rounded-full"
           style={{
-            height: '40px',
+            height: '45px',
             transform: `translate(-50%, -100%) rotate(${getMinuteAngle(minutes)}deg)`,
           }}
         ></div>
       </div>
 
       {/* Minute selection */}
-      <div className="grid grid-cols-6 gap-2 w-full max-w-xs">
+      <div className="grid grid-cols-6 gap-3 w-full max-w-sm mx-auto">
         {minuteAngles.map((minute) => (
           <button
             key={`minute-${minute}`}
             className={cn(
-              "px-2 py-1 rounded text-sm font-bold transition-all",
+              "px-3 py-2 rounded-lg text-sm font-bold transition-all min-w-[44px]",
               minutes === minute 
                 ? "bg-secondary text-secondary-foreground" 
-                : "hover:bg-accent hover:text-accent-foreground"
+                : "hover:bg-accent hover:text-accent-foreground bg-muted"
             )}
             onClick={() => handleMinuteClick(minute)}
           >
@@ -127,10 +127,10 @@ export const TimePicker: React.FC<TimePickerProps> = ({ value, onChange, classNa
       </div>
 
       {/* AM/PM Toggle */}
-      <div className="flex space-x-2">
+      <div className="flex space-x-3 mx-auto">
         <button
           className={cn(
-            "px-4 py-2 rounded-lg font-bold transition-all",
+            "px-6 py-3 rounded-lg font-bold transition-all min-w-[60px]",
             period === 'AM' 
               ? "bg-primary text-primary-foreground" 
               : "bg-muted hover:bg-accent"
@@ -141,7 +141,7 @@ export const TimePicker: React.FC<TimePickerProps> = ({ value, onChange, classNa
         </button>
         <button
           className={cn(
-            "px-4 py-2 rounded-lg font-bold transition-all",
+            "px-6 py-3 rounded-lg font-bold transition-all min-w-[60px]",
             period === 'PM' 
               ? "bg-primary text-primary-foreground" 
               : "bg-muted hover:bg-accent"
@@ -153,8 +153,8 @@ export const TimePicker: React.FC<TimePickerProps> = ({ value, onChange, classNa
       </div>
 
       {/* Digital Display */}
-      <div className="text-center">
-        <div className="text-2xl font-bold font-mono">
+      <div className="text-center mx-auto">
+        <div className="text-2xl font-bold font-mono text-foreground">
           {hours.toString().padStart(2, '0')}:{minutes.toString().padStart(2, '0')} {period}
         </div>
       </div>
