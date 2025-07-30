@@ -342,7 +342,7 @@ export const Dashboard = () => {
             })()}
           </h1>
           <p className="text-lg text-white/90">
-            Track your relationship harmony and connection
+            Hey lovebirds! Track your relationship harmony and connection
           </p>
         </div>
       </div>
