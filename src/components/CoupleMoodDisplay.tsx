@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { MoodBitmoji } from './MoodBitmoji';
-import { Heart, Plus } from 'lucide-react';
+import { Heart, Plus, Edit3 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
@@ -35,6 +35,7 @@ export const CoupleMoodDisplay: React.FC<CoupleMoodDisplayProps> = ({
   onMoodUpdate
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showMoodSelector, setShowMoodSelector] = useState(false);
   const { toast } = useToast();
 
   const handleQuickMoodSelect = async (mood: MoodType) => {
@@ -80,6 +81,7 @@ export const CoupleMoodDisplay: React.FC<CoupleMoodDisplayProps> = ({
       }
 
       onMoodUpdate?.();
+      setShowMoodSelector(false);
       
       toast({
         title: "Mood Updated! 💕",
@@ -107,15 +109,26 @@ export const CoupleMoodDisplay: React.FC<CoupleMoodDisplayProps> = ({
         <div className="flex items-center justify-around">
           {/* User Mood */}
           <div className="flex-1 text-center">
-            {userMood ? (
-              <MoodBitmoji mood={userMood} size="lg" />
+            {userMood && !showMoodSelector ? (
+              <div className="relative group">
+                <MoodBitmoji mood={userMood} size="lg" />
+                <button
+                  onClick={() => setShowMoodSelector(true)}
+                  className="absolute -top-1 -right-1 w-6 h-6 bg-white rounded-full shadow-sm border flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  disabled={isSubmitting}
+                >
+                  <Edit3 size={12} className="text-muted-foreground" />
+                </button>
+              </div>
             ) : (
               <div className="space-y-3">
                 <div className="w-20 h-20 bg-muted/50 rounded-full flex items-center justify-center mx-auto border-2 border-dashed border-muted-foreground/30">
                   <Plus className="text-muted-foreground" size={24} />
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground mb-2">Quick Check-in</p>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    {userMood ? 'Update Mood' : 'Quick Check-in'}
+                  </p>
                   <div className="flex flex-wrap justify-center gap-1">
                     {quickMoods.slice(0, 3).map((mood) => (
                       <button
@@ -140,6 +153,14 @@ export const CoupleMoodDisplay: React.FC<CoupleMoodDisplayProps> = ({
                       </button>
                     ))}
                   </div>
+                  {userMood && (
+                    <button
+                      onClick={() => setShowMoodSelector(false)}
+                      className="text-xs text-muted-foreground underline mt-2"
+                    >
+                      Cancel
+                    </button>
+                  )}
                 </div>
               </div>
             )}
@@ -164,7 +185,7 @@ export const CoupleMoodDisplay: React.FC<CoupleMoodDisplayProps> = ({
           </div>
         </div>
         
-        {!userMood && !partnerMood && (
+        {!userMood && !partnerMood && !showMoodSelector && (
           <p className="text-center text-sm text-muted-foreground mt-4">
             Tap an emoji above to share your mood!
           </p>
