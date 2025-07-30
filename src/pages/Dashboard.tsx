@@ -461,7 +461,7 @@ export const Dashboard = () => {
             <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center mx-auto mb-3">
               <Calendar className="text-accent-foreground" size={24} />
             </div>
-            <h3 className="font-semibold text-foreground mb-1">This Week</h3>
+            <h3 className="font-semibold text-foreground mb-1">Upcoming dates</h3>
             <p className="text-xs text-muted-foreground">3 dates planned</p>
           </div>
 
