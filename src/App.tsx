@@ -25,10 +25,7 @@ const App = () => {
   const [showSplash, setShowSplash] = useState(true);
 
   if (showSplash) {
-    return <SplashScreen onComplete={() => {
-      setShowSplash(false);
-      window.location.href = '/motto';
-    }} />;
+    return <SplashScreen onComplete={() => setShowSplash(false)} />;
   }
 
   return (
@@ -48,7 +45,7 @@ const App = () => {
               <Route path="/profile" element={<Profile />} />
               <Route path="/couple-setup" element={<CoupleSetup />} />
               <Route path="/insights" element={<RelationshipInsights />} />
-              <Route path="/motto" element={<AppMottoPage onNext={() => window.location.href = '/auth'} onBack={() => window.location.href = '/'} />} />
+              <Route path="/motto" element={<AppMottoPage onNext={() => {}} onBack={() => {}} />} />
               <Route path="/onboarding" element={<OnboardingFlow />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />

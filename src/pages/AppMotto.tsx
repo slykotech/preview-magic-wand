@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Heart, Sparkles, Shield, Users, ArrowRight, Star } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface AppMottoProps {
   onNext: () => void;
@@ -9,6 +10,7 @@ interface AppMottoProps {
 }
 
 const AppMottoPage = ({ onNext, onBack }: AppMottoProps) => {
+  const navigate = useNavigate();
   const [currentSlide, setCurrentSlide] = useState(0);
 
   const slides = [
@@ -58,7 +60,7 @@ const AppMottoPage = ({ onNext, onBack }: AppMottoProps) => {
           <div className="flex justify-end">
             <Button 
               variant="ghost" 
-              onClick={onNext}
+              onClick={() => navigate('/auth')}
               className="text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300"
             >
               Skip
@@ -121,7 +123,7 @@ const AppMottoPage = ({ onNext, onBack }: AppMottoProps) => {
             <div className="space-y-3 mt-8">
               {isLastSlide ? (
                 <Button 
-                  onClick={onNext}
+                  onClick={() => navigate('/auth')}
                   className="w-full py-4 text-lg bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg"
                 >
                   Start Your Journey
