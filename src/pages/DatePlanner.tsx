@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from "date-fns";
 import { TimePicker } from "@/components/ui/time-picker";
 import { BottomNavigation } from "@/components/BottomNavigation";
-import { Calendar, MapPin, Clock, DollarSign, Heart, Star, CalendarPlus } from "lucide-react";
+import { CalendarIcon, MapPin, Clock, DollarSign, Heart, Star, CalendarPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
@@ -34,7 +36,7 @@ const categories = ['All', 'outdoor', 'indoor', 'adventure', 'relaxing', 'creati
 export const DatePlanner = () => {
   const [activeCategory, setActiveCategory] = useState('All');
   const [selectedIdea, setSelectedIdea] = useState<DateIdea | null>(null);
-  const [selectedDate, setSelectedDate] = useState('');
+  const [selectedDate, setSelectedDate] = useState<Date>();
   const [selectedTime, setSelectedTime] = useState('');
   const [dateIdeas, setDateIdeas] = useState<DateIdea[]>([]);
   const [loading, setLoading] = useState(true);
@@ -129,7 +131,7 @@ export const DatePlanner = () => {
 
   const handleSchedule = (idea: DateIdea) => {
     setSelectedIdea(idea);
-    setSelectedDate('');
+    setSelectedDate(undefined);
     setSelectedTime('');
     toast({
       title: "Great choice! 💕",
@@ -155,7 +157,7 @@ export const DatePlanner = () => {
         .or(`user1_id.eq.${user?.id},user2_id.eq.${user?.id}`)
         .single();
 
-      const scheduledDateTime = new Date(`${selectedDate}T${selectedTime}`);
+      const scheduledDateTime = selectedDate ? new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate()) : new Date();
 
       const { error } = await supabase
         .from('date_ideas')
@@ -278,7 +280,7 @@ export const DatePlanner = () => {
                   variant="romantic"
                   className="w-full"
                 >
-                  <Calendar className="mr-2" size={18} />
+                  <CalendarIcon className="mr-2" size={18} />
                   Schedule This Date
                 </Button>
               </div>
@@ -303,12 +305,26 @@ export const DatePlanner = () => {
               <div className="space-y-3">
                 <div>
                   <label className="text-sm font-bold text-foreground mb-2 block">Select Date</label>
-                  <Input
-                    type="date"
-                    value={selectedDate}
-                    onChange={(e) => setSelectedDate(e.target.value)}
-                    className="w-full"
-                  />
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start text-left font-normal"
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <CalendarComponent
+                        mode="single"
+                        selected={selectedDate}
+                        onSelect={setSelectedDate}
+                        initialFocus
+                        className="p-3 pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
                 <div>
                   <label className="text-sm font-bold text-foreground mb-2 block">Select Time</label>
@@ -320,22 +336,6 @@ export const DatePlanner = () => {
                   />
                 </div>
               </div>
-              
-              <Button 
-                variant="romantic" 
-                className="w-full"
-                onClick={confirmSchedule}
-              >
-                <CalendarPlus className="mr-2" />
-                Confirm Schedule
-              </Button>
-              <Button 
-                variant="ghost" 
-                className="w-full"
-                onClick={() => setSelectedIdea(null)}
-              >
-                Maybe Later
-              </Button>
             </div>
           </div>
         </div>
