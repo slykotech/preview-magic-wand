@@ -302,12 +302,17 @@ export const Dashboard = () => {
             </div>
             
             {partnerMood && (
-              <div className="animate-scale-in" style={{ animationDelay: '0.3s' }}>
-                <div className="text-center">
-                  <div className="text-6xl mb-2 animate-bounce" style={{ animationDelay: '0.5s' }}>
-                    {partnerMood}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="animate-scale-in" style={{ animationDelay: '0.3s' }}>
+                  <div className="text-center">
+                    <div className="text-8xl mb-4 animate-[bounce_1s_ease-in-out_infinite,fade-out_0.5s_ease-out_0.7s_forwards] transform-gpu" 
+                         style={{ animation: 'bounce 1s ease-in-out infinite, scale-in 0.3s ease-out 0.3s both, fade-out 0.5s ease-out 0.7s forwards' }}>
+                      {partnerMood}
+                    </div>
+                    <p className="text-white/90 text-lg font-medium animate-fade-in" style={{ animationDelay: '0.5s' }}>
+                      Partner's Mood
+                    </p>
                   </div>
-                  <p className="text-white/90 text-sm font-medium">Partner's Mood</p>
                 </div>
               </div>
             )}
