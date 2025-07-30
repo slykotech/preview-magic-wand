@@ -395,16 +395,6 @@ export const CoupleSetup = () => {
                               This is how you'll appear in the app
                             </p>
                           </div>
-                          {partnerProfile && (
-                            <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-md">
-                              <p className="text-sm text-yellow-800">
-                                <span className="font-medium">Partner's Name:</span> {partnerProfile.display_name || 'Not set'}
-                              </p>
-                              <p className="text-xs text-yellow-600 mt-1">
-                                Your partner's name is automatically fetched from their profile. They can update it from their own account.
-                              </p>
-                            </div>
-                          )}
                           <div className="flex gap-3">
                             <Button
                               onClick={updateNames}
@@ -421,6 +411,22 @@ export const CoupleSetup = () => {
                               )}
                             </Button>
                           </div>
+                       </div>
+                     </div>
+
+                     {/* Partner's Name - Read Only */}
+                     <div className="bg-purple-50 border border-purple-200 p-4 rounded-lg">
+                       <h4 className="font-semibold text-purple-800 mb-3 flex items-center gap-2">
+                         <Heart size={16} />
+                         Partner's Name (Read Only)
+                       </h4>
+                       <div className="bg-white border border-purple-300 p-3 rounded-md">
+                         <p className="text-sm text-purple-800">
+                           <span className="font-medium">Name:</span> {partnerProfile?.display_name || 'Not available'}
+                         </p>
+                         <p className="text-xs text-purple-600 mt-1">
+                           Your partner's name is automatically fetched from their profile. They can update it from their own account.
+                         </p>
                        </div>
                      </div>
 
