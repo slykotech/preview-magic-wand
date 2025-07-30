@@ -125,38 +125,38 @@ export const CoupleMoodDisplay: React.FC<CoupleMoodDisplayProps> = ({
                 <div className="w-20 h-20 bg-muted/50 rounded-full flex items-center justify-center mx-auto border-2 border-dashed border-muted-foreground/30">
                   <Plus className="text-muted-foreground" size={24} />
                 </div>
-                <div>
-                  <p className="text-xs text-muted-foreground mb-2">
+                <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 shadow-lg border border-white/20 animate-scale-in">
+                  <p className="text-xs text-muted-foreground mb-3 text-center font-medium">
                     {userMood ? 'Update Mood' : 'Quick Check-in'}
                   </p>
-                  <div className="flex flex-wrap justify-center gap-1">
+                  <div className="grid grid-cols-3 gap-2 mb-2">
                     {quickMoods.slice(0, 3).map((mood) => (
                       <button
                         key={mood.value}
-                        className="w-8 h-8 rounded-full bg-white/60 hover:bg-white/80 hover:scale-105 transition-all duration-200 flex items-center justify-center shadow-sm disabled:opacity-50"
+                        className="w-10 h-10 rounded-full bg-gradient-to-br from-white to-white/80 hover:from-primary/10 hover:to-primary/5 hover:scale-110 hover:animate-bounce transition-all duration-300 flex items-center justify-center shadow-md hover:shadow-lg disabled:opacity-50 border border-white/50"
                         onClick={() => handleQuickMoodSelect(mood.value)}
                         disabled={isSubmitting}
                       >
-                        <span className="text-sm">{mood.emoji}</span>
+                        <span className="text-lg">{mood.emoji}</span>
                       </button>
                     ))}
                   </div>
-                  <div className="flex flex-wrap justify-center gap-1 mt-1">
+                  <div className="grid grid-cols-3 gap-2">
                     {quickMoods.slice(3).map((mood) => (
                       <button
                         key={mood.value}
-                        className="w-8 h-8 rounded-full bg-white/60 hover:bg-white/80 hover:scale-105 transition-all duration-200 flex items-center justify-center shadow-sm disabled:opacity-50"
+                        className="w-10 h-10 rounded-full bg-gradient-to-br from-white to-white/80 hover:from-primary/10 hover:to-primary/5 hover:scale-110 hover:animate-bounce transition-all duration-300 flex items-center justify-center shadow-md hover:shadow-lg disabled:opacity-50 border border-white/50"
                         onClick={() => handleQuickMoodSelect(mood.value)}
                         disabled={isSubmitting}
                       >
-                        <span className="text-sm">{mood.emoji}</span>
+                        <span className="text-lg">{mood.emoji}</span>
                       </button>
                     ))}
                   </div>
                   {userMood && (
                     <button
                       onClick={() => setShowMoodSelector(false)}
-                      className="text-xs text-muted-foreground underline mt-2"
+                      className="text-xs text-muted-foreground hover:text-foreground underline mt-3 block mx-auto transition-colors"
                     >
                       Cancel
                     </button>
