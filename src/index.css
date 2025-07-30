@@ -111,3 +111,45 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  /* Sync Score Splash Animation */
+  @keyframes zoom-to-position {
+    0% {
+      transform: scale(2) translate(0, 0);
+    }
+    100% {
+      transform: scale(1) translate(0, -180px);
+    }
+  }
+  
+  /* Floating emoji animations */
+  @keyframes float-1 {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-20px) rotate(5deg); }
+  }
+  
+  @keyframes float-2 {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-15px) rotate(-3deg); }
+  }
+  
+  @keyframes float-3 {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-25px) rotate(7deg); }
+  }
+  
+  @keyframes float-4 {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-18px) rotate(-5deg); }
+  }
+  
+  @keyframes float-5 {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-22px) rotate(4deg); }
+  }
+  
+  .animate-zoom-to-position {
+    animation: zoom-to-position 0.8s ease-out forwards;
+  }
+}
