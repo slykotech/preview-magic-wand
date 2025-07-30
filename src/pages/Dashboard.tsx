@@ -453,16 +453,16 @@ export const Dashboard = () => {
             <p className="text-xs text-muted-foreground">Keep the streak!</p>
           </div>
 
-          {/* Mood Check */}
+          {/* Weekly Planning */}
           <div 
             className="bg-card border rounded-xl p-4 text-center cursor-pointer hover:shadow-sm transition-all shadow-sm"
-            onClick={handleMoodCheckinClick}
+            onClick={() => navigate('/planner')}
           >
             <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center mx-auto mb-3">
-              <Heart className="text-accent-foreground" size={24} />
+              <Calendar className="text-accent-foreground" size={24} />
             </div>
-            <h3 className="font-semibold text-foreground mb-1">Mood Check</h3>
-            <p className="text-xs text-muted-foreground">How are you feeling?</p>
+            <h3 className="font-semibold text-foreground mb-1">This Week</h3>
+            <p className="text-xs text-muted-foreground">3 dates planned</p>
           </div>
 
           {/* Plan Date */}
