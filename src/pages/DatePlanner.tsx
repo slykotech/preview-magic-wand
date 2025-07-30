@@ -315,7 +315,8 @@ export const DatePlanner = () => {
                   <TimePicker
                     value={selectedTime}
                     onChange={setSelectedTime}
-                    className="w-full"
+                    onConfirm={confirmSchedule}
+                    onCancel={() => setSelectedIdea(null)}
                   />
                 </div>
               </div>
