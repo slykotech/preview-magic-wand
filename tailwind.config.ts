@@ -52,18 +52,22 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
-				'twilight-blue': 'hsl(var(--twilight-blue))',
-				'sunrise-coral': 'hsl(var(--sunrise-coral))',
-				'soft-cloud': 'hsl(var(--soft-cloud))',
-				'gold-accent': 'hsl(var(--gold-accent))'
+				'purple-deep': 'hsl(var(--purple-deep))',
+				'purple-medium': 'hsl(var(--purple-medium))',
+				'pink-vibrant': 'hsl(var(--pink-vibrant))',
+				'pink-soft': 'hsl(var(--pink-soft))'
 			},
 			backgroundImage: {
+				'gradient-primary': 'var(--gradient-primary)',
+				'gradient-secondary': 'var(--gradient-secondary)',
 				'gradient-romance': 'var(--gradient-romance)',
 				'gradient-glow': 'var(--gradient-glow)'
 			},
 			boxShadow: {
+				'primary': 'var(--shadow-primary)',
 				'romantic': 'var(--shadow-romantic)',
-				'soft': 'var(--shadow-soft)'
+				'soft': 'var(--shadow-soft)',
+				'glow': 'var(--shadow-glow)'
 			},
 			transitionTimingFunction: {
 				'love': 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
@@ -104,22 +108,14 @@ export default {
 						opacity: '0.8'
 					}
 				},
-				'float-love': {
+				'bounce-subtle': {
 					'0%, 100%': {
-						transform: 'translateY(0px)'
+						transform: 'translateY(0)',
+						animationTimingFunction: 'cubic-bezier(0.8, 0, 1, 1)'
 					},
 					'50%': {
-						transform: 'translateY(-10px)'
-					}
-				},
-				'slide-up': {
-					'0%': {
-						transform: 'translateY(100%)',
-						opacity: '0'
-					},
-					'100%': {
-						transform: 'translateY(0)',
-						opacity: '1'
+						transform: 'translateY(-10px)',
+						animationTimingFunction: 'cubic-bezier(0, 0, 0.2, 1)'
 					}
 				},
 				'fade-in': {
@@ -137,8 +133,7 @@ export default {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out',
 				'heart-pulse': 'heart-pulse 2s ease-in-out infinite',
-				'float-love': 'float-love 3s ease-in-out infinite',
-				'slide-up': 'slide-up 0.4s ease-out',
+				'bounce-subtle': 'bounce-subtle 2s ease-in-out infinite',
 				'fade-in': 'fade-in 0.6s ease-out'
 			}
 		}
