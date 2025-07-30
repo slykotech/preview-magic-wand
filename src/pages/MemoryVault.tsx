@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { BottomNavigation } from "@/components/BottomNavigation";
-import { Plus, Heart, Camera, X, Star, Upload, Image as ImageIcon } from "lucide-react";
+import { Plus, Heart, Camera, X, Star, Upload, Image as ImageIcon, Grid3X3, List, Edit, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
@@ -54,6 +54,9 @@ export const MemoryVault = () => {
   const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [viewMode, setViewMode] = useState<'grid' | 'timeline'>('grid');
+  const [filterType, setFilterType] = useState<'all' | 'photos' | 'notes' | 'favorites'>('all');
+  const [fabOpen, setFabOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
@@ -69,6 +72,17 @@ export const MemoryVault = () => {
       fetchCoupleAndMemories();
     }
   }, [user, authLoading, navigate]);
+
+  useEffect(() => {
+    const handleClickOutside = () => {
+      if (fabOpen) {
+        setFabOpen(false);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [fabOpen]);
 
   const fetchCoupleAndMemories = async () => {
     try {
@@ -206,10 +220,11 @@ export const MemoryVault = () => {
       setNewMemory({ title: "", description: "", memory_date: "", image_url: "" });
       setUploadedFiles([]);
       setShowCreateForm(false);
+      setFabOpen(false);
 
       toast({
         title: "Memory Created! 💕",
-        description: `Your special moment with ${uploadedFiles.length} ${uploadedFiles.length === 1 ? 'image' : 'images'} has been saved`,
+        description: `Your special moment has been saved`,
       });
     } catch (error) {
       console.error('Error creating memory:', error);
@@ -262,101 +277,12 @@ export const MemoryVault = () => {
     fileInputRef.current?.click();
   };
 
-  const startEdit = (memory: Memory) => {
-    setEditingMemory(memory);
-    setNewMemory({
-      title: memory.title,
-      description: memory.description || "",
-      memory_date: memory.memory_date || "",
-      image_url: memory.image_url || ""
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
     });
-    setUploadedFiles([]);
-    setShowEditForm(true);
-    setSelectedMemory(null);
-  };
-
-  const updateMemory = async () => {
-    if (!editingMemory || !newMemory.title.trim()) {
-      toast({
-        title: "Missing information",
-        description: "Please enter at least a title for your memory",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    try {
-      // Update the memory
-      const { error: memoryError } = await supabase
-        .from('memories')
-        .update({
-          title: newMemory.title,
-          description: newMemory.description || null,
-          memory_date: newMemory.memory_date || null,
-        })
-        .eq('id', editingMemory.id);
-
-      if (memoryError) throw memoryError;
-
-      // Upload new images if files are selected
-      if (uploadedFiles.length > 0) {
-        const uploadResults = await uploadImages(uploadedFiles);
-        
-        // Get current max upload order
-        const { data: existingImages } = await supabase
-          .from('memory_images')
-          .select('upload_order')
-          .eq('memory_id', editingMemory.id)
-          .order('upload_order', { ascending: false })
-          .limit(1);
-
-        const maxOrder = existingImages && existingImages.length > 0 ? existingImages[0].upload_order : -1;
-
-        // Insert new memory images
-        const memoryImages = uploadResults.map((result, index) => ({
-          memory_id: editingMemory.id,
-          image_url: result.url,
-          file_name: result.fileName,
-          upload_order: maxOrder + 1 + index
-        }));
-
-        const { error: imagesError } = await supabase
-          .from('memory_images')
-          .insert(memoryImages);
-
-        if (imagesError) throw imagesError;
-      }
-
-      // Fetch updated memory with images
-      const { data: updatedMemory } = await supabase
-        .from('memories')
-        .select(`
-          *,
-          images:memory_images(*)
-        `)
-        .eq('id', editingMemory.id)
-        .single();
-
-      // Update memories list
-      setMemories(prev => prev.map(m => m.id === editingMemory.id ? updatedMemory : m));
-      
-      setNewMemory({ title: "", description: "", memory_date: "", image_url: "" });
-      setUploadedFiles([]);
-      setEditingMemory(null);
-      setShowEditForm(false);
-
-      toast({
-        title: "Memory Updated! 💕",
-        description: "Your changes have been saved",
-      });
-    } catch (error) {
-      console.error('Error updating memory:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update memory",
-        variant: "destructive"
-      });
-    }
   };
 
   const deleteMemory = async () => {
@@ -408,61 +334,17 @@ export const MemoryVault = () => {
     }
   };
 
-  const removeImageFromMemory = async (imageId: string, imageUrl: string) => {
-    try {
-      // Delete from storage
-      const url = new URL(imageUrl);
-      const filePath = url.pathname.split('/').pop();
-      if (filePath) {
-        await supabase.storage
-          .from('memory-images')
-          .remove([filePath]);
-      }
-
-      // Delete from database
-      await supabase
-        .from('memory_images')
-        .delete()
-        .eq('id', imageId);
-
-      // Update selected memory if it's open
-      if (selectedMemory) {
-        const updatedImages = selectedMemory.images?.filter(img => img.id !== imageId) || [];
-        setSelectedMemory({
-          ...selectedMemory,
-          images: updatedImages
-        });
-      }
-
-      // Update memories list
-      setMemories(prev => prev.map(memory => {
-        if (memory.id === selectedMemory?.id) {
-          return {
-            ...memory,
-            images: memory.images?.filter(img => img.id !== imageId) || []
-          };
-        }
-        return memory;
-      }));
-
-      toast({
-        title: "Image Removed",
-        description: "The image has been deleted",
-      });
-    } catch (error) {
-      console.error('Error removing image:', error);
-      toast({
-        title: "Error",
-        description: "Failed to remove image",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const filteredMemories = memories.filter(memory =>
-    memory.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (memory.description && memory.description.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredMemories = memories.filter(memory => {
+    const matchesSearch = memory.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (memory.description && memory.description.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    if (filterType === 'all') return matchesSearch;
+    if (filterType === 'photos') return matchesSearch && memory.images && memory.images.length > 0;
+    if (filterType === 'notes') return matchesSearch && (!memory.images || memory.images.length === 0);
+    if (filterType === 'favorites') return matchesSearch; // TODO: Add favorites functionality
+    
+    return matchesSearch;
+  });
 
   if (loading) {
     return (
@@ -473,180 +355,274 @@ export const MemoryVault = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-background pb-20 relative overflow-hidden">
       {/* Header */}
-      <div className="bg-gradient-romance text-white p-6 shadow-romantic">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center animate-pulse">
-              <Heart size={24} />
-            </div>
-            <div>
-              <h1 className="text-xl font-extrabold font-poppins">Memory Vault</h1>
-              <p className="text-white/80 text-sm font-inter font-bold">Your love story collection</p>
-            </div>
+      <header className="bg-card p-6 pt-10 shadow-lg z-10 relative">
+        <h1 className="text-3xl font-bold text-foreground mb-1">Memory Vault</h1>
+        <p className="text-muted-foreground mb-4">Your love story collection</p>
+        
+        <div className="flex justify-between items-center">
+          {/* Filter Pills */}
+          <div className="flex space-x-2 overflow-x-auto pb-2">
+            {[
+              { id: 'all', label: 'All' },
+              { id: 'photos', label: 'Photos' },
+              { id: 'notes', label: 'Notes' },
+              { id: 'favorites', label: 'Favorites' }
+            ].map((filter) => (
+              <button
+                key={filter.id}
+                onClick={() => setFilterType(filter.id as any)}
+                className={`px-4 py-1.5 rounded-full whitespace-nowrap font-semibold text-sm transition-all ${
+                  filterType === filter.id
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                }`}
+              >
+                {filter.label}
+              </button>
+            ))}
           </div>
-          <Button
-            onClick={() => setShowCreateForm(true)}
-            className="bg-white/20 hover:bg-white/30 border-white/30"
-            variant="outline"
-            size="sm"
-          >
-            <Plus size={16} className="mr-1" />
-            Add
-          </Button>
-        </div>
-      </div>
 
-      <div className="p-6 space-y-6">
-        {/* Search */}
-        <div className="relative">
-          <Input
-            placeholder="Search your memories..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-4 pr-4 py-3 rounded-xl border-muted font-inter"
-          />
-        </div>
-
-        {/* Memory Stats */}
-        <div className="grid grid-cols-3 gap-4">
-          <div className="bg-card rounded-xl p-4 text-center shadow-soft">
-            <p className="text-2xl font-extrabold font-poppins text-primary">{memories.length}</p>
-            <p className="text-xs text-muted-foreground font-inter font-bold">Total Memories</p>
-          </div>
-          <div className="bg-card rounded-xl p-4 text-center shadow-soft">
-            <p className="text-2xl font-extrabold font-poppins text-secondary">
-              {memories.reduce((total, memory) => total + (memory.images?.length || (memory.image_url ? 1 : 0)), 0)}
-            </p>
-            <p className="text-xs text-muted-foreground font-inter font-bold">Photos</p>
-          </div>
-          <div className="bg-card rounded-xl p-4 text-center shadow-soft">
-            <p className="text-2xl font-extrabold font-poppins text-accent">
-              {new Date().getFullYear() - 2023}
-            </p>
-            <p className="text-xs text-muted-foreground font-inter font-bold">Years Together</p>
+          {/* View Toggle */}
+          <div className="flex border border-border rounded-full p-1">
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`p-1.5 rounded-full transition-colors ${
+                viewMode === 'grid' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'
+              }`}
+            >
+              <Grid3X3 size={20} />
+            </button>
+            <button
+              onClick={() => setViewMode('timeline')}
+              className={`p-1.5 rounded-full transition-colors ${
+                viewMode === 'timeline' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'
+              }`}
+            >
+              <List size={20} />
+            </button>
           </div>
         </div>
+      </header>
 
-        {/* Memories Grid */}
-        {filteredMemories.length === 0 ? (
-          <div className="text-center py-12">
-            <Heart className="mx-auto text-muted-foreground mb-4" size={48} />
-            <h3 className="text-lg font-bold text-foreground mb-2">No memories yet</h3>
-            <p className="text-muted-foreground mb-4">Start creating your love story!</p>
-            <Button onClick={() => setShowCreateForm(true)}>
-              <Plus size={16} className="mr-2" />
-              Add Your First Memory
-            </Button>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {filteredMemories.map((memory, index) => (
+      {/* Main Content */}
+      <main className="flex-grow p-6 relative">
+        {/* Grid View */}
+        {viewMode === 'grid' && (
+          <div className="grid grid-cols-2 gap-4">
+            {filteredMemories.map((memory) => (
               <div
                 key={memory.id}
-                className="bg-card rounded-xl p-4 shadow-soft hover:shadow-romantic transition-all duration-200 cursor-pointer animate-fade-in"
-                style={{ animationDelay: `${index * 100}ms` }}
+                className="break-inside-avoid mb-4 transition-transform hover:scale-105 cursor-pointer"
                 onClick={() => setSelectedMemory(memory)}
               >
-                <div className="flex items-start gap-4 mb-3">
-                  {/* Images or Icon */}
-                  <div className="flex-shrink-0">
-                    {(memory.images && memory.images.length > 0) || memory.image_url ? (
-                      <div className="relative">
-                        {memory.images && memory.images.length > 0 ? (
-                          <div className="w-16 h-16 rounded-lg overflow-hidden">
-                            <img 
-                              src={memory.images[0].image_url} 
-                              alt={memory.title}
-                              className="w-full h-full object-cover"
-                            />
-                            {memory.images.length > 1 && (
-                              <div className="absolute -top-1 -right-1 bg-primary text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                                {memory.images.length}
-                              </div>
-                            )}
-                          </div>
-                        ) : (
-                          <div className="w-16 h-16 rounded-lg overflow-hidden">
-                            <img 
-                              src={memory.image_url} 
-                              alt={memory.title}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="w-16 h-16 bg-sunrise-coral/20 text-sunrise-coral rounded-lg flex items-center justify-center">
-                        <Camera size={24} />
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Content */}
-                  <div className="flex-1">
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <h3 className="font-poppins font-bold text-foreground">{memory.title}</h3>
-                        <p className="text-sm text-muted-foreground font-inter font-semibold">
-                          {memory.memory_date ? new Date(memory.memory_date).toLocaleDateString('en-US', { 
-                            year: 'numeric', 
-                            month: 'long', 
-                            day: 'numeric' 
-                          }) : new Date(memory.created_at).toLocaleDateString('en-US', { 
-                            year: 'numeric', 
-                            month: 'long', 
-                            day: 'numeric' 
-                          })}
-                        </p>
-                      </div>
-                      <Star className="text-gold-accent animate-pulse" size={20} fill="currentColor" />
-                    </div>
-
-                    <p className="text-muted-foreground font-inter text-sm leading-relaxed mb-3 line-clamp-2 font-medium">
-                      {memory.description || 'A special memory'}
+                {memory.images && memory.images.length > 0 ? (
+                  <img
+                    src={memory.images[0].image_url}
+                    alt={memory.title}
+                    className="rounded-2xl w-full object-cover"
+                    style={{ aspectRatio: `${Math.random() * 0.5 + 1}` }}
+                  />
+                ) : (
+                  <div className="bg-card p-4 rounded-2xl relative shadow-soft">
+                    <button className="absolute top-3 right-3 text-muted-foreground hover:text-accent transition-colors">
+                      <Star size={20} />
+                    </button>
+                    <p className="text-foreground pr-6 font-medium">{memory.title}</p>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      {memory.memory_date ? formatDate(memory.memory_date) : formatDate(memory.created_at)}
                     </p>
-
-                    <div className="flex flex-wrap gap-2">
-                      <span className="px-2 py-1 bg-muted rounded-full text-xs text-muted-foreground">
-                        #memory
-                      </span>
-                    </div>
                   </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Timeline View */}
+        {viewMode === 'timeline' && (
+          <div className="relative">
+            <div className="absolute left-4 top-0 bottom-0 w-1 bg-border rounded-full"></div>
+            {filteredMemories.map((memory, index) => (
+              <div key={memory.id} className="relative pl-12 mb-8">
+                <div className="absolute left-2 top-1 h-5 w-5 border-4 border-background bg-primary rounded-full"></div>
+                <p className="text-sm text-muted-foreground mb-1">
+                  {memory.memory_date ? formatDate(memory.memory_date) : formatDate(memory.created_at)}
+                </p>
+                <div
+                  className="bg-card p-4 rounded-xl shadow-soft cursor-pointer hover:shadow-lg transition-all"
+                  onClick={() => setSelectedMemory(memory)}
+                >
+                  <p className="font-medium text-foreground">{memory.title}</p>
+                  {memory.description && (
+                    <p className="text-muted-foreground mt-1 text-sm">{memory.description}</p>
+                  )}
                 </div>
               </div>
             ))}
           </div>
         )}
-      </div>
 
-      {/* Create Memory Dialog */}
-      <Dialog open={showCreateForm} onOpenChange={setShowCreateForm}>
-        <DialogContent className="sm:max-w-md">
+        {filteredMemories.length === 0 && (
+          <div className="text-center py-12">
+            <Heart size={48} className="mx-auto text-muted-foreground mb-4" />
+            <p className="text-muted-foreground">No memories found. Start creating your love story!</p>
+          </div>
+        )}
+
+        {/* Floating Action Button */}
+        <div className="fixed bottom-24 right-6 z-20" onClick={(e) => e.stopPropagation()}>
+          {/* FAB Menu Items */}
+          <div className={`flex flex-col items-center space-y-3 mb-3 transition-all duration-300 ${
+            fabOpen ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform translate-y-5 pointer-events-none'
+          }`}>
+            <button
+              onClick={() => {
+                setShowCreateForm(true);
+                setFabOpen(false);
+              }}
+              className="bg-card w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-110 active:scale-100"
+              title="Add Journal Entry"
+            >
+              <Edit size={24} className="text-foreground" />
+            </button>
+            <button
+              onClick={() => {
+                setShowCreateForm(true);
+                setFabOpen(false);
+                // Auto focus on file input when opened for photos
+                setTimeout(() => triggerFileInput(), 100);
+              }}
+              className="bg-card w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-110 active:scale-100"
+              title="Add Photo"
+            >
+              <Camera size={24} className="text-foreground" />
+            </button>
+          </div>
+          
+          {/* Main FAB */}
+          <button
+            onClick={() => setFabOpen(!fabOpen)}
+            className={`bg-primary w-16 h-16 rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-105 active:scale-100 ${
+              fabOpen ? 'rotate-45' : ''
+            }`}
+          >
+            <Plus size={32} className="text-primary-foreground" />
+          </button>
+        </div>
+      </main>
+
+      {/* Memory Detail Modal */}
+      <Dialog open={!!selectedMemory} onOpenChange={() => setSelectedMemory(null)}>
+        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+          {selectedMemory && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-xl font-bold">{selectedMemory.title}</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                {selectedMemory.images && selectedMemory.images.length > 0 && (
+                  <div className="space-y-2">
+                    {selectedMemory.images.map((image) => (
+                      <div key={image.id} className="relative">
+                        <img
+                          src={image.image_url}
+                          alt={selectedMemory.title}
+                          className="w-full rounded-lg object-cover"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {selectedMemory.description && (
+                  <p className="text-muted-foreground">{selectedMemory.description}</p>
+                )}
+                <p className="text-sm text-muted-foreground">
+                  {selectedMemory.memory_date 
+                    ? formatDate(selectedMemory.memory_date) 
+                    : formatDate(selectedMemory.created_at)
+                  }
+                </p>
+                <div className="flex gap-2 pt-4">
+                  <Button
+                    onClick={() => {
+                      setEditingMemory(selectedMemory);
+                      setNewMemory({
+                        title: selectedMemory.title,
+                        description: selectedMemory.description || "",
+                        memory_date: selectedMemory.memory_date || "",
+                        image_url: selectedMemory.image_url || ""
+                      });
+                      setShowEditForm(true);
+                      setSelectedMemory(null);
+                    }}
+                    variant="outline"
+                    size="sm"
+                  >
+                    <Edit size={16} className="mr-1" />
+                    Edit
+                  </Button>
+                  <Button
+                    onClick={() => setShowDeleteConfirm(true)}
+                    variant="destructive"
+                    size="sm"
+                  >
+                    <Trash2 size={16} className="mr-1" />
+                    Delete
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Modal */}
+      <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Heart size={20} />
-              Create New Memory
-            </DialogTitle>
+            <DialogTitle>Delete Memory</DialogTitle>
+          </DialogHeader>
+          <p>Are you sure you want to delete this memory? This action cannot be undone.</p>
+          <div className="flex gap-2 mt-4">
+            <Button
+              onClick={deleteMemory}
+              variant="destructive"
+              disabled={deleting}
+            >
+              {deleting ? "Deleting..." : "Delete"}
+            </Button>
+            <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>
+              Cancel
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Memory Form */}
+      <Dialog open={showCreateForm} onOpenChange={setShowCreateForm}>
+        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Create New Memory</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="title">Title *</Label>
+              <Label htmlFor="title">Title</Label>
               <Input
                 id="title"
-                placeholder="Our special moment..."
                 value={newMemory.title}
                 onChange={(e) => setNewMemory({ ...newMemory, title: e.target.value })}
+                placeholder="What's this memory about?"
               />
             </div>
             <div>
               <Label htmlFor="description">Description</Label>
               <Textarea
                 id="description"
-                placeholder="Tell the story of this memory..."
                 value={newMemory.description}
                 onChange={(e) => setNewMemory({ ...newMemory, description: e.target.value })}
+                placeholder="Tell the story..."
                 rows={3}
               />
             </div>
@@ -659,385 +635,70 @@ export const MemoryVault = () => {
                 onChange={(e) => setNewMemory({ ...newMemory, memory_date: e.target.value })}
               />
             </div>
-            <div>
-              <Label>Photos</Label>
-              <div 
-                className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer ${
-                  dragActive ? 'border-primary bg-primary/10' : 'border-muted hover:border-primary'
-                }`}
-                onDragEnter={handleDrag}
-                onDragLeave={handleDrag}
-                onDragOver={handleDrag}
-                onDrop={handleDrop}
-                onClick={triggerFileInput}
-              >
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={(e) => e.target.files && handleFilesSelect(Array.from(e.target.files))}
-                  className="hidden"
-                />
-                {uploadedFiles.length > 0 ? (
-                  <div className="space-y-3">
-                    <ImageIcon className="mx-auto text-green-600" size={24} />
-                    <p className="text-sm font-medium text-green-600">{uploadedFiles.length} files selected</p>
-                    <div className="grid grid-cols-3 gap-2 max-h-32 overflow-y-auto">
-                      {uploadedFiles.map((file, index) => (
-                        <div key={index} className="relative bg-muted rounded p-2">
-                          <p className="text-xs truncate">{file.name}</p>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="absolute -top-1 -right-1 h-5 w-5 p-0 bg-destructive text-white hover:bg-destructive/80"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              removeFile(index);
-                            }}
-                          >
-                            <X size={12} />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setUploadedFiles([]);
-                      }}
-                    >
-                      Clear All
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <Upload className="mx-auto text-muted-foreground" size={24} />
-                    <p className="text-sm text-muted-foreground">
-                      Drag & drop multiple images here, or click to browse
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      JPG, PNG, GIF up to 10MB each
-                    </p>
-                  </div>
-                )}
-              </div>
+            
+            {/* File Upload Area */}
+            <div
+              className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                dragActive ? 'border-primary bg-primary/5' : 'border-border'
+              }`}
+              onDragEnter={handleDrag}
+              onDragLeave={handleDrag}
+              onDragOver={handleDrag}
+              onDrop={handleDrop}
+            >
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={(e) => handleFilesSelect(Array.from(e.target.files || []))}
+                className="hidden"
+              />
               
-              {/* Alternative: URL input - REMOVED */}
-            </div>
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                onClick={() => setShowCreateForm(false)}
-                className="flex-1"
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={createMemory}
-                className="flex-1"
-                disabled={!newMemory.title.trim() || uploading}
-              >
-                {uploading ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Uploading {uploadedFiles.length} files...
-                  </>
-                ) : (
-                  'Create Memory'
-                )}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Memory Detail Dialog */}
-      {selectedMemory && (
-        <Dialog open={!!selectedMemory} onOpenChange={() => setSelectedMemory(null)}>
-          <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-full bg-sunrise-coral/20 text-sunrise-coral`}>
-                    <Camera size={20} />
-                  </div>
-                  <div>
-                    <DialogTitle className="text-left">{selectedMemory.title}</DialogTitle>
-                    <p className="text-sm text-muted-foreground">
-                      {selectedMemory.memory_date ? new Date(selectedMemory.memory_date).toLocaleDateString('en-US', { 
-                        year: 'numeric', 
-                        month: 'long', 
-                        day: 'numeric' 
-                      }) : new Date(selectedMemory.created_at).toLocaleDateString('en-US', { 
-                        year: 'numeric', 
-                        month: 'long', 
-                        day: 'numeric' 
-                      })}
-                    </p>
-                  </div>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSelectedMemory(null)}
-                >
-                  <X size={16} />
-                </Button>
-              </div>
-            </DialogHeader>
-            <div className="space-y-4">
-              {/* Display multiple images */}
-              {((selectedMemory.images && selectedMemory.images.length > 0) || selectedMemory.image_url) && (
-                <div className="space-y-3">
-                  {selectedMemory.images && selectedMemory.images.length > 0 ? (
-                    <div className="grid grid-cols-1 gap-3">
-                      {selectedMemory.images
-                        .sort((a, b) => a.upload_order - b.upload_order)
-                        .map((image, index) => (
-                          <div key={image.id} className="relative group">
-                            <div className="w-full h-64 bg-gradient-romance rounded-xl overflow-hidden">
-                              <img 
-                                src={image.image_url} 
-                                alt={`${selectedMemory.title} - Image ${index + 1}`}
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                              onClick={() => removeImageFromMemory(image.id, image.image_url)}
-                            >
-                              <X size={16} />
-                            </Button>
-                          </div>
-                        ))}
-                    </div>
-                  ) : selectedMemory.image_url && (
-                    <div className="w-full h-64 bg-gradient-romance rounded-xl overflow-hidden">
-                      <img 
-                        src={selectedMemory.image_url} 
-                        alt={selectedMemory.title}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  )}
-                </div>
-              )}
-              
-              <p className="text-foreground font-inter leading-relaxed mb-6 font-medium">
-                {selectedMemory.description || 'A special memory to cherish together.'}
+              <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+              <p className="text-sm text-muted-foreground mb-2">
+                Drag & drop images here, or click to select
               </p>
-              
-              <div className="flex flex-wrap gap-2 mb-6">
-                <span className="px-3 py-1 bg-muted rounded-full text-sm text-muted-foreground">
-                  #memory
-                </span>
-              </div>
-              
-              <div className="flex gap-3">
-                <Button 
-                  variant="outline" 
-                  className="flex-1"
-                  onClick={() => startEdit(selectedMemory)}
-                >
-                  <Camera className="mr-2" size={16} />
-                  Edit Memory
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="flex-1"
-                  onClick={() => setShowDeleteConfirm(true)}
-                >
-                  <X className="mr-2" size={16} />
-                  Delete
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-        )}
-
-      {/* Edit Memory Dialog */}
-      <Dialog open={showEditForm} onOpenChange={setShowEditForm}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Heart size={20} />
-              Edit Memory
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="edit-title">Title *</Label>
-              <Input
-                id="edit-title"
-                placeholder="Our special moment..."
-                value={newMemory.title}
-                onChange={(e) => setNewMemory({ ...newMemory, title: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-description">Description</Label>
-              <Textarea
-                id="edit-description"
-                placeholder="Tell the story of this memory..."
-                value={newMemory.description}
-                onChange={(e) => setNewMemory({ ...newMemory, description: e.target.value })}
-                rows={3}
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-memory_date">Date</Label>
-              <Input
-                id="edit-memory_date"
-                type="date"
-                value={newMemory.memory_date}
-                onChange={(e) => setNewMemory({ ...newMemory, memory_date: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label>Add More Photos</Label>
-              <div 
-                className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer ${
-                  dragActive ? 'border-primary bg-primary/10' : 'border-muted hover:border-primary'
-                }`}
-                onDragEnter={handleDrag}
-                onDragLeave={handleDrag}
-                onDragOver={handleDrag}
-                onDrop={handleDrop}
+              <Button 
+                type="button" 
+                variant="outline" 
+                size="sm"
                 onClick={triggerFileInput}
               >
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={(e) => e.target.files && handleFilesSelect(Array.from(e.target.files))}
-                  className="hidden"
-                />
-                {uploadedFiles.length > 0 ? (
-                  <div className="space-y-3">
-                    <ImageIcon className="mx-auto text-green-600" size={24} />
-                    <p className="text-sm font-medium text-green-600">{uploadedFiles.length} new files selected</p>
-                    <div className="grid grid-cols-3 gap-2 max-h-32 overflow-y-auto">
-                      {uploadedFiles.map((file, index) => (
-                        <div key={index} className="relative bg-muted rounded p-2">
-                          <p className="text-xs truncate">{file.name}</p>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="absolute -top-1 -right-1 h-5 w-5 p-0 bg-destructive text-white hover:bg-destructive/80"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              removeFile(index);
-                            }}
-                          >
-                            <X size={12} />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setUploadedFiles([]);
-                      }}
-                    >
-                      Clear All
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <Upload className="mx-auto text-muted-foreground" size={24} />
-                    <p className="text-sm text-muted-foreground">
-                      Add more images to this memory
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      JPG, PNG, GIF up to 10MB each
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowEditForm(false);
-                  setUploadedFiles([]);
-                  setEditingMemory(null);
-                }}
-                className="flex-1"
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={updateMemory}
-                className="flex-1"
-                disabled={!newMemory.title.trim() || uploading}
-              >
-                {uploading ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Updating...
-                  </>
-                ) : (
-                  'Update Memory'
-                )}
+                Choose Files
               </Button>
             </div>
-          </div>
-        </DialogContent>
-      </Dialog>
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-destructive">
-              <X size={20} />
-              Delete Memory
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <p className="text-foreground">
-              Are you sure you want to delete "<strong>{selectedMemory?.title}</strong>"? 
-            </p>
-            <p className="text-sm text-muted-foreground">
-              This action cannot be undone. All images associated with this memory will also be permanently deleted.
-            </p>
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                onClick={() => setShowDeleteConfirm(false)}
-                className="flex-1"
-              >
-                Cancel
+            {/* Uploaded Files Preview */}
+            {uploadedFiles.length > 0 && (
+              <div className="space-y-2">
+                <Label>Selected Images ({uploadedFiles.length})</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {uploadedFiles.map((file, index) => (
+                    <div key={index} className="relative">
+                      <img
+                        src={URL.createObjectURL(file)}
+                        alt={`Upload ${index + 1}`}
+                        className="w-full h-20 object-cover rounded-lg"
+                      />
+                      <button
+                        onClick={() => removeFile(index)}
+                        className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1"
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="flex gap-2">
+              <Button onClick={createMemory} disabled={uploading} className="flex-1">
+                {uploading ? "Creating..." : "Create Memory"}
               </Button>
-              <Button
-                variant="destructive"
-                onClick={deleteMemory}
-                className="flex-1"
-                disabled={deleting}
-              >
-                {deleting ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Deleting...
-                  </>
-                ) : (
-                  'Delete Forever'
-                )}
+              <Button variant="outline" onClick={() => setShowCreateForm(false)}>
+                Cancel
               </Button>
             </div>
           </div>
