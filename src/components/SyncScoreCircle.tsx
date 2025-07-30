@@ -47,8 +47,8 @@ export const SyncScoreCircle = ({ score, animated = true }: SyncScoreCircleProps
         />
         {/* Progress circle */}
         <circle
-          cx="72"
-          cy="72"
+          cx="65"
+          cy="65"
           r={radius}
           stroke="currentColor"
           strokeWidth="8"
