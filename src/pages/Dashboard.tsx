@@ -325,16 +325,19 @@ export const Dashboard = () => {
         </div>
       )}
       
-      <div className="container mx-auto px-6 py-8 space-y-6">
-        {/* Header */}
+      {/* Header with gradient background */}
+      <div className="bg-gradient-primary py-12 px-6 -mx-6 -mt-8 mb-8">
         <div className={`text-center space-y-2 ${isLoaded && !showSplash ? 'animate-fade-in' : 'opacity-0'}`}>
-          <h1 className="text-2xl font-bold text-foreground">
-            Good morning, lovebirds! 💕
+          <h1 className="text-3xl font-bold text-white">
+            LoveSync Dashboard
           </h1>
-          <p className="text-sm text-muted-foreground">
-            Here's how your relationship is syncing today
+          <p className="text-lg text-white/90">
+            Track your relationship harmony and connection
           </p>
         </div>
+      </div>
+      
+      <div className="container mx-auto px-6 space-y-6">
 
         {/* Sync Score Section */}
         <div className={`${isLoaded && !showSplash ? 'animate-fade-in' : 'opacity-0'}`} style={{ animationDelay: '200ms' }}>
