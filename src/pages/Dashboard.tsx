@@ -334,7 +334,12 @@ export const Dashboard = () => {
       <div className="bg-gradient-primary py-12 px-6 -mx-6 -mt-8 mb-8">
         <div className={`text-center space-y-2 ${isLoaded && !showSplash ? 'animate-fade-in' : 'opacity-0'}`}>
           <h1 className="text-3xl font-bold text-white">
-            LoveSync Dashboard
+            {(() => {
+              const hour = new Date().getHours();
+              if (hour < 12) return "Good Morning";
+              if (hour < 17) return "Good Afternoon";
+              return "Good Evening";
+            })()}
           </h1>
           <p className="text-lg text-white/90">
             Track your relationship harmony and connection
