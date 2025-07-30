@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import { MoodBitmoji } from './MoodBitmoji';
-import { Heart, Plus, Edit3 } from 'lucide-react';
+import { Heart, Plus, Edit3, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
@@ -146,38 +148,56 @@ export const CoupleMoodDisplay: React.FC<CoupleMoodDisplayProps> = ({
               </div>
             ) : (
               <div className="space-y-3">
-                <div className="w-20 h-20 bg-muted/50 rounded-full flex items-center justify-center mx-auto border-2 border-dashed border-muted-foreground/30">
+                <button
+                  onClick={() => setShowMoodSelector(true)}
+                  className="w-20 h-20 bg-muted/50 rounded-full flex items-center justify-center mx-auto border-2 border-dashed border-muted-foreground/30 hover:border-primary/50 hover:bg-primary/5 transition-all duration-200"
+                >
                   <Plus className="text-muted-foreground" size={24} />
-                </div>
-                <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-4 shadow-lg border border-white/30 animate-scale-in">
-                  <p className="text-xs text-muted-foreground mb-4 text-center font-medium">
-                    {userMood ? 'Update Mood' : 'Quick Check-in'}
-                  </p>
-                  <div className="grid grid-cols-3 gap-3">
-                    {quickMoods.map((mood) => (
-                      <button
-                        key={mood.value}
-                        className="flex flex-col items-center p-2 rounded-xl bg-gradient-to-br from-white to-white/80 hover:from-primary/10 hover:to-primary/5 hover:scale-105 transition-all duration-300 shadow-sm hover:shadow-md disabled:opacity-50 border border-white/50 group"
-                        onClick={() => handleQuickMoodSelect(mood.value)}
-                        disabled={isSubmitting}
-                      >
-                        <span className="text-2xl mb-1 group-hover:animate-bounce">{mood.emoji}</span>
-                        <span className="text-xs text-muted-foreground font-medium capitalize">{mood.value}</span>
-                      </button>
-                    ))}
-                  </div>
-                  {userMood && (
-                    <button
-                      onClick={() => setShowMoodSelector(false)}
-                      className="text-xs text-muted-foreground hover:text-foreground underline mt-3 block mx-auto transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  )}
-                </div>
+                </button>
+                <p className="text-xs text-muted-foreground text-center">
+                  {userMood ? 'Update Mood' : 'Quick Check-in'}
+                </p>
               </div>
             )}
           </div>
+          
+          {/* Mood Selection Modal */}
+          <Dialog open={showMoodSelector} onOpenChange={setShowMoodSelector}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader className="text-center pb-4">
+                <div className="w-16 h-16 border-2 border-dashed border-muted-foreground/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Plus className="text-muted-foreground" size={20} />
+                </div>
+                <DialogTitle className="text-xl font-semibold text-primary">
+                  {userMood ? 'Update Mood' : 'Update Mood'}
+                </DialogTitle>
+              </DialogHeader>
+              
+              <div className="grid grid-cols-3 gap-4 py-6">
+                {quickMoods.map((mood) => (
+                  <button
+                    key={mood.value}
+                    className="flex flex-col items-center p-4 rounded-2xl bg-gradient-to-br from-white to-muted/30 hover:from-primary/10 hover:to-primary/5 hover:scale-105 transition-all duration-300 shadow-sm hover:shadow-md disabled:opacity-50 border border-border/20 group"
+                    onClick={() => handleQuickMoodSelect(mood.value)}
+                    disabled={isSubmitting}
+                  >
+                    <span className="text-3xl mb-2 group-hover:animate-bounce">{mood.emoji}</span>
+                    <span className="text-sm text-foreground font-medium capitalize">{mood.value}</span>
+                  </button>
+                ))}
+              </div>
+              
+              <div className="flex justify-center pt-4">
+                <Button
+                  variant="ghost"
+                  onClick={() => setShowMoodSelector(false)}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
           
           {/* Connection Heart */}
           <div className="flex-none px-4">
