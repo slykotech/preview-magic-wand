@@ -38,10 +38,10 @@ export const CoupleMoodDisplay: React.FC<CoupleMoodDisplayProps> = ({
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showMoodSelector, setShowMoodSelector] = useState(false);
-  const [selectedEmojiAnimation, setSelectedEmojiAnimation] = useState<{ emoji: string; id: number } | null>(null);
+  const [selectedEmojiAnimations, setSelectedEmojiAnimations] = useState<{ emoji: string; id: number; x: number; y: number }[]>([]);
   const { toast } = useToast();
 
-  const handleQuickMoodSelect = async (mood: MoodType) => {
+  const handleQuickMoodSelect = async (mood: MoodType, event: React.MouseEvent) => {
     if (!userId || !coupleId) {
       toast({
         title: "Setup Required",
@@ -51,14 +51,23 @@ export const CoupleMoodDisplay: React.FC<CoupleMoodDisplayProps> = ({
       return;
     }
 
+    // Get click position for animation
+    const rect = event.currentTarget.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height / 2;
+
     // Trigger floating animation
     const selectedMoodEmoji = quickMoods.find(m => m.value === mood)?.emoji || '';
-    const animationId = Date.now();
-    setSelectedEmojiAnimation({ emoji: selectedMoodEmoji, id: animationId });
+    const animationId = Date.now() + Math.random(); // Ensure unique IDs
+    
+    setSelectedEmojiAnimations(prev => [
+      ...prev,
+      { emoji: selectedMoodEmoji, id: animationId, x, y }
+    ]);
     
     // Remove animation after it completes
     setTimeout(() => {
-      setSelectedEmojiAnimation(null);
+      setSelectedEmojiAnimations(prev => prev.filter(anim => anim.id !== animationId));
     }, 1000);
 
     setIsSubmitting(true);
@@ -113,17 +122,21 @@ export const CoupleMoodDisplay: React.FC<CoupleMoodDisplayProps> = ({
   };
   return (
     <div className="relative">
-      {/* Floating Animation Overlay */}
-      {selectedEmojiAnimation && (
+      {/* Floating Animation Overlays */}
+      {selectedEmojiAnimations.map((animation) => (
         <div 
-          key={selectedEmojiAnimation.id}
-          className="absolute inset-0 flex items-center justify-center pointer-events-none z-50"
+          key={animation.id}
+          className="fixed pointer-events-none z-50"
+          style={{
+            left: animation.x - 30, // Center the emoji
+            top: animation.y - 30,
+          }}
         >
-          <div className="animate-[float-up_1s_ease-out_forwards] text-6xl">
-            {selectedEmojiAnimation.emoji}
+          <div className="animate-float-up text-6xl">
+            {animation.emoji}
           </div>
         </div>
-      )}
+      ))}
       
       <Card className={`${className} bg-gradient-to-br from-soft-cloud to-background border border-border/50 shadow-sm`}>
         <CardContent className="p-6">
@@ -163,7 +176,7 @@ export const CoupleMoodDisplay: React.FC<CoupleMoodDisplayProps> = ({
           
           {/* Mood Selection Modal */}
           <Dialog open={showMoodSelector} onOpenChange={setShowMoodSelector}>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className="sm:max-w-md rounded-3xl border-2 border-primary/20 shadow-2xl">
               <DialogHeader className="text-center pb-4">
                 <div className="w-16 h-16 border-2 border-dashed border-muted-foreground/30 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Plus className="text-muted-foreground" size={20} />
@@ -178,7 +191,7 @@ export const CoupleMoodDisplay: React.FC<CoupleMoodDisplayProps> = ({
                   <button
                     key={mood.value}
                     className="flex flex-col items-center p-4 rounded-2xl bg-gradient-to-br from-white to-muted/30 hover:from-primary/10 hover:to-primary/5 hover:scale-105 transition-all duration-300 shadow-sm hover:shadow-md disabled:opacity-50 border border-border/20 group"
-                    onClick={() => handleQuickMoodSelect(mood.value)}
+                    onClick={(e) => handleQuickMoodSelect(mood.value, e)}
                     disabled={isSubmitting}
                   >
                     <span className="text-3xl mb-2 group-hover:animate-bounce">{mood.emoji}</span>
@@ -191,7 +204,7 @@ export const CoupleMoodDisplay: React.FC<CoupleMoodDisplayProps> = ({
                 <Button
                   variant="ghost"
                   onClick={() => setShowMoodSelector(false)}
-                  className="text-muted-foreground hover:text-foreground"
+                  className="text-muted-foreground hover:text-foreground rounded-full px-8"
                 >
                   Cancel
                 </Button>
