@@ -33,7 +33,7 @@ export const BottomNavigation = () => {
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-twilight-blue/95 backdrop-blur-lg border-t border-white/10 z-50">
+    <nav className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-lg border-t border-border z-50">
       <div className="flex items-center justify-around py-2 px-4 max-w-md mx-auto">
         {navItems.map((item) => {
           const isActive = item.id === 'home' 
@@ -47,8 +47,8 @@ export const BottomNavigation = () => {
               onClick={() => navigate(item.path)}
               className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all duration-300 ${
                 isActive 
-                  ? 'text-sunrise-coral transform scale-110' 
-                  : 'text-white/70 hover:text-white hover:scale-105'
+                  ? 'text-primary transform scale-110' 
+                  : 'text-muted-foreground hover:text-foreground hover:scale-105'
               }`}
             >
               <Icon 
