@@ -300,53 +300,53 @@ export const Dashboard = () => {
     <div className="min-h-screen bg-background relative overflow-hidden pb-20">
       {/* Splash Screen Overlay with Sync Score Animation */}
       {showSplash && isLoaded && (
-        <div className="fixed inset-0 bg-gradient-primary z-50 flex items-center justify-center" 
+        <div className="fixed inset-0 bg-gradient-primary z-50" 
              style={{ 
                animation: 'fade-out 0.3s ease-out 1.7s forwards' 
              }}>
-          <div className="relative w-full h-full flex items-center justify-center">
-            {/* Full Screen Sync Score with precise positioning */}
-            <div className="absolute inset-0 flex items-center justify-center"
+          
+          {/* Sync Score - starts center, zooms to dashboard position */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="sync-score-container"
                  style={{ 
-                   animation: 'scale-in 0.5s ease-out 0.2s both, zoom-to-position 0.8s ease-out 1s both'
+                   animation: 'zoom-to-dashboard 1.2s ease-out 0.8s forwards',
+                   transform: 'scale(2.5) translateY(0)'
                  }}>
-              <div className="sync-score-splash" style={{ transform: 'scale(2)' }}>
-                <SyncScoreCircle score={syncScore} animated={true} />
-              </div>
+              <SyncScoreCircle score={syncScore} animated={true} />
             </div>
-            
-            {/* Floating Partner Mood Emojis */}
-            {partnerMood && (
-              <div className="absolute inset-0 pointer-events-none">
-                {/* Multiple floating emojis */}
-                {[...Array(5)].map((_, i) => (
-                  <div key={i} 
-                       className="absolute text-6xl opacity-90"
-                       style={{
-                         left: `${20 + i * 15}%`,
-                         top: `${30 + (i % 2) * 40}%`,
-                         animation: `float-${i + 1} 2s ease-in-out infinite, fade-in 0.3s ease-out ${0.5 + i * 0.1}s both, fade-out 0.5s ease-out 1.3s forwards`
-                       }}>
-                    {partnerMood}
-                  </div>
-                ))}
-                
-                {/* Partner mood text */}
-                <div className="absolute bottom-1/3 left-1/2 transform -translate-x-1/2 text-center"
-                     style={{ animation: 'fade-in 0.3s ease-out 0.8s both, fade-out 0.5s ease-out 1.3s forwards' }}>
-                  <p className="text-white/90 text-lg font-medium">
-                    Partner's Mood
-                  </p>
+          </div>
+          
+          {/* Floating Partner Mood Emojis */}
+          {partnerMood && (
+            <div className="absolute inset-0 pointer-events-none">
+              {/* Multiple floating emojis */}
+              {[...Array(5)].map((_, i) => (
+                <div key={i} 
+                     className="absolute text-6xl opacity-90"
+                     style={{
+                       left: `${20 + i * 15}%`,
+                       top: `${30 + (i % 2) * 40}%`,
+                       animation: `float-${i + 1} 2s ease-in-out infinite, fade-in 0.3s ease-out ${0.5 + i * 0.1}s both, fade-out 0.5s ease-out 1.3s forwards`
+                     }}>
+                  {partnerMood}
                 </div>
+              ))}
+              
+              {/* Partner mood text */}
+              <div className="absolute bottom-1/3 left-1/2 transform -translate-x-1/2 text-center"
+                   style={{ animation: 'fade-in 0.3s ease-out 0.8s both, fade-out 0.5s ease-out 1.3s forwards' }}>
+                <p className="text-white/90 text-lg font-medium">
+                  Partner's Mood
+                </p>
               </div>
-            )}
-            
-            {/* Welcome text */}
-            <div className="absolute bottom-1/4 left-1/2 transform -translate-x-1/2 text-white text-center"
-                 style={{ animation: 'fade-in 0.3s ease-out 1s both, fade-out 0.3s ease-out 1.5s forwards' }}>
-              <h2 className="text-xl font-bold mb-1">Welcome Back! 💕</h2>
-              <p className="text-white/80 text-sm">Your love sync is ready...</p>
             </div>
+          )}
+          
+          {/* Welcome text */}
+          <div className="absolute bottom-1/4 left-1/2 transform -translate-x-1/2 text-white text-center"
+               style={{ animation: 'fade-in 0.3s ease-out 1s both, fade-out 0.3s ease-out 1.5s forwards' }}>
+            <h2 className="text-xl font-bold mb-1">Welcome Back! 💕</h2>
+            <p className="text-white/80 text-sm">Your love sync is ready...</p>
           </div>
         </div>
       )}

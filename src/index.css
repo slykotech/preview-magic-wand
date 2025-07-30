@@ -113,13 +113,13 @@ All colors MUST be HSL.
 }
 
 @layer utilities {
-  /* Sync Score Splash Animation */
-  @keyframes zoom-to-position {
+  /* Sync Score Splash Animation - Precise Dashboard Positioning */
+  @keyframes zoom-to-dashboard {
     0% {
-      transform: scale(2) translate(0, 0);
+      transform: scale(2.5) translateY(0);
     }
     100% {
-      transform: scale(1) translate(0, -250px);
+      transform: scale(1) translateY(-280px) translateX(0);
       opacity: 0;
     }
   }
@@ -150,12 +150,12 @@ All colors MUST be HSL.
     50% { transform: translateY(-22px) rotate(4deg); }
   }
   
-  .animate-zoom-to-position {
-    animation: zoom-to-position 0.8s ease-out forwards;
+  .animate-zoom-to-dashboard {
+    animation: zoom-to-dashboard 1.2s ease-out forwards;
   }
   
-  /* Ensure sync score transitions smoothly */
-  .sync-score-splash {
-    transition: all 0.8s ease-out;
+  /* Sync score container for smooth positioning */
+  .sync-score-container {
+    transition: all 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   }
 }
