@@ -36,6 +36,7 @@ export const CoupleMoodDisplay: React.FC<CoupleMoodDisplayProps> = ({
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showMoodSelector, setShowMoodSelector] = useState(false);
+  const [selectedEmojiAnimation, setSelectedEmojiAnimation] = useState<{ emoji: string; id: number } | null>(null);
   const { toast } = useToast();
 
   const handleQuickMoodSelect = async (mood: MoodType) => {
@@ -47,6 +48,16 @@ export const CoupleMoodDisplay: React.FC<CoupleMoodDisplayProps> = ({
       });
       return;
     }
+
+    // Trigger floating animation
+    const selectedMoodEmoji = quickMoods.find(m => m.value === mood)?.emoji || '';
+    const animationId = Date.now();
+    setSelectedEmojiAnimation({ emoji: selectedMoodEmoji, id: animationId });
+    
+    // Remove animation after it completes
+    setTimeout(() => {
+      setSelectedEmojiAnimation(null);
+    }, 1000);
 
     setIsSubmitting(true);
     
@@ -99,8 +110,21 @@ export const CoupleMoodDisplay: React.FC<CoupleMoodDisplayProps> = ({
     }
   };
   return (
-    <Card className={`${className} bg-gradient-to-br from-soft-cloud to-background border border-border/50 shadow-sm`}>
-      <CardContent className="p-6">
+    <div className="relative">
+      {/* Floating Animation Overlay */}
+      {selectedEmojiAnimation && (
+        <div 
+          key={selectedEmojiAnimation.id}
+          className="absolute inset-0 flex items-center justify-center pointer-events-none z-50"
+        >
+          <div className="animate-[float-up_1s_ease-out_forwards] text-6xl">
+            {selectedEmojiAnimation.emoji}
+          </div>
+        </div>
+      )}
+      
+      <Card className={`${className} bg-gradient-to-br from-soft-cloud to-background border border-border/50 shadow-sm`}>
+        <CardContent className="p-6">
         <div className="text-center mb-4">
           <h3 className="text-lg font-bold text-foreground">Today's Mood</h3>
           <p className="text-sm text-muted-foreground">How you're both feeling</p>
@@ -125,31 +149,20 @@ export const CoupleMoodDisplay: React.FC<CoupleMoodDisplayProps> = ({
                 <div className="w-20 h-20 bg-muted/50 rounded-full flex items-center justify-center mx-auto border-2 border-dashed border-muted-foreground/30">
                   <Plus className="text-muted-foreground" size={24} />
                 </div>
-                <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 shadow-lg border border-white/20 animate-scale-in">
-                  <p className="text-xs text-muted-foreground mb-3 text-center font-medium">
+                <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-4 shadow-lg border border-white/30 animate-scale-in">
+                  <p className="text-xs text-muted-foreground mb-4 text-center font-medium">
                     {userMood ? 'Update Mood' : 'Quick Check-in'}
                   </p>
-                  <div className="grid grid-cols-3 gap-2 mb-2">
-                    {quickMoods.slice(0, 3).map((mood) => (
+                  <div className="grid grid-cols-3 gap-3">
+                    {quickMoods.map((mood) => (
                       <button
                         key={mood.value}
-                        className="w-10 h-10 rounded-full bg-gradient-to-br from-white to-white/80 hover:from-primary/10 hover:to-primary/5 hover:scale-110 hover:animate-bounce transition-all duration-300 flex items-center justify-center shadow-md hover:shadow-lg disabled:opacity-50 border border-white/50"
+                        className="flex flex-col items-center p-2 rounded-xl bg-gradient-to-br from-white to-white/80 hover:from-primary/10 hover:to-primary/5 hover:scale-105 transition-all duration-300 shadow-sm hover:shadow-md disabled:opacity-50 border border-white/50 group"
                         onClick={() => handleQuickMoodSelect(mood.value)}
                         disabled={isSubmitting}
                       >
-                        <span className="text-lg">{mood.emoji}</span>
-                      </button>
-                    ))}
-                  </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    {quickMoods.slice(3).map((mood) => (
-                      <button
-                        key={mood.value}
-                        className="w-10 h-10 rounded-full bg-gradient-to-br from-white to-white/80 hover:from-primary/10 hover:to-primary/5 hover:scale-110 hover:animate-bounce transition-all duration-300 flex items-center justify-center shadow-md hover:shadow-lg disabled:opacity-50 border border-white/50"
-                        onClick={() => handleQuickMoodSelect(mood.value)}
-                        disabled={isSubmitting}
-                      >
-                        <span className="text-lg">{mood.emoji}</span>
+                        <span className="text-2xl mb-1 group-hover:animate-bounce">{mood.emoji}</span>
+                        <span className="text-xs text-muted-foreground font-medium capitalize">{mood.value}</span>
                       </button>
                     ))}
                   </div>
@@ -192,5 +205,6 @@ export const CoupleMoodDisplay: React.FC<CoupleMoodDisplayProps> = ({
         )}
       </CardContent>
     </Card>
+    </div>
   );
 };
