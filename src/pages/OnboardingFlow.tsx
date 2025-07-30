@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Heart, Users, Target, Link } from "lucide-react";
+import { Heart, Users, Target } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const OnboardingFlow = () => {
@@ -70,43 +70,6 @@ const OnboardingFlow = () => {
         return (
           <div className="space-y-6">
             <div className="text-center space-y-4">
-              <Link size={48} className="mx-auto text-accent" />
-              <h1 className="text-3xl font-bold text-foreground">Invite Your Partner</h1>
-              <p className="text-muted-foreground">Share this link with your partner to connect</p>
-            </div>
-            
-            <Card className="p-6 space-y-4">
-              <div className="bg-muted p-4 rounded-lg">
-                <p className="text-sm text-muted-foreground mb-2">Share this link:</p>
-                <div className="flex gap-2">
-                  <input 
-                    readOnly 
-                    value="https://lovesync.app/invite/abc123"
-                    className="flex-1 px-3 py-2 text-sm border rounded-md bg-background"
-                  />
-                  <Button size="sm">Copy</Button>
-                </div>
-              </div>
-              
-              <div className="text-center">
-                <p className="text-sm text-muted-foreground">
-                  Your partner will receive an invitation to join LoveSync
-                </p>
-              </div>
-            </Card>
-            
-            <div className="text-center">
-              <Button variant="outline" onClick={() => setCurrentStep(2)}>
-                Skip for now
-              </Button>
-            </div>
-          </div>
-        );
-
-      case 2:
-        return (
-          <div className="space-y-6">
-            <div className="text-center space-y-4">
               <Target size={48} className="mx-auto text-accent" />
               <h1 className="text-3xl font-bold text-foreground">Set Your Goals</h1>
               <p className="text-muted-foreground">What would you like to improve in your relationship?</p>
@@ -143,11 +106,11 @@ const OnboardingFlow = () => {
   };
 
   const handleNext = () => {
-    if (currentStep < 2) {
+    if (currentStep < 1) {
       setCurrentStep(currentStep + 1);
     } else {
-      // Complete onboarding and go to dashboard
-      navigate('/dashboard');
+      // Complete onboarding and go to auth
+      navigate('/auth');
     }
   };
 
@@ -162,8 +125,6 @@ const OnboardingFlow = () => {
       case 0:
         return relationshipType !== "";
       case 1:
-        return true; // Can always skip partner invite
-      case 2:
         return goals.length > 0;
       default:
         return true;
@@ -176,13 +137,13 @@ const OnboardingFlow = () => {
         {/* Progress indicator */}
         <div className="mb-8">
           <div className="flex justify-between items-center mb-2">
-            <span className="text-sm text-muted-foreground">Step {currentStep + 1} of 3</span>
-            <span className="text-sm text-muted-foreground">{Math.round(((currentStep + 1) / 3) * 100)}%</span>
+            <span className="text-sm text-muted-foreground">Step {currentStep + 1} of 2</span>
+            <span className="text-sm text-muted-foreground">{Math.round(((currentStep + 1) / 2) * 100)}%</span>
           </div>
           <div className="w-full bg-muted rounded-full h-2">
             <div 
               className="bg-accent rounded-full h-2 transition-all duration-300"
-              style={{ width: `${((currentStep + 1) / 3) * 100}%` }}
+              style={{ width: `${((currentStep + 1) / 2) * 100}%` }}
             />
           </div>
         </div>
@@ -197,7 +158,7 @@ const OnboardingFlow = () => {
             disabled={!canProceed()}
             className="w-full py-3"
           >
-            {currentStep === 2 ? 'Complete Setup' : 'Continue'}
+            {currentStep === 1 ? 'Complete Setup' : 'Continue'}
           </Button>
           
           {currentStep > 0 && (
