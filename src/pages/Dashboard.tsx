@@ -343,7 +343,7 @@ export const Dashboard = () => {
           )}
           
           {/* Welcome text */}
-          <div className="absolute bottom-32 left-1/2 transform -translate-x-1/2 text-white text-center"
+          <div className="absolute bottom-16 left-1/2 transform -translate-x-1/2 text-white text-center"
                style={{ animation: 'fade-in 0.3s ease-out 1s both, fade-out 0.3s ease-out 1.5s forwards' }}>
             <h2 className="text-xl font-bold mb-1">Welcome Back! 💕</h2>
             <p className="text-white/80 text-sm">Your love sync is ready...</p>
