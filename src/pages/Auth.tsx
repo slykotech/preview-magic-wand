@@ -22,10 +22,10 @@ export const Auth = () => {
     // Check if user is already logged in or handle verification
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session) {
-        navigate('/');
+        navigate('/onboarding');
       }
       if (event === 'TOKEN_REFRESHED' && session) {
-        navigate('/');
+        navigate('/onboarding');
       }
     });
 
@@ -42,7 +42,7 @@ export const Auth = () => {
         });
         
         if (!error) {
-          navigate('/');
+          navigate('/onboarding');
         }
       }
     };
@@ -123,7 +123,7 @@ export const Auth = () => {
         title: "Welcome back! 💕",
         description: "Successfully signed in"
       });
-      navigate('/');
+      navigate('/onboarding');
     }
   };
 

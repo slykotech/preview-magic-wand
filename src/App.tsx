@@ -16,6 +16,7 @@ import { Profile } from "./pages/Profile";
 import { CoupleSetup } from "./pages/CoupleSetup";
 import { RelationshipInsights } from "./pages/RelationshipInsights";
 import AppMottoPage from "./pages/AppMotto";
+import OnboardingFlow from "./pages/OnboardingFlow";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,7 +25,10 @@ const App = () => {
   const [showSplash, setShowSplash] = useState(true);
 
   if (showSplash) {
-    return <SplashScreen onComplete={() => setShowSplash(false)} />;
+    return <SplashScreen onComplete={() => {
+      setShowSplash(false);
+      window.location.href = '/motto';
+    }} />;
   }
 
   return (
@@ -45,6 +49,7 @@ const App = () => {
               <Route path="/couple-setup" element={<CoupleSetup />} />
               <Route path="/insights" element={<RelationshipInsights />} />
               <Route path="/motto" element={<AppMottoPage onNext={() => window.location.href = '/auth'} onBack={() => window.location.href = '/'} />} />
+              <Route path="/onboarding" element={<OnboardingFlow />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
