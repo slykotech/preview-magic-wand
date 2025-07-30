@@ -227,8 +227,8 @@ export const Dashboard = () => {
       }
       setIsLoaded(true);
       
-      // Show splash animation for 2 seconds
-      setTimeout(() => setShowSplash(false), 2000);
+      // Show splash animation for 1 second
+      setTimeout(() => setShowSplash(false), 1000);
 
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -295,26 +295,26 @@ export const Dashboard = () => {
     <div className="min-h-screen bg-background relative overflow-hidden pb-20">
       {/* Splash Screen Overlay */}
       {showSplash && isLoaded && (
-        <div className="fixed inset-0 bg-gradient-primary z-50 flex items-center justify-center animate-fade-out" style={{ animationDelay: '1.5s', animationFillMode: 'forwards' }}>
+        <div className="fixed inset-0 bg-gradient-primary z-50 flex items-center justify-center animate-fade-out" style={{ animationDelay: '0.8s', animationFillMode: 'forwards' }}>
           <div className="text-center space-y-8">
-            <div className="animate-scale-in" style={{ animationDelay: '0.2s' }}>
+            <div className="animate-scale-in" style={{ animationDelay: '0.1s' }}>
               <SyncScoreCircle score={syncScore} animated={true} />
             </div>
             
-            <div className="animate-scale-in" style={{ animationDelay: '0.5s' }}>
-              <CoupleMoodDisplay 
-                userMood={userMood} 
-                partnerMood={partnerMood} 
-                userId={user?.id}
-                coupleId={coupleId}
-                onMoodUpdate={refreshDashboard}
-                splashMode={true}
-              />
-            </div>
+            {partnerMood && (
+              <div className="animate-scale-in" style={{ animationDelay: '0.3s' }}>
+                <div className="text-center">
+                  <div className="text-6xl mb-2 animate-bounce" style={{ animationDelay: '0.5s' }}>
+                    {partnerMood}
+                  </div>
+                  <p className="text-white/90 text-sm font-medium">Partner's Mood</p>
+                </div>
+              </div>
+            )}
             
-            <div className="text-white text-center animate-fade-in" style={{ animationDelay: '0.8s' }}>
-              <h2 className="text-2xl font-bold mb-2">Welcome Back! 💕</h2>
-              <p className="text-white/80">Your love sync is loading...</p>
+            <div className="text-white text-center animate-fade-in" style={{ animationDelay: '0.5s' }}>
+              <h2 className="text-xl font-bold mb-1">Welcome Back! 💕</h2>
+              <p className="text-white/80 text-sm">Your love sync is ready...</p>
             </div>
           </div>
         </div>
