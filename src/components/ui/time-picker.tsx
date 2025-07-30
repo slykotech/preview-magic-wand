@@ -20,6 +20,7 @@ export const TimePicker: React.FC<TimePickerProps> = ({
   const [hours, setHours] = useState<number>(7);
   const [minutes, setMinutes] = useState<number>(0);
   const [period, setPeriod] = useState<'AM' | 'PM'>('AM');
+  const [mode, setMode] = useState<'hours' | 'minutes'>('hours');
 
   // Parse initial value
   useEffect(() => {
@@ -60,47 +61,74 @@ export const TimePicker: React.FC<TimePickerProps> = ({
   }, [hours, minutes, period, onChange]);
 
   const hourNumbers = [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+  const minuteNumbers = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
 
-  const getHourAngle = (hour: number) => {
-    return (hour % 12) * 30;
+  const getAngle = (value: number, max: number) => {
+    return (value % max) * (360 / max);
   };
 
   const handleHourClick = (hour: number) => {
     setHours(hour);
+    setMode('minutes'); // Automatically switch to minutes after selecting hour
   };
+
+  const handleMinuteClick = (minute: number) => {
+    setMinutes(minute);
+  };
+
+  const currentNumbers = mode === 'hours' ? hourNumbers : minuteNumbers;
+  const currentValue = mode === 'hours' ? hours : minutes;
 
   return (
     <div className={cn("relative", className)}>
-      {/* Curved Tab Container */}
-      <div className="bg-white rounded-3xl shadow-xl p-8 relative overflow-hidden">
+      {/* Curved Tab Container - Reduced size */}
+      <div className="bg-white rounded-2xl shadow-lg p-4 relative overflow-hidden max-w-sm mx-auto">
         {/* Curved tab effect */}
-        <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 w-16 h-8 bg-white rounded-b-2xl shadow-lg"></div>
+        <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 w-12 h-6 bg-white rounded-b-xl shadow-md"></div>
         
         {/* Header */}
-        <div className="text-center mb-6">
-          <h3 className="text-sm font-medium text-gray-500 mb-4">SELECT TIME</h3>
+        <div className="text-center mb-4">
+          <h3 className="text-xs font-medium text-gray-500 mb-3">SELECT TIME</h3>
           
           {/* Digital Display */}
-          <div className="flex items-center justify-center gap-2 mb-6">
-            <div className="bg-purple-100 rounded-2xl px-6 py-4 min-w-[100px]">
-              <span className="text-4xl font-bold text-purple-600">
+          <div className="flex items-center justify-center gap-1 mb-4">
+            <button
+              onClick={() => setMode('hours')}
+              className={cn(
+                "rounded-xl px-3 py-2 min-w-[60px] transition-all",
+                mode === 'hours' ? "bg-purple-100" : "bg-gray-50 hover:bg-gray-100"
+              )}
+            >
+              <span className={cn(
+                "text-2xl font-bold",
+                mode === 'hours' ? "text-purple-600" : "text-gray-600"
+              )}>
                 {hours.toString().padStart(2, '0')}
               </span>
-            </div>
-            <span className="text-4xl font-bold text-gray-400">:</span>
-            <div className="bg-gray-100 rounded-2xl px-6 py-4 min-w-[100px]">
-              <span className="text-4xl font-bold text-gray-600">
+            </button>
+            <span className="text-2xl font-bold text-gray-400">:</span>
+            <button
+              onClick={() => setMode('minutes')}
+              className={cn(
+                "rounded-xl px-3 py-2 min-w-[60px] transition-all",
+                mode === 'minutes' ? "bg-purple-100" : "bg-gray-50 hover:bg-gray-100"
+              )}
+            >
+              <span className={cn(
+                "text-2xl font-bold",
+                mode === 'minutes' ? "text-purple-600" : "text-gray-600"
+              )}>
                 {minutes.toString().padStart(2, '0')}
               </span>
-            </div>
+            </button>
             
             {/* AM/PM Toggle */}
-            <div className="ml-6 flex flex-col gap-2">
+            <div className="ml-3 flex flex-col gap-1">
               <button
                 className={cn(
-                  "px-4 py-2 rounded-xl text-sm font-bold transition-all",
+                  "px-2 py-1 rounded-lg text-xs font-bold transition-all",
                   period === 'AM' 
-                    ? "bg-purple-200 text-purple-700 shadow-md" 
+                    ? "bg-purple-200 text-purple-700" 
                     : "text-gray-400 hover:text-gray-600 hover:bg-gray-50"
                 )}
                 onClick={() => setPeriod('AM')}
@@ -109,9 +137,9 @@ export const TimePicker: React.FC<TimePickerProps> = ({
               </button>
               <button
                 className={cn(
-                  "px-4 py-2 rounded-xl text-sm font-bold transition-all",
+                  "px-2 py-1 rounded-lg text-xs font-bold transition-all",
                   period === 'PM' 
-                    ? "bg-purple-200 text-purple-700 shadow-md" 
+                    ? "bg-purple-200 text-purple-700" 
                     : "text-gray-400 hover:text-gray-600 hover:bg-gray-50"
                 )}
                 onClick={() => setPeriod('PM')}
@@ -120,85 +148,99 @@ export const TimePicker: React.FC<TimePickerProps> = ({
               </button>
             </div>
           </div>
+          
+          {/* Mode indicator */}
+          <p className="text-xs text-gray-500">
+            Select {mode === 'hours' ? 'Hour' : 'Minutes'}
+          </p>
         </div>
 
-        {/* Clock Face */}
-        <div className="relative w-72 h-72 bg-gray-50 rounded-full mx-auto mb-8 border border-gray-200">
-          {/* Hour markers - Arranged like a real clock */}
-          {hourNumbers.map((hour, index) => {
-            const angle = getHourAngle(hour);
-            const radius = 120; // Distance from center
+        {/* Clock Face - Reduced size */}
+        <div className="relative w-48 h-48 bg-gray-50 rounded-full mx-auto mb-4 border border-gray-200">
+          {/* Numbers arranged properly */}
+          {currentNumbers.map((number, index) => {
+            const angle = getAngle(index, 12);
+            const radius = 70; // Reduced radius
             const radian = (angle - 90) * (Math.PI / 180);
             const x = Math.cos(radian) * radius;
             const y = Math.sin(radian) * radius;
             
             return (
               <button
-                key={`hour-${hour}`}
+                key={`${mode}-${number}`}
                 className={cn(
-                  "absolute w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold transition-all duration-200 border-2",
-                  hours === hour 
-                    ? "bg-purple-600 text-white border-purple-600 shadow-lg transform scale-110" 
-                    : "text-gray-700 border-transparent hover:bg-purple-50 hover:border-purple-200"
+                  "absolute w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-200",
+                  currentValue === number 
+                    ? "bg-purple-600 text-white shadow-lg transform scale-110" 
+                    : "text-gray-700 hover:bg-purple-50"
                 )}
                 style={{
-                  top: `${144 + y - 24}px`,
-                  left: `${144 + x - 24}px`,
+                  top: `${96 + y - 16}px`,
+                  left: `${96 + x - 16}px`,
                 }}
-                onClick={() => handleHourClick(hour)}
+                onClick={() => mode === 'hours' ? handleHourClick(number) : handleMinuteClick(number)}
               >
-                {hour}
+                {mode === 'minutes' ? number.toString().padStart(2, '0') : number}
               </button>
             );
           })}
 
           {/* Center dot */}
-          <div className="absolute top-1/2 left-1/2 w-4 h-4 bg-purple-600 rounded-full transform -translate-x-1/2 -translate-y-1/2 z-10"></div>
+          <div className="absolute top-1/2 left-1/2 w-3 h-3 bg-purple-600 rounded-full transform -translate-x-1/2 -translate-y-1/2 z-10"></div>
 
-          {/* Hour hand */}
+          {/* Hand */}
           <div
-            className="absolute top-1/2 left-1/2 w-1 bg-purple-600 origin-bottom rounded-full z-10"
+            className="absolute top-1/2 left-1/2 w-0.5 bg-purple-600 origin-bottom rounded-full z-10"
             style={{
-              height: '90px',
-              transform: `translate(-50%, -100%) rotate(${getHourAngle(hours)}deg)`,
+              height: '60px',
+              transform: `translate(-50%, -100%) rotate(${getAngle(
+                mode === 'hours' ? (hours === 12 ? 0 : hours) : minutes / 5,
+                12
+              )}deg)`,
             }}
           ></div>
 
           {/* Hand circle at the end */}
           <div
-            className="absolute w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-lg z-20"
+            className="absolute w-6 h-6 bg-purple-600 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-md z-20"
             style={{
-              top: `${144 + Math.sin((getHourAngle(hours) - 90) * Math.PI / 180) * 90 - 20}px`,
-              left: `${144 + Math.cos((getHourAngle(hours) - 90) * Math.PI / 180) * 90 - 20}px`,
+              top: `${96 + Math.sin((getAngle(
+                mode === 'hours' ? (hours === 12 ? 0 : hours) : minutes / 5,
+                12
+              ) - 90) * Math.PI / 180) * 60 - 12}px`,
+              left: `${96 + Math.cos((getAngle(
+                mode === 'hours' ? (hours === 12 ? 0 : hours) : minutes / 5,
+                12
+              ) - 90) * Math.PI / 180) * 60 - 12}px`,
             }}
           >
-            {hours}
+            {mode === 'hours' ? hours : Math.floor(minutes / 5)}
           </div>
         </div>
 
         {/* Action Buttons */}
-        <div className="flex justify-between items-center pt-6 border-t border-gray-100">
+        <div className="flex justify-between items-center pt-3 border-t border-gray-100">
           <div className="flex-1">
-            {/* Keyboard icon placeholder */}
-            <button className="text-gray-400 hover:text-gray-600 p-2 rounded-lg hover:bg-gray-50 transition-colors">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect x="2" y="6" width="20" height="12" rx="2" stroke="currentColor" strokeWidth="2"/>
-                <path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
+            {/* Mode toggle button */}
+            <button 
+              className="text-purple-600 hover:text-purple-700 p-1 rounded-lg hover:bg-purple-50 transition-colors text-sm font-medium"
+              onClick={() => setMode(mode === 'hours' ? 'minutes' : 'hours')}
+            >
+              {mode === 'hours' ? 'Minutes' : 'Hours'}
             </button>
           </div>
           
-          <div className="flex gap-6">
+          <div className="flex gap-3">
             <Button 
               variant="ghost" 
-              className="text-purple-600 font-bold text-lg px-6 py-3 rounded-xl hover:bg-purple-50"
+              className="text-purple-600 font-bold text-sm px-4 py-2 rounded-lg hover:bg-purple-50"
               onClick={onCancel}
             >
               CANCEL
             </Button>
             <Button 
               variant="ghost" 
-              className="text-purple-600 font-bold text-lg px-6 py-3 rounded-xl hover:bg-purple-50"
+              className="text-purple-600 font-bold text-sm px-4 py-2 rounded-lg hover:bg-purple-50"
               onClick={onConfirm}
             >
               OK
