@@ -5,18 +5,18 @@ interface MoodBitmojiProps {
   mood: string;
   size?: 'sm' | 'md' | 'lg';
   isPartner?: boolean;
+  showLabels?: boolean;
 }
 
 const moodEmojis: Record<string, string> = {
-  excited: '🤩',
   happy: '😊',
-  content: '😌',
-  anxious: '😰',
-  sad: '😢',
-  stressed: '😵',
+  excited: '🤗',
   love: '😍',
+  content: '😌',
   neutral: '😐',
   tired: '😴',
+  stressed: '😰',
+  sad: '😢',
   angry: '😠',
   romantic: '🥰'
 };
@@ -45,7 +45,8 @@ const getMoodColor = (mood: string) => {
 export const MoodBitmoji: React.FC<MoodBitmojiProps> = ({ 
   mood, 
   size = 'md',
-  isPartner = false 
+  isPartner = false,
+  showLabels = true
 }) => {
   const sizeClasses = {
     sm: 'w-12 h-12',
@@ -66,14 +67,16 @@ export const MoodBitmoji: React.FC<MoodBitmojiProps> = ({
           {moodEmojis[mood] || '😐'}
         </span>
       </div>
-      <div className="text-center">
-        <p className="text-xs font-medium text-muted-foreground capitalize">
-          {isPartner ? 'Partner' : 'You'}
-        </p>
-        <p className="text-sm font-semibold text-foreground capitalize">
-          {mood}
-        </p>
-      </div>
+      {showLabels && (
+        <div className="text-center">
+          <p className="text-xs font-medium text-muted-foreground capitalize">
+            {isPartner ? 'Partner' : 'You'}
+          </p>
+          <p className="text-sm font-semibold text-foreground capitalize">
+            {mood}
+          </p>
+        </div>
+      )}
     </div>
   );
 };
