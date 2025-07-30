@@ -308,17 +308,6 @@ export const Dashboard = () => {
         {/* Couple Avatars with Good Sync Status */}
         <div className={`${isLoaded ? 'animate-fade-in' : 'opacity-0'}`} style={{ animationDelay: '400ms' }}>
           <CoupleAvatars syncScore={syncScore} animated={isLoaded} />
-          
-          {/* Good Sync Status */}
-          <div className="text-center mt-4">
-            <p className="text-lg font-semibold text-foreground mb-2">Good Sync! 💪</p>
-            <div className="flex justify-center gap-1">
-              {[1, 2, 3, 4].map((star) => (
-                <span key={star} className="text-yellow-400 text-lg">⭐</span>
-              ))}
-              <span className="text-gray-300 text-lg">⭐</span>
-            </div>
-          </div>
         </div>
 
         <div className={`${isLoaded ? 'animate-fade-in' : 'opacity-0'}`} style={{ animationDelay: '450ms' }}>
