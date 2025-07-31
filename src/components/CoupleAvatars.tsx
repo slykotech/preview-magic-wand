@@ -83,7 +83,7 @@ export const CoupleAvatars = ({
           )}
           {/* Camera Icon for User Avatar */}
           {onUserAvatarClick && (
-            <div className="absolute top-1 left-1 bg-primary text-primary-foreground rounded-full p-1 shadow-lg animate-pulse">
+            <div className="absolute top-1 left-1 bg-gradient-to-br from-primary to-primary/80 text-white rounded-full p-1.5 shadow-lg animate-bounce border-2 border-white">
               <Camera className="h-3 w-3" />
             </div>
           )}
