@@ -498,48 +498,47 @@ export const MemoryVault = () => {
         <h1 className="text-3xl font-bold text-foreground mb-1">Memory Vault</h1>
         <p className="text-muted-foreground mb-4">Your love story collection</p>
         
-        <div className="flex justify-between items-center">
-          {/* Filter Pills */}
-          <div className="flex space-x-2 overflow-x-auto pb-2">
-            {[
-              { id: 'all', label: 'All' },
-              { id: 'photos', label: 'Photos' },
-              { id: 'notes', label: 'Notes' },
-              { id: 'favorites', label: 'Favorites' }
-            ].map((filter) => (
-              <button
-                key={filter.id}
-                onClick={() => setFilterType(filter.id as any)}
-                className={`px-4 py-1.5 rounded-full whitespace-nowrap font-semibold text-sm transition-all ${
-                  filterType === filter.id
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                }`}
-              >
-                {filter.label}
-              </button>
-            ))}
-          </div>
+        {/* Filter Pills */}
+        <div className="flex space-x-2 overflow-x-auto scrollbar-hide pb-2 mb-4" 
+             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+          {[
+            { id: 'all', label: 'All' },
+            { id: 'photos', label: 'Photos' },
+            { id: 'notes', label: 'Notes' },
+            { id: 'favorites', label: 'Favorites' }
+          ].map((filter) => (
+            <button
+              key={filter.id}
+              onClick={() => setFilterType(filter.id as any)}
+              className={`px-4 py-1.5 rounded-full whitespace-nowrap font-semibold text-sm transition-all ${
+                filterType === filter.id
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+              }`}
+            >
+              {filter.label}
+            </button>
+          ))}
+        </div>
 
-          {/* View Toggle */}
-          <div className="flex border border-border rounded-full p-1">
-            <button
-              onClick={() => setViewMode('grid')}
-              className={`p-1.5 rounded-full transition-colors ${
-                viewMode === 'grid' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'
-              }`}
-            >
-              <Grid3X3 size={20} />
-            </button>
-            <button
-              onClick={() => setViewMode('timeline')}
-              className={`p-1.5 rounded-full transition-colors ${
-                viewMode === 'timeline' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'
-              }`}
-            >
-              <List size={20} />
-            </button>
-          </div>
+        {/* View Toggle - Repositioned */}
+        <div className="absolute top-6 right-6 z-20 flex border border-border rounded-full p-1 bg-background/80 backdrop-blur-sm">
+          <button
+            onClick={() => setViewMode('grid')}
+            className={`p-1.5 rounded-full transition-colors ${
+              viewMode === 'grid' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'
+            }`}
+          >
+            <Grid3X3 size={18} />
+          </button>
+          <button
+            onClick={() => setViewMode('timeline')}
+            className={`p-1.5 rounded-full transition-colors ${
+              viewMode === 'timeline' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'
+            }`}
+          >
+            <List size={18} />
+          </button>
         </div>
       </header>
 
