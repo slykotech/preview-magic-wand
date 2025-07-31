@@ -43,9 +43,12 @@ export const PartnerConnectionSection = () => {
   const [selectedRequestId, setSelectedRequestId] = useState<string>("");
   const [emailValidation, setEmailValidation] = useState<{
     isValid: boolean;
+    exists: boolean;
+    available: boolean;
     message: string;
     isChecking: boolean;
-  }>({ isValid: false, message: "", isChecking: false });
+    showInviteToJoin: boolean;
+  }>({ isValid: false, exists: false, available: false, message: "", isChecking: false, showInviteToJoin: false });
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -54,24 +57,51 @@ export const PartnerConnectionSection = () => {
   const handleCancel = () => {
     setIsEditing(false);
     setPartnerEmail("");
-    setEmailValidation({ isValid: false, message: "", isChecking: false });
+    setEmailValidation({ isValid: false, exists: false, available: false, message: "", isChecking: false, showInviteToJoin: false });
   };
 
   const handleSendRequest = async () => {
-    if (!partnerEmail.trim() || !emailValidation.isValid) return;
+    if (!partnerEmail.trim() || !emailValidation.isValid || !emailValidation.exists || !emailValidation.available) return;
     
     const success = await sendPartnerRequest(partnerEmail);
     if (success) {
       setPartnerEmail("");
       setIsEditing(false);
-      setEmailValidation({ isValid: false, message: "", isChecking: false });
+      setEmailValidation({ isValid: false, exists: false, available: false, message: "", isChecking: false, showInviteToJoin: false });
+    }
+  };
+
+  const handleInviteToJoin = async () => {
+    if (!partnerEmail.trim() || !emailValidation.isValid) return;
+
+    try {
+      const { data, error } = await supabase.functions.invoke('send-invitation-email', {
+        body: {
+          type: 'invite',
+          email: partnerEmail
+        }
+      });
+
+      if (error) {
+        console.error('Error sending invitation:', error);
+        return;
+      }
+
+      console.log('Invitation sent successfully:', data);
+      // Show success message or update UI as needed
+      setEmailValidation(prev => ({ 
+        ...prev, 
+        message: "Invitation to join Love Sync sent successfully!" 
+      }));
+    } catch (error) {
+      console.error('Error sending invitation:', error);
     }
   };
 
   // Email validation function
-  const validateEmail = (email: string) => {
+  const validateEmail = async (email: string) => {
     if (!email.trim()) {
-      setEmailValidation({ isValid: false, message: "", isChecking: false });
+      setEmailValidation({ isValid: false, exists: false, available: false, message: "", isChecking: false, showInviteToJoin: false });
       return;
     }
 
@@ -80,18 +110,103 @@ export const PartnerConnectionSection = () => {
     if (!emailRegex.test(email)) {
       setEmailValidation({ 
         isValid: false, 
+        exists: false, 
+        available: false,
         message: "Please enter a valid email address", 
-        isChecking: false 
+        isChecking: false,
+        showInviteToJoin: false
       });
       return;
     }
 
-    // Email format is valid - backend will handle user existence validation
-    setEmailValidation({ 
+    // Email format is valid - now check if user exists
+    setEmailValidation(prev => ({ 
+      ...prev, 
       isValid: true, 
-      message: "Email format is valid", 
-      isChecking: false 
-    });
+      isChecking: true, 
+      message: "Checking if user exists...",
+      showInviteToJoin: false
+    }));
+
+    try {
+      const { data, error } = await supabase.functions.invoke('check-email-exists', {
+        body: {},
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      // Use direct fetch since invoke doesn't support query params well
+      const session = await supabase.auth.getSession();
+      const response = await fetch(`https://kdbgwmtihgmialrmaecn.supabase.co/functions/v1/check-email-exists?email=${encodeURIComponent(email)}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${session.data.session?.access_token}`,
+          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkYmd3bXRpaGdtaWFscm1hZWNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM3MjA0MzAsImV4cCI6MjA2OTI5NjQzMH0.9tugXDyBuaIaf8fAS0z6cyb-y8Rtykl2zrPxd8bnnOw',
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const result = await response.json();
+
+      if (!result.success) {
+        setEmailValidation({
+          isValid: true,
+          exists: false,
+          available: false,
+          message: result.error || "Error checking user existence",
+          isChecking: false,
+          showInviteToJoin: false
+        });
+        return;
+      }
+
+      if (!result.exists) {
+        setEmailValidation({
+          isValid: true,
+          exists: false,
+          available: false,
+          message: "This email is not registered with Love Sync.",
+          isChecking: false,
+          showInviteToJoin: true
+        });
+        return;
+      }
+
+      if (!result.available) {
+        setEmailValidation({
+          isValid: true,
+          exists: true,
+          available: false,
+          message: "This user is already in a couple relationship.",
+          isChecking: false,
+          showInviteToJoin: false
+        });
+        return;
+      }
+
+      // User exists and is available
+      setEmailValidation({
+        isValid: true,
+        exists: true,
+        available: true,
+        message: "Ready to invite this user",
+        isChecking: false,
+        showInviteToJoin: false
+      });
+
+    } catch (error) {
+      console.error('Error checking email:', error);
+      setEmailValidation({
+        isValid: true,
+        exists: false,
+        available: false,
+        message: "Error checking user existence",
+        isChecking: false,
+        showInviteToJoin: false
+      });
+    }
   };
 
   // Debounce email validation
@@ -100,7 +215,7 @@ export const PartnerConnectionSection = () => {
       if (partnerEmail) {
         validateEmail(partnerEmail);
       }
-    }, 500);
+    }, 800);
 
     return () => clearTimeout(timeoutId);
   }, [partnerEmail]);
@@ -216,8 +331,10 @@ export const PartnerConnectionSection = () => {
                       className={`mt-1 ${
                         partnerEmail && !emailValidation.isValid && !emailValidation.isChecking 
                           ? 'border-red-500 focus:border-red-500' 
-                          : partnerEmail && emailValidation.isValid 
-                          ? 'border-green-500 focus:border-green-500' 
+                          : partnerEmail && emailValidation.isValid && emailValidation.exists && emailValidation.available
+                          ? 'border-green-500 focus:border-green-500'
+                          : partnerEmail && emailValidation.isValid && (!emailValidation.exists || !emailValidation.available)
+                          ? 'border-yellow-500 focus:border-yellow-500'
                           : ''
                       }`}
                     />
@@ -233,17 +350,38 @@ export const PartnerConnectionSection = () => {
                         {emailValidation.message}
                       </p>
                     )}
-                    {partnerEmail && emailValidation.isValid && emailValidation.message && (
+                    {partnerEmail && emailValidation.isValid && emailValidation.exists && emailValidation.available && emailValidation.message && (
                       <p className="text-xs text-green-600 mt-1 flex items-center">
                         <Check className="w-3 h-3 mr-1" />
                         {emailValidation.message}
                       </p>
                     )}
+                    {partnerEmail && emailValidation.isValid && emailValidation.exists && !emailValidation.available && emailValidation.message && (
+                      <p className="text-xs text-yellow-600 mt-1 flex items-center">
+                        <AlertTriangle className="w-3 h-3 mr-1" />
+                        {emailValidation.message}
+                      </p>
+                    )}
+                    {partnerEmail && emailValidation.isValid && !emailValidation.exists && emailValidation.message && (
+                      <p className="text-xs text-yellow-600 mt-1 flex items-center">
+                        <AlertTriangle className="w-3 h-3 mr-1" />
+                        {emailValidation.message}
+                      </p>
+                    )}
+                    {emailValidation.showInviteToJoin && (
+                      <button
+                        onClick={handleInviteToJoin}
+                        className="text-xs text-blue-600 hover:text-blue-800 underline mt-1 flex items-center"
+                      >
+                        <UserPlus className="w-3 h-3 mr-1" />
+                        Invite your partner to join Love Sync
+                      </button>
+                    )}
                   </div>
                   <div className="flex gap-2">
                     <Button 
                       onClick={handleSendRequest}
-                      disabled={isProcessing || !partnerEmail.trim() || !emailValidation.isValid || emailValidation.isChecking}
+                      disabled={isProcessing || !partnerEmail.trim() || !emailValidation.isValid || !emailValidation.exists || !emailValidation.available || emailValidation.isChecking}
                       className="flex-1 bg-gradient-secondary hover:opacity-90 text-white"
                       size="sm"
                     >
