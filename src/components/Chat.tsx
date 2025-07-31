@@ -251,7 +251,9 @@ export const Chat: React.FC<ChatProps> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-background z-50 flex flex-col animate-slide-in-right">
+    <div className="fixed inset-0 bg-background z-50 flex flex-col">
+      {/* Debug info */}
+      <div className="hidden">Chat component mounted - input should be visible</div>
       {/* Header */}
       <div className="bg-primary text-primary-foreground p-4 flex items-center gap-3 shadow-lg">
         <Button
@@ -284,84 +286,86 @@ export const Chat: React.FC<ChatProps> = ({ isOpen, onClose }) => {
         </Button>
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-gradient-to-b from-background to-muted/20">
-        {loading ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          </div>
-        ) : messages.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-center">
-            <div className="space-y-2">
-              <div className="text-6xl">💬</div>
-              <h3 className="text-lg font-semibold text-muted-foreground">Start the conversation</h3>
-              <p className="text-sm text-muted-foreground">Send your first message to {getPartnerDisplayName()}</p>
+      {/* Messages Container - Takes remaining space */}
+      <div className="flex-1 overflow-hidden flex flex-col">
+        <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-gradient-to-b from-background to-muted/20">
+          {loading ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
-          </div>
-        ) : (
-          messages.map((message) => {
-            const isOwn = message.sender_id === user?.id;
-            const senderName = isOwn ? getUserDisplayName() : getPartnerDisplayName();
-            
-            return (
-              <div
-                key={message.id}
-                className={`flex ${isOwn ? 'justify-end' : 'justify-start'} animate-fade-in`}
-              >
-                <div className={`max-w-[75%] ${isOwn ? 'order-2' : 'order-1'}`}>
-                  <div
-                    className={`${
-                      message.message_type === 'emoji' || message.message_type === 'sticker'
-                        ? 'text-3xl px-2 py-1 bg-transparent' 
-                        : `px-4 py-2 rounded-2xl ${
-                            isOwn
-                              ? 'bg-primary text-primary-foreground ml-2'
-                              : 'bg-muted text-foreground mr-2'
-                          }`
-                    }`}
-                  >
-                    {message.message_type === 'image' ? (
-                      <img 
-                        src={message.message_text} 
-                        alt="Shared image" 
-                        className="max-w-full h-auto rounded-lg cursor-pointer"
-                        onClick={() => window.open(message.message_text, '_blank')}
-                      />
-                    ) : message.message_type === 'video' ? (
-                      <video 
-                        src={message.message_text} 
-                        controls 
-                        className="max-w-full h-auto rounded-lg"
-                        style={{ maxHeight: '300px' }}
-                      />
-                    ) : (
-                      message.message_text
-                    )}
+          ) : messages.length === 0 ? (
+            <div className="flex items-center justify-center h-full text-center">
+              <div className="space-y-2">
+                <div className="text-6xl">💬</div>
+                <h3 className="text-lg font-semibold text-muted-foreground">Start the conversation</h3>
+                <p className="text-sm text-muted-foreground">Send your first message to {getPartnerDisplayName()}</p>
+              </div>
+            </div>
+          ) : (
+            messages.map((message) => {
+              const isOwn = message.sender_id === user?.id;
+              const senderName = isOwn ? getUserDisplayName() : getPartnerDisplayName();
+              
+              return (
+                <div
+                  key={message.id}
+                  className={`flex ${isOwn ? 'justify-end' : 'justify-start'} animate-fade-in`}
+                >
+                  <div className={`max-w-[75%] ${isOwn ? 'order-2' : 'order-1'}`}>
+                    <div
+                      className={`${
+                        message.message_type === 'emoji' || message.message_type === 'sticker'
+                          ? 'text-3xl px-2 py-1 bg-transparent' 
+                          : `px-4 py-2 rounded-2xl ${
+                              isOwn
+                                ? 'bg-primary text-primary-foreground ml-2'
+                                : 'bg-muted text-foreground mr-2'
+                            }`
+                      }`}
+                    >
+                      {message.message_type === 'image' ? (
+                        <img 
+                          src={message.message_text} 
+                          alt="Shared image" 
+                          className="max-w-full h-auto rounded-lg cursor-pointer"
+                          onClick={() => window.open(message.message_text, '_blank')}
+                        />
+                      ) : message.message_type === 'video' ? (
+                        <video 
+                          src={message.message_text} 
+                          controls 
+                          className="max-w-full h-auto rounded-lg"
+                          style={{ maxHeight: '300px' }}
+                        />
+                      ) : (
+                        message.message_text
+                      )}
+                    </div>
+                    
+                    <div className={`text-xs text-muted-foreground mt-1 ${isOwn ? 'text-right mr-2' : 'ml-2'}`}>
+                      {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
+                      {isOwn && (
+                        <span className="ml-1">
+                          {message.is_read ? '✓✓' : '✓'}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   
-                  <div className={`text-xs text-muted-foreground mt-1 ${isOwn ? 'text-right mr-2' : 'ml-2'}`}>
-                    {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
-                    {isOwn && (
-                      <span className="ml-1">
-                        {message.is_read ? '✓✓' : '✓'}
-                      </span>
-                    )}
-                  </div>
+                  {!isOwn && (
+                    <Avatar className={`h-8 w-8 ${isOwn ? 'order-1 mr-2' : 'order-2 ml-2'}`}>
+                      <AvatarImage src={partnerProfile?.avatar_url || undefined} />
+                      <AvatarFallback className="text-xs bg-muted">
+                        {senderName.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  )}
                 </div>
-                
-                {!isOwn && (
-                  <Avatar className={`h-8 w-8 ${isOwn ? 'order-1 mr-2' : 'order-2 ml-2'}`}>
-                    <AvatarImage src={partnerProfile?.avatar_url || undefined} />
-                    <AvatarFallback className="text-xs bg-muted">
-                      {senderName.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                )}
-              </div>
-            );
-          })
-        )}
-        <div ref={messagesEndRef} />
+              );
+            })
+          )}
+          <div ref={messagesEndRef} />
+        </div>
       </div>
 
       {/* Emoji Picker */}
@@ -450,8 +454,8 @@ export const Chat: React.FC<ChatProps> = ({ isOpen, onClose }) => {
         </div>
       )}
 
-      {/* Message Input - Fixed positioning */}
-      <div className="sticky bottom-0 border-t bg-background/95 backdrop-blur-sm p-4 shadow-lg">
+      {/* Message Input - Always visible at bottom */}
+      <div className="border-t bg-background p-4 min-h-[80px]" style={{ zIndex: 1000 }}>
         <div className="flex gap-2 items-end">
           {/* Attachment Button */}
           <Button
