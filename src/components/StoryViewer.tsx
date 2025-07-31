@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Heart, Send, Camera, Upload, Smile, MessageCircle, Eye } from 'lucide-react';
+import { X, Heart, Send, Camera, Upload, Smile, MessageCircle, Eye, Trash2, Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
+import { formatDistanceToNow } from 'date-fns';
 
 interface Story {
   id: string;
@@ -15,6 +16,7 @@ interface Story {
   created_at: string;
   expires_at: string;
   view_count: number;
+  has_partner_viewed?: boolean;
 }
 
 interface StoryResponse {
@@ -56,6 +58,8 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [progressTimer, setProgressTimer] = useState<NodeJS.Timeout | null>(null);
   const [isPaused, setIsPaused] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [storyToDelete, setStoryToDelete] = useState<string | null>(null);
 
   const quickEmojis = ['❤️', '😂', '😍', '🔥', '👏', '😢', '😮', '👍'];
 
@@ -85,7 +89,32 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setStories(data || []);
+
+      // For each story, check if partner has viewed it
+      const storiesWithViewStatus = await Promise.all(
+        (data || []).map(async (story) => {
+          if (isOwnStory) {
+            // Check if partner has viewed this story
+            const { data: views } = await supabase
+              .from('story_views')
+              .select('viewer_id')
+              .eq('story_id', story.id)
+              .neq('viewer_id', story.user_id);
+            
+            return {
+              ...story,
+              has_partner_viewed: (views && views.length > 0) || false
+            };
+          } else {
+            return {
+              ...story,
+              has_partner_viewed: false
+            };
+          }
+        })
+      );
+
+      setStories(storiesWithViewStatus);
       
       if (isOwnStory && (!data || data.length === 0)) {
         setShowCreateStory(true);
@@ -272,6 +301,36 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
     }
   };
 
+  const handleDeleteStory = async (storyId: string) => {
+    try {
+      const { error } = await supabase
+        .from('stories')
+        .delete()
+        .eq('id', storyId);
+
+      if (error) throw error;
+
+      toast.success('Story deleted');
+      fetchStories();
+      setShowDeleteConfirm(false);
+      setStoryToDelete(null);
+      
+      // If this was the last story or we're at the end, close or go back
+      if (stories.length === 1) {
+        onClose();
+      } else if (currentStoryIndex >= stories.length - 1) {
+        setCurrentStoryIndex(Math.max(0, currentStoryIndex - 1));
+      }
+    } catch (error) {
+      console.error('Error deleting story:', error);
+      toast.error('Failed to delete story');
+    }
+  };
+
+  const formatTimeAgo = (dateString: string) => {
+    return formatDistanceToNow(new Date(dateString), { addSuffix: true });
+  };
+
   if (!isOpen) return null;
 
   if (showCreateStory || (isOwnStory && stories.length === 0)) {
@@ -339,14 +398,22 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
                 />
               </label>
               
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={startCamera}
-              >
-                <Camera className="h-4 w-4 mr-2" />
-                Take Photo
-              </Button>
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  variant="outline"
+                  onClick={startCamera}
+                >
+                  <Camera className="h-4 w-4 mr-2" />
+                  Take Photo
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add More
+                </Button>
+              </div>
             </div>
           ) : (
             <div className="space-y-4">
@@ -421,15 +488,47 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
           ))}
         </div>
 
-        {/* Close Button */}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onClose}
-          className="absolute top-4 right-4 z-10 text-white hover:bg-white/20"
-        >
-          <X className="h-6 w-6" />
-        </Button>
+        {/* Header with story info */}
+        <div className="absolute top-12 left-4 right-4 z-10 flex items-center justify-between text-white">
+          <div className="flex items-center gap-2">
+            <div className="text-sm">
+              <div className="font-medium">{isOwnStory ? 'Your Story' : 'Partner\'s Story'}</div>
+              <div className="text-xs opacity-75">{formatTimeAgo(currentStory.created_at)}</div>
+            </div>
+            {isOwnStory && (
+              <div className="flex items-center gap-1 text-xs">
+                <Eye className="h-3 w-3" />
+                <span className={currentStory.has_partner_viewed ? 'text-green-400' : 'text-gray-400'}>
+                  {currentStory.has_partner_viewed ? 'Seen' : 'Not seen'}
+                </span>
+              </div>
+            )}
+          </div>
+          
+          <div className="flex items-center gap-2">
+            {isOwnStory && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => {
+                  setStoryToDelete(currentStory.id);
+                  setShowDeleteConfirm(true);
+                }}
+                className="text-white hover:bg-red-500/20"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onClose}
+              className="text-white hover:bg-white/20"
+            >
+              <X className="h-6 w-6" />
+            </Button>
+          </div>
+        </div>
 
         {/* Story Image */}
         <div 
@@ -519,13 +618,42 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
             <Button
               onClick={() => setShowCreateStory(true)}
               size="icon"
-              className="rounded-full"
+              className="rounded-full bg-primary hover:bg-primary/90"
             >
               <Camera className="h-4 w-4" />
             </Button>
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4">
+            <h3 className="text-lg font-semibold mb-4">Delete Story?</h3>
+            <p className="text-gray-600 mb-6">This action cannot be undone.</p>
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setStoryToDelete(null);
+                }}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => storyToDelete && handleDeleteStory(storyToDelete)}
+                className="flex-1"
+              >
+                Delete
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
