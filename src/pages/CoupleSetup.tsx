@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BottomNavigation } from "@/components/BottomNavigation";
-import { PartnerConnectionManager } from "@/components/PartnerConnectionManager";
+import { PartnerConnectionManagerV2 } from "@/components/PartnerConnectionManagerV2";
 import { Heart, Users, Plus, ArrowLeft, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -221,7 +221,7 @@ export const CoupleSetup = () => {
             </Card>
 
             {/* Partner Connection Management */}
-            <PartnerConnectionManager />
+            <PartnerConnectionManagerV2 />
 
             {/* Action Buttons */}
             <div className="flex gap-3 pt-2">
