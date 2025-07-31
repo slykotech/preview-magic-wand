@@ -438,8 +438,9 @@ export const Dashboard = () => {
     }
   };
 
+  // Only handle story viewing if story exists
   const handleUserAvatarClick = () => {
-    if (user?.id && coupleId) {
+    if (user?.id && coupleId && hasUserStory) {
       setStoryTargetUserId(user.id);
       setIsOwnStory(true);
       setShowStoryViewer(true);
@@ -447,9 +448,18 @@ export const Dashboard = () => {
   };
 
   const handlePartnerAvatarClick = () => {
-    if (partnerId && coupleId && partnerId !== user?.id) {
+    if (partnerId && coupleId && partnerId !== user?.id && hasPartnerStory) {
       setStoryTargetUserId(partnerId);
       setIsOwnStory(false);
+      setShowStoryViewer(true);
+    }
+  };
+
+  // Separate camera handler for uploading new stories
+  const handleCameraClick = () => {
+    if (user?.id && coupleId) {
+      setStoryTargetUserId(user.id);
+      setIsOwnStory(true);
       setShowStoryViewer(true);
     }
   };
@@ -557,6 +567,7 @@ export const Dashboard = () => {
               animated={true}
               onUserAvatarClick={handleUserAvatarClick}
               onPartnerAvatarClick={handlePartnerAvatarClick}
+              onCameraClick={handleCameraClick}
               hasUserStory={hasUserStory}
               hasPartnerStory={hasPartnerStory}
             />

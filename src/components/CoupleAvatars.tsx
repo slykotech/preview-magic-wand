@@ -7,6 +7,7 @@ interface CoupleAvatarsProps {
   animated?: boolean;
   onUserAvatarClick?: () => void;
   onPartnerAvatarClick?: () => void;
+  onCameraClick?: () => void;
   hasUserStory?: boolean;
   hasPartnerStory?: boolean;
 }
@@ -16,6 +17,7 @@ export const CoupleAvatars = ({
   animated = true, 
   onUserAvatarClick, 
   onPartnerAvatarClick,
+  onCameraClick,
   hasUserStory = false,
   hasPartnerStory = false 
 }: CoupleAvatarsProps) => {
@@ -53,38 +55,31 @@ export const CoupleAvatars = ({
       <div className={`flex items-center justify-center ${getProximityClass(syncScore)} transition-all duration-1000 ease-love`}>
         {/* User Avatar */}
         <div 
-          className={`relative ${isLoaded ? 'animate-fade-in' : 'opacity-0'} ${onUserAvatarClick ? 'cursor-pointer' : ''}`}
-          onClick={onUserAvatarClick}
+          className={`relative ${isLoaded ? 'animate-fade-in' : 'opacity-0'} ${(hasUserStory && onUserAvatarClick) ? 'cursor-pointer' : ''}`}
+          onClick={hasUserStory ? onUserAvatarClick : undefined}
         >
-          <div className={`w-24 h-24 rounded-full overflow-hidden shadow-romantic ring-4 ${
-            hasUserStory ? 'ring-gradient-primary ring-4' : 'ring-sunrise-coral/20'
-          } ${onUserAvatarClick ? 'hover:ring-8' : ''} transition-all duration-300`}>
-            <img 
-              src={coupleImage}
-              alt="User Avatar"
-              className={`w-full h-full object-cover object-left ${getAvatarMood(syncScore)} ${
-                animated ? 'hover:scale-110' : ''
-              } transition-all duration-300`}
-            />
-          </div>
-          {/* Story Ring */}
-          {hasUserStory && (
-            <div className="absolute inset-0 w-24 h-24 rounded-full bg-gradient-primary p-0.5">
+          {/* Gradient ring only if story exists */}
+          {hasUserStory ? (
+            <div className="w-24 h-24 rounded-full bg-gradient-primary p-0.5 hover:p-0 transition-all duration-300">
               <div className="w-full h-full rounded-full bg-white p-1">
-                <div className="w-full h-full rounded-full overflow-hidden">
+                <div className="w-full h-full rounded-full overflow-hidden shadow-romantic">
                   <img 
                     src={coupleImage}
                     alt="User Avatar"
-                    className="w-full h-full object-cover object-left"
+                    className={`w-full h-full object-cover object-left ${getAvatarMood(syncScore)} ${
+                      animated ? 'hover:scale-110' : ''
+                    } transition-all duration-300`}
                   />
                 </div>
               </div>
             </div>
-          )}
-          {/* Camera Icon for User Avatar */}
-          {onUserAvatarClick && (
-            <div className="absolute top-1 left-1 bg-gradient-to-br from-primary to-primary/80 text-white rounded-full p-1.5 shadow-lg animate-bounce border-2 border-white">
-              <Camera className="h-3 w-3" />
+          ) : (
+            <div className="w-24 h-24 rounded-full overflow-hidden shadow-romantic ring-4 ring-sunrise-coral/20">
+              <img 
+                src={coupleImage}
+                alt="User Avatar"
+                className={`w-full h-full object-cover object-left ${getAvatarMood(syncScore)} transition-all duration-300`}
+              />
             </div>
           )}
           {/* Mood Indicator */}
@@ -97,33 +92,32 @@ export const CoupleAvatars = ({
 
         {/* Partner Avatar */}
         <div 
-          className={`relative ${isLoaded ? 'animate-fade-in' : 'opacity-0'} ${onPartnerAvatarClick ? 'cursor-pointer' : ''}`} 
+          className={`relative ${isLoaded ? 'animate-fade-in' : 'opacity-0'} ${(hasPartnerStory && onPartnerAvatarClick) ? 'cursor-pointer' : ''}`} 
           style={{ animationDelay: '200ms' }}
-          onClick={onPartnerAvatarClick}
+          onClick={hasPartnerStory ? onPartnerAvatarClick : undefined}
         >
-          <div className={`w-24 h-24 rounded-full overflow-hidden shadow-romantic ring-4 ${
-            hasPartnerStory ? 'ring-gradient-primary ring-4' : 'ring-sunrise-coral/20'
-          } ${onPartnerAvatarClick ? 'hover:ring-8' : ''} transition-all duration-300`}>
-            <img 
-              src={coupleImage}
-              alt="Partner Avatar"
-              className={`w-full h-full object-cover object-right ${getAvatarMood(syncScore)} ${
-                animated ? 'hover:scale-110' : ''
-              } transition-all duration-300`}
-            />
-          </div>
-          {/* Story Ring */}
-          {hasPartnerStory && (
-            <div className="absolute inset-0 w-24 h-24 rounded-full bg-gradient-primary p-0.5">
+          {/* Gradient ring only if story exists */}
+          {hasPartnerStory ? (
+            <div className="w-24 h-24 rounded-full bg-gradient-primary p-0.5 hover:p-0 transition-all duration-300">
               <div className="w-full h-full rounded-full bg-white p-1">
-                <div className="w-full h-full rounded-full overflow-hidden">
+                <div className="w-full h-full rounded-full overflow-hidden shadow-romantic">
                   <img 
                     src={coupleImage}
                     alt="Partner Avatar"
-                    className="w-full h-full object-cover object-right"
+                    className={`w-full h-full object-cover object-right ${getAvatarMood(syncScore)} ${
+                      animated ? 'hover:scale-110' : ''
+                    } transition-all duration-300`}
                   />
                 </div>
               </div>
+            </div>
+          ) : (
+            <div className="w-24 h-24 rounded-full overflow-hidden shadow-romantic ring-4 ring-sunrise-coral/20">
+              <img 
+                src={coupleImage}
+                alt="Partner Avatar"
+                className={`w-full h-full object-cover object-right ${getAvatarMood(syncScore)} transition-all duration-300`}
+              />
             </div>
           )}
           {/* Mood Indicator */}
@@ -134,6 +128,18 @@ export const CoupleAvatars = ({
           }`}></div>
         </div>
       </div>
+
+      {/* Separate Camera Button for uploading stories */}
+      {onCameraClick && (
+        <div className="absolute top-0 right-0">
+          <button
+            onClick={onCameraClick}
+            className="bg-gradient-to-br from-primary to-primary/80 text-white rounded-full p-2 shadow-lg hover:scale-110 transition-all duration-300 border-2 border-white"
+          >
+            <Camera className="h-4 w-4" />
+          </button>
+        </div>
+      )}
 
       {/* Love Particles for High Sync */}
       {syncScore >= 90 && (
