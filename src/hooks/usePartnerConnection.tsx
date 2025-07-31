@@ -249,6 +249,8 @@ export const usePartnerConnection = () => {
 
     setIsProcessing(true);
     try {
+      console.log('Calling remove partner with coupleId:', coupleData.id);
+      
       const { data, error } = await supabase.functions.invoke('manage-partner-connection', {
         body: { 
           action: 'remove_partner',
@@ -256,12 +258,18 @@ export const usePartnerConnection = () => {
         }
       });
 
-      if (error) throw error;
+      console.log('Edge function response:', { data, error });
 
-      if (!data.success) {
+      if (error) {
+        console.error('Edge function error:', error);
+        throw error;
+      }
+
+      if (!data?.success) {
+        console.error('Edge function returned failure:', data);
         toast({
           title: "Remove Failed",
-          description: data.error,
+          description: data?.error || "Unknown error occurred",
           variant: "destructive"
         });
         return false;
