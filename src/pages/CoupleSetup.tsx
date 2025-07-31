@@ -25,6 +25,9 @@ export const CoupleSetup = () => {
   const [editing, setEditing] = useState(false);
   const [updating, setUpdating] = useState(false);
 
+  // Check if user is in demo mode (paired with themselves)
+  const isDemoMode = coupleData?.user1_id === coupleData?.user2_id;
+
   useEffect(() => {
     if (user) {
       fetchUserData();
@@ -163,6 +166,47 @@ export const CoupleSetup = () => {
       toast({
         title: "Error",
         description: "Failed to update partner connection",
+        variant: "destructive"
+      });
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const removePartner = async () => {
+    if (!coupleData) return;
+    
+    setUpdating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('remove-partner', {
+        body: { coupleId: coupleData.id }
+      });
+
+      if (error) throw error;
+
+      if (!data.success) {
+        toast({
+          title: "Remove Failed",
+          description: data.error,
+          variant: "destructive"
+        });
+        return;
+      }
+
+      toast({
+        title: "Partner Removed! 💔",
+        description: data.message,
+      });
+
+      // Refresh the data
+      await fetchUserData();
+      setEditing(false);
+      setPartnerEmail("");
+    } catch (error) {
+      console.error('Error removing partner:', error);
+      toast({
+        title: "Error",
+        description: "Failed to remove partner",
         variant: "destructive"
       });
     } finally {
@@ -425,21 +469,34 @@ export const CoupleSetup = () => {
                           Enter email of someone with a LoveSync account
                         </p>
                       </div>
-                      <Button
-                        onClick={updatePartnerConnection}
-                        disabled={updating}
-                        className="w-full bg-gradient-secondary hover:opacity-90 text-white shadow-romantic"
-                        size="sm"
-                      >
-                        {updating ? (
-                          <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                            Connecting...
-                          </>
-                        ) : (
-                          'Connect to Partner'
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={updatePartnerConnection}
+                          disabled={updating}
+                          className="flex-1 bg-gradient-secondary hover:opacity-90 text-white shadow-romantic"
+                          size="sm"
+                        >
+                          {updating ? (
+                            <>
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                              Connecting...
+                            </>
+                          ) : (
+                            'Connect to Partner'
+                          )}
+                        </Button>
+                        {!isDemoMode && (
+                          <Button
+                            variant="outline"
+                            onClick={removePartner}
+                            disabled={updating}
+                            className="text-red-600 border-red-200 hover:bg-red-50"
+                            size="sm"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         )}
-                      </Button>
+                      </div>
                     </div>
                   ) : (
                     <>
@@ -468,9 +525,25 @@ export const CoupleSetup = () => {
                           <div className="flex items-center gap-2">
                             <span className="text-yellow-600">⚠️</span>
                             <span className="text-yellow-800 text-sm font-medium">
-                              You are currently paired with yourself (demo mode)
+                              You are currently in demo mode. Add a real partner above.
                             </span>
                           </div>
+                        </div>
+                      )}
+
+                      {/* Show remove partner option for real couples */}
+                      {coupleData?.user1_id !== coupleData?.user2_id && !editing && (
+                        <div className="mt-3">
+                          <Button
+                            variant="outline"
+                            onClick={removePartner}
+                            disabled={updating}
+                            className="w-full text-red-600 border-red-200 hover:bg-red-50"
+                            size="sm"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Remove Partner
+                          </Button>
                         </div>
                       )}
                     </>

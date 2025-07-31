@@ -71,6 +71,20 @@ Deno.serve(async (req) => {
       )
     }
 
+    // Prevent self-partnering
+    if (partnerUser.id === user.id) {
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'You cannot be your own partner. Please enter a different email address.' 
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+
     console.log('Found partner user:', partnerUser.id)
 
     // Get current couple data to check if it's demo mode
