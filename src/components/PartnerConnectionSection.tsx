@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,10 +14,12 @@ import {
   Check,
   X,
   Clock,
-  Mail
+  Mail,
+  AlertCircle
 } from "lucide-react";
 import { usePartnerConnectionV2 } from "@/hooks/usePartnerConnectionV2";
 import { format } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
 
 export const PartnerConnectionSection = () => {
   const {
@@ -39,6 +41,11 @@ export const PartnerConnectionSection = () => {
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [showDeclineDialog, setShowDeclineDialog] = useState(false);
   const [selectedRequestId, setSelectedRequestId] = useState<string>("");
+  const [emailValidation, setEmailValidation] = useState<{
+    isValid: boolean;
+    message: string;
+    isChecking: boolean;
+  }>({ isValid: false, message: "", isChecking: false });
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -47,17 +54,56 @@ export const PartnerConnectionSection = () => {
   const handleCancel = () => {
     setIsEditing(false);
     setPartnerEmail("");
+    setEmailValidation({ isValid: false, message: "", isChecking: false });
   };
 
   const handleSendRequest = async () => {
-    if (!partnerEmail.trim()) return;
+    if (!partnerEmail.trim() || !emailValidation.isValid) return;
     
     const success = await sendPartnerRequest(partnerEmail);
     if (success) {
       setPartnerEmail("");
       setIsEditing(false);
+      setEmailValidation({ isValid: false, message: "", isChecking: false });
     }
   };
+
+  // Email validation function
+  const validateEmail = (email: string) => {
+    if (!email.trim()) {
+      setEmailValidation({ isValid: false, message: "", isChecking: false });
+      return;
+    }
+
+    // Basic email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setEmailValidation({ 
+        isValid: false, 
+        message: "Please enter a valid email address", 
+        isChecking: false 
+      });
+      return;
+    }
+
+    // Email format is valid - backend will handle user existence validation
+    setEmailValidation({ 
+      isValid: true, 
+      message: "Email format is valid", 
+      isChecking: false 
+    });
+  };
+
+  // Debounce email validation
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (partnerEmail) {
+        validateEmail(partnerEmail);
+      }
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [partnerEmail]);
 
   const handleDisconnectConfirm = async () => {
     const success = await disconnectFromPartner();
@@ -167,13 +213,37 @@ export const PartnerConnectionSection = () => {
                       value={partnerEmail}
                       onChange={(e) => setPartnerEmail(e.target.value)}
                       placeholder="partner@example.com"
-                      className="mt-1"
+                      className={`mt-1 ${
+                        partnerEmail && !emailValidation.isValid && !emailValidation.isChecking 
+                          ? 'border-red-500 focus:border-red-500' 
+                          : partnerEmail && emailValidation.isValid 
+                          ? 'border-green-500 focus:border-green-500' 
+                          : ''
+                      }`}
                     />
+                    {emailValidation.isChecking && (
+                      <p className="text-xs text-muted-foreground mt-1 flex items-center">
+                        <div className="animate-spin rounded-full h-3 w-3 border-b border-primary mr-1"></div>
+                        Validating email...
+                      </p>
+                    )}
+                    {partnerEmail && !emailValidation.isChecking && !emailValidation.isValid && emailValidation.message && (
+                      <p className="text-xs text-red-600 mt-1 flex items-center">
+                        <AlertCircle className="w-3 h-3 mr-1" />
+                        {emailValidation.message}
+                      </p>
+                    )}
+                    {partnerEmail && emailValidation.isValid && emailValidation.message && (
+                      <p className="text-xs text-green-600 mt-1 flex items-center">
+                        <Check className="w-3 h-3 mr-1" />
+                        {emailValidation.message}
+                      </p>
+                    )}
                   </div>
                   <div className="flex gap-2">
                     <Button 
                       onClick={handleSendRequest}
-                      disabled={isProcessing || !partnerEmail.trim()}
+                      disabled={isProcessing || !partnerEmail.trim() || !emailValidation.isValid || emailValidation.isChecking}
                       className="flex-1 bg-gradient-secondary hover:opacity-90 text-white"
                       size="sm"
                     >

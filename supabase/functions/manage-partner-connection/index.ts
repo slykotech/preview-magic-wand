@@ -142,31 +142,34 @@ async function handleSendRequest(supabase: any, user: any, partnerEmail: string)
 
   const partnerUser = authUsers.users.find((u: any) => u.email === partnerEmail)
   
-  // Check for existing pending request to this email
-  const { data: existingRequest, error: requestError } = await supabase
+  // Check for any existing requests to this email and clean them up if needed
+  const { data: existingRequests, error: requestError } = await supabase
     .from('partner_requests')
     .select('*')
     .eq('requester_id', user.id)
     .eq('requested_email', partnerEmail)
-    .eq('status', 'pending')
-    .maybeSingle()
 
   if (requestError) {
-    console.error('Error checking existing request:', requestError)
+    console.error('Error checking existing requests:', requestError)
     throw new Error('Failed to check existing requests')
   }
 
-  if (existingRequest) {
-    return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: 'You already have a pending request to this email.' 
-      }),
-      { 
-        status: 400, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    )
+  // If there are existing requests, delete them first to allow reconnection
+  if (existingRequests && existingRequests.length > 0) {
+    console.log('Found existing requests, cleaning up:', existingRequests.length)
+    
+    const { error: deleteError } = await supabase
+      .from('partner_requests')
+      .delete()
+      .eq('requester_id', user.id)
+      .eq('requested_email', partnerEmail)
+
+    if (deleteError) {
+      console.error('Error deleting existing requests:', deleteError)
+      throw new Error('Failed to clean up existing requests')
+    }
+    
+    console.log('Successfully cleaned up existing requests')
   }
 
   // Create partner request
