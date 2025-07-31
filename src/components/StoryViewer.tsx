@@ -69,6 +69,13 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
     }
   }, [isOpen, targetUserId]);
 
+  // Show create story interface when opening own stories
+  useEffect(() => {
+    if (isOpen && isOwnStory && stories.length === 0) {
+      setShowCreateStory(true);
+    }
+  }, [isOpen, isOwnStory, stories.length]);
+
   useEffect(() => {
     if (stories.length > 0 && currentStoryIndex < stories.length) {
       fetchStoryResponses();
