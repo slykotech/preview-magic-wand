@@ -84,7 +84,7 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
         .from('stories')
         .select(`
           *,
-          story_views!inner(viewer_id)
+          story_views(viewer_id)
         `)
         .eq('user_id', targetUserId)
         .eq('couple_id', coupleId)
