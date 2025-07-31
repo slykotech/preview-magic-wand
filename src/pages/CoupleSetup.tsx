@@ -209,30 +209,61 @@ export const CoupleSetup = () => {
     setCreating(true);
     
     try {
-      // Use the seed-data edge function to create complete test data
-      const { data, error } = await supabase.functions.invoke('seed-data', {
-        body: { userId: user?.id }
-      });
-
-      if (error) throw error;
-
-      // Update the user's display name in their profile
-      await supabase
-        .from('profiles')
-        .upsert({
-          user_id: user?.id,
-          display_name: displayName
+      if (partnerEmail.trim()) {
+        // Invite partner flow
+        const { data, error } = await supabase.functions.invoke('invite-partner', {
+          body: { 
+            partnerEmail: partnerEmail.trim(),
+            userDisplayName: displayName.trim()
+          }
         });
 
-      toast({
-        title: "Couple Profile Created! 💕",
-        description: "Sample data has been added. You can now use all features!",
-      });
+        if (error) throw error;
 
-      // Redirect to dashboard after successful setup
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 2000);
+        if (!data.success) {
+          toast({
+            title: "Invitation Failed",
+            description: data.error,
+            variant: "destructive"
+          });
+          return;
+        }
+
+        toast({
+          title: "Partner Invitation Sent! 💕",
+          description: data.message,
+        });
+
+        // Redirect to dashboard after successful setup
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 2000);
+      } else {
+        // Demo mode - use seed-data function
+        const { data, error } = await supabase.functions.invoke('seed-data', {
+          body: { userId: user?.id }
+        });
+
+        if (error) throw error;
+
+        // Update the user's display name in their profile
+        await supabase
+          .from('profiles')
+          .upsert({
+            user_id: user?.id,
+            display_name: displayName
+          });
+
+        toast({
+          title: "Demo Profile Created! 💕",
+          description: "Sample data has been added. You can now use all features!",
+        });
+
+        // Redirect to dashboard after successful setup
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 2000);
+      }
     } catch (error) {
       console.error('Error creating couple:', error);
       toast({
@@ -547,7 +578,7 @@ export const CoupleSetup = () => {
                     placeholder="partner@example.com"
                   />
                   <p className="text-sm text-muted-foreground mt-1">
-                    For now, we'll create demo data so you can explore all features! Their name will be automatically fetched from their profile when they join.
+                    Enter your partner's email to invite them. If they already have an account, you'll be connected immediately. If not, they'll need to create one first.
                   </p>
                 </div>
                 <Button 
