@@ -6,7 +6,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const resend = new Resend(Deno.env.get('RESEND_API_KEY'))
+const resendApiKey = Deno.env.get('RESEND_API_KEY')
+const resend = resendApiKey ? new Resend(resendApiKey) : null
 
 interface InvitationRequest {
   type: 'connect' | 'invite';
@@ -21,6 +22,12 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Check if Resend API key is configured
+    if (!resend) {
+      console.error('RESEND_API_KEY not configured')
+      throw new Error('Email service not configured')
+    }
+
     // Get the Authorization header
     const authHeader = req.headers.get('Authorization')
     
@@ -74,7 +81,7 @@ Deno.serve(async (req) => {
       if (type === 'connect') {
         // Send connection invitation to existing Love Sync user
         const { data, error } = await resend.emails.send({
-          from: 'Love Sync <onboarding@resend.dev>',
+          from: 'Love Sync <onboarding@resend.dev>', // Using resend's test domain for now
           to: [email],
           subject: `${displayName} wants to connect with you on Love Sync! 💕`,
           html: `
@@ -132,7 +139,7 @@ Deno.serve(async (req) => {
       } else {
         // Send invitation to join Love Sync
         const { data, error } = await resend.emails.send({
-          from: 'Love Sync <onboarding@resend.dev>',
+          from: 'Love Sync <onboarding@resend.dev>', // Using resend's test domain for now
           to: [email],
           subject: `${displayName} invited you to join Love Sync! 💕`,
           html: `

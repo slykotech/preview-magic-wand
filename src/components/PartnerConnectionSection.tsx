@@ -74,10 +74,11 @@ export const PartnerConnectionSection = () => {
 
       if (error) {
         console.error('Error sending connection email:', error);
-        return;
+        // Still proceed with the partner request even if email fails
+        console.log('Proceeding with partner request despite email error...');
+      } else {
+        console.log('Connection email sent successfully:', data);
       }
-
-      console.log('Connection email sent successfully:', data);
 
       // Then send the partner request through the existing flow
       const success = await sendPartnerRequest(partnerEmail);
@@ -88,6 +89,13 @@ export const PartnerConnectionSection = () => {
       }
     } catch (error) {
       console.error('Error in send request flow:', error);
+      // Still try to send the partner request
+      const success = await sendPartnerRequest(partnerEmail);
+      if (success) {
+        setPartnerEmail("");
+        setIsEditing(false);
+        setEmailValidation({ isValid: false, exists: false, available: false, message: "", isChecking: false, showInviteToJoin: false });
+      }
     }
   };
 
@@ -104,17 +112,30 @@ export const PartnerConnectionSection = () => {
 
       if (error) {
         console.error('Error sending invitation:', error);
+        setEmailValidation(prev => ({ 
+          ...prev, 
+          message: "Failed to send invitation. Please try again." 
+        }));
         return;
       }
 
       console.log('Invitation sent successfully:', data);
-      // Show success message or update UI as needed
       setEmailValidation(prev => ({ 
         ...prev, 
         message: "Invitation to join Love Sync sent successfully!" 
       }));
+      
+      // Clear the form after successful invite
+      setTimeout(() => {
+        setPartnerEmail("");
+        setEmailValidation({ isValid: false, exists: false, available: false, message: "", isChecking: false, showInviteToJoin: false });
+      }, 2000);
     } catch (error) {
       console.error('Error sending invitation:', error);
+      setEmailValidation(prev => ({ 
+        ...prev, 
+        message: "Failed to send invitation. Please try again." 
+      }));
     }
   };
 
