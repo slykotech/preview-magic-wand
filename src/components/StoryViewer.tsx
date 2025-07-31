@@ -76,10 +76,12 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
     }
   }, [isOpen, targetUserId, showUploadInterface, isOwnStory]);
 
-  // Show create story interface when opening own stories with no existing stories (but not when upload interface is explicitly requested)
+  // Only show create story interface when no existing stories AND not explicitly from avatar click
   useEffect(() => {
-    if (isOpen && isOwnStory && !showUploadInterface && stories.length === 0) {
+    if (isOpen && isOwnStory && showUploadInterface && stories.length === 0) {
       setShowCreateStory(true);
+    } else if (isOpen && !showUploadInterface) {
+      setShowCreateStory(false); // Ensure upload interface is hidden for avatar clicks
     }
   }, [isOpen, isOwnStory, showUploadInterface, stories.length]);
 

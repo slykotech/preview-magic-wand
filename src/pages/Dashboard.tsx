@@ -443,6 +443,7 @@ export const Dashboard = () => {
     if (user?.id && coupleId && hasUserStory) {
       setStoryTargetUserId(user.id);
       setIsOwnStory(true);
+      setShowUploadInterface(false); // Explicitly set to false for avatar clicks
       setShowStoryViewer(true);
     }
   };
@@ -451,6 +452,7 @@ export const Dashboard = () => {
     if (partnerId && coupleId && partnerId !== user?.id && hasPartnerStory) {
       setStoryTargetUserId(partnerId);
       setIsOwnStory(false);
+      setShowUploadInterface(false); // Explicitly set to false for avatar clicks
       setShowStoryViewer(true);
     }
   };
