@@ -2,11 +2,14 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { BottomNavigation } from "@/components/BottomNavigation";
-import { Send, Sparkles } from "lucide-react";
+import { Send, Sparkles, Mic, MicOff, Volume2, VolumeX, Lightbulb } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useVoiceRecording } from "@/hooks/useVoiceRecording";
+import { useTextToSpeech } from "@/hooks/useTextToSpeech";
+import { Badge } from "@/components/ui/badge";
 
 interface Message {
   id: string;
@@ -20,10 +23,14 @@ export const AICoach = () => {
   const [newMessage, setNewMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [isVoiceMode, setIsVoiceMode] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const { isRecording, isProcessing, startRecording, stopRecording } = useVoiceRecording();
+  const { isSpeaking, speak, stopSpeaking } = useTextToSpeech();
 
   useEffect(() => {
     if (!loading && !user) {
@@ -61,6 +68,14 @@ export const AICoach = () => {
       };
 
       setMessages([welcomeMessage]);
+      
+      // Set initial suggestions
+      setSuggestions([
+        "How can we improve our communication?",
+        "Planning a special date night",
+        "Dealing with relationship stress",
+        "Building emotional intimacy"
+      ]);
 
       // Save welcome message to database
       await supabase
@@ -89,12 +104,13 @@ export const AICoach = () => {
     scrollToBottom();
   }, [messages]);
 
-  const handleSendMessage = async () => {
-    if (!newMessage.trim() || !sessionId) return;
+  const handleSendMessage = async (messageText?: string) => {
+    const textToSend = messageText || newMessage;
+    if (!textToSend.trim() || !sessionId) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
-      content: newMessage,
+      content: textToSend,
       role: 'user',
       timestamp: new Date()
     };
@@ -113,44 +129,87 @@ export const AICoach = () => {
           role: 'user'
         });
 
-      // Simulate AI response (in a real app, this would call an AI service)
-      setTimeout(async () => {
-        const responses = [
-          "That's a wonderful insight! Communication is indeed the foundation of any strong relationship. Have you tried expressing this to your partner using 'I' statements?",
-          "I understand how challenging that can feel. Remember, every relationship has its ups and downs. What matters is how you both navigate through them together.",
-          "It sounds like you're both putting in effort, which is beautiful! Small gestures of appreciation can go a long way. When did you last tell your partner something you're grateful for?",
-          "Quality time is so important! Even 15 minutes of undivided attention each day can strengthen your bond. What's your favorite way to connect with your partner?"
-        ];
+      // Get AI response from OpenAI
+      const { data, error } = await supabase.functions.invoke('ai-coach-chat', {
+        body: {
+          messages: messages.concat(userMessage).map(m => ({
+            role: m.role,
+            content: m.content
+          })),
+          userContext: "Couple relationship coaching session"
+        }
+      });
 
-        const aiResponse: Message = {
-          id: (Date.now() + 1).toString(),
-          content: responses[Math.floor(Math.random() * responses.length)],
-          role: 'assistant',
-          timestamp: new Date()
-        };
+      if (error) throw error;
 
-        setMessages(prev => [...prev, aiResponse]);
-        setIsTyping(false);
+      const aiResponse: Message = {
+        id: (Date.now() + 1).toString(),
+        content: data.message,
+        role: 'assistant',
+        timestamp: new Date()
+      };
 
-        // Save AI response to database
-        await supabase
-          .from('ai_coach_messages')
-          .insert({
-            session_id: sessionId,
-            content: aiResponse.content,
-            role: 'assistant'
-          });
+      setMessages(prev => [...prev, aiResponse]);
+      setIsTyping(false);
 
-      }, 2000);
+      // Save AI response to database
+      await supabase
+        .from('ai_coach_messages')
+        .insert({
+          session_id: sessionId,
+          content: aiResponse.content,
+          role: 'assistant'
+        });
+
+      // Auto-speak in voice mode
+      if (isVoiceMode) {
+        await speak(aiResponse.content);
+      }
+
+      // Update suggestions based on conversation
+      updateSuggestions(aiResponse.content);
 
     } catch (error) {
-      console.error('Error saving message:', error);
+      console.error('Error handling message:', error);
       setIsTyping(false);
+      toast({
+        title: "Error",
+        description: "Failed to get AI response. Please try again.",
+        variant: "destructive"
+      });
     }
+  };
 
+  const updateSuggestions = (aiResponse: string) => {
+    // Generate contextual suggestions based on AI response
+    const contextSuggestions = [
+      "Can you give me specific examples?",
+      "How do we practice this together?",
+      "What if my partner doesn't respond well?",
+      "Any other techniques you'd recommend?"
+    ];
+    setSuggestions(contextSuggestions);
+  };
+
+  const handleVoiceMessage = async () => {
+    if (isRecording) {
+      const transcribedText = await stopRecording();
+      if (transcribedText) {
+        await handleSendMessage(transcribedText);
+      }
+    } else {
+      await startRecording();
+    }
+  };
+
+  const toggleVoiceMode = () => {
+    setIsVoiceMode(!isVoiceMode);
+    if (isSpeaking) {
+      stopSpeaking();
+    }
     toast({
-      title: "Message sent! 📨",
-      description: "Your AI coach is thinking...",
+      title: isVoiceMode ? "Voice mode disabled" : "Voice mode enabled",
+      description: isVoiceMode ? "AI responses will be text only" : "AI responses will be spoken aloud",
     });
   };
 
@@ -165,14 +224,24 @@ export const AICoach = () => {
     <div className="min-h-screen bg-background flex flex-col pb-20">
       {/* Header */}
       <div className="bg-gradient-romance text-white p-6 shadow-romantic">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center animate-pulse">
-            <Sparkles size={24} />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center animate-pulse">
+              <Sparkles size={24} />
+            </div>
+            <div>
+              <h1 className="text-xl font-extrabold font-poppins">AI Relationship Coach</h1>
+              <p className="text-white/80 text-sm font-inter font-bold">Always here to help your love grow</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-xl font-extrabold font-poppins">AI Relationship Coach</h1>
-            <p className="text-white/80 text-sm font-inter font-bold">Always here to help your love grow</p>
-          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={toggleVoiceMode}
+            className="text-white hover:bg-white/20"
+          >
+            {isVoiceMode ? <Volume2 size={20} /> : <VolumeX size={20} />}
+          </Button>
         </div>
       </div>
 
@@ -216,6 +285,47 @@ export const AICoach = () => {
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Suggestions */}
+      {suggestions.length > 0 && (
+        <div className="px-4 pb-2">
+          <div className="flex items-center gap-2 mb-3">
+            <Lightbulb size={16} className="text-secondary" />
+            <span className="text-sm font-medium text-muted-foreground">Quick suggestions:</span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {suggestions.map((suggestion, index) => (
+              <Badge
+                key={index}
+                variant="secondary"
+                className="cursor-pointer hover:bg-secondary/80 transition-colors"
+                onClick={() => handleSendMessage(suggestion)}
+              >
+                {suggestion}
+              </Badge>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Voice Controls */}
+      {isVoiceMode && (
+        <div className="px-4 pb-2">
+          <div className="bg-card rounded-lg p-3 border border-secondary/20">
+            <div className="flex items-center justify-center gap-3">
+              <div className={`w-3 h-3 rounded-full ${isVoiceMode ? 'bg-green-500 animate-pulse' : 'bg-muted'}`} />
+              <span className="text-sm font-medium">Voice Mode Active</span>
+              {(isRecording || isProcessing || isSpeaking) && (
+                <div className="text-xs text-muted-foreground">
+                  {isRecording && "🎤 Listening..."}
+                  {isProcessing && "⚡ Processing..."}
+                  {isSpeaking && "🔊 Speaking..."}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Input */}
       <div className="p-4 bg-card border-t border-border">
         <div className="flex gap-3">
@@ -223,13 +333,26 @@ export const AICoach = () => {
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder="Share what's on your mind..."
+            placeholder={isVoiceMode ? "Tap mic to speak or type..." : "Share what's on your mind..."}
             className="flex-1 rounded-full border-muted focus:border-secondary font-inter"
-            disabled={isTyping}
+            disabled={isTyping || isRecording || isProcessing}
           />
+          
+          {/* Voice Button */}
           <Button
-            onClick={handleSendMessage}
-            disabled={!newMessage.trim() || isTyping}
+            onClick={handleVoiceMessage}
+            disabled={isTyping || isProcessing}
+            variant={isRecording ? "destructive" : "outline"}
+            size="fab"
+            className="shrink-0"
+          >
+            {isRecording ? <MicOff size={20} /> : <Mic size={20} />}
+          </Button>
+
+          {/* Send Button */}
+          <Button
+            onClick={() => handleSendMessage()}
+            disabled={!newMessage.trim() || isTyping || isRecording || isProcessing}
             variant="floating"
             size="fab"
             className="shrink-0"
