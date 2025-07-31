@@ -82,7 +82,10 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
     try {
       const { data, error } = await supabase
         .from('stories')
-        .select('*')
+        .select(`
+          *,
+          story_views!inner(viewer_id)
+        `)
         .eq('user_id', targetUserId)
         .eq('couple_id', coupleId)
         .gt('expires_at', new Date().toISOString())
@@ -90,29 +93,11 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
 
       if (error) throw error;
 
-      // For each story, check if partner has viewed it
-      const storiesWithViewStatus = await Promise.all(
-        (data || []).map(async (story) => {
-          if (isOwnStory) {
-            // Check if partner has viewed this story
-            const { data: views } = await supabase
-              .from('story_views')
-              .select('viewer_id')
-              .eq('story_id', story.id)
-              .neq('viewer_id', story.user_id);
-            
-            return {
-              ...story,
-              has_partner_viewed: (views && views.length > 0) || false
-            };
-          } else {
-            return {
-              ...story,
-              has_partner_viewed: false
-            };
-          }
-        })
-      );
+      // Process stories with view status
+      const storiesWithViewStatus = (data || []).map(story => ({
+        ...story,
+        has_partner_viewed: story.story_views?.some((view: any) => view.viewer_id !== story.user_id) || false
+      }));
 
       setStories(storiesWithViewStatus);
       
@@ -121,7 +106,29 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
       }
     } catch (error) {
       console.error('Error fetching stories:', error);
-      toast.error('Failed to load stories');
+      
+      // Fallback: fetch stories without view status if join fails
+      try {
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('stories')
+          .select('*')
+          .eq('user_id', targetUserId)
+          .eq('couple_id', coupleId)
+          .gt('expires_at', new Date().toISOString())
+          .order('created_at', { ascending: false });
+
+        if (fallbackError) throw fallbackError;
+        
+        const storiesWithFallbackStatus = (fallbackData || []).map(story => ({
+          ...story,
+          has_partner_viewed: false
+        }));
+        
+        setStories(storiesWithFallbackStatus);
+      } catch (fallbackError) {
+        console.error('Fallback fetch also failed:', fallbackError);
+        toast.error('Failed to load stories');
+      }
     }
   };
 
