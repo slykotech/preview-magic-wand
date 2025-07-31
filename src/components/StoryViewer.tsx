@@ -216,15 +216,152 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
     }
   };
 
+  const checkCameraSupport = () => {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      toast.error('Camera is not supported in this browser. Please use a modern browser like Chrome, Firefox, or Safari.');
+      return false;
+    }
+    
+    // Check if we're on HTTPS or localhost (required for camera access)
+    if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+      toast.error('Camera access requires a secure connection (HTTPS). Please check your connection.');
+      return false;
+    }
+    
+    return true;
+  };
+
+  const checkPermissions = async () => {
+    try {
+      // Try to check permissions if the API is available
+      if ('permissions' in navigator) {
+        const permission = await navigator.permissions.query({ name: 'camera' as PermissionName });
+        console.log('Camera permission status:', permission.state);
+        
+        if (permission.state === 'denied') {
+          toast.error(
+            'Camera access is permanently denied. Please enable camera permissions in your browser settings:\n' +
+            '1. Click the camera icon in your address bar\n' +
+            '2. Select "Allow" for camera access\n' +
+            '3. Refresh the page and try again'
+          );
+          return false;
+        }
+      }
+      return true;
+    } catch (error) {
+      console.log('Permissions API not available, will try direct access');
+      return true;
+    }
+  };
+
   const startCamera = async () => {
     try {
-      // First, try to get user media directly (more reliable than permissions API)
+      console.log('Starting camera access...');
+      
+      // Step 1: Check basic camera support
+      if (!checkCameraSupport()) {
+        return;
+      }
+
+      // Step 2: Check existing permissions
+      const hasPermission = await checkPermissions();
+      if (!hasPermission) {
+        return;
+      }
+
+      // Step 3: Show loading state
+      toast.loading('Requesting camera access...', { id: 'camera-loading' });
+
+      // Step 4: Request camera access with comprehensive settings
+      console.log('Requesting camera stream...');
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: { 
           facingMode: 'user',
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
+          width: { ideal: 1280, min: 640, max: 1920 },
+          height: { ideal: 720, min: 480, max: 1080 }
         }, 
+        audio: false 
+      });
+      
+      console.log('Camera stream obtained successfully');
+      
+      // Step 5: Set up video element
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        
+        // Wait for video to be ready
+        await new Promise<void>((resolve, reject) => {
+          if (videoRef.current) {
+            videoRef.current.onloadedmetadata = () => {
+              console.log('Video metadata loaded');
+              resolve();
+            };
+            videoRef.current.onerror = (error) => {
+              console.error('Video error:', error);
+              reject(new Error('Failed to load video'));
+            };
+          }
+        });
+        
+        // Play the video
+        await videoRef.current.play();
+        console.log('Camera video started playing');
+        
+        setShowCamera(true);
+        toast.dismiss('camera-loading');
+        toast.success('Camera is ready! Position yourself and click "Capture" to take a photo.');
+      }
+    } catch (error: any) {
+      console.error('Camera access error:', error);
+      toast.dismiss('camera-loading');
+      
+      // Enhanced error handling with specific solutions
+      if (error.name === 'NotAllowedError') {
+        toast.error(
+          'Camera access denied. To fix this:\n' +
+          '1. Look for the camera icon in your browser\'s address bar\n' +
+          '2. Click it and select "Allow"\n' +
+          '3. Or go to browser settings and enable camera for this site\n' +
+          '4. Refresh and try again'
+        );
+      } else if (error.name === 'NotFoundError') {
+        toast.error(
+          'No camera found. Please:\n' +
+          '1. Check that your camera is connected\n' +
+          '2. Make sure no other apps are using the camera\n' +
+          '3. Try refreshing the page'
+        );
+      } else if (error.name === 'NotSupportedError') {
+        toast.error('Camera is not supported on this device or browser. Please use a modern browser.');
+      } else if (error.name === 'NotReadableError') {
+        toast.error(
+          'Camera is busy. Please:\n' +
+          '1. Close other apps using the camera\n' +
+          '2. Restart your browser\n' +
+          '3. Try again'
+        );
+      } else if (error.name === 'OverconstrainedError') {
+        toast.error('Camera settings not supported. Trying with basic settings...');
+        // Retry with basic settings
+        setTimeout(() => startCameraBasic(), 1000);
+      } else {
+        toast.error(
+          'Camera access failed. Try:\n' +
+          '1. Refreshing the page\n' +
+          '2. Checking browser permissions\n' +
+          '3. Using a different browser'
+        );
+      }
+    }
+  };
+
+  // Fallback camera access with minimal constraints
+  const startCameraBasic = async () => {
+    try {
+      console.log('Attempting basic camera access...');
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: true, 
         audio: false 
       });
       
@@ -232,22 +369,11 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
         videoRef.current.srcObject = stream;
         await videoRef.current.play();
         setShowCamera(true);
-        toast.success('Camera is ready! Click "Capture" to take a photo.');
+        toast.success('Camera is ready with basic settings!');
       }
-    } catch (error: any) {
-      console.error('Error accessing camera:', error);
-      
-      if (error.name === 'NotAllowedError') {
-        toast.error('Camera access denied. Please click "Allow" when your browser asks for camera permission.');
-      } else if (error.name === 'NotFoundError') {
-        toast.error('No camera found on this device.');
-      } else if (error.name === 'NotSupportedError') {
-        toast.error('Camera is not supported on this device or browser.');
-      } else if (error.name === 'NotReadableError') {
-        toast.error('Camera is already in use by another application.');
-      } else {
-        toast.error('Unable to access camera. Please check your browser settings and try again.');
-      }
+    } catch (error) {
+      console.error('Basic camera access also failed:', error);
+      toast.error('Unable to access camera even with basic settings. Please check your device and browser.');
     }
   };
 
