@@ -20,7 +20,7 @@ export const Dashboard = () => {
   const [syncScore, setSyncScore] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoaded, setIsLoaded] = useState(false);
-  const [showSplash, setShowSplash] = useState(false);
+  const [showSplash, setShowSplash] = useState(true);
   const [showDailyCheckin, setShowDailyCheckin] = useState(false);
   const [showMoodCheckin, setShowMoodCheckin] = useState(false);
   const [upcomingDate, setUpcomingDate] = useState<any>(null);
@@ -262,14 +262,14 @@ export const Dashboard = () => {
       }
       setIsLoaded(true);
       
-      // Show splash animation for 2 seconds to allow zoom animation
-      setShowSplash(true);
+      // Hide splash after data loads and animation completes
       setTimeout(() => setShowSplash(false), 2000);
 
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
       setIsLoaded(true);
-      setShowSplash(false);
+      // Hide splash even on error to prevent infinite loading
+      setTimeout(() => setShowSplash(false), 1000);
     }
   };
 
@@ -499,8 +499,8 @@ export const Dashboard = () => {
         </div>
       )}
       
-      {/* Main Content - visible by default, hidden only during splash animation */}
-      <div className={showSplash && isLoaded ? 'opacity-0' : 'opacity-100'}>
+      {/* Main Content - hidden during splash screen */}
+      <div className={showSplash ? 'opacity-0' : 'opacity-100 transition-opacity duration-300'}>
         {/* Header with gradient background */}
         <div className="bg-gradient-primary py-12 px-6 -mx-6 -mt-8 mb-8">
           <div className={`text-center space-y-2 ${isLoaded && !showSplash ? 'animate-fade-in' : 'opacity-0'}`}>
