@@ -641,13 +641,6 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
               prevStory();
             }}
           />
-          <div 
-            className="absolute right-0 top-0 w-1/3 h-full z-10"
-            onClick={(e) => {
-              e.stopPropagation();
-              nextStory();
-            }}
-          />
 
           {/* Caption */}
           {currentStory.caption && (
