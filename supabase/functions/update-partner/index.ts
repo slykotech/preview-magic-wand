@@ -73,32 +73,7 @@ Deno.serve(async (req) => {
 
     console.log('Found partner user:', partnerUser.id)
 
-    // Step 2: Check if partner is already in another couple relationship
-    const { data: existingPartnerCouple, error: partnerCoupleError } = await supabase
-      .from('couples')
-      .select('id')
-      .or(`user1_id.eq.${partnerUser.id},user2_id.eq.${partnerUser.id}`)
-      .maybeSingle()
-
-    if (partnerCoupleError) {
-      console.error('Error checking partner\'s existing couples:', partnerCoupleError)
-      throw new Error('Failed to check partner availability')
-    }
-
-    if (existingPartnerCouple) {
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: 'Partner is already in another couple relationship' 
-        }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      )
-    }
-
-    // Step 3: Verify the couple belongs to the current user
+    // Get current couple data to check if it's demo mode
     const { data: currentCouple, error: coupleError } = await supabase
       .from('couples')
       .select('*')
@@ -113,7 +88,38 @@ Deno.serve(async (req) => {
 
     console.log('Current couple data:', currentCouple)
 
-    // Step 4: Update the couple relationship
+    // Check if this is demo mode (user is paired with themselves)
+    const isDemoMode = currentCouple.user1_id === currentCouple.user2_id
+
+    // Step 2: Check if partner is already in another couple relationship (skip if demo mode and same user)
+    if (!isDemoMode || partnerUser.id !== user.id) {
+      const { data: existingPartnerCouple, error: partnerCoupleError } = await supabase
+        .from('couples')
+        .select('id')
+        .or(`user1_id.eq.${partnerUser.id},user2_id.eq.${partnerUser.id}`)
+        .neq('id', coupleId) // Exclude current couple
+        .maybeSingle()
+
+      if (partnerCoupleError) {
+        console.error('Error checking partner\'s existing couples:', partnerCoupleError)
+        throw new Error('Failed to check partner availability')
+      }
+
+      if (existingPartnerCouple) {
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: 'Partner is already in another couple relationship' 
+          }),
+          { 
+            status: 400, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        )
+      }
+    }
+
+    // Step 3: Update the couple relationship
     // Determine which user field to update
     let updateData: any = {}
     if (currentCouple.user1_id === user.id) {
