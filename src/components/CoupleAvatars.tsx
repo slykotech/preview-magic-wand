@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Camera } from "lucide-react";
 import coupleImage from "@/assets/couple-avatars.jpg";
 
 interface CoupleAvatarsProps {
@@ -78,6 +79,12 @@ export const CoupleAvatars = ({
                   />
                 </div>
               </div>
+            </div>
+          )}
+          {/* Camera Icon for User Avatar */}
+          {onUserAvatarClick && (
+            <div className="absolute top-1 left-1 bg-primary text-primary-foreground rounded-full p-1 shadow-lg animate-pulse">
+              <Camera className="h-3 w-3" />
             </div>
           )}
           {/* Mood Indicator */}
