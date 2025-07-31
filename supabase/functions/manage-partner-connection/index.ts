@@ -192,8 +192,8 @@ async function handleSendRequest(supabase: any, user: any, partnerEmail: string)
   console.log('Successfully created partner request:', newRequest)
 
   const message = partnerUser 
-    ? `Partner request sent to ${partnerEmail}! They can accept it from their app.`
-    : `Partner request created! ${partnerEmail} will need to create an account first, then they can accept your request.`
+    ? `Partner request sent to ${partnerEmail}! They will receive an email to accept the connection.`
+    : `Partner request created! ${partnerEmail} will need to create an account first, then they can accept your request via email.`
 
   return new Response(
     JSON.stringify({ 

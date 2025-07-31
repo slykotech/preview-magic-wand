@@ -121,6 +121,9 @@ Deno.serve(async (req) => {
 
         if (error) {
           console.error('Resend error:', error)
+          if (error.name === 'rate_limit_exceeded' || error.statusCode === 429) {
+            throw new Error('Rate limit exceeded. Please try again in a few seconds.')
+          }
           throw new Error(`Failed to send email: ${error.message}`)
         }
 
@@ -186,6 +189,9 @@ Deno.serve(async (req) => {
 
         if (error) {
           console.error('Resend error:', error)
+          if (error.name === 'rate_limit_exceeded' || error.statusCode === 429) {
+            throw new Error('Rate limit exceeded. Please try again in a few seconds.')
+          }
           throw new Error(`Failed to send email: ${error.message}`)
         }
 
