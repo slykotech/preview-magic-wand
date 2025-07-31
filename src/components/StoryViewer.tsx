@@ -690,7 +690,7 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
             <Button
               onClick={() => setShowCreateStory(true)}
               size="icon"
-              className="rounded-full bg-primary hover:bg-primary/90"
+              className="rounded-full bg-primary hover:bg-primary/90 shadow-lg"
             >
               <Camera className="h-4 w-4" />
             </Button>
