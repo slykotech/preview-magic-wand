@@ -25,7 +25,7 @@ export const Auth = () => {
         navigate('/onboarding');
       }
       if (event === 'TOKEN_REFRESHED' && session) {
-        navigate('/onboarding');
+        navigate('/dashboard');
       }
     });
 
@@ -123,7 +123,7 @@ export const Auth = () => {
         title: "Welcome back! 💕",
         description: "Successfully signed in"
       });
-      navigate('/onboarding');
+        navigate('/dashboard');
     }
   };
 

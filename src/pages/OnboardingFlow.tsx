@@ -111,7 +111,7 @@ const OnboardingFlow = () => {
     } else {
       // Complete onboarding and go to dashboard
       console.log("Onboarding complete:", { relationshipType, goals });
-      navigate('/dashboard');
+      navigate('/auth');
     }
   };
 
