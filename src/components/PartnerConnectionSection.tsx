@@ -63,11 +63,31 @@ export const PartnerConnectionSection = () => {
   const handleSendRequest = async () => {
     if (!partnerEmail.trim() || !emailValidation.isValid || !emailValidation.exists || !emailValidation.available) return;
     
-    const success = await sendPartnerRequest(partnerEmail);
-    if (success) {
-      setPartnerEmail("");
-      setIsEditing(false);
-      setEmailValidation({ isValid: false, exists: false, available: false, message: "", isChecking: false, showInviteToJoin: false });
+    try {
+      // Send connection email first
+      const { data, error } = await supabase.functions.invoke('send-invitation-email', {
+        body: {
+          type: 'connect',
+          email: partnerEmail
+        }
+      });
+
+      if (error) {
+        console.error('Error sending connection email:', error);
+        return;
+      }
+
+      console.log('Connection email sent successfully:', data);
+
+      // Then send the partner request through the existing flow
+      const success = await sendPartnerRequest(partnerEmail);
+      if (success) {
+        setPartnerEmail("");
+        setIsEditing(false);
+        setEmailValidation({ isValid: false, exists: false, available: false, message: "", isChecking: false, showInviteToJoin: false });
+      }
+    } catch (error) {
+      console.error('Error in send request flow:', error);
     }
   };
 
