@@ -561,7 +561,7 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
         </div>
 
         {/* Header with story info */}
-        <div className="absolute top-12 left-4 right-4 z-10 flex items-center justify-between text-white">
+        <div className="absolute top-12 left-4 right-4 z-20 flex items-center justify-between text-white">
           <div className="flex items-center gap-2">
             <div className="text-sm">
               <div className="font-medium">{isOwnStory ? 'Your Story' : 'Partner\'s Story'}</div>
@@ -582,11 +582,12 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation();
                   setStoryToDelete(currentStory.id);
                   setShowDeleteConfirm(true);
                 }}
-                className="text-white hover:bg-red-500/20"
+                className="text-white hover:bg-red-500/20 z-30"
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
@@ -594,8 +595,11 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
             <Button
               variant="ghost"
               size="icon"
-              onClick={onClose}
-              className="text-white hover:bg-white/20"
+              onClick={(e) => {
+                e.stopPropagation();
+                onClose();
+              }}
+              className="text-white hover:bg-white/20 z-30"
             >
               <X className="h-6 w-6" />
             </Button>
@@ -700,7 +704,7 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]">
           <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4">
             <h3 className="text-lg font-semibold mb-4">Delete Story?</h3>
             <p className="text-gray-600 mb-6">This action cannot be undone.</p>
