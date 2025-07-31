@@ -115,9 +115,10 @@ export const usePartnerConnectionV2 = () => {
 
       // Update connection status based on requests
       if ((incoming && incoming.length > 0) || (outgoing && outgoing.length > 0)) {
-        if (connectionStatus === 'unpaired') {
-          setConnectionStatus('pending');
-        }
+        setConnectionStatus('pending');
+      } else if (!couple || couple.user1_id === couple.user2_id) {
+        // No pending requests and not paired (or in demo mode) - set to unpaired
+        setConnectionStatus('unpaired');
       }
 
     } catch (error) {
