@@ -78,6 +78,10 @@ export const MemoryVault = () => {
   const [fabOpen, setFabOpen] = useState(false);
   const [createMode, setCreateMode] = useState<'photo' | 'note'>('photo');
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [detailItem, setDetailItem] = useState<(Memory & { type: 'memory' }) | (Note & { type: 'note' }) | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editItem, setEditItem] = useState<(Memory & { type: 'memory' }) | (Note & { type: 'note' }) | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
@@ -484,16 +488,120 @@ export const MemoryVault = () => {
 
   const filteredItems = getFilteredItems();
 
-  const toggleExpanded = (itemId: string) => {
-    setExpandedItems(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(itemId)) {
-        newSet.delete(itemId);
-      } else {
-        newSet.add(itemId);
-      }
-      return newSet;
-    });
+  const openDetailModal = (item: any) => {
+    setDetailItem(item);
+    setShowDetailModal(true);
+  };
+
+  const openEditModal = (item: any) => {
+    setEditItem(item);
+    if (item.type === 'memory') {
+      setNewMemory({
+        title: item.title,
+        description: item.description || '',
+        memory_date: item.memory_date || '',
+        image_url: ''
+      });
+    } else {
+      setNewNote({
+        title: item.title,
+        content: item.content || ''
+      });
+    }
+    setShowEditModal(true);
+  };
+
+  const updateMemory = async () => {
+    if (!editItem || editItem.type !== 'memory' || !newMemory.title.trim()) {
+      toast({
+        title: "Missing information",
+        description: "Please enter at least a title for your memory",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('memories')
+        .update({
+          title: newMemory.title,
+          description: newMemory.description || null,
+          memory_date: newMemory.memory_date || null,
+        })
+        .eq('id', editItem.id);
+
+      if (error) throw error;
+
+      // Update local state
+      setMemories(prev => prev.map(m => 
+        m.id === editItem.id 
+          ? { ...m, title: newMemory.title, description: newMemory.description || null, memory_date: newMemory.memory_date || null }
+          : m
+      ));
+
+      setShowEditModal(false);
+      setEditItem(null);
+      setNewMemory({ title: "", description: "", memory_date: "", image_url: "" });
+
+      toast({
+        title: "Memory Updated! 💕",
+        description: "Your memory has been successfully updated",
+      });
+    } catch (error) {
+      console.error('Error updating memory:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update memory",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const updateNote = async () => {
+    if (!editItem || editItem.type !== 'note' || !newNote.title.trim()) {
+      toast({
+        title: "Missing information",
+        description: "Please enter at least a title for your note",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('notes')
+        .update({
+          title: newNote.title,
+          content: newNote.content || null,
+        })
+        .eq('id', editItem.id);
+
+      if (error) throw error;
+
+      // Update local state
+      setNotes(prev => prev.map(n => 
+        n.id === editItem.id 
+          ? { ...n, title: newNote.title, content: newNote.content || null }
+          : n
+      ));
+
+      setShowEditModal(false);
+      setEditItem(null);
+      setNewNote({ title: "", content: "" });
+
+      toast({
+        title: "Note Updated! 📝",
+        description: "Your note has been successfully updated",
+      });
+    } catch (error) {
+      console.error('Error updating note:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update note",
+        variant: "destructive"
+      });
+    }
   };
 
   if (loading) {
@@ -613,17 +721,17 @@ export const MemoryVault = () => {
                             <p className={isExpanded ? '' : 'line-clamp-2'}>
                               {(item as Memory).description}
                             </p>
-                            {(item as Memory).description!.length > 80 && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  toggleExpanded(item.id);
-                                }}
-                                className="text-white/60 hover:text-white text-xs mt-1 underline"
-                              >
-                                {isExpanded ? 'Show less' : 'Read more'}
-                              </button>
-                            )}
+                             {(item as Memory).description!.length > 80 && (
+                               <button
+                                 onClick={(e) => {
+                                   e.stopPropagation();
+                                   openDetailModal(item);
+                                 }}
+                                 className="text-white/60 hover:text-white text-xs mt-1 underline"
+                               >
+                                 Read more
+                               </button>
+                             )}
                           </div>
                         )}
                       </div>
@@ -661,17 +769,17 @@ export const MemoryVault = () => {
                             <p className={isExpanded ? '' : 'line-clamp-3'}>
                               {(item as Note).content}
                             </p>
-                            {(item as Note).content!.length > 120 && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  toggleExpanded(item.id);
-                                }}
-                                className="text-primary hover:text-primary/80 text-xs mt-1 underline"
-                              >
-                                {isExpanded ? 'Show less' : 'Read more'}
-                              </button>
-                            )}
+                             {(item as Note).content!.length > 120 && (
+                               <button
+                                 onClick={(e) => {
+                                   e.stopPropagation();
+                                   openDetailModal(item);
+                                 }}
+                                 className="text-primary hover:text-primary/80 text-xs mt-1 underline"
+                               >
+                                 Read more
+                               </button>
+                             )}
                           </div>
                         )}
                         
@@ -681,17 +789,17 @@ export const MemoryVault = () => {
                             <p className={isExpanded ? '' : 'line-clamp-3'}>
                               {(item as Memory).description}
                             </p>
-                            {(item as Memory).description!.length > 120 && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  toggleExpanded(item.id);
-                                }}
-                                className="text-primary hover:text-primary/80 text-xs mt-1 underline"
-                              >
-                                {isExpanded ? 'Show less' : 'Read more'}
-                              </button>
-                            )}
+                             {(item as Memory).description!.length > 120 && (
+                               <button
+                                 onClick={(e) => {
+                                   e.stopPropagation();
+                                   openDetailModal(item);
+                                 }}
+                                 className="text-primary hover:text-primary/80 text-xs mt-1 underline"
+                               >
+                                 Read more
+                               </button>
+                             )}
                           </div>
                         )}
                         
@@ -855,6 +963,17 @@ export const MemoryVault = () => {
                 </p>
                 <div className="flex gap-2 pt-4">
                   <Button
+                    onClick={() => {
+                      openEditModal({ ...selectedMemory, type: 'memory' });
+                      setSelectedMemory(null);
+                    }}
+                    variant="outline"
+                    size="sm"
+                  >
+                    <Edit size={16} className="mr-1" />
+                    Edit
+                  </Button>
+                  <Button
                     onClick={() => toggleFavorite(selectedMemory.id, 'memory', selectedMemory.is_favorite)}
                     variant="outline"
                     size="sm"
@@ -896,6 +1015,17 @@ export const MemoryVault = () => {
                   {formatDate(selectedNote.created_at)}
                 </p>
                 <div className="flex gap-2 pt-4">
+                  <Button
+                    onClick={() => {
+                      openEditModal({ ...selectedNote, type: 'note' });
+                      setSelectedNote(null);
+                    }}
+                    variant="outline"
+                    size="sm"
+                  >
+                    <Edit size={16} className="mr-1" />
+                    Edit
+                  </Button>
                   <Button
                     onClick={() => toggleFavorite(selectedNote.id, 'note', selectedNote.is_favorite)}
                     variant="outline"
@@ -1072,6 +1202,158 @@ export const MemoryVault = () => {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Detail Modal for Read More */}
+      <Dialog open={showDetailModal} onOpenChange={setShowDetailModal}>
+        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+          {detailItem && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                  {detailItem.type === 'note' ? <FileText size={20} /> : <ImageIcon size={20} />}
+                  {detailItem.title}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                {detailItem.type === 'memory' && detailItem.images && detailItem.images.length > 0 && (
+                  <div className="space-y-2">
+                    {detailItem.images.map((image) => (
+                      <div key={image.id} className="relative">
+                        <img
+                          src={image.image_url}
+                          alt={detailItem.title}
+                          className="w-full rounded-lg object-cover"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {detailItem.type === 'memory' && detailItem.description && (
+                  <p className="text-muted-foreground whitespace-pre-wrap">{detailItem.description}</p>
+                )}
+                {detailItem.type === 'note' && detailItem.content && (
+                  <p className="text-muted-foreground whitespace-pre-wrap">{detailItem.content}</p>
+                )}
+                <p className="text-sm text-muted-foreground">
+                  {detailItem.type === 'memory' && detailItem.memory_date 
+                    ? formatDate(detailItem.memory_date) 
+                    : formatDate(detailItem.created_at)
+                  }
+                </p>
+                <div className="flex gap-2 pt-4">
+                  <Button
+                    onClick={() => {
+                      openEditModal(detailItem);
+                      setShowDetailModal(false);
+                    }}
+                    variant="outline"
+                    size="sm"
+                  >
+                    <Edit size={16} className="mr-1" />
+                    Edit
+                  </Button>
+                  <Button
+                    onClick={() => toggleFavorite(detailItem.id, detailItem.type, detailItem.is_favorite)}
+                    variant="outline"
+                    size="sm"
+                  >
+                    <Star size={16} className={`mr-1 ${detailItem.is_favorite ? 'fill-yellow-400 text-yellow-400' : ''}`} />
+                    {detailItem.is_favorite ? 'Unfavorite' : 'Favorite'}
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Modal */}
+      <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
+        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+          {editItem && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  {editItem.type === 'note' ? <FileText size={20} /> : <ImageIcon size={20} />}
+                  Edit {editItem.type === 'note' ? 'Note' : 'Memory'}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="edit-title">Title</Label>
+                  <Input
+                    id="edit-title"
+                    value={editItem.type === 'memory' ? newMemory.title : newNote.title}
+                    onChange={(e) => {
+                      if (editItem.type === 'memory') {
+                        setNewMemory({ ...newMemory, title: e.target.value });
+                      } else {
+                        setNewNote({ ...newNote, title: e.target.value });
+                      }
+                    }}
+                    placeholder="Title"
+                  />
+                </div>
+
+                {editItem.type === 'memory' ? (
+                  <>
+                    <div>
+                      <Label htmlFor="edit-description">Description</Label>
+                      <Textarea
+                        id="edit-description"
+                        value={newMemory.description}
+                        onChange={(e) => setNewMemory({ ...newMemory, description: e.target.value })}
+                        placeholder="Description..."
+                        rows={4}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-memory-date">Date</Label>
+                      <Input
+                        id="edit-memory-date"
+                        type="date"
+                        value={newMemory.memory_date}
+                        onChange={(e) => setNewMemory({ ...newMemory, memory_date: e.target.value })}
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <div>
+                    <Label htmlFor="edit-content">Content</Label>
+                    <Textarea
+                      id="edit-content"
+                      value={newNote.content}
+                      onChange={(e) => setNewNote({ ...newNote, content: e.target.value })}
+                      placeholder="Note content..."
+                      rows={6}
+                    />
+                  </div>
+                )}
+
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={editItem.type === 'memory' ? updateMemory : updateNote}
+                    className="flex-1"
+                  >
+                    Update {editItem.type === 'memory' ? 'Memory' : 'Note'}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setShowEditModal(false);
+                      setEditItem(null);
+                      setNewMemory({ title: "", description: "", memory_date: "", image_url: "" });
+                      setNewNote({ title: "", content: "" });
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
         </DialogContent>
       </Dialog>
 
