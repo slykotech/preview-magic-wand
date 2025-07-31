@@ -20,7 +20,11 @@ export const Dashboard = () => {
   const [syncScore, setSyncScore] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoaded, setIsLoaded] = useState(false);
-  const [showSplash, setShowSplash] = useState(true);
+  const [showSplash, setShowSplash] = useState(() => {
+    // Only show splash on fresh app load, not on tab switches
+    const hasShownSplash = sessionStorage.getItem('hasShownSplash');
+    return !hasShownSplash;
+  });
   const [showDailyCheckin, setShowDailyCheckin] = useState(false);
   const [showMoodCheckin, setShowMoodCheckin] = useState(false);
   const [upcomingDate, setUpcomingDate] = useState<any>(null);
@@ -262,14 +266,24 @@ export const Dashboard = () => {
       }
       setIsLoaded(true);
       
-      // Hide splash after data loads and animation completes
-      setTimeout(() => setShowSplash(false), 2000);
+      // Hide splash after data loads and animation completes (only if showing)
+      if (showSplash) {
+        setTimeout(() => {
+          setShowSplash(false);
+          sessionStorage.setItem('hasShownSplash', 'true');
+        }, 2000);
+      }
 
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
       setIsLoaded(true);
-      // Hide splash even on error to prevent infinite loading
-      setTimeout(() => setShowSplash(false), 1000);
+      // Hide splash even on error to prevent infinite loading (only if showing)
+      if (showSplash) {
+        setTimeout(() => {
+          setShowSplash(false);
+          sessionStorage.setItem('hasShownSplash', 'true');
+        }, 1000);
+      }
     }
   };
 
