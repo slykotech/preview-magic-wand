@@ -20,7 +20,7 @@ serve(async (req) => {
     const response = await fetch('https://api.openai.com/v1/audio/speech', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
+        'Authorization': `Bearer ${Deno.env.get('Open AI API key')}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
