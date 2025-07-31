@@ -526,7 +526,7 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
       <div className="fixed inset-0 bg-black/95 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
         <div className="bg-gradient-to-br from-background via-background to-background/95 border border-border/20 rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl animate-scale-in">
           <div className="flex items-center justify-between mb-6">
-            <div>
+            <div className="animate-fade-in" style={{ animationDelay: '100ms' }}>
               <h3 className="text-xl font-bold bg-gradient-to-r from-primary via-primary to-primary/80 bg-clip-text text-transparent">
                 Create Story
               </h3>
@@ -539,36 +539,42 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
                 setShowCreateStory(false);
                 if (stories.length === 0) onClose();
               }}
-              className="rounded-full hover:bg-muted/50"
+              className="rounded-full hover:bg-muted/50 transition-all duration-300 hover:scale-110"
             >
               <X className="h-5 w-5" />
             </Button>
           </div>
 
           {showCamera ? (
-            <div className="space-y-6">
-              <div className="relative overflow-hidden rounded-xl border border-border/20">
+            <div className="space-y-6 animate-fade-in">
+              <div className="relative overflow-hidden rounded-xl border border-border/20 animate-scale-in" style={{ animationDelay: '200ms' }}>
                 <video
                   ref={videoRef}
                   autoPlay
                   playsInline
-                  className="w-full h-72 object-cover bg-gradient-to-br from-muted to-muted/50"
+                  className="w-full h-72 object-cover bg-gradient-to-br from-muted to-muted/50 transition-all duration-500"
                 />
                 <canvas ref={canvasRef} className="hidden" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
+                
+                {/* Camera overlay with smooth pulse animation */}
+                <div className="absolute inset-0 pointer-events-none">
+                  <div className="absolute top-4 left-4 w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                  <div className="absolute top-4 left-4 w-3 h-3 bg-red-500/50 rounded-full animate-ping"></div>
+                </div>
               </div>
               
-              <div className="flex gap-3">
+              <div className="flex gap-3 animate-fade-in" style={{ animationDelay: '400ms' }}>
                 <Button
                   variant="outline"
                   onClick={stopCamera}
-                  className="flex-1 hover:bg-muted/50 border-border/50"
+                  className="flex-1 hover:bg-muted/50 border-border/50 transition-all duration-300 hover:scale-105"
                 >
                   Cancel
                 </Button>
                 <Button
                   onClick={capturePhoto}
-                  className="flex-1 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 shadow-lg"
+                  className="flex-1 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl"
                 >
                   <Camera className="h-4 w-4 mr-2" />
                   Capture
@@ -576,9 +582,9 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
               </div>
             </div>
           ) : !selectedFile ? (
-            <div className="space-y-6">
+            <div className="space-y-6 animate-fade-in" style={{ animationDelay: '200ms' }}>
               <label htmlFor="story-upload" className="cursor-pointer group">
-                <div className="border-2 border-dashed border-border/40 rounded-xl p-10 text-center hover:border-primary/50 transition-all duration-300 bg-gradient-to-br from-muted/20 to-background group-hover:from-primary/5 group-hover:to-primary/10">
+                <div className="border-2 border-dashed border-border/40 rounded-xl p-10 text-center hover:border-primary/50 transition-all duration-300 bg-gradient-to-br from-muted/20 to-background group-hover:from-primary/5 group-hover:to-primary/10 animate-scale-in" style={{ animationDelay: '300ms' }}>
                   <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-full w-20 h-20 mx-auto mb-6 flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
                     <Upload className="h-10 w-10 text-primary" />
                   </div>
@@ -595,11 +601,11 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
                 />
               </label>
               
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3 animate-fade-in" style={{ animationDelay: '500ms' }}>
                 <Button
                   variant="outline"
                   onClick={startCamera}
-                  className="bg-gradient-to-br from-background to-muted/20 hover:from-muted/20 hover:to-muted/40 border-border/50 hover:border-primary/50 transition-all duration-300"
+                  className="bg-gradient-to-br from-background to-muted/20 hover:from-muted/20 hover:to-muted/40 border-border/50 hover:border-primary/50 transition-all duration-300 hover:scale-105"
                 >
                   <Camera className="h-4 w-4 mr-2" />
                   Take Photo
@@ -607,7 +613,7 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
                 <Button
                   variant="outline"
                   onClick={() => fileInputRef.current?.click()}
-                  className="bg-gradient-to-br from-background to-muted/20 hover:from-muted/20 hover:to-muted/40 border-border/50 hover:border-primary/50 transition-all duration-300"
+                  className="bg-gradient-to-br from-background to-muted/20 hover:from-muted/20 hover:to-muted/40 border-border/50 hover:border-primary/50 transition-all duration-300 hover:scale-105"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Gallery
@@ -615,12 +621,12 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
               </div>
             </div>
           ) : (
-            <div className="space-y-6">
-              <div className="relative overflow-hidden rounded-xl border border-border/20">
+            <div className="space-y-6 animate-fade-in">
+              <div className="relative overflow-hidden rounded-xl border border-border/20 animate-scale-in" style={{ animationDelay: '200ms' }}>
                 <img
                   src={URL.createObjectURL(selectedFile)}
                   alt="Story preview"
-                  className="w-full h-72 object-cover"
+                  className="w-full h-72 object-cover transition-all duration-500"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
               </div>
@@ -630,21 +636,22 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
                 value={caption}
                 onChange={(e) => setCaption(e.target.value)}
                 rows={3}
-                className="bg-gradient-to-br from-background to-muted/20 border-border/50 focus:border-primary/50 resize-none"
+                className="bg-gradient-to-br from-background to-muted/20 border-border/50 focus:border-primary/50 resize-none transition-all duration-300 animate-fade-in"
+                style={{ animationDelay: '400ms' }}
               />
               
-              <div className="flex gap-3">
+              <div className="flex gap-3 animate-fade-in" style={{ animationDelay: '600ms' }}>
                 <Button
                   variant="outline"
                   onClick={() => setSelectedFile(null)}
-                  className="hover:bg-muted/50 border-border/50"
+                  className="hover:bg-muted/50 border-border/50 transition-all duration-300 hover:scale-105"
                 >
                   Change Photo
                 </Button>
                 <Button
                   onClick={handleCreateStory}
                   disabled={uploading}
-                  className="flex-1 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 shadow-lg disabled:opacity-50"
+                  className="flex-1 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 shadow-lg disabled:opacity-50 transition-all duration-300 hover:scale-105 hover:shadow-xl"
                 >
                   {uploading ? (
                     <span className="flex items-center gap-2">
