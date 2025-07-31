@@ -21,38 +21,33 @@ Deno.serve(async (req) => {
   try {
     // Get the Authorization header
     const authHeader = req.headers.get('Authorization')
+    console.log('Auth header received:', authHeader ? 'Present' : 'Missing')
+    
     if (!authHeader) {
       throw new Error('Missing Authorization header')
     }
 
-    // Create supabase client with the auth header for user verification
-    const supabaseAuth = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: {
-            Authorization: authHeader,
-          },
-        },
-      }
-    )
-
-    // Get the authenticated user
-    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser()
-
-    if (authError || !user) {
-      console.error('Auth error:', authError)
-      throw new Error(`Authentication failed: ${authError?.message || 'User not found'}`)
-    }
-
-    console.log('Authenticated user:', user.id)
+    // Extract JWT token from Bearer token
+    const token = authHeader.replace('Bearer ', '')
+    console.log('JWT token length:', token.length)
 
     // Create supabase client with service role for admin operations
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     )
+
+    // Verify the JWT token and get user
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    console.log('User:', user?.id || 'null')
+
+    if (authError || !user) {
+      console.error('Auth error:', authError)
+      throw new Error(`Authentication failed: ${authError?.message || 'Auth session missing!'}`)
+    }
+
+    console.log('Authenticated user:', user.id)
+
 
     const { action, partnerEmail, requestId, coupleId }: PartnerConnectionRequest = await req.json()
 
