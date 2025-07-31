@@ -9,6 +9,7 @@ import { CoupleMoodDisplay } from "@/components/CoupleMoodDisplay";
 import { MoodCheckin } from "@/components/MoodCheckin";
 import { DailyCheckinFlow } from "@/components/DailyCheckinFlow";
 import { StoryViewer } from "@/components/StoryViewer";
+import { Chat } from "@/components/Chat";
 import { Calendar, Heart, MessageCircle, Sparkles, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -37,6 +38,8 @@ export const Dashboard = () => {
   const [hasUserStory, setHasUserStory] = useState(false);
   const [hasPartnerStory, setHasPartnerStory] = useState(false);
   const [partnerId, setPartnerId] = useState<string>();
+  const [showChat, setShowChat] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user, loading } = useAuth();
@@ -267,6 +270,63 @@ export const Dashboard = () => {
       setIsLoaded(true);
     }
   };
+
+  // Fetch unread message count
+  const fetchUnreadCount = async () => {
+    if (!coupleId || !user?.id) return;
+
+    try {
+      // Get conversation for this couple
+      const { data: conversation } = await supabase
+        .from('conversations')
+        .select('id')
+        .eq('couple_id', coupleId)
+        .maybeSingle();
+
+      if (!conversation) return;
+
+      // Count unread messages
+      const { count } = await supabase
+        .from('messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('conversation_id', conversation.id)
+        .eq('is_read', false)
+        .neq('sender_id', user.id);
+
+      setUnreadCount(count || 0);
+    } catch (error) {
+      console.error('Error fetching unread count:', error);
+    }
+  };
+
+  // Update unread count when coupleId or user changes
+  useEffect(() => {
+    fetchUnreadCount();
+  }, [coupleId, user?.id]);
+
+  // Set up real-time subscription for unread messages
+  useEffect(() => {
+    if (!coupleId) return;
+
+    const channel = supabase
+      .channel('dashboard-messages')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'messages'
+        },
+        () => {
+          fetchUnreadCount();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [coupleId]);
 
   // Refresh data when navigating back from other pages
   const refreshDashboard = () => {
@@ -646,6 +706,35 @@ export const Dashboard = () => {
           targetUserId={storyTargetUserId}
           coupleId={coupleId}
           isOwnStory={isOwnStory}
+        />
+      )}
+
+      {/* Floating Messages Button */}
+      {!showSplash && coupleId && (
+        <div className="fixed bottom-20 right-4 z-40">
+          <Button
+            onClick={() => setShowChat(true)}
+            size="icon"
+            className="h-14 w-14 rounded-full bg-primary hover:bg-primary/90 shadow-lg animate-bounce relative"
+          >
+            <MessageCircle className="h-6 w-6" />
+            {unreadCount > 0 && (
+              <div className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold animate-pulse">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </div>
+            )}
+          </Button>
+        </div>
+      )}
+
+      {/* Chat Modal */}
+      {showChat && coupleId && (
+        <Chat
+          isOpen={showChat}
+          onClose={() => {
+            setShowChat(false);
+            fetchUnreadCount(); // Refresh unread count when closing chat
+          }}
         />
       )}
 
