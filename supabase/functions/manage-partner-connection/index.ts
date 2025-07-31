@@ -29,14 +29,21 @@ Deno.serve(async (req) => {
     const jwt = authHeader.replace('Bearer ', '')
     console.log('JWT token length:', jwt.length)
 
-    // Create supabase client for user authentication
+    // Create supabase client with anon key for authentication
     const supabaseAuth = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: {
+          headers: {
+            Authorization: authHeader
+          }
+        }
+      }
     )
 
-    // Verify the user's JWT token by passing it directly
-    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser(jwt)
+    // Verify the user's JWT token
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser()
 
     if (authError || !user) {
       console.error('Auth error:', authError)
