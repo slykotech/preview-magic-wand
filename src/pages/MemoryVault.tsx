@@ -546,75 +546,108 @@ export const MemoryVault = () => {
       <main className="flex-grow p-6 relative">
         {/* Grid View */}
         {viewMode === 'grid' && (
-          <div className="grid grid-cols-2 gap-4">
-            {filteredItems.map((item) => (
-              <div
-                key={`${item.type}-${item.id}`}
-                className="break-inside-avoid mb-4 transition-transform hover:scale-105 cursor-pointer"
-                onClick={() => {
-                  if (item.type === 'memory') {
-                    setSelectedMemory(item as Memory);
-                  } else {
-                    setSelectedNote(item as Note);
-                  }
-                }}
-              >
-                {item.type === 'memory' && (item as Memory).images && (item as Memory).images!.length > 0 ? (
-                  <div className="relative">
-                    <img
-                      src={(item as Memory).images![0].image_url}
-                      alt={item.title}
-                      className="rounded-2xl w-full object-cover"
-                      style={{ aspectRatio: `${Math.random() * 0.5 + 1}` }}
-                    />
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleFavorite(item.id, 'memory', item.is_favorite);
-                      }}
-                      className="absolute top-3 right-3 transition-colors"
-                    >
-                      <Star 
-                        size={20} 
-                        className={item.is_favorite ? 'fill-yellow-400 text-yellow-400' : 'text-white/70 hover:text-yellow-400'} 
+          <div className="columns-2 gap-2 space-y-0">
+            {filteredItems.map((item, index) => {
+              // Dynamic heights for masonry effect
+              const cardHeights = ['h-32', 'h-40', 'h-48', 'h-36', 'h-44', 'h-52'];
+              const cardColors = [
+                'bg-gradient-to-br from-blue-600 to-blue-800', 
+                'bg-gradient-to-br from-red-500 to-red-700',
+                'bg-gradient-to-br from-yellow-500 to-orange-600',
+                'bg-gradient-to-br from-purple-500 to-purple-700',
+                'bg-gradient-to-br from-green-500 to-green-700',
+                'bg-gradient-to-br from-pink-500 to-pink-700'
+              ];
+              
+              const randomHeight = cardHeights[index % cardHeights.length];
+              const randomColor = cardColors[index % cardColors.length];
+              
+              return (
+                <div
+                  key={`${item.type}-${item.id}`}
+                  className="break-inside-avoid mb-2 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg cursor-pointer"
+                  onClick={() => {
+                    if (item.type === 'memory') {
+                      setSelectedMemory(item as Memory);
+                    } else {
+                      setSelectedNote(item as Note);
+                    }
+                  }}
+                >
+                  {item.type === 'memory' && (item as Memory).images && (item as Memory).images!.length > 0 ? (
+                    <div className={`relative ${randomHeight} rounded-2xl overflow-hidden group`}>
+                      <img
+                        src={(item as Memory).images![0].image_url}
+                        alt={item.title}
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                       />
-                    </button>
-                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-3 rounded-b-2xl">
-                      <p className="text-white font-medium">{item.title}</p>
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleFavorite(item.id, 'memory', item.is_favorite);
+                        }}
+                        className="absolute top-3 right-3 transition-all duration-200 hover:scale-110"
+                      >
+                        <Star 
+                          size={16} 
+                          className={item.is_favorite ? 'fill-yellow-400 text-yellow-400 drop-shadow-lg' : 'text-white/80 hover:text-yellow-400'} 
+                        />
+                      </button>
+                      <div className="absolute bottom-3 left-3 right-3">
+                        <p className="text-white font-semibold text-sm leading-tight drop-shadow-lg">{item.title}</p>
+                        {(item as Memory).description && (
+                          <p className="text-white/80 text-xs mt-1 line-clamp-2">{(item as Memory).description}</p>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ) : (
-                  <div className="bg-card p-4 rounded-2xl relative shadow-soft min-h-[120px]">
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleFavorite(item.id, item.type, item.is_favorite);
-                      }}
-                      className="absolute top-3 right-3 text-muted-foreground hover:text-accent transition-colors"
-                    >
-                      <Star 
-                        size={20} 
-                        className={item.is_favorite ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'} 
-                      />
-                    </button>
-                    <div className="flex items-center gap-2 mb-2">
-                      {item.type === 'note' ? (
-                        <FileText size={16} className="text-primary" />
-                      ) : (
-                        <ImageIcon size={16} className="text-primary" />
-                      )}
-                      <p className="text-foreground pr-6 font-medium">{item.title}</p>
+                  ) : (
+                    <div className={`${randomColor} ${randomHeight} rounded-2xl relative p-4 text-white group transition-all duration-300 hover:shadow-xl`}>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleFavorite(item.id, item.type, item.is_favorite);
+                        }}
+                        className="absolute top-3 right-3 transition-all duration-200 hover:scale-110"
+                      >
+                        <Star 
+                          size={16} 
+                          className={item.is_favorite ? 'fill-yellow-300 text-yellow-300' : 'text-white/80 hover:text-yellow-300'} 
+                        />
+                      </button>
+                      
+                      <div className="flex flex-col h-full">
+                        <div className="flex items-center gap-2 mb-3">
+                          {item.type === 'note' ? (
+                            <FileText size={16} className="text-white/90" />
+                          ) : (
+                            <ImageIcon size={16} className="text-white/90" />
+                          )}
+                        </div>
+                        
+                        <h3 className="font-bold text-lg leading-tight mb-2 pr-6">{item.title}</h3>
+                        
+                        {item.type === 'note' && (item as Note).content && (
+                          <p className="text-white/80 text-sm line-clamp-3 flex-grow">{(item as Note).content}</p>
+                        )}
+                        
+                        <div className="mt-auto">
+                          <p className="text-white/70 text-xs">
+                            {item.type === 'memory' && (item as Memory).memory_date 
+                              ? formatDate((item as Memory).memory_date!) 
+                              : formatDate(item.created_at)
+                            }
+                          </p>
+                        </div>
+                      </div>
+                      
+                      {/* Subtle overlay for depth */}
+                      <div className="absolute inset-0 bg-white/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      {item.type === 'memory' && (item as Memory).memory_date 
-                        ? formatDate((item as Memory).memory_date!) 
-                        : formatDate(item.created_at)
-                      }
-                    </p>
-                  </div>
-                )}
-              </div>
-            ))}
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
 
