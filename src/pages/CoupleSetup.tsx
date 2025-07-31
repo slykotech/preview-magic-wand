@@ -4,8 +4,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BottomNavigation } from "@/components/BottomNavigation";
-import { PartnerConnectionManagerV2 } from "@/components/PartnerConnectionManagerV2";
-import { Heart, Users, Plus, ArrowLeft, User } from "lucide-react";
+import { ProfileSection } from "@/components/ProfileSection";
+import { PartnerConnectionSection } from "@/components/PartnerConnectionSection";
+import { RelationshipInfoSection } from "@/components/RelationshipInfoSection";
+import { Heart, Users, Plus, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
@@ -181,47 +183,17 @@ export const CoupleSetup = () => {
       <div className="p-6 space-y-6">
         {coupleData ? (
           <>
-            {/* User Profile Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <User size={20} />
-                  Your Profile
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="displayName">Your Display Name</Label>
-                  <Input
-                    id="displayName"
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                    placeholder="Enter your name"
-                    className="mt-1"
-                  />
-                  <p className="text-sm text-muted-foreground mt-1">
-                    This is how you'll appear throughout the app
-                  </p>
-                </div>
-                <Button 
-                  onClick={updateUserProfile}
-                  disabled={updating || !displayName.trim()}
-                  className="w-full bg-gradient-primary hover:opacity-90 text-white shadow-romantic"
-                >
-                  {updating ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Updating...
-                    </>
-                  ) : (
-                    'Update Profile'
-                  )}
-                </Button>
-              </CardContent>
-            </Card>
+            {/* Your Profile Section */}
+            <ProfileSection 
+              userProfile={userProfile} 
+              onProfileUpdate={fetchUserData}
+            />
 
-            {/* Partner Connection Management */}
-            <PartnerConnectionManagerV2 />
+            {/* Partner Connection Section */}
+            <PartnerConnectionSection />
+
+            {/* Relationship Info Section */}
+            <RelationshipInfoSection />
 
             {/* Action Buttons */}
             <div className="flex gap-3 pt-2">
