@@ -77,6 +77,7 @@ export const MemoryVault = () => {
   const [filterType, setFilterType] = useState<'all' | 'photos' | 'notes' | 'favorites'>('all');
   const [fabOpen, setFabOpen] = useState(false);
   const [createMode, setCreateMode] = useState<'photo' | 'note'>('photo');
+  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
@@ -483,6 +484,18 @@ export const MemoryVault = () => {
 
   const filteredItems = getFilteredItems();
 
+  const toggleExpanded = (itemId: string) => {
+    setExpandedItems(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(itemId)) {
+        newSet.delete(itemId);
+      } else {
+        newSet.add(itemId);
+      }
+      return newSet;
+    });
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -548,7 +561,7 @@ export const MemoryVault = () => {
         {viewMode === 'grid' && (
           <div className="columns-2 gap-3 space-y-0">
             {filteredItems.map((item, index) => {
-              const [expanded, setExpanded] = useState(false);
+              const isExpanded = expandedItems.has(item.id);
               
               return (
                 <div
@@ -597,18 +610,18 @@ export const MemoryVault = () => {
                         <h3 className="text-white font-semibold text-sm leading-tight drop-shadow-lg mb-1">{item.title}</h3>
                         {(item as Memory).description && (
                           <div className="text-white/80 text-xs">
-                            <p className={expanded ? '' : 'line-clamp-2'}>
+                            <p className={isExpanded ? '' : 'line-clamp-2'}>
                               {(item as Memory).description}
                             </p>
                             {(item as Memory).description!.length > 80 && (
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setExpanded(!expanded);
+                                  toggleExpanded(item.id);
                                 }}
                                 className="text-white/60 hover:text-white text-xs mt-1 underline"
                               >
-                                {expanded ? 'Show less' : 'Read more'}
+                                {isExpanded ? 'Show less' : 'Read more'}
                               </button>
                             )}
                           </div>
@@ -645,18 +658,18 @@ export const MemoryVault = () => {
                         {/* Content with text overflow control */}
                         {item.type === 'note' && (item as Note).content && (
                           <div className="text-muted-foreground text-xs mb-3">
-                            <p className={expanded ? '' : 'line-clamp-3'}>
+                            <p className={isExpanded ? '' : 'line-clamp-3'}>
                               {(item as Note).content}
                             </p>
                             {(item as Note).content!.length > 120 && (
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setExpanded(!expanded);
+                                  toggleExpanded(item.id);
                                 }}
                                 className="text-primary hover:text-primary/80 text-xs mt-1 underline"
                               >
-                                {expanded ? 'Show less' : 'Read more'}
+                                {isExpanded ? 'Show less' : 'Read more'}
                               </button>
                             )}
                           </div>
@@ -665,18 +678,18 @@ export const MemoryVault = () => {
                         {/* Memory without images description */}
                         {item.type === 'memory' && (item as Memory).description && (
                           <div className="text-muted-foreground text-xs mb-3">
-                            <p className={expanded ? '' : 'line-clamp-3'}>
+                            <p className={isExpanded ? '' : 'line-clamp-3'}>
                               {(item as Memory).description}
                             </p>
                             {(item as Memory).description!.length > 120 && (
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setExpanded(!expanded);
+                                  toggleExpanded(item.id);
                                 }}
                                 className="text-primary hover:text-primary/80 text-xs mt-1 underline"
                               >
-                                {expanded ? 'Show less' : 'Read more'}
+                                {isExpanded ? 'Show less' : 'Read more'}
                               </button>
                             )}
                           </div>
