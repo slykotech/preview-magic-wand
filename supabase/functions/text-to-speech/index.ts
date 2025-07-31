@@ -17,10 +17,17 @@ serve(async (req) => {
       throw new Error('Text is required');
     }
 
+    const apiKey = Deno.env.get('Open AI API key');
+    if (!apiKey) {
+      throw new Error('OpenAI API key not found');
+    }
+
+    console.log('Generating speech for text length:', text.length);
+
     const response = await fetch('https://api.openai.com/v1/audio/speech', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${Deno.env.get('Open AI API key')}`,
+        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -32,11 +39,14 @@ serve(async (req) => {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error?.message || 'Failed to generate speech');
+      const errorText = await response.text();
+      console.error('OpenAI API error:', errorText);
+      throw new Error(`OpenAI API error: ${errorText}`);
     }
 
     const arrayBuffer = await response.arrayBuffer();
+    console.log('Generated audio buffer size:', arrayBuffer.byteLength);
+    
     const base64Audio = btoa(
       String.fromCharCode(...new Uint8Array(arrayBuffer))
     );
@@ -48,6 +58,7 @@ serve(async (req) => {
       },
     );
   } catch (error) {
+    console.error('Text-to-speech error:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
       {
