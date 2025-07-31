@@ -12,6 +12,7 @@ import { Dashboard } from "./pages/Dashboard";
 import { AICoach } from "./pages/AICoach";
 import { DatePlanner } from "./pages/DatePlanner";
 import { MemoryVault } from "./pages/MemoryVault";
+import { Messages } from "./pages/Messages";
 import { Profile } from "./pages/Profile";
 import { CoupleSetup } from "./pages/CoupleSetup";
 import { RelationshipInsights } from "./pages/RelationshipInsights";
@@ -39,6 +40,7 @@ const App = () => {
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/messages" element={<Messages />} />
               <Route path="/coach" element={<AICoach />} />
               <Route path="/planner" element={<DatePlanner />} />
               <Route path="/vault" element={<MemoryVault />} />

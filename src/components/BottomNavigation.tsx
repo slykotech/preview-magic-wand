@@ -1,9 +1,13 @@
 import { Home, MessageCircle, Calendar, Heart, User } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useCoupleData } from "@/hooks/useCoupleData";
 
 const navItems = [
   { id: 'home', icon: Home, label: 'Home', path: '/' },
-  { id: 'coach', icon: MessageCircle, label: 'Coach', path: '/coach' },
+  { id: 'messages', icon: MessageCircle, label: 'Messages', path: '/messages' },
   { id: 'planner', icon: Calendar, label: 'Planner', path: '/planner' },
   { id: 'vault', icon: Heart, label: 'Vault', path: '/vault' },
   { id: 'profile', icon: User, label: 'Profile', path: '/profile' },
@@ -12,6 +16,60 @@ const navItems = [
 export const BottomNavigation = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { coupleData } = useCoupleData();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (!user?.id || !coupleData?.id) return;
+
+    const fetchUnreadCount = async () => {
+      try {
+        // Get conversation for this couple
+        const { data: conversation } = await supabase
+          .from('conversations')
+          .select('id')
+          .eq('couple_id', coupleData.id)
+          .maybeSingle();
+
+        if (!conversation) return;
+
+        // Count unread messages
+        const { count } = await supabase
+          .from('messages')
+          .select('*', { count: 'exact', head: true })
+          .eq('conversation_id', conversation.id)
+          .eq('is_read', false)
+          .neq('sender_id', user.id);
+
+        setUnreadCount(count || 0);
+      } catch (error) {
+        console.error('Error fetching unread count:', error);
+      }
+    };
+
+    fetchUnreadCount();
+
+    // Set up real-time subscription for unread messages
+    const channel = supabase
+      .channel('unread-messages')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'messages'
+        },
+        () => {
+          fetchUnreadCount();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, coupleData?.id]);
 
   const getIconAnimation = (iconId: string, isActive: boolean) => {
     if (!isActive) return '';
@@ -19,7 +77,7 @@ export const BottomNavigation = () => {
     switch (iconId) {
       case 'home':
         return 'animate-float-love';
-      case 'coach':
+      case 'messages':
         return 'animate-pulse';
       case 'planner':
         return 'animate-bounce';
@@ -51,10 +109,17 @@ export const BottomNavigation = () => {
                   : 'text-muted-foreground hover:text-foreground hover:scale-105'
               }`}
             >
-              <Icon 
-                size={22} 
-                className={`${getIconAnimation(item.id, isActive)}`}
-              />
+              <div className="relative">
+                <Icon 
+                  size={22} 
+                  className={`${getIconAnimation(item.id, isActive)}`}
+                />
+                {item.id === 'messages' && unreadCount > 0 && (
+                  <div className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold animate-pulse">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </div>
+                )}
+              </div>
               <span className={`text-xs font-inter ${isActive ? 'font-medium' : ''}`}>
                 {item.label}
               </span>
