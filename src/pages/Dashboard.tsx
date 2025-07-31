@@ -86,12 +86,17 @@ export const Dashboard = () => {
     try {
       console.log('Fetching dashboard data for user:', user?.id);
       
-      // First, get user's couple relationship
-      const { data: coupleData } = await supabase
+      // First, get user's couple relationship - get the most recent one
+      const { data: coupleDataArray } = await supabase
         .from('couples')
         .select('id, user1_id, user2_id')
         .or(`user1_id.eq.${user?.id},user2_id.eq.${user?.id}`)
-        .maybeSingle();
+        .order('created_at', { ascending: false });
+      
+      // Filter out self-pairing and get the first valid couple
+      const coupleData = coupleDataArray?.find(couple => 
+        couple.user1_id !== couple.user2_id
+      ) || coupleDataArray?.[0];
 
       console.log('Couple data fetched:', coupleData);
       const currentCoupleId = coupleData?.id;
