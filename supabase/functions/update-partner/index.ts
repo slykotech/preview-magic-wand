@@ -17,27 +17,42 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-    )
-
     // Get the Authorization header
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
       throw new Error('Missing Authorization header')
     }
 
+    // Create supabase client for user authentication
+    const supabaseAuth = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: {
+          headers: {
+            Authorization: authHeader,
+          },
+        },
+      }
+    )
+
     // Verify the user's JWT token
-    const { data: { user }, error: authError } = await supabase.auth.getUser(
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser(
       authHeader.replace('Bearer ', '')
     )
 
     if (authError || !user) {
+      console.error('Auth error:', authError)
       throw new Error('Invalid or expired token')
     }
 
     console.log('Authenticated user:', user.id)
+
+    // Create supabase client with service role for admin operations
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+    )
 
     const { partnerEmail, coupleId }: UpdatePartnerRequest = await req.json()
 
