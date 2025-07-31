@@ -131,7 +131,7 @@ export const CoupleAvatars = ({
 
       {/* Separate Camera Button for uploading stories */}
       {onCameraClick && (
-        <div className="absolute top-0 right-0">
+        <div className="flex justify-center mt-4">
           <button
             onClick={onCameraClick}
             className="bg-gradient-to-br from-primary to-primary/80 text-white rounded-full p-2 shadow-lg hover:scale-110 transition-all duration-300 border-2 border-white"
