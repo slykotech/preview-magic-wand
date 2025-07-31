@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { BottomNavigation } from "@/components/BottomNavigation";
-import { Plus, Heart, Camera, X, Star, Upload, Image as ImageIcon, Grid3X3, List, Edit, Trash2 } from "lucide-react";
+import { Plus, Heart, Camera, X, Star, Upload, Image as ImageIcon, Grid3X3, List, Edit, Trash2, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
@@ -22,6 +22,7 @@ interface Memory {
   created_by: string;
   created_at: string;
   updated_at: string;
+  is_favorite: boolean;
   images?: MemoryImage[];
 }
 
@@ -34,20 +35,38 @@ interface MemoryImage {
   created_at: string;
 }
 
+interface Note {
+  id: string;
+  title: string;
+  content: string | null;
+  couple_id: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  is_favorite: boolean;
+}
+
 export const MemoryVault = () => {
   const [memories, setMemories] = useState<Memory[]>([]);
+  const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedMemory, setSelectedMemory] = useState<Memory | null>(null);
+  const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [editingMemory, setEditingMemory] = useState<Memory | null>(null);
+  const [editingNote, setEditingNote] = useState<Note | null>(null);
   const [newMemory, setNewMemory] = useState({
     title: "",
     description: "",
     memory_date: "",
     image_url: ""
+  });
+  const [newNote, setNewNote] = useState({
+    title: "",
+    content: ""
   });
   const [coupleId, setCoupleId] = useState<string | null>(null);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
@@ -57,6 +76,7 @@ export const MemoryVault = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'timeline'>('grid');
   const [filterType, setFilterType] = useState<'all' | 'photos' | 'notes' | 'favorites'>('all');
   const [fabOpen, setFabOpen] = useState(false);
+  const [createMode, setCreateMode] = useState<'photo' | 'note'>('photo');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
@@ -95,7 +115,10 @@ export const MemoryVault = () => {
 
       if (coupleData) {
         setCoupleId(coupleData.id);
-        await fetchMemories(coupleData.id);
+        await Promise.all([
+          fetchMemories(coupleData.id),
+          fetchNotes(coupleData.id)
+        ]);
       }
     } catch (error) {
       console.error('Error fetching couple data:', error);
@@ -119,6 +142,21 @@ export const MemoryVault = () => {
       setMemories(data || []);
     } catch (error) {
       console.error('Error fetching memories:', error);
+    }
+  };
+
+  const fetchNotes = async (couple_id: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('notes')
+        .select('*')
+        .eq('couple_id', couple_id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setNotes(data || []);
+    } catch (error) {
+      console.error('Error fetching notes:', error);
     }
   };
 
@@ -236,6 +274,83 @@ export const MemoryVault = () => {
     }
   };
 
+  const createNote = async () => {
+    if (!coupleId || !newNote.title.trim()) {
+      toast({
+        title: "Missing information",
+        description: "Please enter at least a title for your note",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const { data: noteData, error: noteError } = await supabase
+        .from('notes')
+        .insert({
+          title: newNote.title,
+          content: newNote.content || null,
+          couple_id: coupleId,
+          created_by: user?.id
+        })
+        .select()
+        .single();
+
+      if (noteError) throw noteError;
+
+      setNotes([noteData, ...notes]);
+      setNewNote({ title: "", content: "" });
+      setShowCreateForm(false);
+      setFabOpen(false);
+
+      toast({
+        title: "Note Created! 📝",
+        description: `Your note has been saved`,
+      });
+    } catch (error) {
+      console.error('Error creating note:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create note",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const toggleFavorite = async (id: string, type: 'memory' | 'note', currentState: boolean) => {
+    try {
+      const table = type === 'memory' ? 'memories' : 'notes';
+      const { error } = await supabase
+        .from(table)
+        .update({ is_favorite: !currentState })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      if (type === 'memory') {
+        setMemories(prev => prev.map(m => 
+          m.id === id ? { ...m, is_favorite: !currentState } : m
+        ));
+      } else {
+        setNotes(prev => prev.map(n => 
+          n.id === id ? { ...n, is_favorite: !currentState } : n
+        ));
+      }
+
+      toast({
+        title: !currentState ? "Added to Favorites! ⭐" : "Removed from Favorites",
+        description: !currentState ? "This item is now favorited" : "This item is no longer favorited",
+      });
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update favorite status",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -285,48 +400,60 @@ export const MemoryVault = () => {
     });
   };
 
-  const deleteMemory = async () => {
-    if (!selectedMemory) return;
+  const deleteItem = async () => {
+    if (!selectedMemory && !selectedNote) return;
 
     setDeleting(true);
     try {
-      // Delete images from storage first
-      if (selectedMemory.images && selectedMemory.images.length > 0) {
-        const filePaths = selectedMemory.images.map(img => {
-          const url = new URL(img.image_url);
-          return url.pathname.split('/').pop() || '';
-        }).filter(path => path);
+      if (selectedMemory) {
+        // Delete images from storage first
+        if (selectedMemory.images && selectedMemory.images.length > 0) {
+          const filePaths = selectedMemory.images.map(img => {
+            const url = new URL(img.image_url);
+            return url.pathname.split('/').pop() || '';
+          }).filter(path => path);
 
-        if (filePaths.length > 0) {
-          await supabase.storage
-            .from('memory-images')
-            .remove(filePaths);
+          if (filePaths.length > 0) {
+            await supabase.storage
+              .from('memory-images')
+              .remove(filePaths);
+          }
         }
+
+        // Delete memory from database
+        const { error: deleteError } = await supabase
+          .from('memories')
+          .delete()
+          .eq('id', selectedMemory.id);
+
+        if (deleteError) throw deleteError;
+        setMemories(prev => prev.filter(m => m.id !== selectedMemory.id));
+        setSelectedMemory(null);
       }
 
-      // Delete memory images from database (will cascade)
-      const { error: deleteError } = await supabase
-        .from('memories')
-        .delete()
-        .eq('id', selectedMemory.id);
+      if (selectedNote) {
+        // Delete note from database
+        const { error: deleteError } = await supabase
+          .from('notes')
+          .delete()
+          .eq('id', selectedNote.id);
 
-      if (deleteError) throw deleteError;
+        if (deleteError) throw deleteError;
+        setNotes(prev => prev.filter(n => n.id !== selectedNote.id));
+        setSelectedNote(null);
+      }
 
-      // Update memories list
-      setMemories(prev => prev.filter(m => m.id !== selectedMemory.id));
-      
-      setSelectedMemory(null);
       setShowDeleteConfirm(false);
 
       toast({
-        title: "Memory Deleted",
-        description: "The memory has been permanently removed",
+        title: "Item Deleted",
+        description: "The item has been permanently removed",
       });
     } catch (error) {
-      console.error('Error deleting memory:', error);
+      console.error('Error deleting item:', error);
       toast({
         title: "Error",
-        description: "Failed to delete memory",
+        description: "Failed to delete item",
         variant: "destructive"
       });
     } finally {
@@ -334,17 +461,27 @@ export const MemoryVault = () => {
     }
   };
 
-  const filteredMemories = memories.filter(memory => {
-    const matchesSearch = memory.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (memory.description && memory.description.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    if (filterType === 'all') return matchesSearch;
-    if (filterType === 'photos') return matchesSearch && memory.images && memory.images.length > 0;
-    if (filterType === 'notes') return matchesSearch && (!memory.images || memory.images.length === 0);
-    if (filterType === 'favorites') return matchesSearch; // TODO: Add favorites functionality
-    
-    return matchesSearch;
-  });
+  const getFilteredItems = () => {
+    const allItems = [
+      ...memories.map(m => ({ ...m, type: 'memory' as const })),
+      ...notes.map(n => ({ ...n, type: 'note' as const }))
+    ];
+
+    return allItems.filter(item => {
+      const matchesSearch = item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (item.type === 'memory' && item.description && item.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (item.type === 'note' && item.content && item.content.toLowerCase().includes(searchTerm.toLowerCase()));
+      
+      if (filterType === 'all') return matchesSearch;
+      if (filterType === 'photos') return matchesSearch && item.type === 'memory';
+      if (filterType === 'notes') return matchesSearch && item.type === 'note';
+      if (filterType === 'favorites') return matchesSearch && item.is_favorite;
+      
+      return matchesSearch;
+    }).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  };
+
+  const filteredItems = getFilteredItems();
 
   if (loading) {
     return (
@@ -411,27 +548,69 @@ export const MemoryVault = () => {
         {/* Grid View */}
         {viewMode === 'grid' && (
           <div className="grid grid-cols-2 gap-4">
-            {filteredMemories.map((memory) => (
+            {filteredItems.map((item) => (
               <div
-                key={memory.id}
+                key={`${item.type}-${item.id}`}
                 className="break-inside-avoid mb-4 transition-transform hover:scale-105 cursor-pointer"
-                onClick={() => setSelectedMemory(memory)}
+                onClick={() => {
+                  if (item.type === 'memory') {
+                    setSelectedMemory(item as Memory);
+                  } else {
+                    setSelectedNote(item as Note);
+                  }
+                }}
               >
-                {memory.images && memory.images.length > 0 ? (
-                  <img
-                    src={memory.images[0].image_url}
-                    alt={memory.title}
-                    className="rounded-2xl w-full object-cover"
-                    style={{ aspectRatio: `${Math.random() * 0.5 + 1}` }}
-                  />
-                ) : (
-                  <div className="bg-card p-4 rounded-2xl relative shadow-soft">
-                    <button className="absolute top-3 right-3 text-muted-foreground hover:text-accent transition-colors">
-                      <Star size={20} />
+                {item.type === 'memory' && (item as Memory).images && (item as Memory).images!.length > 0 ? (
+                  <div className="relative">
+                    <img
+                      src={(item as Memory).images![0].image_url}
+                      alt={item.title}
+                      className="rounded-2xl w-full object-cover"
+                      style={{ aspectRatio: `${Math.random() * 0.5 + 1}` }}
+                    />
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleFavorite(item.id, 'memory', item.is_favorite);
+                      }}
+                      className="absolute top-3 right-3 transition-colors"
+                    >
+                      <Star 
+                        size={20} 
+                        className={item.is_favorite ? 'fill-yellow-400 text-yellow-400' : 'text-white/70 hover:text-yellow-400'} 
+                      />
                     </button>
-                    <p className="text-foreground pr-6 font-medium">{memory.title}</p>
-                    <p className="text-sm text-muted-foreground mt-2">
-                      {memory.memory_date ? formatDate(memory.memory_date) : formatDate(memory.created_at)}
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-3 rounded-b-2xl">
+                      <p className="text-white font-medium">{item.title}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-card p-4 rounded-2xl relative shadow-soft min-h-[120px]">
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleFavorite(item.id, item.type, item.is_favorite);
+                      }}
+                      className="absolute top-3 right-3 text-muted-foreground hover:text-accent transition-colors"
+                    >
+                      <Star 
+                        size={20} 
+                        className={item.is_favorite ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'} 
+                      />
+                    </button>
+                    <div className="flex items-center gap-2 mb-2">
+                      {item.type === 'note' ? (
+                        <FileText size={16} className="text-primary" />
+                      ) : (
+                        <ImageIcon size={16} className="text-primary" />
+                      )}
+                      <p className="text-foreground pr-6 font-medium">{item.title}</p>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {item.type === 'memory' && (item as Memory).memory_date 
+                        ? formatDate((item as Memory).memory_date!) 
+                        : formatDate(item.created_at)
+                      }
                     </p>
                   </div>
                 )}
@@ -444,19 +623,52 @@ export const MemoryVault = () => {
         {viewMode === 'timeline' && (
           <div className="relative">
             <div className="absolute left-4 top-0 bottom-0 w-1 bg-border rounded-full"></div>
-            {filteredMemories.map((memory, index) => (
-              <div key={memory.id} className="relative pl-12 mb-8">
+            {filteredItems.map((item) => (
+              <div key={`${item.type}-${item.id}`} className="relative pl-12 mb-8">
                 <div className="absolute left-2 top-1 h-5 w-5 border-4 border-background bg-primary rounded-full"></div>
                 <p className="text-sm text-muted-foreground mb-1">
-                  {memory.memory_date ? formatDate(memory.memory_date) : formatDate(memory.created_at)}
+                  {item.type === 'memory' && (item as Memory).memory_date 
+                    ? formatDate((item as Memory).memory_date!) 
+                    : formatDate(item.created_at)
+                  }
                 </p>
                 <div
                   className="bg-card p-4 rounded-xl shadow-soft cursor-pointer hover:shadow-lg transition-all"
-                  onClick={() => setSelectedMemory(memory)}
+                  onClick={() => {
+                    if (item.type === 'memory') {
+                      setSelectedMemory(item as Memory);
+                    } else {
+                      setSelectedNote(item as Note);
+                    }
+                  }}
                 >
-                  <p className="font-medium text-foreground">{memory.title}</p>
-                  {memory.description && (
-                    <p className="text-muted-foreground mt-1 text-sm">{memory.description}</p>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      {item.type === 'note' ? (
+                        <FileText size={16} className="text-primary" />
+                      ) : (
+                        <ImageIcon size={16} className="text-primary" />
+                      )}
+                      <p className="font-medium text-foreground">{item.title}</p>
+                    </div>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleFavorite(item.id, item.type, item.is_favorite);
+                      }}
+                      className="text-muted-foreground hover:text-accent transition-colors"
+                    >
+                      <Star 
+                        size={16} 
+                        className={item.is_favorite ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'} 
+                      />
+                    </button>
+                  </div>
+                  {item.type === 'memory' && (item as Memory).description && (
+                    <p className="text-muted-foreground mt-1 text-sm">{(item as Memory).description}</p>
+                  )}
+                  {item.type === 'note' && (item as Note).content && (
+                    <p className="text-muted-foreground mt-1 text-sm line-clamp-2">{(item as Note).content}</p>
                   )}
                 </div>
               </div>
@@ -464,10 +676,10 @@ export const MemoryVault = () => {
           </div>
         )}
 
-        {filteredMemories.length === 0 && (
+        {filteredItems.length === 0 && (
           <div className="text-center py-12">
             <Heart size={48} className="mx-auto text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">No memories found. Start creating your love story!</p>
+            <p className="text-muted-foreground">No {filterType === 'all' ? 'items' : filterType} found. Start creating your love story!</p>
           </div>
         )}
 
@@ -479,20 +691,20 @@ export const MemoryVault = () => {
           }`}>
             <button
               onClick={() => {
+                setCreateMode('note');
                 setShowCreateForm(true);
                 setFabOpen(false);
               }}
               className="bg-card w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-110 active:scale-100"
-              title="Add Journal Entry"
+              title="Add Note"
             >
-              <Edit size={24} className="text-foreground" />
+              <FileText size={24} className="text-foreground" />
             </button>
             <button
               onClick={() => {
+                setCreateMode('photo');
                 setShowCreateForm(true);
                 setFabOpen(false);
-                // Auto focus on file input when opened for photos
-                setTimeout(() => triggerFileInput(), 100);
               }}
               className="bg-card w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-110 active:scale-100"
               title="Add Photo"
@@ -519,7 +731,10 @@ export const MemoryVault = () => {
           {selectedMemory && (
             <>
               <DialogHeader>
-                <DialogTitle className="text-xl font-bold">{selectedMemory.title}</DialogTitle>
+                <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                  <ImageIcon size={20} />
+                  {selectedMemory.title}
+                </DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 {selectedMemory.images && selectedMemory.images.length > 0 && (
@@ -546,22 +761,54 @@ export const MemoryVault = () => {
                 </p>
                 <div className="flex gap-2 pt-4">
                   <Button
-                    onClick={() => {
-                      setEditingMemory(selectedMemory);
-                      setNewMemory({
-                        title: selectedMemory.title,
-                        description: selectedMemory.description || "",
-                        memory_date: selectedMemory.memory_date || "",
-                        image_url: selectedMemory.image_url || ""
-                      });
-                      setShowEditForm(true);
-                      setSelectedMemory(null);
-                    }}
+                    onClick={() => toggleFavorite(selectedMemory.id, 'memory', selectedMemory.is_favorite)}
                     variant="outline"
                     size="sm"
                   >
-                    <Edit size={16} className="mr-1" />
-                    Edit
+                    <Star size={16} className={`mr-1 ${selectedMemory.is_favorite ? 'fill-yellow-400 text-yellow-400' : ''}`} />
+                    {selectedMemory.is_favorite ? 'Unfavorite' : 'Favorite'}
+                  </Button>
+                  <Button
+                    onClick={() => setShowDeleteConfirm(true)}
+                    variant="destructive"
+                    size="sm"
+                  >
+                    <Trash2 size={16} className="mr-1" />
+                    Delete
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Note Detail Modal */}
+      <Dialog open={!!selectedNote} onOpenChange={() => setSelectedNote(null)}>
+        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+          {selectedNote && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                  <FileText size={20} />
+                  {selectedNote.title}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                {selectedNote.content && (
+                  <p className="text-muted-foreground whitespace-pre-wrap">{selectedNote.content}</p>
+                )}
+                <p className="text-sm text-muted-foreground">
+                  {formatDate(selectedNote.created_at)}
+                </p>
+                <div className="flex gap-2 pt-4">
+                  <Button
+                    onClick={() => toggleFavorite(selectedNote.id, 'note', selectedNote.is_favorite)}
+                    variant="outline"
+                    size="sm"
+                  >
+                    <Star size={16} className={`mr-1 ${selectedNote.is_favorite ? 'fill-yellow-400 text-yellow-400' : ''}`} />
+                    {selectedNote.is_favorite ? 'Unfavorite' : 'Favorite'}
                   </Button>
                   <Button
                     onClick={() => setShowDeleteConfirm(true)}
@@ -582,12 +829,12 @@ export const MemoryVault = () => {
       <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Memory</DialogTitle>
+            <DialogTitle>Delete {selectedMemory ? 'Memory' : 'Note'}</DialogTitle>
           </DialogHeader>
-          <p>Are you sure you want to delete this memory? This action cannot be undone.</p>
+          <p>Are you sure you want to delete this {selectedMemory ? 'memory' : 'note'}? This action cannot be undone.</p>
           <div className="flex gap-2 mt-4">
             <Button
-              onClick={deleteMemory}
+              onClick={deleteItem}
               variant="destructive"
               disabled={deleting}
             >
@@ -600,102 +847,131 @@ export const MemoryVault = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Create Memory Form */}
+      {/* Create Form Modal */}
       <Dialog open={showCreateForm} onOpenChange={setShowCreateForm}>
         <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Create New Memory</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              {createMode === 'photo' ? <Camera size={20} /> : <FileText size={20} />}
+              Create New {createMode === 'photo' ? 'Memory' : 'Note'}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
               <Label htmlFor="title">Title</Label>
               <Input
                 id="title"
-                value={newMemory.title}
-                onChange={(e) => setNewMemory({ ...newMemory, title: e.target.value })}
-                placeholder="What's this memory about?"
+                value={createMode === 'photo' ? newMemory.title : newNote.title}
+                onChange={(e) => {
+                  if (createMode === 'photo') {
+                    setNewMemory({ ...newMemory, title: e.target.value });
+                  } else {
+                    setNewNote({ ...newNote, title: e.target.value });
+                  }
+                }}
+                placeholder={`What's this ${createMode === 'photo' ? 'memory' : 'note'} about?`}
               />
-            </div>
-            <div>
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={newMemory.description}
-                onChange={(e) => setNewMemory({ ...newMemory, description: e.target.value })}
-                placeholder="Tell the story..."
-                rows={3}
-              />
-            </div>
-            <div>
-              <Label htmlFor="memory_date">Date</Label>
-              <Input
-                id="memory_date"
-                type="date"
-                value={newMemory.memory_date}
-                onChange={(e) => setNewMemory({ ...newMemory, memory_date: e.target.value })}
-              />
-            </div>
-            
-            {/* File Upload Area */}
-            <div
-              className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
-                dragActive ? 'border-primary bg-primary/5' : 'border-border'
-              }`}
-              onDragEnter={handleDrag}
-              onDragLeave={handleDrag}
-              onDragOver={handleDrag}
-              onDrop={handleDrop}
-            >
-              <input
-                ref={fileInputRef}
-                type="file"
-                multiple
-                accept="image/*"
-                onChange={(e) => handleFilesSelect(Array.from(e.target.files || []))}
-                className="hidden"
-              />
-              
-              <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-              <p className="text-sm text-muted-foreground mb-2">
-                Drag & drop images here, or click to select
-              </p>
-              <Button 
-                type="button" 
-                variant="outline" 
-                size="sm"
-                onClick={triggerFileInput}
-              >
-                Choose Files
-              </Button>
             </div>
 
-            {/* Uploaded Files Preview */}
-            {uploadedFiles.length > 0 && (
-              <div className="space-y-2">
-                <Label>Selected Images ({uploadedFiles.length})</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  {uploadedFiles.map((file, index) => (
-                    <div key={index} className="relative">
-                      <img
-                        src={URL.createObjectURL(file)}
-                        alt={`Upload ${index + 1}`}
-                        className="w-full h-20 object-cover rounded-lg"
-                      />
-                      <button
-                        onClick={() => removeFile(index)}
-                        className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1"
-                      >
-                        <X size={12} />
-                      </button>
-                    </div>
-                  ))}
+            {createMode === 'photo' ? (
+              <>
+                <div>
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    value={newMemory.description}
+                    onChange={(e) => setNewMemory({ ...newMemory, description: e.target.value })}
+                    placeholder="Tell the story..."
+                    rows={3}
+                  />
                 </div>
+                <div>
+                  <Label htmlFor="memory_date">Date</Label>
+                  <Input
+                    id="memory_date"
+                    type="date"
+                    value={newMemory.memory_date}
+                    onChange={(e) => setNewMemory({ ...newMemory, memory_date: e.target.value })}
+                  />
+                </div>
+                
+                {/* File Upload Area */}
+                <div
+                  className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                    dragActive ? 'border-primary bg-primary/5' : 'border-border'
+                  }`}
+                  onDragEnter={handleDrag}
+                  onDragLeave={handleDrag}
+                  onDragOver={handleDrag}
+                  onDrop={handleDrop}
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={(e) => handleFilesSelect(Array.from(e.target.files || []))}
+                    className="hidden"
+                  />
+                  
+                  <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Drag & drop images here, or click to select
+                  </p>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm"
+                    onClick={triggerFileInput}
+                  >
+                    Choose Files
+                  </Button>
+                </div>
+
+                {/* Uploaded Files Preview */}
+                {uploadedFiles.length > 0 && (
+                  <div className="space-y-2">
+                    <Label>Selected Images ({uploadedFiles.length})</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {uploadedFiles.map((file, index) => (
+                        <div key={index} className="relative">
+                          <img
+                            src={URL.createObjectURL(file)}
+                            alt={`Upload ${index + 1}`}
+                            className="w-full h-20 object-cover rounded-lg"
+                          />
+                          <button
+                            onClick={() => removeFile(index)}
+                            className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1"
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div>
+                <Label htmlFor="content">Content</Label>
+                <Textarea
+                  id="content"
+                  value={newNote.content}
+                  onChange={(e) => setNewNote({ ...newNote, content: e.target.value })}
+                  placeholder="Write your note here..."
+                  rows={6}
+                />
               </div>
             )}
 
             <div className="flex gap-2">
-              <Button onClick={createMemory} disabled={uploading} className="flex-1">
-                {uploading ? "Creating..." : "Create Memory"}
+              <Button 
+                onClick={createMode === 'photo' ? createMemory : createNote} 
+                disabled={uploading} 
+                className="flex-1"
+              >
+                {uploading ? "Creating..." : `Create ${createMode === 'photo' ? 'Memory' : 'Note'}`}
               </Button>
               <Button variant="outline" onClick={() => setShowCreateForm(false)}>
                 Cancel
