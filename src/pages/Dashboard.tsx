@@ -8,6 +8,7 @@ import { StreakDisplay } from "@/components/StreakDisplay";
 import { CoupleMoodDisplay } from "@/components/CoupleMoodDisplay";
 import { MoodCheckin } from "@/components/MoodCheckin";
 import { DailyCheckinFlow } from "@/components/DailyCheckinFlow";
+import { StoryViewer } from "@/components/StoryViewer";
 import { Calendar, Heart, MessageCircle, Sparkles, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -30,6 +31,12 @@ export const Dashboard = () => {
   const [userMood, setUserMood] = useState<string>();
   const [partnerMood, setPartnerMood] = useState<string>();
   const [coupleId, setCoupleId] = useState<string>();
+  const [showStoryViewer, setShowStoryViewer] = useState(false);
+  const [storyTargetUserId, setStoryTargetUserId] = useState<string>();
+  const [isOwnStory, setIsOwnStory] = useState(false);
+  const [hasUserStory, setHasUserStory] = useState(false);
+  const [hasPartnerStory, setHasPartnerStory] = useState(false);
+  const [partnerId, setPartnerId] = useState<string>();
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user, loading } = useAuth();
@@ -91,10 +98,11 @@ export const Dashboard = () => {
         return;
       }
       
-      const partnerId = coupleData?.user1_id === user?.id ? coupleData?.user2_id : coupleData?.user1_id;
+      const currentPartnerId = coupleData?.user1_id === user?.id ? coupleData?.user2_id : coupleData?.user1_id;
+      setPartnerId(currentPartnerId);
       
       // Handle case where user is paired with themselves (testing scenario)
-      const isTestingWithSelf = partnerId === user?.id;
+      const isTestingWithSelf = currentPartnerId === user?.id;
 
       // Fetch or calculate sync score
       let syncScore = 75; // Default
@@ -217,10 +225,13 @@ export const Dashboard = () => {
       const { data: partnerMoodData } = await supabase
         .from('daily_checkins')
         .select('mood')
-        .eq('user_id', partnerId)
+        .eq('user_id', currentPartnerId)
         .eq('couple_id', currentCoupleId)
         .eq('checkin_date', todayForMood)
         .maybeSingle();
+
+      // Check for active stories
+      await checkForStories(currentCoupleId, user?.id, currentPartnerId);
 
       console.log('User mood data:', { userId: user?.id, mood: userMoodData?.mood });
       console.log('Partner mood data:', { partnerId, mood: partnerMoodData?.mood });
@@ -312,6 +323,65 @@ export const Dashboard = () => {
     });
   };
 
+  // Story functionality
+  const checkForStories = async (coupleId: string, userId: string, partnerId?: string) => {
+    try {
+      const now = new Date().toISOString();
+      
+      // Check for user's active stories
+      const { data: userStories } = await supabase
+        .from('stories')
+        .select('id')
+        .eq('couple_id', coupleId)
+        .eq('user_id', userId)
+        .gt('expires_at', now);
+      
+      setHasUserStory((userStories?.length || 0) > 0);
+
+      // Check for partner's active stories
+      if (partnerId && partnerId !== userId) {
+        const { data: partnerStories } = await supabase
+          .from('stories')
+          .select('id')
+          .eq('couple_id', coupleId)
+          .eq('user_id', partnerId)
+          .gt('expires_at', now);
+        
+        setHasPartnerStory((partnerStories?.length || 0) > 0);
+      } else {
+        setHasPartnerStory(false);
+      }
+    } catch (error) {
+      console.error('Error checking for stories:', error);
+    }
+  };
+
+  const handleUserAvatarClick = () => {
+    if (user?.id && coupleId) {
+      setStoryTargetUserId(user.id);
+      setIsOwnStory(true);
+      setShowStoryViewer(true);
+    }
+  };
+
+  const handlePartnerAvatarClick = () => {
+    if (partnerId && coupleId && partnerId !== user?.id) {
+      setStoryTargetUserId(partnerId);
+      setIsOwnStory(false);
+      setShowStoryViewer(true);
+    }
+  };
+
+  const handleStoryViewerClose = () => {
+    setShowStoryViewer(false);
+    setStoryTargetUserId(undefined);
+    setIsOwnStory(false);
+    // Refresh story status after closing
+    if (coupleId && user?.id) {
+      checkForStories(coupleId, user.id, partnerId);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
       {/* Splash Screen Overlay with Sync Score Animation */}
@@ -395,7 +465,14 @@ export const Dashboard = () => {
 
         {/* Couple Avatars with Good Sync Status */}
         <div className={`${isLoaded && !showSplash ? 'animate-fade-in' : 'opacity-0'}`}>
-          <CoupleAvatars syncScore={syncScore} animated={isLoaded && !showSplash} />
+          <CoupleAvatars 
+            syncScore={syncScore} 
+            animated={isLoaded && !showSplash}
+            onUserAvatarClick={handleUserAvatarClick}
+            onPartnerAvatarClick={handlePartnerAvatarClick}
+            hasUserStory={hasUserStory}
+            hasPartnerStory={hasPartnerStory}
+          />
         </div>
 
         <div className={`${isLoaded && !showSplash ? 'animate-fade-in' : 'opacity-0'}`}>
@@ -559,6 +636,17 @@ export const Dashboard = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Story Viewer Modal */}
+      {showStoryViewer && storyTargetUserId && coupleId && (
+        <StoryViewer
+          isOpen={showStoryViewer}
+          onClose={handleStoryViewerClose}
+          targetUserId={storyTargetUserId}
+          coupleId={coupleId}
+          isOwnStory={isOwnStory}
+        />
       )}
 
       {/* Bottom Navigation - hidden during splash */}

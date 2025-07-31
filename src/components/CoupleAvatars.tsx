@@ -4,9 +4,20 @@ import coupleImage from "@/assets/couple-avatars.jpg";
 interface CoupleAvatarsProps {
   syncScore: number;
   animated?: boolean;
+  onUserAvatarClick?: () => void;
+  onPartnerAvatarClick?: () => void;
+  hasUserStory?: boolean;
+  hasPartnerStory?: boolean;
 }
 
-export const CoupleAvatars = ({ syncScore, animated = true }: CoupleAvatarsProps) => {
+export const CoupleAvatars = ({ 
+  syncScore, 
+  animated = true, 
+  onUserAvatarClick, 
+  onPartnerAvatarClick,
+  hasUserStory = false,
+  hasPartnerStory = false 
+}: CoupleAvatarsProps) => {
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
@@ -40,8 +51,13 @@ export const CoupleAvatars = ({ syncScore, animated = true }: CoupleAvatarsProps
       {/* Avatar Container */}
       <div className={`flex items-center justify-center ${getProximityClass(syncScore)} transition-all duration-1000 ease-love`}>
         {/* User Avatar */}
-        <div className={`relative ${isLoaded ? 'animate-fade-in' : 'opacity-0'}`}>
-          <div className="w-24 h-24 rounded-full overflow-hidden shadow-romantic ring-4 ring-sunrise-coral/20">
+        <div 
+          className={`relative ${isLoaded ? 'animate-fade-in' : 'opacity-0'} ${onUserAvatarClick ? 'cursor-pointer' : ''}`}
+          onClick={onUserAvatarClick}
+        >
+          <div className={`w-24 h-24 rounded-full overflow-hidden shadow-romantic ring-4 ${
+            hasUserStory ? 'ring-gradient-primary ring-4' : 'ring-sunrise-coral/20'
+          } ${onUserAvatarClick ? 'hover:ring-8' : ''} transition-all duration-300`}>
             <img 
               src={coupleImage}
               alt="User Avatar"
@@ -50,6 +66,20 @@ export const CoupleAvatars = ({ syncScore, animated = true }: CoupleAvatarsProps
               } transition-all duration-300`}
             />
           </div>
+          {/* Story Ring */}
+          {hasUserStory && (
+            <div className="absolute inset-0 w-24 h-24 rounded-full bg-gradient-primary p-0.5">
+              <div className="w-full h-full rounded-full bg-white p-1">
+                <div className="w-full h-full rounded-full overflow-hidden">
+                  <img 
+                    src={coupleImage}
+                    alt="User Avatar"
+                    className="w-full h-full object-cover object-left"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
           {/* Mood Indicator */}
           <div className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-2 border-white ${
             syncScore >= 80 ? 'bg-gold-accent animate-pulse' :
@@ -59,8 +89,14 @@ export const CoupleAvatars = ({ syncScore, animated = true }: CoupleAvatarsProps
         </div>
 
         {/* Partner Avatar */}
-        <div className={`relative ${isLoaded ? 'animate-fade-in' : 'opacity-0'}`} style={{ animationDelay: '200ms' }}>
-          <div className="w-24 h-24 rounded-full overflow-hidden shadow-romantic ring-4 ring-sunrise-coral/20">
+        <div 
+          className={`relative ${isLoaded ? 'animate-fade-in' : 'opacity-0'} ${onPartnerAvatarClick ? 'cursor-pointer' : ''}`} 
+          style={{ animationDelay: '200ms' }}
+          onClick={onPartnerAvatarClick}
+        >
+          <div className={`w-24 h-24 rounded-full overflow-hidden shadow-romantic ring-4 ${
+            hasPartnerStory ? 'ring-gradient-primary ring-4' : 'ring-sunrise-coral/20'
+          } ${onPartnerAvatarClick ? 'hover:ring-8' : ''} transition-all duration-300`}>
             <img 
               src={coupleImage}
               alt="Partner Avatar"
@@ -69,6 +105,20 @@ export const CoupleAvatars = ({ syncScore, animated = true }: CoupleAvatarsProps
               } transition-all duration-300`}
             />
           </div>
+          {/* Story Ring */}
+          {hasPartnerStory && (
+            <div className="absolute inset-0 w-24 h-24 rounded-full bg-gradient-primary p-0.5">
+              <div className="w-full h-full rounded-full bg-white p-1">
+                <div className="w-full h-full rounded-full overflow-hidden">
+                  <img 
+                    src={coupleImage}
+                    alt="Partner Avatar"
+                    className="w-full h-full object-cover object-right"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
           {/* Mood Indicator */}
           <div className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-2 border-white ${
             syncScore >= 80 ? 'bg-gold-accent animate-pulse' :

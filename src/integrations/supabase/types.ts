@@ -408,6 +408,84 @@ export type Database = {
         }
         Relationships: []
       }
+      stories: {
+        Row: {
+          caption: string | null
+          couple_id: string
+          created_at: string
+          expires_at: string
+          id: string
+          image_url: string
+          user_id: string
+          view_count: number | null
+        }
+        Insert: {
+          caption?: string | null
+          couple_id: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          image_url: string
+          user_id: string
+          view_count?: number | null
+        }
+        Update: {
+          caption?: string | null
+          couple_id?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          image_url?: string
+          user_id?: string
+          view_count?: number | null
+        }
+        Relationships: []
+      }
+      story_responses: {
+        Row: {
+          created_at: string
+          id: string
+          response_text: string
+          story_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          response_text: string
+          story_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          response_text?: string
+          story_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      story_views: {
+        Row: {
+          id: string
+          story_id: string
+          viewed_at: string
+          viewer_id: string
+        }
+        Insert: {
+          id?: string
+          story_id: string
+          viewed_at?: string
+          viewer_id: string
+        }
+        Update: {
+          id?: string
+          story_id?: string
+          viewed_at?: string
+          viewer_id?: string
+        }
+        Relationships: []
+      }
       sync_scores: {
         Row: {
           calculated_date: string
