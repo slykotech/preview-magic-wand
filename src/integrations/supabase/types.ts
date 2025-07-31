@@ -448,6 +448,39 @@ export type Database = {
         }
         Relationships: []
       }
+      partner_requests: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          requested_email: string
+          requested_user_id: string | null
+          requester_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          requested_email: string
+          requested_user_id?: string | null
+          requester_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          requested_email?: string
+          requested_user_id?: string | null
+          requester_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -646,6 +679,10 @@ export type Database = {
       calculate_sync_score: {
         Args: { p_couple_id: string }
         Returns: number
+      }
+      expire_old_partner_requests: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       generate_relationship_insights: {
         Args: { p_couple_id: string }

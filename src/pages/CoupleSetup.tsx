@@ -3,12 +3,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BottomNavigation } from "@/components/BottomNavigation";
-import { Heart, Users, Plus, ArrowLeft, Edit, User, Mail, Calendar, Trash2 } from "lucide-react";
+import { Heart, Users, Plus, ArrowLeft, Edit, User, Mail, Calendar, Trash2, Check, X, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 export const CoupleSetup = () => {
   const navigate = useNavigate();
@@ -24,6 +27,9 @@ export const CoupleSetup = () => {
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState(false);
   const [updating, setUpdating] = useState(false);
+  const [relationshipStatus, setRelationshipStatus] = useState<string>('dating');
+  const [anniversaryDate, setAnniversaryDate] = useState<Date | null>(null);
+  const [partnerRequests, setPartnerRequests] = useState<any[]>([]);
 
   // Check if user is in demo mode (paired with themselves)
   const isDemoMode = coupleData?.user1_id === coupleData?.user2_id;
@@ -57,7 +63,7 @@ export const CoupleSetup = () => {
 
       setCoupleData(couple);
 
-      // If couple exists, fetch partner profile
+      // If couple exists, fetch partner profile and set form data
       if (couple) {
         const partnerId = couple.user1_id === user?.id ? couple.user2_id : couple.user1_id;
         const { data: partner } = await supabase
@@ -67,7 +73,21 @@ export const CoupleSetup = () => {
           .maybeSingle();
         
         setPartnerProfile(partner);
+        setRelationshipStatus(couple.relationship_status || 'dating');
+        if (couple.anniversary_date) {
+          setAnniversaryDate(new Date(couple.anniversary_date));
+        }
       }
+
+      // Fetch pending partner requests
+      const { data: requests } = await supabase
+        .from('partner_requests')
+        .select('*')
+        .or(`requested_email.eq.${user?.email},requested_user_id.eq.${user?.id}`)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false });
+
+      setPartnerRequests(requests || []);
     } catch (error) {
       console.error('Error fetching user data:', error);
     } finally {
@@ -113,7 +133,7 @@ export const CoupleSetup = () => {
     }
   };
 
-  const updatePartnerConnection = async () => {
+  const sendPartnerRequest = async () => {
     if (!partnerEmail.trim()) {
       toast({
         title: "Email required",
@@ -123,29 +143,17 @@ export const CoupleSetup = () => {
       return;
     }
 
-    if (!coupleData) {
-      toast({
-        title: "Error",
-        description: "No couple relationship found",
-        variant: "destructive"
-      });
-      return;
-    }
-
     setUpdating(true);
     try {
-      const { data, error } = await supabase.functions.invoke('update-partner', {
-        body: { 
-          partnerEmail: partnerEmail.trim(),
-          coupleId: coupleData.id 
-        }
+      const { data, error } = await supabase.functions.invoke('send-partner-request', {
+        body: { partnerEmail: partnerEmail.trim() }
       });
 
       if (error) throw error;
 
       if (!data.success) {
         toast({
-          title: "Update Failed",
+          title: "Request Failed",
           description: data.error,
           variant: "destructive"
         });
@@ -153,19 +161,122 @@ export const CoupleSetup = () => {
       }
 
       toast({
-        title: "Partner Updated! 💕",
+        title: "Partner Request Sent! 💕",
         description: data.message,
       });
 
       // Refresh the data
-      fetchUserData();
+      await fetchUserData();
       setEditing(false);
       setPartnerEmail("");
     } catch (error) {
-      console.error('Error updating partner:', error);
+      console.error('Error sending partner request:', error);
       toast({
         title: "Error",
-        description: "Failed to update partner connection",
+        description: "Failed to send partner request",
+        variant: "destructive"
+      });
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const acceptPartnerRequest = async (requestId: string) => {
+    setUpdating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('accept-partner-request', {
+        body: { requestId }
+      });
+
+      if (error) throw error;
+
+      if (!data.success) {
+        toast({
+          title: "Accept Failed",
+          description: data.error,
+          variant: "destructive"
+        });
+        return;
+      }
+
+      toast({
+        title: "Partner Request Accepted! 💕",
+        description: data.message,
+      });
+
+      // Refresh the data
+      await fetchUserData();
+    } catch (error) {
+      console.error('Error accepting partner request:', error);
+      toast({
+        title: "Error",
+        description: "Failed to accept partner request",
+        variant: "destructive"
+      });
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const declinePartnerRequest = async (requestId: string) => {
+    try {
+      const { error } = await supabase
+        .from('partner_requests')
+        .update({ status: 'declined' })
+        .eq('id', requestId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Request Declined",
+        description: "Partner request has been declined",
+      });
+
+      // Refresh the data
+      await fetchUserData();
+    } catch (error) {
+      console.error('Error declining partner request:', error);
+      toast({
+        title: "Error",
+        description: "Failed to decline partner request",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const updateRelationshipDetails = async () => {
+    if (!coupleData) return;
+
+    setUpdating(true);
+    try {
+      const updates: any = {
+        relationship_status: relationshipStatus,
+      };
+
+      if (anniversaryDate) {
+        updates.anniversary_date = anniversaryDate.toISOString().split('T')[0];
+      }
+
+      const { error } = await supabase
+        .from('couples')
+        .update(updates)
+        .eq('id', coupleData.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Relationship Updated! 💕",
+        description: "Your relationship details have been updated",
+      });
+
+      // Refresh the data
+      await fetchUserData();
+      setEditing(false);
+    } catch (error) {
+      console.error('Error updating relationship details:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update relationship details",
         variant: "destructive"
       });
     } finally {
@@ -469,34 +580,34 @@ export const CoupleSetup = () => {
                           Enter email of someone with a LoveSync account
                         </p>
                       </div>
-                      <div className="flex gap-2">
-                        <Button
-                          onClick={updatePartnerConnection}
-                          disabled={updating}
-                          className="flex-1 bg-gradient-secondary hover:opacity-90 text-white shadow-romantic"
-                          size="sm"
-                        >
-                          {updating ? (
-                            <>
-                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                              Connecting...
-                            </>
-                          ) : (
-                            'Connect to Partner'
-                          )}
-                        </Button>
-                        {!isDemoMode && (
-                          <Button
-                            variant="outline"
-                            onClick={removePartner}
-                            disabled={updating}
-                            className="text-red-600 border-red-200 hover:bg-red-50"
-                            size="sm"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
+                       <div className="flex gap-2">
+                         <Button
+                           onClick={sendPartnerRequest}
+                           disabled={updating}
+                           className="flex-1 bg-gradient-secondary hover:opacity-90 text-white shadow-romantic"
+                           size="sm"
+                         >
+                           {updating ? (
+                             <>
+                               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                               Sending...
+                             </>
+                           ) : (
+                             'Send Partner Request'
+                           )}
+                         </Button>
+                         {!isDemoMode && (
+                           <Button
+                             variant="outline"
+                             onClick={removePartner}
+                             disabled={updating}
+                             className="text-red-600 border-red-200 hover:bg-red-50"
+                             size="sm"
+                           >
+                             <Trash2 className="h-4 w-4" />
+                           </Button>
+                         )}
+                       </div>
                     </div>
                   ) : (
                     <>
@@ -558,27 +669,135 @@ export const CoupleSetup = () => {
                     </div>
                     <h4 className="font-semibold text-gray-800">Relationship Info</h4>
                   </div>
-                  <div className="space-y-3">
-                    <div className="bg-white border border-gray-300 p-3 rounded-md">
-                      <div className="flex flex-col space-y-1">
-                        <span className="text-xs font-semibold text-gray-800 uppercase tracking-wide">Status</span>
-                        <span className="text-sm text-gray-700 capitalize">{coupleData?.relationship_status || 'dating'}</span>
+                  {editing ? (
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="relationshipStatus" className="text-sm font-medium text-gray-800">
+                          Relationship Status
+                        </Label>
+                        <Select value={relationshipStatus} onValueChange={setRelationshipStatus}>
+                          <SelectTrigger className="mt-1">
+                            <SelectValue placeholder="Select status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="dating">Dating</SelectItem>
+                            <SelectItem value="engaged">Engaged</SelectItem>
+                            <SelectItem value="married">Married</SelectItem>
+                            <SelectItem value="partnered">Partnered</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label htmlFor="anniversaryDate" className="text-sm font-medium text-gray-800">
+                          Anniversary Date
+                        </Label>
+                        <div className="mt-1">
+                          <DatePicker
+                            selected={anniversaryDate}
+                            onChange={(date) => setAnniversaryDate(date)}
+                            dateFormat="MM/dd/yyyy"
+                            placeholderText="Select anniversary date"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            maxDate={new Date()}
+                          />
+                        </div>
+                      </div>
+                      <Button
+                        onClick={updateRelationshipDetails}
+                        disabled={updating}
+                        className="w-full bg-gradient-primary hover:opacity-90 text-white shadow-romantic"
+                        size="sm"
+                      >
+                        {updating ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            Updating...
+                          </>
+                        ) : (
+                          'Update Relationship Details'
+                        )}
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="bg-white border border-gray-300 p-3 rounded-md">
+                        <div className="flex flex-col space-y-1">
+                          <span className="text-xs font-semibold text-gray-800 uppercase tracking-wide">Status</span>
+                          <span className="text-sm text-gray-700 capitalize">{coupleData?.relationship_status || 'dating'}</span>
+                        </div>
+                      </div>
+                      <div className="bg-white border border-gray-300 p-3 rounded-md">
+                        <div className="flex flex-col space-y-1">
+                          <span className="text-xs font-semibold text-gray-800 uppercase tracking-wide">Anniversary</span>
+                          <span className="text-sm text-gray-700">
+                            {coupleData?.anniversary_date 
+                              ? new Date(coupleData.anniversary_date).toLocaleDateString() 
+                              : 'Not set'}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="bg-white border border-gray-300 p-3 rounded-md">
+                        <div className="flex flex-col space-y-1">
+                          <span className="text-xs font-semibold text-gray-800 uppercase tracking-wide">Created</span>
+                          <span className="text-sm text-gray-700">{new Date(coupleData.created_at).toLocaleDateString()}</span>
+                        </div>
                       </div>
                     </div>
-                    <div className="bg-white border border-gray-300 p-3 rounded-md">
-                      <div className="flex flex-col space-y-1">
-                        <span className="text-xs font-semibold text-gray-800 uppercase tracking-wide">Anniversary</span>
-                        <span className="text-sm text-gray-700">{coupleData?.anniversary_date ? new Date(coupleData.anniversary_date).toLocaleDateString() : '28/07/2025'}</span>
+                  )}
+                </div>
+
+                {/* Partner Requests */}
+                {partnerRequests.length > 0 && (
+                  <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                        <Mail className="text-white" size={16} />
                       </div>
+                      <h4 className="font-semibold text-blue-800">Partner Requests</h4>
                     </div>
-                    <div className="bg-white border border-gray-300 p-3 rounded-md">
-                      <div className="flex flex-col space-y-1">
-                        <span className="text-xs font-semibold text-gray-800 uppercase tracking-wide">Created</span>
-                        <span className="text-sm text-gray-700">{new Date(coupleData.created_at).toLocaleDateString()}</span>
-                      </div>
+                    <div className="space-y-3">
+                      {partnerRequests.map((request) => (
+                        <div key={request.id} className="bg-white border border-blue-300 p-3 rounded-md">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm font-medium text-blue-800">
+                                {request.requester_id === user?.id ? (
+                                  `Sent to: ${request.requested_email}`
+                                ) : (
+                                  `From: ${request.requested_email}`
+                                )}
+                              </p>
+                              <p className="text-xs text-blue-600">
+                                <Clock className="inline w-3 h-3 mr-1" />
+                                {new Date(request.created_at).toLocaleDateString()}
+                              </p>
+                            </div>
+                            {request.requester_id !== user?.id && (
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  onClick={() => acceptPartnerRequest(request.id)}
+                                  disabled={updating}
+                                  className="bg-green-600 hover:bg-green-700 text-white"
+                                >
+                                  <Check className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => declinePartnerRequest(request.id)}
+                                  className="text-red-600 border-red-200 hover:bg-red-50"
+                                >
+                                  <X className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                </div>
+                )}
 
 
                 {/* Edit Mode Cancel Button */}
@@ -587,9 +806,13 @@ export const CoupleSetup = () => {
                     <Button
                       variant="outline"
                       onClick={() => {
-                        setEditing(false);
-                        setPartnerEmail("");
-                        setDisplayName(profileData?.display_name || '');
+                      setEditing(false);
+                      setPartnerEmail("");
+                      setDisplayName(profileData?.display_name || '');
+                      setRelationshipStatus(coupleData?.relationship_status || 'dating');
+                      if (coupleData?.anniversary_date) {
+                        setAnniversaryDate(new Date(coupleData.anniversary_date));
+                      }
                       }}
                       className="px-8"
                     >
