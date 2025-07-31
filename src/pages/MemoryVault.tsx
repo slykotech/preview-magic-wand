@@ -1207,7 +1207,7 @@ export const MemoryVault = () => {
 
       {/* Detail Modal for Read More */}
       <Dialog open={showDetailModal} onOpenChange={setShowDetailModal}>
-        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto mx-4 rounded-2xl shadow-2xl border-0 bg-background/95 backdrop-blur-sm">
           {detailItem && (
             <>
               <DialogHeader>
