@@ -300,6 +300,7 @@ export type Database = {
           description: string | null
           id: string
           image_url: string | null
+          is_favorite: boolean | null
           memory_date: string | null
           title: string
           updated_at: string
@@ -311,6 +312,7 @@ export type Database = {
           description?: string | null
           id?: string
           image_url?: string | null
+          is_favorite?: boolean | null
           memory_date?: string | null
           title: string
           updated_at?: string
@@ -322,6 +324,7 @@ export type Database = {
           description?: string | null
           id?: string
           image_url?: string | null
+          is_favorite?: boolean | null
           memory_date?: string | null
           title?: string
           updated_at?: string
@@ -411,6 +414,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      notes: {
+        Row: {
+          content: string | null
+          couple_id: string
+          created_at: string
+          created_by: string
+          id: string
+          is_favorite: boolean | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          content?: string | null
+          couple_id: string
+          created_at?: string
+          created_by: string
+          id?: string
+          is_favorite?: boolean | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string | null
+          couple_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          is_favorite?: boolean | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
