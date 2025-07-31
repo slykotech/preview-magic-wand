@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Smile, ArrowLeft, MoreVertical } from 'lucide-react';
+import { Send, Smile, ArrowLeft, MoreVertical, Image, Video, Heart, Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -14,7 +14,7 @@ interface Message {
   conversation_id: string;
   sender_id: string;
   message_text: string;
-  message_type: 'text' | 'emoji' | 'image';
+  message_type: 'text' | 'emoji' | 'image' | 'video' | 'sticker';
   is_read: boolean;
   created_at: string;
   updated_at: string;
@@ -40,10 +40,15 @@ export const Chat: React.FC<ChatProps> = ({ isOpen, onClose }) => {
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [loading, setLoading] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showStickers, setShowStickers] = useState(false);
+  const [showAttachments, setShowAttachments] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const quickEmojis = ['❤️', '😂', '😍', '🥰', '😘', '🔥', '👏', '💯', '🙌', '✨'];
+  const loveStickers = ['💕', '💖', '💗', '💓', '💘', '💝', '💞', '💟', '❣️', '💋', '🌹', '💐'];
+  const actionStickers = ['🫶', '👫', '💏', '👪', '🥳', '🎉', '🎊', '🔥', '⭐', '✨', '💫', '🌟'];
 
   useEffect(() => {
     if (isOpen && coupleData) {
@@ -162,7 +167,7 @@ export const Chat: React.FC<ChatProps> = ({ isOpen, onClose }) => {
     }
   };
 
-  const sendMessage = async (text: string, type: 'text' | 'emoji' = 'text') => {
+  const sendMessage = async (text: string, type: 'text' | 'emoji' | 'sticker' | 'image' | 'video' = 'text') => {
     if (!text.trim() || !conversation?.id || !user?.id) return;
 
     try {
@@ -180,14 +185,60 @@ export const Chat: React.FC<ChatProps> = ({ isOpen, onClose }) => {
 
       setNewMessage('');
       setShowEmojiPicker(false);
+      setShowStickers(false);
+      setShowAttachments(false);
     } catch (error) {
       console.error('Error sending message:', error);
       toast.error('Failed to send message');
     }
   };
 
+  const handleFileUpload = async (file: File) => {
+    if (!file || !conversation?.id || !user?.id) return;
+
+    const fileType = file.type.startsWith('image/') ? 'image' : 
+                    file.type.startsWith('video/') ? 'video' : 'text';
+    
+    if (fileType === 'text') {
+      toast.error('Please select an image or video file');
+      return;
+    }
+
+    const maxSize = fileType === 'video' ? 50 * 1024 * 1024 : 5 * 1024 * 1024; // 50MB for video, 5MB for image
+    if (file.size > maxSize) {
+      toast.error(`File size too large. Max ${fileType === 'video' ? '50MB' : '5MB'} allowed.`);
+      return;
+    }
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
+      const filePath = `${user.id}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('memory-images')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from('memory-images')
+        .getPublicUrl(filePath);
+
+      await sendMessage(urlData.publicUrl, fileType);
+      toast.success(`${fileType === 'video' ? 'Video' : 'Image'} sent successfully!`);
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      toast.error('Failed to upload file');
+    }
+  };
+
   const handleEmojiClick = (emoji: string) => {
     sendMessage(emoji, 'emoji');
+  };
+
+  const handleStickerClick = (sticker: string) => {
+    sendMessage(sticker, 'sticker');
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -259,17 +310,33 @@ export const Chat: React.FC<ChatProps> = ({ isOpen, onClose }) => {
               >
                 <div className={`max-w-[75%] ${isOwn ? 'order-2' : 'order-1'}`}>
                   <div
-                    className={`px-4 py-2 rounded-2xl ${
-                      isOwn
-                        ? 'bg-primary text-primary-foreground ml-2'
-                        : 'bg-muted text-foreground mr-2'
-                    } ${
-                      message.message_type === 'emoji' 
+                    className={`${
+                      message.message_type === 'emoji' || message.message_type === 'sticker'
                         ? 'text-3xl px-2 py-1 bg-transparent' 
-                        : ''
+                        : `px-4 py-2 rounded-2xl ${
+                            isOwn
+                              ? 'bg-primary text-primary-foreground ml-2'
+                              : 'bg-muted text-foreground mr-2'
+                          }`
                     }`}
                   >
-                    {message.message_text}
+                    {message.message_type === 'image' ? (
+                      <img 
+                        src={message.message_text} 
+                        alt="Shared image" 
+                        className="max-w-full h-auto rounded-lg cursor-pointer"
+                        onClick={() => window.open(message.message_text, '_blank')}
+                      />
+                    ) : message.message_type === 'video' ? (
+                      <video 
+                        src={message.message_text} 
+                        controls 
+                        className="max-w-full h-auto rounded-lg"
+                        style={{ maxHeight: '300px' }}
+                      />
+                    ) : (
+                      message.message_text
+                    )}
                   </div>
                   
                   <div className={`text-xs text-muted-foreground mt-1 ${isOwn ? 'text-right mr-2' : 'ml-2'}`}>
@@ -314,9 +381,92 @@ export const Chat: React.FC<ChatProps> = ({ isOpen, onClose }) => {
         </div>
       )}
 
-      {/* Message Input */}
-      <div className="border-t bg-background p-4">
+      {/* Love Stickers */}
+      {showStickers && (
+        <div className="border-t bg-background p-4">
+          <h4 className="text-sm font-medium mb-3 text-muted-foreground">Love Stickers</h4>
+          <div className="grid grid-cols-6 gap-2 mb-4">
+            {loveStickers.map((sticker, index) => (
+              <button
+                key={index}
+                onClick={() => handleStickerClick(sticker)}
+                className="text-2xl p-2 rounded-lg hover:bg-muted transition-colors"
+              >
+                {sticker}
+              </button>
+            ))}
+          </div>
+          <h4 className="text-sm font-medium mb-3 text-muted-foreground">Action Stickers</h4>
+          <div className="grid grid-cols-6 gap-2">
+            {actionStickers.map((sticker, index) => (
+              <button
+                key={index}
+                onClick={() => handleStickerClick(sticker)}
+                className="text-2xl p-2 rounded-lg hover:bg-muted transition-colors"
+              >
+                {sticker}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Attachments Panel */}
+      {showAttachments && (
+        <div className="border-t bg-background p-4">
+          <div className="grid grid-cols-3 gap-4">
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="flex flex-col items-center gap-2 p-4 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-primary transition-colors"
+            >
+              <Camera className="h-6 w-6 text-primary" />
+              <span className="text-xs font-medium">Photo</span>
+            </button>
+            <button
+              onClick={() => {
+                if (fileInputRef.current) {
+                  fileInputRef.current.accept = 'video/*';
+                  fileInputRef.current.click();
+                }
+              }}
+              className="flex flex-col items-center gap-2 p-4 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-primary transition-colors"
+            >
+              <Video className="h-6 w-6 text-primary" />
+              <span className="text-xs font-medium">Video</span>
+            </button>
+            <button
+              onClick={() => {
+                if (fileInputRef.current) {
+                  fileInputRef.current.accept = 'image/*,video/*';
+                  fileInputRef.current.click();
+                }
+              }}
+              className="flex flex-col items-center gap-2 p-4 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-primary transition-colors"
+            >
+              <Image className="h-6 w-6 text-primary" />
+              <span className="text-xs font-medium">Gallery</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Message Input - Fixed positioning */}
+      <div className="sticky bottom-0 border-t bg-background/95 backdrop-blur-sm p-4 shadow-lg">
         <div className="flex gap-2 items-end">
+          {/* Attachment Button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => {
+              setShowAttachments(!showAttachments);
+              setShowEmojiPicker(false);
+              setShowStickers(false);
+            }}
+            className={`rounded-full ${showAttachments ? 'bg-muted' : ''}`}
+          >
+            <Image className="h-5 w-5" />
+          </Button>
+          
           <div className="flex-1 relative">
             <Input
               ref={inputRef}
@@ -324,29 +474,64 @@ export const Chat: React.FC<ChatProps> = ({ isOpen, onClose }) => {
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               onKeyPress={handleKeyPress}
-              className="pr-12 min-h-[44px] rounded-full"
+              className="pr-12 min-h-[44px] rounded-full border-2 focus:border-primary"
               disabled={loading}
             />
           </div>
           
+          {/* Love Stickers Button */}
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+            onClick={() => {
+              setShowStickers(!showStickers);
+              setShowEmojiPicker(false);
+              setShowAttachments(false);
+            }}
+            className={`rounded-full ${showStickers ? 'bg-muted' : ''}`}
+          >
+            <Heart className="h-5 w-5 text-red-500" />
+          </Button>
+          
+          {/* Emoji Button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => {
+              setShowEmojiPicker(!showEmojiPicker);
+              setShowStickers(false);
+              setShowAttachments(false);
+            }}
             className={`rounded-full ${showEmojiPicker ? 'bg-muted' : ''}`}
           >
             <Smile className="h-5 w-5" />
           </Button>
           
+          {/* Send Button */}
           <Button
             onClick={() => sendMessage(newMessage)}
             disabled={loading || !newMessage.trim()}
             size="icon"
-            className="rounded-full"
+            className="rounded-full min-w-[44px]"
           >
             <Send className="h-5 w-5" />
           </Button>
         </div>
+        
+        {/* Hidden file input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*,video/*"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) {
+              handleFileUpload(file);
+              e.target.value = '';
+            }
+          }}
+          className="hidden"
+        />
       </div>
     </div>
   );
