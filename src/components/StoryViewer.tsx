@@ -47,7 +47,8 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [stories, setStories] = useState<Story[]>([]);
+  const [userStories, setUserStories] = useState<Story[]>([]);
+  const [partnerStories, setPartnerStories] = useState<Story[]>([]);
   const [currentStoryIndex, setCurrentStoryIndex] = useState(0);
   const [responses, setResponses] = useState<StoryResponse[]>([]);
   const [responseText, setResponseText] = useState('');
@@ -76,23 +77,26 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
     }
   }, [isOpen, targetUserId, showUploadInterface, isOwnStory]);
 
+  // Get current stories array based on context
+  const currentStories = isOwnStory ? userStories : partnerStories;
+
   // Only show create story interface when no existing stories AND not explicitly from avatar click
   useEffect(() => {
-    if (isOpen && isOwnStory && showUploadInterface && stories.length === 0) {
+    if (isOpen && isOwnStory && showUploadInterface && currentStories.length === 0) {
       setShowCreateStory(true);
     } else if (isOpen && !showUploadInterface) {
       setShowCreateStory(false); // Ensure upload interface is hidden for avatar clicks
     }
-  }, [isOpen, isOwnStory, showUploadInterface, stories.length]);
+  }, [isOpen, isOwnStory, showUploadInterface, currentStories.length]);
 
   useEffect(() => {
-    if (stories.length > 0 && currentStoryIndex < stories.length) {
+    if (currentStories.length > 0 && currentStoryIndex < currentStories.length) {
       fetchStoryResponses();
       if (!isOwnStory) {
         markStoryAsViewed();
       }
     }
-  }, [currentStoryIndex, stories]);
+  }, [currentStoryIndex, currentStories, isOwnStory]);
 
   const fetchStories = async () => {
     try {
@@ -115,7 +119,12 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
         has_partner_viewed: story.story_views?.some((view: any) => view.viewer_id !== story.user_id) || false
       }));
 
-      setStories(storiesWithViewStatus);
+      // Separate user and partner stories
+      if (isOwnStory) {
+        setUserStories(storiesWithViewStatus);
+      } else {
+        setPartnerStories(storiesWithViewStatus);
+      }
       
     } catch (error) {
       console.error('Error fetching stories:', error);
@@ -137,7 +146,12 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
           has_partner_viewed: false
         }));
         
-        setStories(storiesWithFallbackStatus);
+        // Separate user and partner stories in fallback
+        if (isOwnStory) {
+          setUserStories(storiesWithFallbackStatus);
+        } else {
+          setPartnerStories(storiesWithFallbackStatus);
+        }
       } catch (fallbackError) {
         console.error('Fallback fetch also failed:', fallbackError);
         toast.error('Failed to load stories');
@@ -146,13 +160,13 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
   };
 
   const fetchStoryResponses = async () => {
-    if (!stories[currentStoryIndex]) return;
+    if (!currentStories[currentStoryIndex]) return;
 
     try {
       const { data, error } = await supabase
         .from('story_responses')
         .select('*')
-        .eq('story_id', stories[currentStoryIndex].id)
+        .eq('story_id', currentStories[currentStoryIndex].id)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
@@ -163,13 +177,13 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
   };
 
   const markStoryAsViewed = async () => {
-    if (!user || !stories[currentStoryIndex]) return;
+    if (!user || !currentStories[currentStoryIndex]) return;
 
     try {
       await supabase
         .from('story_views')
         .insert({
-          story_id: stories[currentStoryIndex].id,
+          story_id: currentStories[currentStoryIndex].id,
           viewer_id: user.id
         });
     } catch (error) {
@@ -178,14 +192,14 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
   };
 
   const handleSendResponse = async (text: string) => {
-    if (!text.trim() || !user || !stories[currentStoryIndex]) return;
+    if (!text.trim() || !user || !currentStories[currentStoryIndex]) return;
 
     setLoading(true);
     try {
       const { error } = await supabase
         .from('story_responses')
         .insert({
-          story_id: stories[currentStoryIndex].id,
+          story_id: currentStories[currentStoryIndex].id,
           user_id: user.id,
           response_text: text.trim()
         });
@@ -453,7 +467,7 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
   };
 
   const nextStory = () => {
-    if (currentStoryIndex < stories.length - 1) {
+    if (currentStoryIndex < currentStories.length - 1) {
       setCurrentStoryIndex(currentStoryIndex + 1);
     } else {
       onClose();
@@ -469,7 +483,7 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
   const handleDeleteStory = async (storyId: string) => {
     try {
       // First delete the image from storage
-      const storyToDelete = stories.find(s => s.id === storyId);
+      const storyToDelete = currentStories.find(s => s.id === storyId);
       if (storyToDelete?.image_url) {
         const urlParts = storyToDelete.image_url.split('/');
         const fileName = urlParts[urlParts.length - 1];
@@ -498,8 +512,12 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
       setStoryToDelete(null);
       
       // Update stories list
-      const updatedStories = stories.filter(s => s.id !== storyId);
-      setStories(updatedStories);
+      const updatedStories = currentStories.filter(s => s.id !== storyId);
+      if (isOwnStory) {
+        setUserStories(updatedStories);
+      } else {
+        setPartnerStories(updatedStories);
+      }
       
       // Handle navigation after deletion
       if (updatedStories.length === 0) {
@@ -537,7 +555,7 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
               size="icon"
               onClick={() => {
                 setShowCreateStory(false);
-                if (stories.length === 0) onClose();
+                if (currentStories.length === 0) onClose();
               }}
               className="rounded-full hover:bg-muted/50 transition-all duration-300 hover:scale-110"
             >
@@ -670,7 +688,7 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
     );
   }
 
-  if (stories.length === 0) {
+  if (currentStories.length === 0) {
     return (
       <div className="fixed inset-0 bg-black/95 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
         <div className="text-center text-white space-y-6 p-8">
@@ -707,14 +725,14 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
     );
   }
 
-  const currentStory = stories[currentStoryIndex];
+  const currentStory = currentStories[currentStoryIndex];
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-95 flex items-center justify-center z-50 animate-fade-in">
       <div className="relative w-full max-w-md h-full max-h-[80vh] bg-black rounded-lg overflow-hidden shadow-2xl animate-scale-in">
         {/* Story Progress Bars */}
         <div className="absolute top-2 left-2 right-2 flex gap-1 z-10">
-          {stories.map((_, index) => (
+          {currentStories.map((_, index) => (
             <div
               key={index}
               className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
