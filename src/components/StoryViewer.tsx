@@ -307,27 +307,50 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
 
   const handleDeleteStory = async (storyId: string) => {
     try {
+      // First delete the image from storage
+      const storyToDelete = stories.find(s => s.id === storyId);
+      if (storyToDelete?.image_url) {
+        const urlParts = storyToDelete.image_url.split('/');
+        const fileName = urlParts[urlParts.length - 1];
+        const filePath = `${user?.id}/${fileName}`;
+        
+        // Delete from storage (non-blocking)
+        supabase.storage
+          .from('story-images')
+          .remove([filePath])
+          .then(({ error: storageError }) => {
+            if (storageError) console.log('Storage deletion warning:', storageError);
+          });
+      }
+
+      // Delete story from database
       const { error } = await supabase
         .from('stories')
         .delete()
-        .eq('id', storyId);
+        .eq('id', storyId)
+        .eq('user_id', user?.id); // Ensure user can only delete their own stories
 
       if (error) throw error;
 
       toast.success('Story deleted');
-      fetchStories();
       setShowDeleteConfirm(false);
       setStoryToDelete(null);
       
-      // If this was the last story or we're at the end, close or go back
-      if (stories.length === 1) {
+      // Update stories list
+      const updatedStories = stories.filter(s => s.id !== storyId);
+      setStories(updatedStories);
+      
+      // Handle navigation after deletion
+      if (updatedStories.length === 0) {
         onClose();
-      } else if (currentStoryIndex >= stories.length - 1) {
-        setCurrentStoryIndex(Math.max(0, currentStoryIndex - 1));
+      } else if (currentStoryIndex >= updatedStories.length) {
+        setCurrentStoryIndex(Math.max(0, updatedStories.length - 1));
       }
     } catch (error) {
       console.error('Error deleting story:', error);
       toast.error('Failed to delete story');
+      setShowDeleteConfirm(false);
+      setStoryToDelete(null);
     }
   };
 
