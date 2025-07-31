@@ -456,10 +456,13 @@ export const Dashboard = () => {
   };
 
   // Separate camera handler for uploading new stories
+  const [showUploadInterface, setShowUploadInterface] = useState(false);
+  
   const handleCameraClick = () => {
     if (user?.id && coupleId) {
       setStoryTargetUserId(user.id);
       setIsOwnStory(true);
+      setShowUploadInterface(true); // Set flag to show upload interface
       setShowStoryViewer(true);
     }
   };
@@ -468,6 +471,7 @@ export const Dashboard = () => {
     setShowStoryViewer(false);
     setStoryTargetUserId(undefined);
     setIsOwnStory(false);
+    setShowUploadInterface(false); // Reset upload interface flag
     // Refresh story status after closing
     if (coupleId && user?.id) {
       checkForStories(coupleId, user.id, partnerId);
@@ -790,6 +794,7 @@ export const Dashboard = () => {
           targetUserId={storyTargetUserId}
           coupleId={coupleId}
           isOwnStory={isOwnStory}
+          showUploadInterface={showUploadInterface}
         />
       )}
 

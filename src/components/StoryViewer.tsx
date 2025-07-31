@@ -32,6 +32,7 @@ interface StoryViewerProps {
   targetUserId: string;
   coupleId: string;
   isOwnStory: boolean;
+  showUploadInterface?: boolean; // New prop to control upload interface
 }
 
 export const StoryViewer: React.FC<StoryViewerProps> = ({
@@ -39,7 +40,8 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
   onClose,
   targetUserId,
   coupleId,
-  isOwnStory
+  isOwnStory,
+  showUploadInterface = false
 }) => {
   const { user } = useAuth();
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -69,12 +71,12 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
     }
   }, [isOpen, targetUserId]);
 
-  // Show create story interface when opening own stories
+  // Show create story interface when explicitly requested or when opening own stories with no stories
   useEffect(() => {
-    if (isOpen && isOwnStory && stories.length === 0) {
+    if (isOpen && isOwnStory && (showUploadInterface || stories.length === 0)) {
       setShowCreateStory(true);
     }
-  }, [isOpen, isOwnStory, stories.length]);
+  }, [isOpen, isOwnStory, showUploadInterface, stories.length]);
 
   useEffect(() => {
     if (stories.length > 0 && currentStoryIndex < stories.length) {
