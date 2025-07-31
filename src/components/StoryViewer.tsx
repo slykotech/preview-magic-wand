@@ -67,13 +67,18 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      fetchStories();
+      // If showUploadInterface is true, immediately show create story interface
+      if (showUploadInterface && isOwnStory) {
+        setShowCreateStory(true);
+      } else {
+        fetchStories();
+      }
     }
-  }, [isOpen, targetUserId]);
+  }, [isOpen, targetUserId, showUploadInterface, isOwnStory]);
 
-  // Show create story interface when explicitly requested or when opening own stories with no stories
+  // Show create story interface when opening own stories with no existing stories (but not when upload interface is explicitly requested)
   useEffect(() => {
-    if (isOpen && isOwnStory && (showUploadInterface || stories.length === 0)) {
+    if (isOpen && isOwnStory && !showUploadInterface && stories.length === 0) {
       setShowCreateStory(true);
     }
   }, [isOpen, isOwnStory, showUploadInterface, stories.length]);
