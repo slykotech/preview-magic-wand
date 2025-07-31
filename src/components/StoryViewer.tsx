@@ -218,17 +218,39 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
 
   const startCamera = async () => {
     try {
+      // Check if camera permission is available
+      const permissionStatus = await navigator.permissions.query({ name: 'camera' as PermissionName });
+      
+      if (permissionStatus.state === 'denied') {
+        toast.error('Camera access is denied. Please enable camera permissions in your browser settings.');
+        return;
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'user' }, 
+        video: { 
+          facingMode: 'user',
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        }, 
         audio: false 
       });
+      
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         setShowCamera(true);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error accessing camera:', error);
-      toast.error('Camera access denied');
+      
+      if (error.name === 'NotAllowedError') {
+        toast.error('Camera access denied. Please allow camera permissions and try again.');
+      } else if (error.name === 'NotFoundError') {
+        toast.error('No camera found on this device.');
+      } else if (error.name === 'NotSupportedError') {
+        toast.error('Camera is not supported on this device.');
+      } else {
+        toast.error('Unable to access camera. Please check your browser settings.');
+      }
     }
   };
 
