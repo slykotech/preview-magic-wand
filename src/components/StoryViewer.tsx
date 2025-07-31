@@ -101,9 +101,6 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
 
       setStories(storiesWithViewStatus);
       
-      if (isOwnStory && (!data || data.length === 0)) {
-        setShowCreateStory(true);
-      }
     } catch (error) {
       console.error('Error fetching stories:', error);
       
@@ -340,7 +337,7 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
 
   if (!isOpen) return null;
 
-  if (showCreateStory || (isOwnStory && stories.length === 0)) {
+  if (showCreateStory) {
     return (
       <div className="fixed inset-0 bg-black/95 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
         <div className="bg-gradient-to-br from-background via-background to-background/95 border border-border/20 rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl animate-scale-in">
@@ -484,12 +481,36 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
 
   if (stories.length === 0) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50">
-        <div className="text-center text-white">
-          <p className="text-lg mb-4">No stories available</p>
-          <Button variant="outline" onClick={onClose}>
-            Close
-          </Button>
+      <div className="fixed inset-0 bg-black/95 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
+        <div className="text-center text-white space-y-6 p-8">
+          <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-full w-24 h-24 mx-auto flex items-center justify-center">
+            <Camera className="h-12 w-12 text-primary" />
+          </div>
+          <div>
+            <h3 className="text-xl font-semibold mb-2">
+              {isOwnStory ? 'No Stories Yet' : 'No Stories Available'}
+            </h3>
+            <p className="text-muted-foreground">
+              {isOwnStory 
+                ? 'Share your first moment with your partner'
+                : 'Your partner hasn\'t shared any stories yet'
+              }
+            </p>
+          </div>
+          <div className="flex gap-3 justify-center">
+            {isOwnStory && (
+              <Button 
+                onClick={() => setShowCreateStory(true)}
+                className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80"
+              >
+                <Camera className="h-4 w-4 mr-2" />
+                Create Story
+              </Button>
+            )}
+            <Button variant="outline" onClick={onClose} className="border-white/20 text-white hover:bg-white/10">
+              Close
+            </Button>
+          </div>
         </div>
       </div>
     );
