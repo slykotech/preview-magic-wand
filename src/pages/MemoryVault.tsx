@@ -550,17 +550,7 @@ export const MemoryVault = () => {
             {filteredItems.map((item, index) => {
               // Dynamic heights for masonry effect
               const cardHeights = ['h-32', 'h-40', 'h-48', 'h-36', 'h-44', 'h-52'];
-              const cardColors = [
-                'bg-gradient-to-br from-blue-600 to-blue-800', 
-                'bg-gradient-to-br from-red-500 to-red-700',
-                'bg-gradient-to-br from-yellow-500 to-orange-600',
-                'bg-gradient-to-br from-purple-500 to-purple-700',
-                'bg-gradient-to-br from-green-500 to-green-700',
-                'bg-gradient-to-br from-pink-500 to-pink-700'
-              ];
-              
               const randomHeight = cardHeights[index % cardHeights.length];
-              const randomColor = cardColors[index % cardColors.length];
               
               return (
                 <div
@@ -602,7 +592,7 @@ export const MemoryVault = () => {
                       </div>
                     </div>
                   ) : (
-                    <div className={`${randomColor} ${randomHeight} rounded-2xl relative p-4 text-white group transition-all duration-300 hover:shadow-xl`}>
+                    <div className={`bg-card ${randomHeight} rounded-2xl relative p-4 group transition-all duration-300 hover:shadow-xl border border-border`}>
                       <button 
                         onClick={(e) => {
                           e.stopPropagation();
@@ -610,36 +600,36 @@ export const MemoryVault = () => {
                         }}
                         className="absolute top-3 right-3 transition-all duration-200 hover:scale-110"
                       >
-                        <Star 
-                          size={16} 
-                          className={item.is_favorite ? 'fill-yellow-300 text-yellow-300' : 'text-white/80 hover:text-yellow-300'} 
-                        />
+                         <Star 
+                           size={16} 
+                           className={item.is_favorite ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground hover:text-yellow-400'} 
+                         />
                       </button>
                       
-                      <div className="flex flex-col h-full">
-                        <div className="flex items-center gap-2 mb-3">
-                          {item.type === 'note' ? (
-                            <FileText size={16} className="text-white/90" />
-                          ) : (
-                            <ImageIcon size={16} className="text-white/90" />
-                          )}
-                        </div>
-                        
-                        <h3 className="font-bold text-lg leading-tight mb-2 pr-6">{item.title}</h3>
-                        
-                        {item.type === 'note' && (item as Note).content && (
-                          <p className="text-white/80 text-sm line-clamp-3 flex-grow">{(item as Note).content}</p>
-                        )}
-                        
-                        <div className="mt-auto">
-                          <p className="text-white/70 text-xs">
-                            {item.type === 'memory' && (item as Memory).memory_date 
-                              ? formatDate((item as Memory).memory_date!) 
-                              : formatDate(item.created_at)
-                            }
-                          </p>
-                        </div>
-                      </div>
+                       <div className="flex flex-col h-full">
+                         <div className="flex items-center gap-2 mb-3">
+                           {item.type === 'note' ? (
+                             <FileText size={16} className="text-primary" />
+                           ) : (
+                             <ImageIcon size={16} className="text-primary" />
+                           )}
+                         </div>
+                         
+                         <h3 className="font-bold text-lg leading-tight mb-2 pr-6 text-foreground">{item.title}</h3>
+                         
+                         {item.type === 'note' && (item as Note).content && (
+                           <p className="text-muted-foreground text-sm line-clamp-3 flex-grow">{(item as Note).content}</p>
+                         )}
+                         
+                         <div className="mt-auto">
+                           <p className="text-muted-foreground text-xs">
+                             {item.type === 'memory' && (item as Memory).memory_date 
+                               ? formatDate((item as Memory).memory_date!) 
+                               : formatDate(item.created_at)
+                             }
+                           </p>
+                         </div>
+                       </div>
                       
                       {/* Subtle overlay for depth */}
                       <div className="absolute inset-0 bg-white/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
