@@ -546,16 +546,14 @@ export const MemoryVault = () => {
       <main className="flex-grow p-6 relative">
         {/* Grid View */}
         {viewMode === 'grid' && (
-          <div className="columns-2 gap-2 space-y-0">
+          <div className="columns-2 gap-3 space-y-0">
             {filteredItems.map((item, index) => {
-              // Dynamic heights for masonry effect
-              const cardHeights = ['h-32', 'h-40', 'h-48', 'h-36', 'h-44', 'h-52'];
-              const randomHeight = cardHeights[index % cardHeights.length];
+              const [expanded, setExpanded] = useState(false);
               
               return (
                 <div
                   key={`${item.type}-${item.id}`}
-                  className="break-inside-avoid mb-2 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg cursor-pointer"
+                  className="break-inside-avoid mb-3 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg cursor-pointer"
                   onClick={() => {
                     if (item.type === 'memory') {
                       setSelectedMemory(item as Memory);
@@ -565,34 +563,60 @@ export const MemoryVault = () => {
                   }}
                 >
                   {item.type === 'memory' && (item as Memory).images && (item as Memory).images!.length > 0 ? (
-                    <div className={`relative ${randomHeight} rounded-2xl overflow-hidden group`}>
-                      <img
-                        src={(item as Memory).images![0].image_url}
-                        alt={item.title}
-                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleFavorite(item.id, 'memory', item.is_favorite);
-                        }}
-                        className="absolute top-3 right-3 transition-all duration-200 hover:scale-110"
-                      >
-                        <Star 
-                          size={16} 
-                          className={item.is_favorite ? 'fill-yellow-400 text-yellow-400 drop-shadow-lg' : 'text-white/80 hover:text-yellow-400'} 
+                    <div className="relative rounded-2xl overflow-hidden group bg-card shadow-md border border-border">
+                      <div className="relative aspect-square">
+                        <img
+                          src={(item as Memory).images![0].image_url}
+                          alt={item.title}
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                         />
-                      </button>
-                      <div className="absolute bottom-3 left-3 right-3">
-                        <p className="text-white font-semibold text-sm leading-tight drop-shadow-lg">{item.title}</p>
+                        {/* Multiple images indicator */}
+                        {(item as Memory).images!.length > 1 && (
+                          <div className="absolute top-3 left-3 flex items-center gap-1 px-2 py-1 bg-black/60 rounded-full backdrop-blur-sm">
+                            <ImageIcon size={12} className="text-white" />
+                            <span className="text-white text-xs font-medium">+{(item as Memory).images!.length - 1}</span>
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleFavorite(item.id, 'memory', item.is_favorite);
+                          }}
+                          className="absolute top-3 right-3 transition-all duration-200 hover:scale-110"
+                        >
+                          <Star 
+                            size={16} 
+                            className={item.is_favorite ? 'fill-yellow-400 text-yellow-400 drop-shadow-lg' : 'text-white/80 hover:text-yellow-400'} 
+                          />
+                        </button>
+                      </div>
+                      
+                      {/* Content overlay with consistent styling */}
+                      <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
+                        <h3 className="text-white font-semibold text-sm leading-tight drop-shadow-lg mb-1">{item.title}</h3>
                         {(item as Memory).description && (
-                          <p className="text-white/80 text-xs mt-1 line-clamp-2">{(item as Memory).description}</p>
+                          <div className="text-white/80 text-xs">
+                            <p className={expanded ? '' : 'line-clamp-2'}>
+                              {(item as Memory).description}
+                            </p>
+                            {(item as Memory).description!.length > 80 && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setExpanded(!expanded);
+                                }}
+                                className="text-white/60 hover:text-white text-xs mt-1 underline"
+                              >
+                                {expanded ? 'Show less' : 'Read more'}
+                              </button>
+                            )}
+                          </div>
                         )}
                       </div>
                     </div>
                   ) : (
-                    <div className={`bg-card ${randomHeight} rounded-2xl relative p-4 group transition-all duration-300 hover:shadow-xl border border-border`}>
+                    <div className="bg-card rounded-2xl relative p-4 group transition-all duration-300 hover:shadow-xl border border-border shadow-md">
                       <button 
                         onClick={(e) => {
                           e.stopPropagation();
@@ -606,33 +630,68 @@ export const MemoryVault = () => {
                          />
                       </button>
                       
-                       <div className="flex flex-col h-full">
-                         <div className="flex items-center gap-2 mb-3">
-                           {item.type === 'note' ? (
-                             <FileText size={16} className="text-primary" />
-                           ) : (
-                             <ImageIcon size={16} className="text-primary" />
-                           )}
-                         </div>
-                         
-                         <h3 className="font-bold text-lg leading-tight mb-2 pr-6 text-foreground">{item.title}</h3>
-                         
-                         {item.type === 'note' && (item as Note).content && (
-                           <p className="text-muted-foreground text-sm line-clamp-3 flex-grow">{(item as Note).content}</p>
-                         )}
-                         
-                         <div className="mt-auto">
-                           <p className="text-muted-foreground text-xs">
-                             {item.type === 'memory' && (item as Memory).memory_date 
-                               ? formatDate((item as Memory).memory_date!) 
-                               : formatDate(item.created_at)
-                             }
-                           </p>
-                         </div>
-                       </div>
-                      
-                      {/* Subtle overlay for depth */}
-                      <div className="absolute inset-0 bg-white/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      <div className="flex flex-col">
+                        <div className="flex items-center gap-2 mb-3">
+                          {item.type === 'note' ? (
+                            <FileText size={16} className="text-primary" />
+                          ) : (
+                            <ImageIcon size={16} className="text-primary" />
+                          )}
+                        </div>
+                        
+                        {/* Consistent title styling */}
+                        <h3 className="font-semibold text-sm leading-tight mb-2 pr-6 text-foreground">{item.title}</h3>
+                        
+                        {/* Content with text overflow control */}
+                        {item.type === 'note' && (item as Note).content && (
+                          <div className="text-muted-foreground text-xs mb-3">
+                            <p className={expanded ? '' : 'line-clamp-3'}>
+                              {(item as Note).content}
+                            </p>
+                            {(item as Note).content!.length > 120 && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setExpanded(!expanded);
+                                }}
+                                className="text-primary hover:text-primary/80 text-xs mt-1 underline"
+                              >
+                                {expanded ? 'Show less' : 'Read more'}
+                              </button>
+                            )}
+                          </div>
+                        )}
+                        
+                        {/* Memory without images description */}
+                        {item.type === 'memory' && (item as Memory).description && (
+                          <div className="text-muted-foreground text-xs mb-3">
+                            <p className={expanded ? '' : 'line-clamp-3'}>
+                              {(item as Memory).description}
+                            </p>
+                            {(item as Memory).description!.length > 120 && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setExpanded(!expanded);
+                                }}
+                                className="text-primary hover:text-primary/80 text-xs mt-1 underline"
+                              >
+                                {expanded ? 'Show less' : 'Read more'}
+                              </button>
+                            )}
+                          </div>
+                        )}
+                        
+                        {/* Date footer */}
+                        <div className="mt-auto">
+                          <p className="text-muted-foreground text-xs">
+                            {item.type === 'memory' && (item as Memory).memory_date 
+                              ? formatDate((item as Memory).memory_date!) 
+                              : formatDate(item.created_at)
+                            }
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
