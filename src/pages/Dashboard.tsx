@@ -10,6 +10,12 @@ import { MoodCheckin } from "@/components/MoodCheckin";
 import { DailyCheckinFlow } from "@/components/DailyCheckinFlow";
 import { StoryViewer } from "@/components/StoryViewer";
 import { Chat } from "@/components/Chat";
+import { 
+  SyncScoreSkeleton, 
+  DashboardCardSkeleton, 
+  CompactCardSkeleton, 
+  MoodDisplaySkeleton 
+} from "@/components/ui/skeleton";
 import { Calendar, Heart, MessageCircle, Sparkles, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -513,11 +519,11 @@ export const Dashboard = () => {
         </div>
       )}
       
-      {/* Main Content - hidden during splash screen */}
+      {/* Main Content - with loading states */}
       <div className={showSplash ? 'opacity-0' : 'opacity-100 transition-opacity duration-300'}>
         {/* Header with gradient background */}
         <div className="bg-gradient-primary py-12 px-6 -mx-6 -mt-8 mb-8">
-          <div className={`text-center space-y-2 ${isLoaded && !showSplash ? 'animate-fade-in' : 'opacity-0'}`}>
+          <div className={`text-center space-y-2 ${isLoaded ? 'animate-fade-in' : 'opacity-0'}`}>
             <h1 className="text-3xl font-bold text-white">
               {(() => {
                 const hour = new Date().getHours();
@@ -535,141 +541,192 @@ export const Dashboard = () => {
         <div className="container mx-auto px-6 space-y-6 pb-20">
 
           {/* Sync Score Section */}
-          <div className={`${isLoaded && !showSplash ? 'animate-fade-in' : 'opacity-0'}`}>
-            <SyncScoreCircle score={syncScore} animated={isLoaded && !showSplash} />
+          <div className={`${isLoaded ? 'animate-fade-in' : 'opacity-0'}`} style={{ animationDelay: '100ms' }}>
+            {isLoaded ? (
+              <SyncScoreCircle score={syncScore} animated={true} />
+            ) : (
+              <SyncScoreSkeleton />
+            )}
           </div>
 
         {/* Couple Avatars with Good Sync Status */}
-        <div className={`${isLoaded && !showSplash ? 'animate-fade-in' : 'opacity-0'}`}>
-          <CoupleAvatars 
-            syncScore={syncScore} 
-            animated={isLoaded && !showSplash}
-            onUserAvatarClick={handleUserAvatarClick}
-            onPartnerAvatarClick={handlePartnerAvatarClick}
-            hasUserStory={hasUserStory}
-            hasPartnerStory={hasPartnerStory}
-          />
+        <div className={`${isLoaded ? 'animate-fade-in' : 'opacity-0'}`} style={{ animationDelay: '200ms' }}>
+          {isLoaded ? (
+            <CoupleAvatars 
+              syncScore={syncScore} 
+              animated={true}
+              onUserAvatarClick={handleUserAvatarClick}
+              onPartnerAvatarClick={handlePartnerAvatarClick}
+              hasUserStory={hasUserStory}
+              hasPartnerStory={hasPartnerStory}
+            />
+          ) : (
+            <div className="flex justify-center">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 bg-muted animate-pulse rounded-full"></div>
+                <div className="w-8 h-8 bg-accent animate-pulse rounded-full"></div>
+                <div className="w-16 h-16 bg-muted animate-pulse rounded-full"></div>
+              </div>
+            </div>
+          )}
         </div>
 
-        <div className={`${isLoaded && !showSplash ? 'animate-fade-in' : 'opacity-0'}`}>
-          <CoupleMoodDisplay 
-            userMood={userMood} 
-            partnerMood={partnerMood} 
-            userId={user?.id}
-            coupleId={coupleId}
-            onMoodUpdate={refreshDashboard}
-          />
+        <div className={`${isLoaded ? 'animate-fade-in' : 'opacity-0'}`} style={{ animationDelay: '300ms' }}>
+          {isLoaded ? (
+            <CoupleMoodDisplay 
+              userMood={userMood} 
+              partnerMood={partnerMood} 
+              userId={user?.id}
+              coupleId={coupleId}
+              onMoodUpdate={refreshDashboard}
+            />
+          ) : (
+            <MoodDisplaySkeleton />
+          )}
         </div>
 
         {/* Compact Dashboard Cards */}
-        <div className={`grid grid-cols-2 gap-3 ${isLoaded && !showSplash ? 'animate-fade-in' : 'opacity-0'}`}>
-          {/* Last Check-in Card - Compact */}
-          <div className="bg-card border rounded-lg p-3 shadow-sm">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-8 h-8 bg-secondary rounded-full flex items-center justify-center">
-                <Heart className="text-white" size={16} />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Last Check-in</p>
-                <p className="text-xs font-medium">
-                  {lastCheckin ? new Date(lastCheckin.checkin_date).toLocaleDateString() : 'Jul 28, 6:45 AM'}
+        <div className={`grid grid-cols-2 gap-3 ${isLoaded ? 'animate-fade-in' : 'opacity-0'}`} style={{ animationDelay: '400ms' }}>
+          {isLoaded ? (
+            <>
+              {/* Last Check-in Card - Compact */}
+              <div className="bg-card border rounded-lg p-3 shadow-sm">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-8 h-8 bg-secondary rounded-full flex items-center justify-center">
+                    <Heart className="text-white" size={16} />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Last Check-in</p>
+                    <p className="text-xs font-medium">
+                      {lastCheckin ? new Date(lastCheckin.checkin_date).toLocaleDateString() : 'Jul 28, 6:45 AM'}
+                    </p>
+                  </div>
+                </div>
+                <p className="text-sm font-semibold text-foreground">
+                  {lastCheckin ? `Feeling ${lastCheckin.mood}...` : 'Feeling Ne...'}
                 </p>
               </div>
-            </div>
-            <p className="text-sm font-semibold text-foreground">
-              {lastCheckin ? `Feeling ${lastCheckin.mood}...` : 'Feeling Ne...'}
-            </p>
-          </div>
 
-          {/* Relationship Health Card - Compact */}
-          <div className="bg-card border rounded-lg p-3 shadow-sm">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-8 h-8 bg-secondary rounded-full flex items-center justify-center">
-                <Heart className="text-white" size={16} />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Relationship Health</p>
-                <div className="flex items-center gap-1">
-                  <p className="text-lg font-bold text-secondary">50%</p>
-                  <span className="text-secondary text-xs">↗</span>
+              {/* Relationship Health Card - Compact */}
+              <div className="bg-card border rounded-lg p-3 shadow-sm">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-8 h-8 bg-secondary rounded-full flex items-center justify-center">
+                    <Heart className="text-white" size={16} />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Relationship Health</p>
+                    <div className="flex items-center gap-1">
+                      <p className="text-lg font-bold text-secondary">50%</p>
+                      <span className="text-secondary text-xs">↗</span>
+                    </div>
+                  </div>
                 </div>
+                <p className="text-xs text-muted-foreground">Growing together</p>
               </div>
-            </div>
-            <p className="text-xs text-muted-foreground">Growing together</p>
-          </div>
+            </>
+          ) : (
+            <>
+              <CompactCardSkeleton />
+              <CompactCardSkeleton />
+            </>
+          )}
         </div>
 
         {/* Streak Banner */}
-        <div className={`bg-gradient-romance rounded-xl p-4 text-center text-white shadow-sm ${isLoaded && !showSplash ? 'animate-fade-in' : 'opacity-0'}`}>
-          <div className="flex items-center justify-center gap-2 mb-1">
-            <span className="text-2xl font-bold">{checkinStreak || 3}</span>
-            <span className="text-lg">day streak!</span>
-          </div>
-          <p className="text-sm opacity-90">Keep the love alive - check in daily! 🔥</p>
+        <div className={`bg-gradient-romance rounded-xl p-4 text-center text-white shadow-sm ${isLoaded ? 'animate-fade-in' : 'opacity-0'}`} style={{ animationDelay: '500ms' }}>
+          {isLoaded ? (
+            <>
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <span className="text-2xl font-bold">{checkinStreak || 3}</span>
+                <span className="text-lg">day streak!</span>
+              </div>
+              <p className="text-sm opacity-90">Keep the love alive - check in daily! 🔥</p>
+            </>
+          ) : (
+            <div className="animate-pulse">
+              <div className="h-8 bg-white/20 rounded mb-2 w-32 mx-auto"></div>
+              <div className="h-4 bg-white/20 rounded w-48 mx-auto"></div>
+            </div>
+          )}
         </div>
 
         {/* Action Cards Grid */}
-        <div className={`grid grid-cols-2 gap-4 ${isLoaded && !showSplash ? 'animate-fade-in' : 'opacity-0'}`}>
-          {/* Daily Check-in */}
-          <div 
-            className="bg-card border rounded-xl p-4 text-center cursor-pointer hover:shadow-sm transition-all shadow-sm"
-            onClick={handleCheckinClick}
-          >
-            <div className="w-12 h-12 bg-secondary rounded-full flex items-center justify-center mx-auto mb-3">
-              <MessageCircle className="text-white" size={24} />
-            </div>
-            <h3 className="font-semibold text-foreground mb-1">Daily Check-in</h3>
-            <p className="text-xs text-muted-foreground">Keep the streak!</p>
-          </div>
+        <div className={`grid grid-cols-2 gap-4 ${isLoaded ? 'animate-fade-in' : 'opacity-0'}`} style={{ animationDelay: '600ms' }}>
+          {isLoaded ? (
+            <>
+              {/* Daily Check-in */}
+              <div 
+                className="bg-card border rounded-xl p-4 text-center cursor-pointer hover:shadow-sm transition-all shadow-sm hover:scale-105 duration-200"
+                onClick={handleCheckinClick}
+              >
+                <div className="w-12 h-12 bg-secondary rounded-full flex items-center justify-center mx-auto mb-3">
+                  <MessageCircle className="text-white" size={24} />
+                </div>
+                <h3 className="font-semibold text-foreground mb-1">Daily Check-in</h3>
+                <p className="text-xs text-muted-foreground">Keep the streak!</p>
+              </div>
 
-          {/* Weekly Planning */}
-          <div 
-            className="bg-card border rounded-xl p-4 text-center cursor-pointer hover:shadow-sm transition-all shadow-sm"
-            onClick={() => navigate('/planner')}
-          >
-            <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center mx-auto mb-3">
-              <Calendar className="text-accent-foreground" size={24} />
-            </div>
-            <h3 className="font-semibold text-foreground mb-1">Upcoming dates</h3>
-            <p className="text-xs text-muted-foreground">
-              {scheduledDatesCount > 0 ? `${scheduledDatesCount} dates scheduled` : 'No dates scheduled'}
-            </p>
-          </div>
+              {/* Weekly Planning */}
+              <div 
+                className="bg-card border rounded-xl p-4 text-center cursor-pointer hover:shadow-sm transition-all shadow-sm hover:scale-105 duration-200"
+                onClick={() => navigate('/planner')}
+              >
+                <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center mx-auto mb-3">
+                  <Calendar className="text-accent-foreground" size={24} />
+                </div>
+                <h3 className="font-semibold text-foreground mb-1">Upcoming dates</h3>
+                <p className="text-xs text-muted-foreground">
+                  {scheduledDatesCount > 0 ? `${scheduledDatesCount} dates scheduled` : 'No dates scheduled'}
+                </p>
+              </div>
 
-          {/* Plan Date */}
-          <div 
-            className="bg-card border rounded-xl p-4 text-center cursor-pointer hover:shadow-sm transition-all shadow-sm"
-            onClick={handlePlanDateClick}
-          >
-            <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center mx-auto mb-3">
-              <Calendar className="text-white" size={24} />
-            </div>
-            <h3 className="font-semibold text-foreground mb-1">Plan Date</h3>
-            <p className="text-xs text-muted-foreground">Create memories</p>
-          </div>
+              {/* Plan Date */}
+              <div 
+                className="bg-card border rounded-xl p-4 text-center cursor-pointer hover:shadow-sm transition-all shadow-sm hover:scale-105 duration-200"
+                onClick={handlePlanDateClick}
+              >
+                <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center mx-auto mb-3">
+                  <Calendar className="text-white" size={24} />
+                </div>
+                <h3 className="font-semibold text-foreground mb-1">Plan Date</h3>
+                <p className="text-xs text-muted-foreground">Create memories</p>
+              </div>
 
-          {/* Add Memory */}
-          <div 
-            className="bg-card border rounded-xl p-4 text-center cursor-pointer hover:shadow-sm transition-all shadow-sm"
-            onClick={() => navigate('/vault')}
-          >
-            <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center mx-auto mb-3">
-              <Sparkles className="text-accent-foreground" size={24} />
-            </div>
-            <h3 className="font-semibold text-foreground mb-1">Add Memory</h3>
-            <p className="text-xs text-muted-foreground">Capture the moment</p>
-          </div>
+              {/* Add Memory */}
+              <div 
+                className="bg-card border rounded-xl p-4 text-center cursor-pointer hover:shadow-sm transition-all shadow-sm hover:scale-105 duration-200"
+                onClick={() => navigate('/vault')}
+              >
+                <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center mx-auto mb-3">
+                  <Sparkles className="text-accent-foreground" size={24} />
+                </div>
+                <h3 className="font-semibold text-foreground mb-1">Add Memory</h3>
+                <p className="text-xs text-muted-foreground">Capture the moment</p>
+              </div>
+            </>
+          ) : (
+            <>
+              <DashboardCardSkeleton />
+              <DashboardCardSkeleton />
+              <DashboardCardSkeleton />
+              <DashboardCardSkeleton />
+            </>
+          )}
         </div>
 
         {/* Get Relationship Insights Button */}
-        <div className={`${isLoaded && !showSplash ? 'animate-fade-in' : 'opacity-0'}`} style={{ animationDelay: '800ms' }}>
-          <Button 
-            className="w-full rounded-xl py-3 bg-yellow-400 hover:bg-yellow-500 text-black font-medium transition-all"
-            onClick={() => navigate('/coach')}
-          >
-            <Sparkles className="mr-2" size={18} />
-            Get Relationship Insights
-          </Button>
+        <div className={`${isLoaded ? 'animate-fade-in' : 'opacity-0'}`} style={{ animationDelay: '700ms' }}>
+          {isLoaded ? (
+            <Button 
+              className="w-full rounded-xl py-3 bg-yellow-400 hover:bg-yellow-500 text-black font-medium transition-all hover:scale-[1.02] duration-200"
+              onClick={() => navigate('/coach')}
+            >
+              <Sparkles className="mr-2" size={18} />
+              Get Relationship Insights
+            </Button>
+          ) : (
+            <div className="w-full h-12 bg-muted animate-pulse rounded-xl"></div>
+          )}
         </div>
         </div>
       </div>
