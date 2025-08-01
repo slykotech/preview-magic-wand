@@ -407,37 +407,79 @@ async function handleRemovePartner(supabase: any, user: any, coupleId: string) {
 
   console.log('Current couple data:', currentCouple)
 
-  // Reset the couple to demo mode (user paired with themselves)
-  const { data: updatedCouple, error: updateError } = await supabase
+  // Check if there's already a demo mode couple for this user
+  const { data: existingDemoCouple, error: demoCheckError } = await supabase
     .from('couples')
-    .update({
-      user1_id: user.id,
-      user2_id: user.id, // Reset to demo mode
-      user1_nickname_for_user1: null,
-      user1_nickname_for_user2: null,
-      user2_nickname_for_user1: null,
-      user2_nickname_for_user2: null
-    })
-    .eq('id', coupleId)
-    .select()
-    .single()
+    .select('*')
+    .eq('user1_id', user.id)
+    .eq('user2_id', user.id)
+    .neq('id', coupleId) // Exclude the current couple we're trying to update
 
-  if (updateError) {
-    console.error('Error updating couple:', updateError)
-    throw new Error('Failed to remove partner')
+  if (demoCheckError) {
+    console.error('Error checking demo couples:', demoCheckError)
+    throw new Error('Failed to check existing demo couples')
   }
 
-  console.log('Successfully removed partner, reset to demo mode:', updatedCouple)
+  // If there's already a demo couple, delete the current couple instead of updating
+  if (existingDemoCouple && existingDemoCouple.length > 0) {
+    console.log('Found existing demo couple, deleting current couple instead')
+    
+    const { error: deleteError } = await supabase
+      .from('couples')
+      .delete()
+      .eq('id', coupleId)
 
-  return new Response(
-    JSON.stringify({ 
-      success: true, 
-      message: 'Partner removed successfully. You can now add a new partner.',
-      couple: updatedCouple
-    }),
-    { 
-      status: 200, 
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+    if (deleteError) {
+      console.error('Error deleting couple:', deleteError)
+      throw new Error('Failed to remove partner')
     }
-  )
+
+    console.log('Successfully deleted couple, existing demo couple remains')
+
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        message: 'Partner removed successfully. You can now add a new partner.',
+        couple: existingDemoCouple[0]
+      }),
+      { 
+        status: 200, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
+    )
+  } else {
+    // No existing demo couple, safe to update current couple to demo mode
+    const { data: updatedCouple, error: updateError } = await supabase
+      .from('couples')
+      .update({
+        user1_id: user.id,
+        user2_id: user.id, // Reset to demo mode
+        user1_nickname_for_user1: null,
+        user1_nickname_for_user2: null,
+        user2_nickname_for_user1: null,
+        user2_nickname_for_user2: null
+      })
+      .eq('id', coupleId)
+      .select()
+      .single()
+
+    if (updateError) {
+      console.error('Error updating couple:', updateError)
+      throw new Error('Failed to remove partner')
+    }
+
+    console.log('Successfully removed partner, reset to demo mode:', updatedCouple)
+
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        message: 'Partner removed successfully. You can now add a new partner.',
+        couple: updatedCouple
+      }),
+      { 
+        status: 200, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
+    )
+  }
 }
