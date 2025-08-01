@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { CoupleAvatars } from "@/components/CoupleAvatars";
 import { SyncScoreCircle } from "@/components/SyncScoreCircle";
+import { SyncScoreBreakdown } from "@/components/SyncScoreBreakdown";
 import { DashboardCard } from "@/components/DashboardCard";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { StreakDisplay } from "@/components/StreakDisplay";
@@ -10,6 +11,7 @@ import { MoodCheckin } from "@/components/MoodCheckin";
 import { DailyCheckinFlow } from "@/components/DailyCheckinFlow";
 import { StoryViewer } from "@/components/StoryViewer";
 import { Chat } from "@/components/Chat";
+import { useEnhancedSyncScore } from "@/hooks/useEnhancedSyncScore";
 import { 
   SyncScoreSkeleton, 
   DashboardCardSkeleton, 
@@ -38,7 +40,7 @@ export const Dashboard = () => {
   const [lastCheckin, setLastCheckin] = useState<any>(null);
   const [recentMemory, setRecentMemory] = useState<any>(null);
   const [checkinStreak, setCheckinStreak] = useState(0);
-  const [loveStreak, setLoveStreak] = useState(0);
+  const [storyStreak, setStoryStreak] = useState(0);
   const [userMood, setUserMood] = useState<string>();
   const [partnerMood, setPartnerMood] = useState<string>();
   const [coupleId, setCoupleId] = useState<string>();
@@ -50,9 +52,18 @@ export const Dashboard = () => {
   const [partnerId, setPartnerId] = useState<string>();
   const [showChat, setShowChat] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [showSyncBreakdown, setShowSyncBreakdown] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user, loading } = useAuth();
+  
+  // Use enhanced sync score hook
+  const { 
+    syncScoreData, 
+    loading: syncScoreLoading, 
+    logActivity,
+    refreshSyncScore 
+  } = useEnhancedSyncScore(coupleId);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -109,7 +120,7 @@ export const Dashboard = () => {
         setRecentMemory(null);
         setLastCheckin(null);
         setCheckinStreak(0);
-        setLoveStreak(0);
+        setStoryStreak(0);
         setUserMood(undefined);
         setPartnerMood(undefined);
         setIsLoaded(true);
@@ -266,7 +277,7 @@ export const Dashboard = () => {
       setRecentMemory(memoryData);
       setLastCheckin(checkinData);
       setCheckinStreak(streak);
-      setLoveStreak(streak); // For now, love streak = checkin streak
+      setStoryStreak(streak); // For now, story streak = checkin streak
       setUserMood(userMoodData?.mood);
       
       // If testing with self, don't show partner mood as the same
@@ -564,7 +575,21 @@ export const Dashboard = () => {
           {/* Sync Score Section */}
           <div className={`${isLoaded ? 'animate-fade-in' : 'opacity-0'}`} style={{ animationDelay: '100ms' }}>
             {isLoaded ? (
-              <SyncScoreCircle score={syncScore} animated={true} />
+              <div className="space-y-4">
+                <SyncScoreCircle 
+                  score={syncScoreData?.score || syncScore} 
+                  animated={true} 
+                />
+                {syncScoreData && (
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowSyncBreakdown(true)}
+                    className="w-full"
+                  >
+                    View Score Breakdown
+                  </Button>
+                )}
+              </div>
             ) : (
               <SyncScoreSkeleton />
             )}
@@ -654,21 +679,15 @@ export const Dashboard = () => {
           )}
         </div>
 
-        {/* Streak Banner */}
-        <div className={`bg-gradient-romance rounded-xl p-4 text-center text-white shadow-sm ${isLoaded ? 'animate-fade-in' : 'opacity-0'}`} style={{ animationDelay: '500ms' }}>
+        {/* Enhanced Streak Display */}
+        <div className={`${isLoaded ? 'animate-fade-in' : 'opacity-0'}`} style={{ animationDelay: '500ms' }}>
           {isLoaded ? (
-            <>
-              <div className="flex items-center justify-center gap-2 mb-1">
-                <span className="text-2xl font-bold">{checkinStreak || 3}</span>
-                <span className="text-lg">day streak!</span>
-              </div>
-              <p className="text-sm opacity-90">Keep the love alive - check in daily! 🔥</p>
-            </>
+            <StreakDisplay 
+              checkinStreak={syncScoreData?.streaks.checkinStreak || checkinStreak}
+              storyStreak={syncScoreData?.streaks.storyStreak || storyStreak}
+            />
           ) : (
-            <div className="animate-pulse">
-              <div className="h-8 bg-white/20 rounded mb-2 w-32 mx-auto"></div>
-              <div className="h-4 bg-white/20 rounded w-48 mx-auto"></div>
-            </div>
+            <div className="animate-pulse bg-muted rounded-xl h-32"></div>
           )}
         </div>
 
@@ -832,6 +851,27 @@ export const Dashboard = () => {
             fetchUnreadCount(); // Refresh unread count when closing chat
           }}
         />
+      )}
+
+      {/* Sync Score Breakdown Dialog */}
+      {showSyncBreakdown && syncScoreData && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <SyncScoreBreakdown
+              score={syncScoreData.score}
+              breakdown={syncScoreData.breakdown}
+            />
+            <div className="mt-4 text-center">
+              <Button
+                onClick={() => setShowSyncBreakdown(false)}
+                variant="outline"
+                className="bg-background"
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Bottom Navigation - hidden during splash */}

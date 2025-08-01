@@ -99,6 +99,36 @@ export type Database = {
           },
         ]
       }
+      couple_activity_log: {
+        Row: {
+          activity_data: Json | null
+          activity_type: string
+          couple_id: string
+          created_at: string
+          id: string
+          points_awarded: number | null
+          user_id: string
+        }
+        Insert: {
+          activity_data?: Json | null
+          activity_type: string
+          couple_id: string
+          created_at?: string
+          id?: string
+          points_awarded?: number | null
+          user_id: string
+        }
+        Update: {
+          activity_data?: Json | null
+          activity_type?: string
+          couple_id?: string
+          created_at?: string
+          id?: string
+          points_awarded?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       couple_preferences: {
         Row: {
           couple_id: string
@@ -135,11 +165,17 @@ export type Database = {
       couples: {
         Row: {
           anniversary_date: string | null
+          checkin_streak: number | null
           created_at: string
+          disconnection_count: number | null
           id: string
+          last_activity_date: string | null
+          last_sync_score: number | null
           relationship_status:
             | Database["public"]["Enums"]["relationship_status"]
             | null
+          story_streak: number | null
+          total_relationship_days: number | null
           updated_at: string
           user1_id: string
           user1_nickname_for_user1: string | null
@@ -150,11 +186,17 @@ export type Database = {
         }
         Insert: {
           anniversary_date?: string | null
+          checkin_streak?: number | null
           created_at?: string
+          disconnection_count?: number | null
           id?: string
+          last_activity_date?: string | null
+          last_sync_score?: number | null
           relationship_status?:
             | Database["public"]["Enums"]["relationship_status"]
             | null
+          story_streak?: number | null
+          total_relationship_days?: number | null
           updated_at?: string
           user1_id: string
           user1_nickname_for_user1?: string | null
@@ -165,11 +207,17 @@ export type Database = {
         }
         Update: {
           anniversary_date?: string | null
+          checkin_streak?: number | null
           created_at?: string
+          disconnection_count?: number | null
           id?: string
+          last_activity_date?: string | null
+          last_sync_score?: number | null
           relationship_status?:
             | Database["public"]["Enums"]["relationship_status"]
             | null
+          story_streak?: number | null
+          total_relationship_days?: number | null
           updated_at?: string
           user1_id?: string
           user1_nickname_for_user1?: string | null
@@ -291,6 +339,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      historical_sync_scores: {
+        Row: {
+          calculated_date: string
+          checkin_points: number | null
+          communication_points: number | null
+          couple_id: string
+          created_at: string
+          factors: Json | null
+          id: string
+          milestone_points: number | null
+          score: number
+          story_points: number | null
+          streak_bonus: number | null
+        }
+        Insert: {
+          calculated_date?: string
+          checkin_points?: number | null
+          communication_points?: number | null
+          couple_id: string
+          created_at?: string
+          factors?: Json | null
+          id?: string
+          milestone_points?: number | null
+          score: number
+          story_points?: number | null
+          streak_bonus?: number | null
+        }
+        Update: {
+          calculated_date?: string
+          checkin_points?: number | null
+          communication_points?: number | null
+          couple_id?: string
+          created_at?: string
+          factors?: Json | null
+          id?: string
+          milestone_points?: number | null
+          score?: number
+          story_points?: number | null
+          streak_bonus?: number | null
+        }
+        Relationships: []
       }
       memories: {
         Row: {
@@ -644,29 +734,47 @@ export type Database = {
       sync_scores: {
         Row: {
           calculated_date: string
+          checkin_points: number | null
+          communication_points: number | null
           couple_id: string
           created_at: string
           factors: Json | null
           id: string
+          milestone_points: number | null
+          previous_score: number | null
           score: number
+          story_points: number | null
+          streak_bonus: number | null
           updated_at: string
         }
         Insert: {
           calculated_date?: string
+          checkin_points?: number | null
+          communication_points?: number | null
           couple_id: string
           created_at?: string
           factors?: Json | null
           id?: string
+          milestone_points?: number | null
+          previous_score?: number | null
           score: number
+          story_points?: number | null
+          streak_bonus?: number | null
           updated_at?: string
         }
         Update: {
           calculated_date?: string
+          checkin_points?: number | null
+          communication_points?: number | null
           couple_id?: string
           created_at?: string
           factors?: Json | null
           id?: string
+          milestone_points?: number | null
+          previous_score?: number | null
           score?: number
+          story_points?: number | null
+          streak_bonus?: number | null
           updated_at?: string
         }
         Relationships: []
@@ -676,6 +784,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_enhanced_sync_score: {
+        Args: { p_couple_id: string }
+        Returns: number
+      }
       calculate_sync_score: {
         Args: { p_couple_id: string }
         Returns: number
@@ -685,6 +797,20 @@ export type Database = {
         Returns: undefined
       }
       generate_relationship_insights: {
+        Args: { p_couple_id: string }
+        Returns: undefined
+      }
+      log_couple_activity: {
+        Args: {
+          p_couple_id: string
+          p_user_id: string
+          p_activity_type: string
+          p_activity_data?: Json
+          p_points_awarded?: number
+        }
+        Returns: undefined
+      }
+      update_couple_streaks: {
         Args: { p_couple_id: string }
         Returns: undefined
       }

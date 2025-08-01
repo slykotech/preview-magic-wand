@@ -117,6 +117,22 @@ export const DailyCheckinFlow: React.FC<DailyCheckinFlowProps> = ({
           });
       }
 
+      // Log activity for enhanced sync score
+      if (!existingCheckin) {
+        await supabase.rpc('log_couple_activity', {
+          p_couple_id: coupleId,
+          p_user_id: userId,
+          p_activity_type: 'checkin',
+          p_activity_data: {
+            energy_level: energyLevel,
+            relationship_feeling: relationshipFeeling,
+            gratitude: gratitude.trim(),
+            notes: additionalThoughts?.trim() || null
+          },
+          p_points_awarded: 4 // Base points for individual checkin
+        });
+      }
+
       // Calculate proper streak by checking both partners
       let newStreak = currentStreak;
       let bothCheckedIn = false;
@@ -145,6 +161,18 @@ export const DailyCheckinFlow: React.FC<DailyCheckinFlowProps> = ({
           if (partnerCheckin) {
             bothCheckedIn = true;
             newStreak = currentStreak + 1;
+            
+            // Log additional points for both partners checking in
+            await supabase.rpc('log_couple_activity', {
+              p_couple_id: coupleId,
+              p_user_id: userId,
+              p_activity_type: 'checkin',
+              p_activity_data: {
+                type: 'both_partners_checkin',
+                streak: newStreak
+              },
+              p_points_awarded: 4 // Additional points for both partners
+            });
           }
         }
       }

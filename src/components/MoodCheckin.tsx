@@ -77,6 +77,20 @@ export const MoodCheckin: React.FC<MoodCheckinProps> = ({
       setSelectedMood(mood);
       onMoodUpdate?.(mood);
       
+      // Log activity for enhanced sync score
+      if (!existingCheckin) {
+        await supabase.rpc('log_couple_activity', {
+          p_couple_id: coupleId,
+          p_user_id: userId,
+          p_activity_type: 'checkin',
+          p_activity_data: {
+            mood: mood,
+            type: 'mood_checkin'
+          },
+          p_points_awarded: 2 // Points for mood check-in
+        });
+      }
+
       // Signal dashboard to refresh
       localStorage.setItem('mood_updated', Date.now().toString());
       window.dispatchEvent(new Event('storage'));
