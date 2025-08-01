@@ -81,17 +81,19 @@ export const SyncScoreBreakdown: React.FC<SyncScoreBreakdownProps> = ({
       <CardHeader className="pb-4">
         <CardTitle className="flex items-center justify-between">
           <span className="text-lg font-bold">Sync Score Breakdown</span>
-          <div className="flex items-center gap-2">
-            <span className={`text-3xl font-bold ${scoreLevel.color}`}>{score}%</span>
-            <span className="text-2xl">{scoreLevel.emoji}</span>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <span className={`text-3xl font-bold ${scoreLevel.color}`}>{score}%</span>
+              <span className="text-2xl">{scoreLevel.emoji}</span>
+            </div>
             {onClose && (
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={onClose}
-                className="ml-2 h-8 w-8 p-0"
+                className="h-8 w-8 p-0 hover:bg-muted/50"
               >
-                <X size={16} />
+                <X size={18} />
               </Button>
             )}
           </div>
