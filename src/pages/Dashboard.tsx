@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { CoupleAvatars } from "@/components/CoupleAvatars";
 import { SyncScoreCircle } from "@/components/SyncScoreCircle";
-
 import { DashboardCard } from "@/components/DashboardCard";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { StreakDisplay } from "@/components/StreakDisplay";
@@ -12,18 +11,12 @@ import { DailyCheckinFlow } from "@/components/DailyCheckinFlow";
 import { StoryViewer } from "@/components/StoryViewer";
 import { Chat } from "@/components/Chat";
 import { useEnhancedSyncScore } from "@/hooks/useEnhancedSyncScore";
-import { 
-  SyncScoreSkeleton, 
-  DashboardCardSkeleton, 
-  CompactCardSkeleton, 
-  MoodDisplaySkeleton 
-} from "@/components/ui/skeleton";
+import { SyncScoreSkeleton, DashboardCardSkeleton, CompactCardSkeleton, MoodDisplaySkeleton } from "@/components/ui/skeleton";
 import { Calendar, Heart, MessageCircle, Sparkles, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-
 export const Dashboard = () => {
   const [syncScore, setSyncScore] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -52,25 +45,27 @@ export const Dashboard = () => {
   const [partnerId, setPartnerId] = useState<string>();
   const [showChat, setShowChat] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
-  
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const navigate = useNavigate();
-  const { user, loading } = useAuth();
-  
-  // Use enhanced sync score hook
-  const { 
-    syncScoreData, 
-    loading: syncScoreLoading, 
-    logActivity,
-    refreshSyncScore 
-  } = useEnhancedSyncScore(coupleId);
+  const {
+    user,
+    loading
+  } = useAuth();
 
+  // Use enhanced sync score hook
+  const {
+    syncScoreData,
+    loading: syncScoreLoading,
+    logActivity,
+    refreshSyncScore
+  } = useEnhancedSyncScore(coupleId);
   useEffect(() => {
     if (!loading && !user) {
       navigate('/auth');
       return;
     }
-
     if (user) {
       fetchDashboardData();
     }
@@ -85,7 +80,6 @@ export const Dashboard = () => {
         timeoutId = setTimeout(() => fetchDashboardData(), 100);
       }
     };
-
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
@@ -96,11 +90,9 @@ export const Dashboard = () => {
   // Date change detection for auto-refresh
   useEffect(() => {
     if (!user) return;
-
     const checkDateChange = () => {
       const currentDate = new Date().toDateString();
       const lastKnownDate = localStorage.getItem('lastDashboardDate');
-      
       if (lastKnownDate && lastKnownDate !== currentDate) {
         console.log('Date changed detected, refreshing dashboard...');
         // Clear date-related cached data
@@ -109,40 +101,35 @@ export const Dashboard = () => {
         // Refresh dashboard data
         fetchDashboardData();
       }
-      
+
       // Update the stored date
       localStorage.setItem('lastDashboardDate', currentDate);
     };
 
     // Check immediately
     checkDateChange();
-    
+
     // Set up interval to check every minute for date changes
     const interval = setInterval(checkDateChange, 60000);
-    
     return () => clearInterval(interval);
   }, [user]);
-
   const fetchDashboardData = async () => {
     try {
       console.log('Fetching dashboard data for user:', user?.id);
-      
-      // First, get user's couple relationship - get the most recent one
-      const { data: coupleDataArray } = await supabase
-        .from('couples')
-        .select('id, user1_id, user2_id')
-        .or(`user1_id.eq.${user?.id},user2_id.eq.${user?.id}`)
-        .order('created_at', { ascending: false });
-      
-      // Filter out self-pairing and get the first valid couple
-      const coupleData = coupleDataArray?.find(couple => 
-        couple.user1_id !== couple.user2_id
-      ) || coupleDataArray?.[0];
 
+      // First, get user's couple relationship - get the most recent one
+      const {
+        data: coupleDataArray
+      } = await supabase.from('couples').select('id, user1_id, user2_id').or(`user1_id.eq.${user?.id},user2_id.eq.${user?.id}`).order('created_at', {
+        ascending: false
+      });
+
+      // Filter out self-pairing and get the first valid couple
+      const coupleData = coupleDataArray?.find(couple => couple.user1_id !== couple.user2_id) || coupleDataArray?.[0];
       console.log('Couple data fetched:', coupleData);
       const currentCoupleId = coupleData?.id;
       setCoupleId(currentCoupleId);
-      
+
       // If no couple relationship exists, show setup message
       if (!currentCoupleId) {
         setSyncScore(0); // Start from 0% instead of 75%
@@ -156,98 +143,87 @@ export const Dashboard = () => {
         setIsLoaded(true);
         return;
       }
-      
       const currentPartnerId = coupleData?.user1_id === user?.id ? coupleData?.user2_id : coupleData?.user1_id;
       setPartnerId(currentPartnerId);
-      
+
       // Handle case where user is paired with themselves (testing scenario)
       const isTestingWithSelf = currentPartnerId === user?.id;
 
       // Fetch or calculate sync score
       let syncScore = 0; // Start from 0% instead of 75%
-      const { data: syncData } = await supabase
-        .from('sync_scores')
-        .select('score')
-        .eq('couple_id', currentCoupleId)
-        .order('calculated_date', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
+      const {
+        data: syncData
+      } = await supabase.from('sync_scores').select('score').eq('couple_id', currentCoupleId).order('calculated_date', {
+        ascending: false
+      }).limit(1).maybeSingle();
       if (syncData) {
         syncScore = syncData.score;
       } else if (currentCoupleId) {
         // Calculate and store new sync score
-        const { data: calculatedScore } = await supabase
-          .rpc('calculate_sync_score', { p_couple_id: currentCoupleId });
-        
+        const {
+          data: calculatedScore
+        } = await supabase.rpc('calculate_sync_score', {
+          p_couple_id: currentCoupleId
+        });
         if (calculatedScore) {
           syncScore = calculatedScore;
           // Store the calculated score
-          await supabase
-            .from('sync_scores')
-            .upsert({
-              couple_id: currentCoupleId,
-              score: syncScore,
-              calculated_date: new Date().toISOString().split('T')[0]
-            });
+          await supabase.from('sync_scores').upsert({
+            couple_id: currentCoupleId,
+            score: syncScore,
+            calculated_date: new Date().toISOString().split('T')[0]
+          });
         }
       }
 
       // Fetch upcoming scheduled date (only dates that have been scheduled but haven't passed yet)
       const today = new Date().toISOString().split('T')[0];
-      const { data: dateData } = await supabase
-        .from('date_ideas')
-        .select('*')
-        .eq('couple_id', currentCoupleId)
-        .eq('is_completed', true) // Only scheduled dates
-        .gte('completed_date', today) // Future or today's dates only
-        .not('notes', 'is', null) // Must have scheduling notes
-        .ilike('notes', '%scheduled%') // Contains "scheduled" in notes
-        .order('completed_date', { ascending: true })
-        .limit(1)
-        .maybeSingle();
+      const {
+        data: dateData
+      } = await supabase.from('date_ideas').select('*').eq('couple_id', currentCoupleId).eq('is_completed', true) // Only scheduled dates
+      .gte('completed_date', today) // Future or today's dates only
+      .not('notes', 'is', null) // Must have scheduling notes
+      .ilike('notes', '%scheduled%') // Contains "scheduled" in notes
+      .order('completed_date', {
+        ascending: true
+      }).limit(1).maybeSingle();
 
       // Count all scheduled dates for the "Upcoming dates" card
-      const { count: scheduledCount } = await supabase
-        .from('date_ideas')
-        .select('*', { count: 'exact', head: true })
-        .eq('couple_id', currentCoupleId)
-        .eq('is_completed', true) // Only scheduled dates
-        .gte('completed_date', today) // Future or today's dates only
-        .not('notes', 'is', null) // Must have scheduling notes
-        .ilike('notes', '%scheduled%'); // Contains "scheduled" in notes
+      const {
+        count: scheduledCount
+      } = await supabase.from('date_ideas').select('*', {
+        count: 'exact',
+        head: true
+      }).eq('couple_id', currentCoupleId).eq('is_completed', true) // Only scheduled dates
+      .gte('completed_date', today) // Future or today's dates only
+      .not('notes', 'is', null) // Must have scheduling notes
+      .ilike('notes', '%scheduled%'); // Contains "scheduled" in notes
 
       // Fetch recent memory
-      const { data: memoryData } = await supabase
-        .from('memories')
-        .select('*')
-        .eq('couple_id', currentCoupleId)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      const {
+        data: memoryData
+      } = await supabase.from('memories').select('*').eq('couple_id', currentCoupleId).order('created_at', {
+        ascending: false
+      }).limit(1).maybeSingle();
 
       // Fetch last checkin for current user
-      const { data: checkinData } = await supabase
-        .from('daily_checkins')
-        .select('*')
-        .eq('user_id', user?.id)
-        .eq('couple_id', currentCoupleId)
-        .order('checkin_date', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      const {
+        data: checkinData
+      } = await supabase.from('daily_checkins').select('*').eq('user_id', user?.id).eq('couple_id', currentCoupleId).order('checkin_date', {
+        ascending: false
+      }).limit(1).maybeSingle();
 
       // Calculate checkin streak
-      const { data: allCheckins } = await supabase
-        .from('daily_checkins')
-        .select('checkin_date, user_id')
-        .eq('couple_id', currentCoupleId)
-        .order('checkin_date', { ascending: false });
-
+      const {
+        data: allCheckins
+      } = await supabase.from('daily_checkins').select('checkin_date, user_id').eq('couple_id', currentCoupleId).order('checkin_date', {
+        ascending: false
+      });
       let streak = 0;
       if (allCheckins && allCheckins.length > 0) {
         const todayStr = new Date().toDateString();
         let currentDate = new Date();
-        
+
         // Group checkins by date
         const checkinsByDate = allCheckins.reduce((acc, checkin) => {
           const date = new Date(checkin.checkin_date).toDateString();
@@ -260,7 +236,6 @@ export const Dashboard = () => {
         while (true) {
           const dateStr = currentDate.toDateString();
           const dayCheckins = checkinsByDate[dateStr];
-          
           if (dayCheckins && dayCheckins.length === 2) {
             streak++;
             currentDate.setDate(currentDate.getDate() - 1);
@@ -272,35 +247,31 @@ export const Dashboard = () => {
 
       // Get today's moods
       const todayForMood = new Date().toISOString().split('T')[0];
-      
-      const { data: userMoodData } = await supabase
-        .from('daily_checkins')
-        .select('mood')
-        .eq('user_id', user?.id)
-        .eq('couple_id', currentCoupleId)
-        .eq('checkin_date', todayForMood)
-        .maybeSingle();
-
-      const { data: partnerMoodData } = await supabase
-        .from('daily_checkins')
-        .select('mood')
-        .eq('user_id', currentPartnerId)
-        .eq('couple_id', currentCoupleId)
-        .eq('checkin_date', todayForMood)
-        .maybeSingle();
+      const {
+        data: userMoodData
+      } = await supabase.from('daily_checkins').select('mood').eq('user_id', user?.id).eq('couple_id', currentCoupleId).eq('checkin_date', todayForMood).maybeSingle();
+      const {
+        data: partnerMoodData
+      } = await supabase.from('daily_checkins').select('mood').eq('user_id', currentPartnerId).eq('couple_id', currentCoupleId).eq('checkin_date', todayForMood).maybeSingle();
 
       // Check for active stories
       await checkForStories(currentCoupleId, user?.id, currentPartnerId);
-
-      console.log('User mood data:', { userId: user?.id, mood: userMoodData?.mood });
-      console.log('Partner mood data:', { partnerId, mood: partnerMoodData?.mood });
+      console.log('User mood data:', {
+        userId: user?.id,
+        mood: userMoodData?.mood
+      });
+      console.log('Partner mood data:', {
+        partnerId,
+        mood: partnerMoodData?.mood
+      });
       console.log('Is testing with self:', isTestingWithSelf);
-
       setSyncScore(syncScore);
-      
+
       // Generate insights based on activity
       if (currentCoupleId) {
-        await supabase.rpc('generate_relationship_insights', { p_couple_id: currentCoupleId });
+        await supabase.rpc('generate_relationship_insights', {
+          p_couple_id: currentCoupleId
+        });
       }
       setUpcomingDate(dateData);
       setScheduledDatesCount(scheduledCount || 0);
@@ -309,7 +280,7 @@ export const Dashboard = () => {
       setCheckinStreak(streak);
       setStoryStreak(streak); // For now, story streak = checkin streak
       setUserMood(userMoodData?.mood);
-      
+
       // If testing with self, don't show partner mood as the same
       if (isTestingWithSelf) {
         setPartnerMood(undefined); // Show no partner mood for testing
@@ -317,7 +288,7 @@ export const Dashboard = () => {
         setPartnerMood(partnerMoodData?.mood);
       }
       setIsLoaded(true);
-      
+
       // Hide splash after data loads and animation completes (only if showing)
       if (showSplash) {
         setTimeout(() => {
@@ -325,7 +296,6 @@ export const Dashboard = () => {
           sessionStorage.setItem('hasShownSplash', 'true');
         }, 2000);
       }
-
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
       setIsLoaded(true);
@@ -342,25 +312,20 @@ export const Dashboard = () => {
   // Fetch unread message count
   const fetchUnreadCount = async () => {
     if (!coupleId || !user?.id) return;
-
     try {
       // Get conversation for this couple
-      const { data: conversation } = await supabase
-        .from('conversations')
-        .select('id')
-        .eq('couple_id', coupleId)
-        .maybeSingle();
-
+      const {
+        data: conversation
+      } = await supabase.from('conversations').select('id').eq('couple_id', coupleId).maybeSingle();
       if (!conversation) return;
 
       // Count unread messages
-      const { count } = await supabase
-        .from('messages')
-        .select('*', { count: 'exact', head: true })
-        .eq('conversation_id', conversation.id)
-        .eq('is_read', false)
-        .neq('sender_id', user.id);
-
+      const {
+        count
+      } = await supabase.from('messages').select('*', {
+        count: 'exact',
+        head: true
+      }).eq('conversation_id', conversation.id).eq('is_read', false).neq('sender_id', user.id);
       setUnreadCount(count || 0);
     } catch (error) {
       console.error('Error fetching unread count:', error);
@@ -375,22 +340,13 @@ export const Dashboard = () => {
   // Set up real-time subscription for unread messages
   useEffect(() => {
     if (!coupleId) return;
-
-    const channel = supabase
-      .channel('dashboard-messages')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'messages'
-        },
-        () => {
-          fetchUnreadCount();
-        }
-      )
-      .subscribe();
-
+    const channel = supabase.channel('dashboard-messages').on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'messages'
+    }, () => {
+      fetchUnreadCount();
+    }).subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
@@ -411,13 +367,14 @@ export const Dashboard = () => {
         localStorage.removeItem('mood_updated');
       }
     };
-
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
   }, [user]);
-
   const handleCheckinClick = () => {
-    console.log('Checkin clicked!', { coupleId, user: user?.id });
+    console.log('Checkin clicked!', {
+      coupleId,
+      user: user?.id
+    });
     if (coupleId) {
       console.log('Opening daily check-in flow');
       setShowDailyCheckin(true);
@@ -430,7 +387,6 @@ export const Dashboard = () => {
       });
     }
   };
-
   const handleMoodCheckinClick = () => {
     if (coupleId) {
       setShowMoodCheckin(true);
@@ -442,12 +398,11 @@ export const Dashboard = () => {
       });
     }
   };
-
   const handlePlanDateClick = () => {
     navigate('/planner');
     toast({
       title: "Time to plan something special! ✨",
-      description: "Let's find the perfect date idea for you two",
+      description: "Let's find the perfect date idea for you two"
     });
   };
 
@@ -455,26 +410,18 @@ export const Dashboard = () => {
   const checkForStories = async (coupleId: string, userId: string, partnerId?: string) => {
     try {
       const now = new Date().toISOString();
-      
+
       // Check for user's active stories
-      const { data: userStories } = await supabase
-        .from('stories')
-        .select('id')
-        .eq('couple_id', coupleId)
-        .eq('user_id', userId)
-        .gt('expires_at', now);
-      
+      const {
+        data: userStories
+      } = await supabase.from('stories').select('id').eq('couple_id', coupleId).eq('user_id', userId).gt('expires_at', now);
       setHasUserStory((userStories?.length || 0) > 0);
 
       // Check for partner's active stories
       if (partnerId && partnerId !== userId) {
-        const { data: partnerStories } = await supabase
-          .from('stories')
-          .select('id')
-          .eq('couple_id', coupleId)
-          .eq('user_id', partnerId)
-          .gt('expires_at', now);
-        
+        const {
+          data: partnerStories
+        } = await supabase.from('stories').select('id').eq('couple_id', coupleId).eq('user_id', partnerId).gt('expires_at', now);
         setHasPartnerStory((partnerStories?.length || 0) > 0);
       } else {
         setHasPartnerStory(false);
@@ -493,7 +440,6 @@ export const Dashboard = () => {
       setShowStoryViewer(true);
     }
   };
-
   const handlePartnerAvatarClick = () => {
     if (partnerId && coupleId && partnerId !== user?.id && hasPartnerStory) {
       setStoryTargetUserId(partnerId);
@@ -505,7 +451,6 @@ export const Dashboard = () => {
 
   // Separate camera handler for uploading new stories
   const [showUploadInterface, setShowUploadInterface] = useState(false);
-  
   const handleCameraClick = () => {
     if (user?.id && coupleId) {
       setStoryTargetUserId(user.id);
@@ -514,7 +459,6 @@ export const Dashboard = () => {
       setShowStoryViewer(true);
     }
   };
-
   const handleStoryViewerClose = () => {
     setShowStoryViewer(false);
     setStoryTargetUserId(undefined);
@@ -525,61 +469,51 @@ export const Dashboard = () => {
       checkForStories(coupleId, user.id, partnerId);
     }
   };
-
-  return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
+  return <div className="min-h-screen bg-background relative overflow-hidden">
       {/* Splash Screen Overlay with Sync Score Animation */}
-      {showSplash && isLoaded && (
-        <div className="fixed inset-0 bg-gradient-primary z-[100]" 
-             style={{ 
-               animation: 'fade-out 0.3s ease-out 1.7s forwards' 
-             }}>
+      {showSplash && isLoaded && <div className="fixed inset-0 bg-gradient-primary z-[100]" style={{
+      animation: 'fade-out 0.3s ease-out 1.7s forwards'
+    }}>
           
           {/* Sync Score - starts center, zooms to exact dashboard position */}
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="sync-score-container"
-                 style={{ 
-                   animation: 'zoom-to-position 1.2s ease-out 0.8s forwards',
-                   transform: 'scale(2.5)'
-                 }}>
+            <div className="sync-score-container" style={{
+          animation: 'zoom-to-position 1.2s ease-out 0.8s forwards',
+          transform: 'scale(2.5)'
+        }}>
               <SyncScoreCircle score={syncScore} animated={true} />
             </div>
           </div>
           
           {/* Floating Partner Mood Emojis */}
-          {partnerMood && (
-            <div className="absolute inset-0 pointer-events-none">
+          {partnerMood && <div className="absolute inset-0 pointer-events-none">
               {/* Multiple floating emojis */}
-              {[...Array(5)].map((_, i) => (
-                <div key={i} 
-                     className="absolute text-6xl opacity-90"
-                     style={{
-                       left: `${20 + i * 15}%`,
-                       top: `${30 + (i % 2) * 40}%`,
-                       animation: `float-${i + 1} 2s ease-in-out infinite, fade-in 0.3s ease-out ${0.5 + i * 0.1}s both, fade-out 0.5s ease-out 1.3s forwards`
-                     }}>
+              {[...Array(5)].map((_, i) => <div key={i} className="absolute text-6xl opacity-90" style={{
+          left: `${20 + i * 15}%`,
+          top: `${30 + i % 2 * 40}%`,
+          animation: `float-${i + 1} 2s ease-in-out infinite, fade-in 0.3s ease-out ${0.5 + i * 0.1}s both, fade-out 0.5s ease-out 1.3s forwards`
+        }}>
                   {partnerMood}
-                </div>
-              ))}
+                </div>)}
               
               {/* Partner mood text */}
-              <div className="absolute bottom-1/3 left-1/2 transform -translate-x-1/2 text-center"
-                   style={{ animation: 'fade-in 0.3s ease-out 0.8s both, fade-out 0.5s ease-out 1.3s forwards' }}>
+              <div className="absolute bottom-1/3 left-1/2 transform -translate-x-1/2 text-center" style={{
+          animation: 'fade-in 0.3s ease-out 0.8s both, fade-out 0.5s ease-out 1.3s forwards'
+        }}>
                 <p className="text-white/90 text-lg font-medium">
                   Partner's Mood
                 </p>
               </div>
-            </div>
-          )}
+            </div>}
           
           {/* Welcome text */}
-          <div className="absolute bottom-16 left-1/2 transform -translate-x-1/2 text-white text-center"
-               style={{ animation: 'fade-in 0.3s ease-out 1s both, fade-out 0.3s ease-out 1.5s forwards' }}>
+          <div className="absolute bottom-16 left-1/2 transform -translate-x-1/2 text-white text-center" style={{
+        animation: 'fade-in 0.3s ease-out 1s both, fade-out 0.3s ease-out 1.5s forwards'
+      }}>
             <h2 className="text-xl font-bold mb-1">Welcome Back! 💕</h2>
             <p className="text-white/80 text-sm">Your love sync is ready...</p>
           </div>
-        </div>
-      )}
+        </div>}
       
       {/* Main Content - with loading states */}
       <div className={showSplash ? 'opacity-0' : 'opacity-100 transition-opacity duration-300'}>
@@ -588,11 +522,11 @@ export const Dashboard = () => {
           <div className={`text-center space-y-2 ${isLoaded ? 'animate-fade-in' : 'opacity-0'}`}>
             <h1 className="text-3xl font-bold text-white">
               {(() => {
-                const hour = new Date().getHours();
-                if (hour < 12) return "Good Morning";
-                if (hour < 17) return "Good Afternoon";
-                return "Good Evening";
-              })()}
+              const hour = new Date().getHours();
+              if (hour < 12) return "Good Morning";
+              if (hour < 17) return "Good Afternoon";
+              return "Good Evening";
+            })()}
             </h1>
             <p className="text-lg text-white/90">
               Hey lovebirds! Track your relationship harmony and connection
@@ -603,60 +537,38 @@ export const Dashboard = () => {
         <div className="container mx-auto px-6 space-y-6 pb-20">
 
           {/* Sync Score Section */}
-          <div className={`${isLoaded ? 'animate-fade-in' : 'opacity-0'}`} style={{ animationDelay: '100ms' }}>
-            {isLoaded ? (
-              <div className="space-y-4">
-                <SyncScoreCircle 
-                  score={syncScoreData?.score || syncScore} 
-                  animated={true} 
-                />
-              </div>
-            ) : (
-              <SyncScoreSkeleton />
-            )}
+          <div className={`${isLoaded ? 'animate-fade-in' : 'opacity-0'}`} style={{
+          animationDelay: '100ms'
+        }}>
+            {isLoaded ? <div className="space-y-4">
+                <SyncScoreCircle score={syncScoreData?.score || syncScore} animated={true} />
+              </div> : <SyncScoreSkeleton />}
           </div>
 
         {/* Couple Avatars with Good Sync Status */}
-        <div className={`${isLoaded ? 'animate-fade-in' : 'opacity-0'}`} style={{ animationDelay: '200ms' }}>
-          {isLoaded ? (
-            <CoupleAvatars 
-              syncScore={syncScore} 
-              animated={true}
-              onUserAvatarClick={handleUserAvatarClick}
-              onPartnerAvatarClick={handlePartnerAvatarClick}
-              onCameraClick={handleCameraClick}
-              hasUserStory={hasUserStory}
-              hasPartnerStory={hasPartnerStory}
-            />
-          ) : (
-            <div className="flex justify-center">
+        <div className={`${isLoaded ? 'animate-fade-in' : 'opacity-0'}`} style={{
+          animationDelay: '200ms'
+        }}>
+          {isLoaded ? <CoupleAvatars syncScore={syncScore} animated={true} onUserAvatarClick={handleUserAvatarClick} onPartnerAvatarClick={handlePartnerAvatarClick} onCameraClick={handleCameraClick} hasUserStory={hasUserStory} hasPartnerStory={hasPartnerStory} /> : <div className="flex justify-center">
               <div className="flex items-center gap-4">
                 <div className="w-16 h-16 bg-muted animate-pulse rounded-full"></div>
                 <div className="w-8 h-8 bg-accent animate-pulse rounded-full"></div>
                 <div className="w-16 h-16 bg-muted animate-pulse rounded-full"></div>
               </div>
-            </div>
-          )}
+            </div>}
         </div>
 
-        <div className={`${isLoaded ? 'animate-fade-in' : 'opacity-0'}`} style={{ animationDelay: '300ms' }}>
-          {isLoaded ? (
-            <CoupleMoodDisplay 
-              userMood={userMood} 
-              partnerMood={partnerMood} 
-              userId={user?.id}
-              coupleId={coupleId}
-              onMoodUpdate={refreshDashboard}
-            />
-          ) : (
-            <MoodDisplaySkeleton />
-          )}
+        <div className={`${isLoaded ? 'animate-fade-in' : 'opacity-0'}`} style={{
+          animationDelay: '300ms'
+        }}>
+          {isLoaded ? <CoupleMoodDisplay userMood={userMood} partnerMood={partnerMood} userId={user?.id} coupleId={coupleId} onMoodUpdate={refreshDashboard} /> : <MoodDisplaySkeleton />}
         </div>
 
         {/* Compact Dashboard Cards */}
-        <div className={`grid grid-cols-2 gap-3 ${isLoaded ? 'animate-fade-in' : 'opacity-0'}`} style={{ animationDelay: '400ms' }}>
-          {isLoaded ? (
-            <>
+        <div className={`grid grid-cols-2 gap-3 ${isLoaded ? 'animate-fade-in' : 'opacity-0'}`} style={{
+          animationDelay: '400ms'
+        }}>
+          {isLoaded ? <>
               {/* Last Check-in Card - Compact */}
               <div className="bg-card border rounded-lg p-3 shadow-sm">
                 <div className="flex items-center gap-2 mb-2">
@@ -691,36 +603,26 @@ export const Dashboard = () => {
                 </div>
                 <p className="text-xs text-muted-foreground">Growing together</p>
               </div>
-            </>
-          ) : (
-            <>
+            </> : <>
               <CompactCardSkeleton />
               <CompactCardSkeleton />
-            </>
-          )}
+            </>}
         </div>
 
         {/* Enhanced Streak Display */}
-        <div className={`${isLoaded ? 'animate-fade-in' : 'opacity-0'}`} style={{ animationDelay: '500ms' }}>
-          {isLoaded ? (
-            <StreakDisplay 
-              checkinStreak={syncScoreData?.streaks.checkinStreak || checkinStreak}
-              storyStreak={syncScoreData?.streaks.storyStreak || storyStreak}
-            />
-          ) : (
-            <div className="animate-pulse bg-muted rounded-xl h-32"></div>
-          )}
+        <div className={`${isLoaded ? 'animate-fade-in' : 'opacity-0'}`} style={{
+          animationDelay: '500ms'
+        }}>
+          {isLoaded ? <StreakDisplay checkinStreak={syncScoreData?.streaks.checkinStreak || checkinStreak} storyStreak={syncScoreData?.streaks.storyStreak || storyStreak} /> : <div className="animate-pulse bg-muted rounded-xl h-32"></div>}
         </div>
 
         {/* Action Cards Grid */}
-        <div className={`grid grid-cols-2 gap-4 ${isLoaded ? 'animate-fade-in' : 'opacity-0'}`} style={{ animationDelay: '600ms' }}>
-          {isLoaded ? (
-            <>
+        <div className={`grid grid-cols-2 gap-4 ${isLoaded ? 'animate-fade-in' : 'opacity-0'}`} style={{
+          animationDelay: '600ms'
+        }}>
+          {isLoaded ? <>
               {/* Daily Check-in */}
-              <div 
-                className="bg-card border rounded-xl p-4 text-center cursor-pointer hover:shadow-sm transition-all shadow-sm hover:scale-105 duration-200"
-                onClick={handleCheckinClick}
-              >
+              <div className="bg-card border rounded-xl p-4 text-center cursor-pointer hover:shadow-sm transition-all shadow-sm hover:scale-105 duration-200" onClick={handleCheckinClick}>
                 <div className="w-12 h-12 bg-secondary rounded-full flex items-center justify-center mx-auto mb-3">
                   <MessageCircle className="text-white" size={24} />
                 </div>
@@ -729,24 +631,18 @@ export const Dashboard = () => {
               </div>
 
               {/* Weekly Planning */}
-              <div 
-                className="bg-card border rounded-xl p-4 text-center cursor-pointer hover:shadow-sm transition-all shadow-sm hover:scale-105 duration-200"
-                onClick={() => navigate('/planner')}
-              >
+              <div className="bg-card border rounded-xl p-4 text-center cursor-pointer hover:shadow-sm transition-all shadow-sm hover:scale-105 duration-200" onClick={() => navigate('/planner')}>
                 <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center mx-auto mb-3">
                   <Calendar className="text-accent-foreground" size={24} />
                 </div>
-                <h3 className="font-semibold text-foreground mb-1">Upcoming dates</h3>
+                <h3 className="font-semibold text-foreground mb-1">Dates Planned</h3>
                 <p className="text-xs text-muted-foreground">
                   {scheduledDatesCount > 0 ? `${scheduledDatesCount} dates scheduled` : 'No dates scheduled'}
                 </p>
               </div>
 
               {/* Plan Date */}
-              <div 
-                className="bg-card border rounded-xl p-4 text-center cursor-pointer hover:shadow-sm transition-all shadow-sm hover:scale-105 duration-200"
-                onClick={handlePlanDateClick}
-              >
+              <div className="bg-card border rounded-xl p-4 text-center cursor-pointer hover:shadow-sm transition-all shadow-sm hover:scale-105 duration-200" onClick={handlePlanDateClick}>
                 <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center mx-auto mb-3">
                   <Calendar className="text-white" size={24} />
                 </div>
@@ -755,128 +651,76 @@ export const Dashboard = () => {
               </div>
 
               {/* Add Memory */}
-              <div 
-                className="bg-card border rounded-xl p-4 text-center cursor-pointer hover:shadow-sm transition-all shadow-sm hover:scale-105 duration-200"
-                onClick={() => navigate('/vault')}
-              >
+              <div className="bg-card border rounded-xl p-4 text-center cursor-pointer hover:shadow-sm transition-all shadow-sm hover:scale-105 duration-200" onClick={() => navigate('/vault')}>
                 <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center mx-auto mb-3">
                   <Sparkles className="text-accent-foreground" size={24} />
                 </div>
                 <h3 className="font-semibold text-foreground mb-1">Add Memory</h3>
                 <p className="text-xs text-muted-foreground">Capture the moment</p>
               </div>
-            </>
-          ) : (
-            <>
+            </> : <>
               <DashboardCardSkeleton />
               <DashboardCardSkeleton />
               <DashboardCardSkeleton />
               <DashboardCardSkeleton />
-            </>
-          )}
+            </>}
         </div>
 
         {/* Get Relationship Insights Button */}
-        <div className={`${isLoaded ? 'animate-fade-in' : 'opacity-0'}`} style={{ animationDelay: '700ms' }}>
-          {isLoaded ? (
-            <Button 
-              className="w-full rounded-xl py-3 bg-yellow-400 hover:bg-yellow-500 text-black font-medium transition-all hover:scale-[1.02] duration-200"
-              onClick={() => navigate('/coach')}
-            >
+        <div className={`${isLoaded ? 'animate-fade-in' : 'opacity-0'}`} style={{
+          animationDelay: '700ms'
+        }}>
+          {isLoaded ? <Button className="w-full rounded-xl py-3 bg-yellow-400 hover:bg-yellow-500 text-black font-medium transition-all hover:scale-[1.02] duration-200" onClick={() => navigate('/coach')}>
               <Sparkles className="mr-2" size={18} />
               Get Relationship Insights
-            </Button>
-          ) : (
-            <div className="w-full h-12 bg-muted animate-pulse rounded-xl"></div>
-          )}
+            </Button> : <div className="w-full h-12 bg-muted animate-pulse rounded-xl"></div>}
         </div>
         </div>
       </div>
 
       {/* Daily Check-in Flow Modal */}
-      {showDailyCheckin && coupleId && user && (
-        <DailyCheckinFlow
-          userId={user.id}
-          coupleId={coupleId}
-          currentStreak={checkinStreak}
-          onComplete={() => {
-            setShowDailyCheckin(false);
-            refreshDashboard();
-          }}
-          onClose={() => setShowDailyCheckin(false)}
-        />
-      )}
+      {showDailyCheckin && coupleId && user && <DailyCheckinFlow userId={user.id} coupleId={coupleId} currentStreak={checkinStreak} onComplete={() => {
+      setShowDailyCheckin(false);
+      refreshDashboard();
+    }} onClose={() => setShowDailyCheckin(false)} />}
 
       {/* Mood Check Modal */}
-      {showMoodCheckin && coupleId && user && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+      {showMoodCheckin && coupleId && user && <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
           <div className="w-full max-w-md">
-            <MoodCheckin
-              userId={user.id}
-              coupleId={coupleId}
-              currentMood={userMood}
-              onMoodUpdate={(mood) => {
-                setUserMood(mood);
-                setShowMoodCheckin(false);
-                refreshDashboard();
-              }}
-            />
+            <MoodCheckin userId={user.id} coupleId={coupleId} currentMood={userMood} onMoodUpdate={mood => {
+          setUserMood(mood);
+          setShowMoodCheckin(false);
+          refreshDashboard();
+        }} />
             <div className="mt-4 text-center">
-              <button
-                onClick={() => setShowMoodCheckin(false)}
-                className="text-white hover:text-gray-300 text-sm"
-              >
+              <button onClick={() => setShowMoodCheckin(false)} className="text-white hover:text-gray-300 text-sm">
                 Close
               </button>
             </div>
           </div>
-        </div>
-      )}
+        </div>}
 
       {/* Story Viewer Modal */}
-      {showStoryViewer && storyTargetUserId && coupleId && (
-        <StoryViewer
-          isOpen={showStoryViewer}
-          onClose={handleStoryViewerClose}
-          targetUserId={storyTargetUserId}
-          coupleId={coupleId}
-          isOwnStory={isOwnStory}
-          showUploadInterface={showUploadInterface}
-        />
-      )}
+      {showStoryViewer && storyTargetUserId && coupleId && <StoryViewer isOpen={showStoryViewer} onClose={handleStoryViewerClose} targetUserId={storyTargetUserId} coupleId={coupleId} isOwnStory={isOwnStory} showUploadInterface={showUploadInterface} />}
 
       {/* Floating Messages Button */}
-      {!showSplash && coupleId && (
-        <div className="fixed bottom-20 right-4 z-40">
-          <Button
-            onClick={() => setShowChat(true)}
-            size="icon"
-            className="h-14 w-14 rounded-full bg-primary hover:bg-primary/90 shadow-lg relative"
-          >
+      {!showSplash && coupleId && <div className="fixed bottom-20 right-4 z-40">
+          <Button onClick={() => setShowChat(true)} size="icon" className="h-14 w-14 rounded-full bg-primary hover:bg-primary/90 shadow-lg relative">
             <MessageCircle className="h-6 w-6" />
-            {unreadCount > 0 && (
-              <div className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold animate-pulse">
+            {unreadCount > 0 && <div className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold animate-pulse">
                 {unreadCount > 9 ? '9+' : unreadCount}
-              </div>
-            )}
+              </div>}
           </Button>
-        </div>
-      )}
+        </div>}
 
       {/* Chat Modal */}
-      {showChat && coupleId && (
-        <Chat
-          isOpen={showChat}
-          onClose={() => {
-            setShowChat(false);
-            fetchUnreadCount(); // Refresh unread count when closing chat
-          }}
-        />
-      )}
+      {showChat && coupleId && <Chat isOpen={showChat} onClose={() => {
+      setShowChat(false);
+      fetchUnreadCount(); // Refresh unread count when closing chat
+    }} />}
 
 
       {/* Bottom Navigation - hidden during splash */}
       {!showSplash && <BottomNavigation />}
-    </div>
-  );
+    </div>;
 };
