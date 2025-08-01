@@ -454,21 +454,21 @@ export const Chat: React.FC<ChatProps> = ({ isOpen, onClose }) => {
         </div>
       )}
 
-      {/* Message Input - Always visible at bottom */}
-      <div className="border-t bg-background p-4 flex-shrink-0">
-        <div className="flex gap-2 items-end">
+      {/* Message Input - Compact and aligned */}
+      <div className="border-t bg-background px-3 py-2 flex-shrink-0">
+        <div className="flex gap-1 items-center">
           {/* Attachment Button */}
           <Button
             variant="ghost"
-            size="icon"
+            size="sm"
             onClick={() => {
               setShowAttachments(!showAttachments);
               setShowEmojiPicker(false);
               setShowStickers(false);
             }}
-            className={`rounded-full ${showAttachments ? 'bg-muted' : ''}`}
+            className={`rounded-full h-8 w-8 p-0 ${showAttachments ? 'bg-muted' : ''}`}
           >
-            <Image className="h-5 w-5" />
+            <Image className="h-4 w-4" />
           </Button>
           
           <div className="flex-1 relative">
@@ -478,7 +478,7 @@ export const Chat: React.FC<ChatProps> = ({ isOpen, onClose }) => {
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               onKeyPress={handleKeyPress}
-              className="pr-12 min-h-[44px] rounded-full border-2 focus:border-primary"
+              className="h-8 rounded-full border focus:border-primary text-sm"
               disabled={loading}
             />
           </div>
@@ -486,39 +486,39 @@ export const Chat: React.FC<ChatProps> = ({ isOpen, onClose }) => {
           {/* Love Stickers Button */}
           <Button
             variant="ghost"
-            size="icon"
+            size="sm"
             onClick={() => {
               setShowStickers(!showStickers);
               setShowEmojiPicker(false);
               setShowAttachments(false);
             }}
-            className={`rounded-full ${showStickers ? 'bg-muted' : ''}`}
+            className={`rounded-full h-8 w-8 p-0 ${showStickers ? 'bg-muted' : ''}`}
           >
-            <Heart className="h-5 w-5 text-red-500" />
+            <Heart className="h-4 w-4 text-red-500" />
           </Button>
           
           {/* Emoji Button */}
           <Button
             variant="ghost"
-            size="icon"
+            size="sm"
             onClick={() => {
               setShowEmojiPicker(!showEmojiPicker);
               setShowStickers(false);
               setShowAttachments(false);
             }}
-            className={`rounded-full ${showEmojiPicker ? 'bg-muted' : ''}`}
+            className={`rounded-full h-8 w-8 p-0 ${showEmojiPicker ? 'bg-muted' : ''}`}
           >
-            <Smile className="h-5 w-5" />
+            <Smile className="h-4 w-4" />
           </Button>
           
           {/* Send Button */}
           <Button
             onClick={() => sendMessage(newMessage)}
             disabled={loading || !newMessage.trim()}
-            size="icon"
-            className="rounded-full min-w-[44px]"
+            size="sm"
+            className="rounded-full h-8 w-8 p-0"
           >
-            <Send className="h-5 w-5" />
+            <Send className="h-4 w-4" />
           </Button>
         </div>
         
