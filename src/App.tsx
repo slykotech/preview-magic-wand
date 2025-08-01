@@ -21,6 +21,7 @@ import { ImportantDates } from "./pages/ImportantDates";
 import AppMottoPage from "./pages/AppMotto";
 import OnboardingFlow from "./pages/OnboardingFlow";
 import NotFound from "./pages/NotFound";
+import { AppSettings } from "./pages/AppSettings";
 
 const queryClient = new QueryClient();
 
@@ -51,6 +52,7 @@ const App = () => {
           <Route path="/preferences" element={<RelationshipPreferences />} />
           <Route path="/important-dates" element={<ImportantDates />} />
               <Route path="/insights" element={<RelationshipInsights />} />
+              <Route path="/app-settings" element={<AppSettings />} />
               <Route path="/motto" element={<AppMottoPage onNext={() => {}} onBack={() => {}} />} />
               <Route path="/onboarding" element={<OnboardingFlow />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

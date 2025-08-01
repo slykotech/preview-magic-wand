@@ -257,7 +257,7 @@ export const Profile = () => {
               icon={<Settings size={20} />}
               title="App Settings"
               subtitle="Notifications, privacy & more"
-              onClick={() => handleMenuClick("Settings")}
+              onClick={() => handleMenuClick("Settings", "/app-settings")}
             />
             <ProfileMenuItem
               icon={<LogOut size={20} />}
