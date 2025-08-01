@@ -167,44 +167,5 @@ All colors MUST be HSL.
 
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
-  
-  /* Mobile keyboard and layout optimizations */
-  .safe-area-inset-bottom {
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-  
-  .pb-safe {
-    padding-bottom: env(safe-area-inset-bottom, 1rem);
-  }
-  
-  /* Mobile viewport height fix for virtual keyboards */
-  @supports (height: 100dvh) {
-    .h-screen {
-      height: 100dvh;
-    }
-  }
-  
-  /* Ensure input stays visible when keyboard is open */
-  @media (max-height: 600px) {
-    .chat-input-area {
-      position: sticky;
-      bottom: 0;
-      z-index: 50;
-    }
-  }
-  
-  /* Mobile-specific scroll improvements */
-  @media (max-width: 768px) {
-    .chat-messages {
-      -webkit-overflow-scrolling: touch;
-    }
-    
-    /* Ensure content doesn't go behind mobile notches */
-    .mobile-safe {
-      padding-top: env(safe-area-inset-top);
-      padding-left: env(safe-area-inset-left);
-      padding-right: env(safe-area-inset-right);
-      padding-bottom: env(safe-area-inset-bottom);
-    }
   }
 }

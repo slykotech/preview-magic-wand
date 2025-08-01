@@ -251,9 +251,7 @@ export const Chat: React.FC<ChatProps> = ({
     }
   };
   if (!isOpen) return null;
-  
-  return <div className="fixed inset-0 bg-background z-50 flex flex-col h-screen max-h-[100dvh] overflow-hidden">
-      {/* Mobile viewport fix with dvh for better keyboard support */}
+  return <div className="fixed inset-0 bg-background z-50 flex flex-col h-screen">
       {/* Debug info */}
       <div className="hidden">Chat component mounted - input should be visible</div>
       {/* Header */}
@@ -279,9 +277,13 @@ export const Chat: React.FC<ChatProps> = ({
         </Button>
       </div>
 
-      {/* Messages Container - Flexible layout for mobile keyboard */}
-      <div className="flex-1 overflow-hidden flex flex-col min-h-0">
-        <div className="flex-1 p-4 overflow-y-auto space-y-2 bg-gradient-to-b from-background to-muted/20 pb-safe chat-messages">{/* Added mobile-optimized classes */}
+      {/* Messages Container - Reduced size */}
+      <div className="flex-1 overflow-hidden flex flex-col min-h-0" style={{
+      maxHeight: 'calc(100vh - 200px)'
+    }}>
+        <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-gradient-to-b from-background to-muted/20" style={{
+        maxHeight: 'calc(100vh - 280px)'
+      }}>
           {loading ? <div className="flex items-center justify-center h-full">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div> : messages.length === 0 ? <div className="flex items-center justify-center h-full text-center">
@@ -384,9 +386,8 @@ export const Chat: React.FC<ChatProps> = ({
           </div>
         </div>}
 
-      {/* Message Input - Mobile keyboard optimized */}
-      <div className="border-t bg-background px-3 py-2 flex-shrink-0 sticky bottom-0 safe-area-inset-bottom chat-input-area">{/* Added chat-input-area class for mobile targeting */}
-        {/* Added sticky positioning and safe area insets for mobile keyboard support */}
+      {/* Message Input - Compact and aligned */}
+      <div className="border-t bg-background px-3 py-2 flex-shrink-0">
         <div className="flex gap-1 items-center">
           {/* Attachment Button */}
           <Button variant="ghost" size="sm" onClick={() => {
