@@ -99,7 +99,10 @@ export const Chat: React.FC<ChatProps> = ({ isOpen, onClose }) => {
   };
 
   const initializeChat = async () => {
-    if (!coupleData?.id || !user?.id) return;
+    if (!coupleData?.id || !user?.id) {
+      console.log('Missing data for chat initialization:', { coupleData: !!coupleData, user: !!user });
+      return;
+    }
 
     try {
       setLoading(true);
