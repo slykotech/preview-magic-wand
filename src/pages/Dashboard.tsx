@@ -589,11 +589,28 @@ export const Dashboard = () => {
                   <div className="w-8 h-8 bg-secondary rounded-full flex items-center justify-center">
                     <Heart className="text-white" size={16} />
                   </div>
-                  <div>
+                  <div className="space-y-1">
                     <p className="text-xs text-muted-foreground">Last Check-in</p>
                     <p className="text-xs font-medium">
                       {lastCheckin ? format(new Date(lastCheckin.checkin_date), 'd MMMM') : '28 July'}
                     </p>
+                    {lastCheckin && (
+                      <div className="space-y-1">
+                        <p className="text-xs text-muted-foreground">
+                          Mood: <span className="text-foreground font-medium capitalize">{lastCheckin.mood}</span>
+                        </p>
+                        {lastCheckin.energy_level && (
+                          <p className="text-xs text-muted-foreground">
+                            Energy: <span className="text-foreground font-medium">{lastCheckin.energy_level}/10</span>
+                          </p>
+                        )}
+                        {lastCheckin.relationship_feeling && (
+                          <p className="text-xs text-muted-foreground">
+                            Feeling: <span className="text-foreground font-medium">{lastCheckin.relationship_feeling}</span>
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
                 <p className="text-sm font-semibold text-foreground">
