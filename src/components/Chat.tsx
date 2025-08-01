@@ -455,7 +455,7 @@ export const Chat: React.FC<ChatProps> = ({ isOpen, onClose }) => {
       )}
 
       {/* Message Input - Always visible at bottom */}
-      <div className="border-t bg-background p-4 min-h-[80px]" style={{ zIndex: 1000 }}>
+      <div className="border-t bg-background p-4 min-h-[80px] sticky bottom-0 z-50">
         <div className="flex gap-2 items-end">
           {/* Attachment Button */}
           <Button
