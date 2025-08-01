@@ -13,9 +13,7 @@ import { Chat } from "@/components/Chat";
 import { useEnhancedSyncScore } from "@/hooks/useEnhancedSyncScore";
 import { usePresence } from "@/hooks/usePresence";
 import { SyncScoreSkeleton, DashboardCardSkeleton, CompactCardSkeleton, MoodDisplaySkeleton } from "@/components/ui/skeleton";
-import { Calendar, Heart, MessageCircle, Sparkles, Clock, Lightbulb, X } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { format } from "date-fns";
+import { Calendar, Heart, MessageCircle, Sparkles, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -48,8 +46,6 @@ export const Dashboard = () => {
   const [partnerId, setPartnerId] = useState<string>();
   const [showChat, setShowChat] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [showHealthTips, setShowHealthTips] = useState(false);
-  const [showCheckinInsights, setShowCheckinInsights] = useState(false);
   const {
     toast
   } = useToast();
@@ -581,36 +577,16 @@ export const Dashboard = () => {
         }}>
           {isLoaded ? <>
               {/* Last Check-in Card - Compact */}
-              <div 
-                className="bg-card border rounded-lg p-3 shadow-sm cursor-pointer hover:shadow-md transition-all hover:scale-105 duration-200"
-                onClick={() => setShowCheckinInsights(true)}
-              >
+              <div className="bg-card border rounded-lg p-3 shadow-sm">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="w-8 h-8 bg-secondary rounded-full flex items-center justify-center">
                     <Heart className="text-white" size={16} />
                   </div>
-                  <div className="space-y-1">
+                  <div>
                     <p className="text-xs text-muted-foreground">Last Check-in</p>
                     <p className="text-xs font-medium">
-                      {lastCheckin ? format(new Date(lastCheckin.checkin_date), 'd MMMM') : '28 July'}
+                      {lastCheckin ? new Date(lastCheckin.checkin_date).toLocaleDateString() : 'Jul 28, 6:45 AM'}
                     </p>
-                    {lastCheckin && (
-                      <div className="space-y-1">
-                        <p className="text-xs text-muted-foreground">
-                          Mood: <span className="text-foreground font-medium capitalize">{lastCheckin.mood}</span>
-                        </p>
-                        {lastCheckin.energy_level && (
-                          <p className="text-xs text-muted-foreground">
-                            Energy: <span className="text-foreground font-medium">{lastCheckin.energy_level}/10</span>
-                          </p>
-                        )}
-                        {lastCheckin.relationship_feeling && (
-                          <p className="text-xs text-muted-foreground">
-                            Feeling: <span className="text-foreground font-medium">{lastCheckin.relationship_feeling}</span>
-                          </p>
-                        )}
-                      </div>
-                    )}
                   </div>
                 </div>
                 <p className="text-sm font-semibold text-foreground">
@@ -618,37 +594,10 @@ export const Dashboard = () => {
                 </p>
               </div>
 
-              {/* Relationship Health Card - Dynamic */}
-              <div 
-                className="bg-card border rounded-lg p-3 shadow-sm cursor-pointer hover:shadow-md transition-all hover:scale-105 duration-200"
-                onClick={() => setShowHealthTips(true)}
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-8 h-8 bg-secondary rounded-full flex items-center justify-center">
-                    <Heart className="text-white" size={16} />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Relationship Health</p>
-                    <div className="flex items-center gap-1">
-                      <p className="text-lg font-bold text-secondary">{syncScore}%</p>
-                      <span className={`text-xs ${
-                        syncScoreData?.trend === 'up' ? 'text-accent' : 
-                        syncScoreData?.trend === 'down' ? 'text-destructive' : 
-                        'text-muted-foreground'
-                      }`}>
-                        {syncScoreData?.trend === 'up' ? '↗' : 
-                         syncScoreData?.trend === 'down' ? '↘' : 
-                         '→'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {syncScore >= 80 ? 'Thriving together' :
-                   syncScore >= 60 ? 'Growing stronger' :
-                   syncScore >= 40 ? 'Building connection' :
-                   'Starting your journey'}
-                </p>
+              {/* Relationship Health Card - Compact */}
+              <div className="bg-card border rounded-lg p-3 shadow-sm">
+                
+                <p className="text-xs text-muted-foreground">Growing together</p>
               </div>
             </> : <>
               <CompactCardSkeleton />
@@ -766,222 +715,6 @@ export const Dashboard = () => {
       fetchUnreadCount(); // Refresh unread count when closing chat
     }} />}
 
-      {/* Relationship Health Tips Modal */}
-      <Dialog open={showHealthTips} onOpenChange={setShowHealthTips}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Lightbulb className="h-5 w-5 text-yellow-500" />
-              Relationship Enhancement Tips
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="text-center p-4 bg-gradient-to-r from-primary/10 to-secondary/10 rounded-lg">
-              <div className="text-2xl font-bold text-primary mb-1">{syncScore}%</div>
-              <div className="text-sm text-muted-foreground">
-                {syncScore >= 80 ? 'Your relationship is thriving! 🌟' :
-                 syncScore >= 60 ? 'You\'re growing stronger together! 💪' :
-                 syncScore >= 40 ? 'Building a solid foundation! 🏗️' :
-                 'Every journey starts with a single step! 🌱'}
-              </div>
-            </div>
-            
-            <div className="space-y-3">
-              {syncScore < 40 && (
-                <>
-                  <div className="p-3 bg-card border rounded-lg">
-                    <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
-                      <Heart className="h-4 w-4 text-red-500" />
-                      Daily Connection
-                    </h4>
-                    <p className="text-sm text-muted-foreground">
-                      Start with daily check-ins. Share how you're feeling and ask about your partner's day. Small daily connections build strong foundations.
-                    </p>
-                  </div>
-                  <div className="p-3 bg-card border rounded-lg">
-                    <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
-                      <MessageCircle className="h-4 w-4 text-blue-500" />
-                      Open Communication
-                    </h4>
-                    <p className="text-sm text-muted-foreground">
-                      Practice active listening. Put devices away during conversations and show genuine interest in what your partner shares.
-                    </p>
-                  </div>
-                </>
-              )}
-              
-              {syncScore >= 40 && syncScore < 60 && (
-                <>
-                  <div className="p-3 bg-card border rounded-lg">
-                    <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-green-500" />
-                      Quality Time
-                    </h4>
-                    <p className="text-sm text-muted-foreground">
-                      Schedule regular date nights. Try new activities together to create shared memories and strengthen your bond.
-                    </p>
-                  </div>
-                  <div className="p-3 bg-card border rounded-lg">
-                    <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
-                      <Sparkles className="h-4 w-4 text-purple-500" />
-                      Appreciation
-                    </h4>
-                    <p className="text-sm text-muted-foreground">
-                      Express gratitude daily. Notice the small things your partner does and acknowledge them verbally.
-                    </p>
-                  </div>
-                </>
-              )}
-              
-              {syncScore >= 60 && syncScore < 80 && (
-                <>
-                  <div className="p-3 bg-card border rounded-lg">
-                    <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
-                      <Heart className="h-4 w-4 text-pink-500" />
-                      Deeper Intimacy
-                    </h4>
-                    <p className="text-sm text-muted-foreground">
-                      Share your dreams, fears, and aspirations. Create space for vulnerable conversations that deepen emotional intimacy.
-                    </p>
-                  </div>
-                  <div className="p-3 bg-card border rounded-lg">
-                    <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
-                      <Lightbulb className="h-4 w-4 text-yellow-500" />
-                      Growth Together
-                    </h4>
-                    <p className="text-sm text-muted-foreground">
-                      Set relationship goals together. Discuss what you both want to achieve as a couple and support each other's individual growth.
-                    </p>
-                  </div>
-                </>
-              )}
-              
-              {syncScore >= 80 && (
-                <>
-                  <div className="p-3 bg-card border rounded-lg">
-                    <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
-                      <Sparkles className="h-4 w-4 text-gold-500" />
-                      Maintain Excellence
-                    </h4>
-                    <p className="text-sm text-muted-foreground">
-                      Keep nurturing what works! Continue your daily rituals and don't take your strong connection for granted.
-                    </p>
-                  </div>
-                  <div className="p-3 bg-card border rounded-lg">
-                    <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
-                      <Heart className="h-4 w-4 text-red-500" />
-                      Inspire Others
-                    </h4>
-                    <p className="text-sm text-muted-foreground">
-                      Your relationship is thriving! Consider mentoring other couples or sharing what's worked for you.
-                    </p>
-                  </div>
-                </>
-              )}
-            </div>
-            
-            <div className="pt-4 border-t">
-              <Button 
-                className="w-full"
-                onClick={() => setShowHealthTips(false)}
-              >
-                Start Improving Today!
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Check-in Insights Modal */}
-      <Dialog open={showCheckinInsights} onOpenChange={setShowCheckinInsights}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Heart className="h-5 w-5 text-red-500" />
-              Your Last Check-in
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="text-center p-4 bg-gradient-to-r from-secondary/10 to-primary/10 rounded-lg">
-              <div className="text-lg font-bold text-secondary mb-1">
-                {lastCheckin ? format(new Date(lastCheckin.checkin_date), 'd MMMM') : 'No recent check-in'}
-              </div>
-              <div className="text-sm text-muted-foreground">
-                {lastCheckin ? 'Your responses from your last check-in' : 'Start your check-in journey today!'}
-              </div>
-              {checkinStreak > 0 && (
-                <div className="text-lg font-bold text-accent mt-2">
-                  🔥 {checkinStreak} day streak!
-                </div>
-              )}
-            </div>
-            
-            {lastCheckin ? (
-              <div className="space-y-3">
-                <div className="p-3 bg-card rounded-lg border">
-                  <h4 className="font-medium text-sm mb-2">How are you feeling today?</h4>
-                  <p className="text-sm text-foreground capitalize">{lastCheckin.mood}</p>
-                </div>
-
-                {lastCheckin.energy_level && (
-                  <div className="p-3 bg-card rounded-lg border">
-                    <h4 className="font-medium text-sm mb-2">What's your energy level?</h4>
-                    <p className="text-sm text-foreground">{lastCheckin.energy_level}/10</p>
-                  </div>
-                )}
-
-                {lastCheckin.relationship_feeling && (
-                  <div className="p-3 bg-card rounded-lg border">
-                    <h4 className="font-medium text-sm mb-2">How are you feeling about your relationship?</h4>
-                    <p className="text-sm text-foreground">{lastCheckin.relationship_feeling}</p>
-                  </div>
-                )}
-
-                {lastCheckin.gratitude && (
-                  <div className="p-3 bg-card rounded-lg border">
-                    <h4 className="font-medium text-sm mb-2">What are you grateful for today?</h4>
-                    <p className="text-sm text-foreground">{lastCheckin.gratitude}</p>
-                  </div>
-                )}
-
-                {lastCheckin.notes && (
-                  <div className="p-3 bg-card rounded-lg border">
-                    <h4 className="font-medium text-sm mb-2">Additional notes</h4>
-                    <p className="text-sm text-foreground">{lastCheckin.notes}</p>
-                  </div>
-                )}
-
-                <div className="text-center text-xs text-muted-foreground pt-2">
-                  Current streak: {checkinStreak} days
-                </div>
-              </div>
-            ) : (
-              <div className="text-center p-4">
-                <p className="text-sm text-muted-foreground">No check-in data available. Complete your first daily check-in to see your responses here!</p>
-              </div>
-            )}
-            
-            <div className="pt-4 border-t space-y-2">
-              <Button 
-                className="w-full"
-                onClick={() => {
-                  setShowCheckinInsights(false);
-                  handleCheckinClick();
-                }}
-              >
-                Start Today's Check-in
-              </Button>
-              <Button 
-                variant="outline"
-                className="w-full"
-                onClick={() => setShowCheckinInsights(false)}
-              >
-                Close
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Bottom Navigation - hidden during splash */}
       {!showSplash && <BottomNavigation />}
