@@ -51,7 +51,7 @@ export const Chat: React.FC<ChatProps> = ({ isOpen, onClose }) => {
   const actionStickers = ['🫶', '👫', '💏', '👪', '🥳', '🎉', '🎊', '🔥', '⭐', '✨', '💫', '🌟'];
 
   useEffect(() => {
-    if (isOpen && coupleData) {
+    if (isOpen) {
       initializeChat();
     }
   }, [isOpen, coupleData]);
