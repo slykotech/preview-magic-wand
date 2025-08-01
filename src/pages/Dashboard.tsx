@@ -9,7 +9,7 @@ import { CoupleMoodDisplay } from "@/components/CoupleMoodDisplay";
 import { MoodCheckin } from "@/components/MoodCheckin";
 import { DailyCheckinFlow } from "@/components/DailyCheckinFlow";
 import { StoryViewer } from "@/components/StoryViewer";
-import { Chat } from "@/components/Chat";
+
 import { useEnhancedSyncScore } from "@/hooks/useEnhancedSyncScore";
 import { usePresence } from "@/hooks/usePresence";
 import { SyncScoreSkeleton, DashboardCardSkeleton, CompactCardSkeleton, MoodDisplaySkeleton } from "@/components/ui/skeleton";
@@ -46,7 +46,7 @@ export const Dashboard = () => {
   const [hasUserStory, setHasUserStory] = useState(false);
   const [hasPartnerStory, setHasPartnerStory] = useState(false);
   const [partnerId, setPartnerId] = useState<string>();
-  const [showChat, setShowChat] = useState(false);
+  
   const [unreadCount, setUnreadCount] = useState(0);
   const [showHealthTips, setShowHealthTips] = useState(false);
   const [showCheckinInsights, setShowCheckinInsights] = useState(false);
@@ -729,7 +729,7 @@ export const Dashboard = () => {
 
       {/* Floating Messages Button */}
       {!showSplash && coupleId && <div className="fixed bottom-20 right-4 z-40">
-          <Button onClick={() => setShowChat(true)} size="icon" className="h-14 w-14 rounded-full bg-primary hover:bg-primary/90 shadow-lg relative">
+          <Button onClick={() => navigate('/messages')} size="icon" className="h-14 w-14 rounded-full bg-primary hover:bg-primary/90 shadow-lg relative">
             <MessageCircle className="h-6 w-6" />
             {unreadCount > 0 && <div className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold animate-pulse">
                 {unreadCount > 9 ? '9+' : unreadCount}
@@ -737,11 +737,6 @@ export const Dashboard = () => {
           </Button>
         </div>}
 
-      {/* Chat Modal */}
-      {showChat && coupleId && <Chat isOpen={showChat} onClose={() => {
-      setShowChat(false);
-      fetchUnreadCount(); // Refresh unread count when closing chat
-    }} />}
 
       {/* Relationship Health Tips Modal */}
       <Dialog open={showHealthTips} onOpenChange={setShowHealthTips}>
