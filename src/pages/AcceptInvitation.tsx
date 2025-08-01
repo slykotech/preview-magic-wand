@@ -51,6 +51,12 @@ const AcceptInvitation = () => {
       console.log('Setting showSignup to true for new user invitation');
       setShowSignup(true);
     }
+    
+    // If user is already authenticated with invite type, proceed with connection
+    if (!authLoading && invitationType === 'invite' && user && email && senderId) {
+      console.log('User already authenticated for invite - proceeding with connection');
+      handleAcceptInvitation();
+    }
   }, [authLoading, email, senderId, invitationType, user]);
 
   const handleSignup = async () => {
