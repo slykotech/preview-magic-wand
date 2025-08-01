@@ -65,47 +65,44 @@ export const RelationshipInfoSection = () => {
   const statusDisplay = getConnectionStatusDisplay();
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Heart size={20} />
-            Relationship Info
-          </div>
+    <Card className="shadow-lg border-0 bg-card">
+      <CardHeader className="pb-4">
+        <div className="flex items-center justify-end">
           {!isEditing && (
             <Button
               variant="outline"
               size="sm"
               onClick={handleEdit}
-              className="text-xs"
+              className="text-xs hover:bg-accent"
             >
               <Edit3 size={14} className="mr-1" />
               Edit
             </Button>
           )}
-        </CardTitle>
+        </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-6 pt-0">
         {isEditing ? (
           <>
-            <div>
-              <Label className="text-sm text-muted-foreground">Connection Status</Label>
-              <p className={`text-sm font-medium mt-1 ${statusDisplay.color}`}>
+            <div className="bg-muted/30 p-4 rounded-lg border">
+              <Label className="text-sm font-medium text-muted-foreground">Connection Status</Label>
+              <p className={`text-lg font-semibold mt-2 ${statusDisplay.color}`}>
                 {statusDisplay.text}
               </p>
               <p className="text-xs text-muted-foreground mt-1">
                 Connection status is automatically managed
               </p>
             </div>
-            <div>
-              <Label htmlFor="relationshipStatus" className="text-sm font-medium">
+            
+            <div className="bg-background p-4 rounded-lg border">
+              <Label htmlFor="relationshipStatus" className="text-sm font-medium text-muted-foreground">
                 Relationship Status
               </Label>
               <Select 
                 value={relationshipStatus} 
                 onValueChange={(value: "dating" | "engaged" | "married" | "partnered") => setRelationshipStatus(value)}
               >
-                <SelectTrigger className="mt-1">
+                <SelectTrigger className="mt-3 h-12">
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -116,8 +113,9 @@ export const RelationshipInfoSection = () => {
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <Label className="text-sm font-medium">
+            
+            <div className="bg-background p-4 rounded-lg border">
+              <Label className="text-sm font-medium text-muted-foreground">
                 Anniversary Date
               </Label>
               <Popover>
@@ -125,7 +123,7 @@ export const RelationshipInfoSection = () => {
                   <Button
                     variant="outline"
                     className={cn(
-                      "w-full mt-1 justify-start text-left font-normal",
+                      "w-full mt-3 h-12 justify-start text-left font-normal",
                       !anniversaryDate && "text-muted-foreground"
                     )}
                   >
@@ -177,21 +175,23 @@ export const RelationshipInfoSection = () => {
           </>
         ) : (
           <>
-            <div>
-              <Label className="text-sm text-muted-foreground">Connection Status</Label>
-              <p className={`text-sm font-medium mt-1 ${statusDisplay.color}`}>
+            <div className="bg-muted/30 p-4 rounded-lg border">
+              <Label className="text-sm font-medium text-muted-foreground">Connection Status</Label>
+              <p className={`text-lg font-semibold mt-2 ${statusDisplay.color}`}>
                 {statusDisplay.text}
               </p>
             </div>
-            <div>
-              <Label className="text-sm text-muted-foreground">Relationship Status</Label>
-              <p className="text-sm font-medium mt-1 capitalize">
+            
+            <div className="bg-background p-4 rounded-lg border">
+              <Label className="text-sm font-medium text-muted-foreground">Relationship Status</Label>
+              <p className="text-lg font-semibold mt-2 capitalize text-foreground">
                 {coupleData?.relationship_status || 'Not set'}
               </p>
             </div>
-            <div>
-              <Label className="text-sm text-muted-foreground">Anniversary Date</Label>
-              <p className="text-sm font-medium mt-1">
+            
+            <div className="bg-background p-4 rounded-lg border">
+              <Label className="text-sm font-medium text-muted-foreground">Anniversary Date</Label>
+              <p className="text-lg font-semibold mt-2 text-foreground">
                 {coupleData?.anniversary_date 
                   ? format(new Date(coupleData.anniversary_date), "PPP")
                   : 'Not set'}

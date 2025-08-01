@@ -24,9 +24,9 @@ export const RelationshipPreferences = () => {
             <Heart size={24} />
           </div>
           <div>
-            <h1 className="text-xl font-extrabold font-poppins">Relationship Preferences</h1>
+            <h1 className="text-xl font-extrabold font-poppins">Relationship Info</h1>
             <p className="text-white/80 text-sm font-inter font-bold">
-              Customize your love language
+              Manage your relationship details
             </p>
           </div>
         </div>
@@ -35,6 +35,17 @@ export const RelationshipPreferences = () => {
       <div className="p-6 space-y-6">
         {/* Relationship Info Section */}
         <RelationshipInfoSection />
+        
+        {/* Dashboard Navigation */}
+        <div className="pt-4">
+          <Button
+            onClick={() => navigate('/dashboard')}
+            className="w-full bg-gradient-primary hover:opacity-90 text-white py-3"
+            size="lg"
+          >
+            Go to Dashboard
+          </Button>
+        </div>
       </div>
 
       <BottomNavigation />
