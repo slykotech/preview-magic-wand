@@ -271,8 +271,6 @@ export const AppSettings = () => {
               />
             </div>
 
-            <Separator />
-
             <div className="flex items-center justify-between">
               <div>
                 <Label className="font-semibold">Email Notifications</Label>
