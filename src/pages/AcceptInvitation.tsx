@@ -29,24 +29,13 @@ const AcceptInvitation = () => {
   const invitationType = searchParams.get('type');
 
   useEffect(() => {
-    console.log('AcceptInvitation Debug:', {
-      authLoading,
-      email,
-      senderId,
-      invitationType,
-      user: !!user,
-      showSignup
-    });
-
     if (!authLoading && !email && !senderId) {
       setStatus('error');
       setMessage('Invalid invitation link. Please check the link and try again.');
-      return;
     }
     
     // For new user invitations (type=invite), show signup form if not authenticated
     if (!authLoading && invitationType === 'invite' && !user && email && senderId) {
-      console.log('Setting showSignup to true for new user invitation');
       setShowSignup(true);
     }
   }, [authLoading, email, senderId, invitationType, user]);
@@ -210,13 +199,11 @@ const AcceptInvitation = () => {
             {status === 'success' ? 'Connection Successful!' : 
              status === 'error' ? 'Connection Failed' :
              showSignup ? 'Join Love Sync!' :
-             invitationType === 'invite' ? 'Join Love Sync!' :
              'Love Sync Invitation'}
           </CardTitle>
           <CardDescription>
             {showSignup && 'Create your account to connect with your partner'}
-            {status === 'pending' && !user && !showSignup && invitationType === 'invite' && 'Create your account to connect with your partner'}
-            {status === 'pending' && !user && !showSignup && invitationType === 'connect' && 'Please sign in to accept this invitation'}
+            {status === 'pending' && !user && !showSignup && 'Please sign in to accept this invitation'}
             {status === 'pending' && user && 'Ready to connect with your partner'}
             {status === 'success' && 'You are now connected!'}
             {status === 'error' && 'There was an issue with your invitation'}
@@ -326,24 +313,7 @@ const AcceptInvitation = () => {
             </div>
           )}
 
-          {(status === 'pending' && !user && !showSignup && invitationType === 'invite') && (
-            <div className="space-y-4">
-              <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 p-4 rounded-lg">
-                <p className="text-sm text-purple-800 text-center">
-                  You've been invited to join Love Sync! Click below to create your account.
-                </p>
-              </div>
-              <Button 
-                onClick={() => setShowSignup(true)}
-                className="w-full"
-                size="lg"
-              >
-                Create Account & Connect
-              </Button>
-            </div>
-          )}
-
-          {(status === 'pending' && !user && !showSignup && invitationType === 'connect') && (
+          {status === 'pending' && !user && !showSignup && (
             <Button 
               onClick={() => navigate(`/auth?redirect=/accept-invitation?${searchParams.toString()}`)}
               className="w-full"
