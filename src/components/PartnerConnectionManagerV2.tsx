@@ -319,47 +319,31 @@ export const PartnerConnectionManagerV2 = () => {
         </Card>
       )}
 
-      {/* Invite Partner - Show when unpaired */}
+      {/* Connection Instructions - Show when unpaired */}
       {connectionStatus === 'unpaired' && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <UserPlus size={20} />
-              Invite Your Partner
+              <Mail size={20} />
+              Connect with Your Partner
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="partnerEmail">Partner's Email Address</Label>
-              <Input
-                id="partnerEmail"
-                type="email"
-                value={partnerEmail}
-                onChange={(e) => setPartnerEmail(e.target.value)}
-                placeholder="partner@example.com"
-                className="mt-1"
-              />
-              <p className="text-sm text-muted-foreground mt-1">
-                Enter your partner's email to send a connection invitation
+            <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
+              <h4 className="font-semibold text-blue-800 mb-2">Ready to Connect?</h4>
+              <p className="text-sm text-blue-700">
+                Ask your partner to send you a connection invitation via email. 
+                Once you receive the email, simply click the "Accept Connection" button 
+                to instantly pair your accounts!
               </p>
             </div>
-            <Button 
-              onClick={handleSendRequest}
-              disabled={isProcessing || !partnerEmail.trim()}
-              className="w-full bg-gradient-secondary hover:opacity-90 text-white shadow-romantic"
-            >
-              {isProcessing ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Sending Invitation...
-                </>
-              ) : (
-                <>
-                  <Send size={16} className="mr-2" />
-                  Send Partner Invitation
-                </>
-              )}
-            </Button>
+            <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg">
+              <h4 className="font-semibold text-amber-800 mb-2">📧 Email Connection Only</h4>
+              <p className="text-sm text-amber-700">
+                For security, all partner connections must be verified through email. 
+                Look for an invitation from Love Sync in your inbox (check spam folder too!).
+              </p>
+            </div>
           </CardContent>
         </Card>
       )}

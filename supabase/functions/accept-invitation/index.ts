@@ -147,7 +147,7 @@ Deno.serve(async (req) => {
     const { error: cleanupError } = await supabase
       .from('partner_requests')
       .delete()
-      .or(`and(sender_id.eq.${senderUserId},receiver_email.eq.${recipientEmail}),and(sender_id.eq.${recipientUser.id},receiver_email.eq.${senderProfile.email})`)
+      .or(`and(requester_id.eq.${senderUserId},requested_email.eq.${recipientEmail}),and(requester_id.eq.${recipientUser.id},requested_email.eq.${senderProfile.display_name})`)
 
     if (cleanupError) {
       console.error('Error cleaning up partner requests:', cleanupError)

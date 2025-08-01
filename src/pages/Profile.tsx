@@ -176,15 +176,16 @@ export const Profile = () => {
           <div className="flex-1">
             <h1 className="text-xl font-extrabold font-poppins">
               {loading || coupleLoading ? 'Loading...' : 
-               coupleData ? 
+               coupleData && coupleData.user1_id !== coupleData.user2_id ? 
                  `${getUserDisplayName()} & ${getPartnerDisplayName()}` :
-                 'Setup Your Profile'
+                 getUserDisplayName() || 'Setup Your Profile'
               }
             </h1>
             <p className="text-white/80 font-inter text-sm font-bold">
-              {coupleData?.anniversary_date ? 
+              {coupleData?.anniversary_date && coupleData.user1_id !== coupleData.user2_id ? 
                 `Together since ${new Date(coupleData.anniversary_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })} 💕` :
-                coupleData ? 'Together since joining LoveSync 💕' : 'Ready to start your journey? 💕'
+                coupleData && coupleData.user1_id !== coupleData.user2_id ? 'Together since joining LoveSync 💕' : 
+                'Ready to start your journey? 💕'
               }
             </p>
           </div>
