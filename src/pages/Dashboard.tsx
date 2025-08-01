@@ -15,6 +15,7 @@ import { usePresence } from "@/hooks/usePresence";
 import { SyncScoreSkeleton, DashboardCardSkeleton, CompactCardSkeleton, MoodDisplaySkeleton } from "@/components/ui/skeleton";
 import { Calendar, Heart, MessageCircle, Sparkles, Clock, Lightbulb, X } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -591,7 +592,7 @@ export const Dashboard = () => {
                   <div>
                     <p className="text-xs text-muted-foreground">Last Check-in</p>
                     <p className="text-xs font-medium">
-                      {lastCheckin ? new Date(lastCheckin.checkin_date).toLocaleDateString() : 'Jul 28, 6:45 AM'}
+                      {lastCheckin ? format(new Date(lastCheckin.checkin_date), 'd MMMM') : '28 July'}
                     </p>
                   </div>
                 </div>
@@ -886,7 +887,7 @@ export const Dashboard = () => {
           <div className="space-y-4">
             <div className="text-center p-4 bg-gradient-to-r from-secondary/10 to-primary/10 rounded-lg">
               <div className="text-lg font-bold text-secondary mb-1">
-                {lastCheckin ? `Last check-in: ${new Date(lastCheckin.checkin_date).toLocaleDateString()}` : 'No recent check-in'}
+                {lastCheckin ? `Last check-in: ${format(new Date(lastCheckin.checkin_date), 'd MMMM')}` : 'No recent check-in'}
               </div>
               <div className="text-sm text-muted-foreground">
                 {lastCheckin ? `Feeling ${lastCheckin.mood}` : 'Start your check-in journey today!'}
