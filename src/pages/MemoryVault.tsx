@@ -11,6 +11,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { PermissionBanner } from "@/components/PermissionBanner";
+import { usePermissions } from "@/hooks/usePermissions";
 
 interface Memory {
   id: string;
@@ -86,6 +88,7 @@ export const MemoryVault = () => {
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const { checkPermission } = usePermissions();
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -618,6 +621,20 @@ export const MemoryVault = () => {
       <header className="bg-card p-6 pt-10 shadow-lg z-10 relative">
         <h1 className="text-3xl font-bold text-foreground mb-1">Memory Vault</h1>
         <p className="text-muted-foreground mb-4">Your love story collection</p>
+        
+        {/* Permission Banners */}
+        {!checkPermission('mediaLibrary') && (
+          <PermissionBanner
+            type="mediaLibrary"
+            message="Please re-enable Media Library access to upload photos from your gallery."
+          />
+        )}
+        {!checkPermission('camera') && (
+          <PermissionBanner
+            type="camera"
+            message="Please re-enable Camera access to capture new photos for memories."
+          />
+        )}
         
         {/* Filter Pills */}
         <div className="flex space-x-2 overflow-x-auto scrollbar-hide pb-2 mb-4" 

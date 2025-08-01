@@ -32,18 +32,13 @@ interface AppPreferences {
   dailyReminders: boolean;
   weeklyInsights: boolean;
   partnerActivity: boolean;
-  reminderTime: string;
-  notificationSound: boolean;
-  vibration: boolean;
   emailNotifications: boolean;
-  marketingEmails: boolean;
 }
 
-interface PrivacySettings {
-  profileVisibility: 'private' | 'couple' | 'public';
-  dataSharing: boolean;
-  analytics: boolean;
-  locationTracking: boolean;
+interface PermissionSettings {
+  location: boolean;
+  mediaLibrary: boolean;
+  camera: boolean;
 }
 
 export const AppSettings = () => {
@@ -59,18 +54,13 @@ export const AppSettings = () => {
     dailyReminders: true,
     weeklyInsights: true,
     partnerActivity: true,
-    reminderTime: '20:00',
-    notificationSound: true,
-    vibration: true,
-    emailNotifications: true,
-    marketingEmails: false
+    emailNotifications: true
   });
   
-  const [privacy, setPrivacy] = useState<PrivacySettings>({
-    profileVisibility: 'couple',
-    dataSharing: false,
-    analytics: true,
-    locationTracking: false
+  const [permissions, setPermissions] = useState<PermissionSettings>({
+    location: false,
+    mediaLibrary: false,
+    camera: false
   });
 
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -95,9 +85,14 @@ export const AppSettings = () => {
       if (couplePrefs) {
         setPreferences(prev => ({
           ...prev,
-          dailyReminders: couplePrefs.reminder_frequency === 'daily',
-          reminderTime: couplePrefs.notification_time || '20:00'
+          dailyReminders: couplePrefs.reminder_frequency === 'daily'
         }));
+      }
+
+      // Load permission settings from localStorage
+      const savedPermissions = localStorage.getItem('app_permissions');
+      if (savedPermissions) {
+        setPermissions(JSON.parse(savedPermissions));
       }
     } catch (error) {
       console.error('Error loading settings:', error);
@@ -122,11 +117,13 @@ export const AppSettings = () => {
         .from('couple_preferences')
         .upsert({
           couple_id: coupleData.id,
-          reminder_frequency: preferences.dailyReminders ? 'daily' : 'weekly',
-          notification_time: preferences.reminderTime
+          reminder_frequency: preferences.dailyReminders ? 'daily' : 'weekly'
         }, {
           onConflict: 'couple_id'
         });
+
+      // Save permissions to localStorage
+      localStorage.setItem('app_permissions', JSON.stringify(permissions));
 
       if (error) throw error;
 
@@ -146,11 +143,43 @@ export const AppSettings = () => {
     }
   };
 
-  const exportData = () => {
-    toast({
-      title: "Data export requested 📊",
-      description: "Your data will be emailed to you within 24 hours"
-    });
+  const requestPermission = async (type: keyof PermissionSettings) => {
+    try {
+      let granted = false;
+      
+      switch (type) {
+        case 'location':
+          if ('geolocation' in navigator) {
+            await new Promise((resolve, reject) => {
+              navigator.geolocation.getCurrentPosition(resolve, reject);
+            });
+            granted = true;
+          }
+          break;
+        case 'mediaLibrary':
+        case 'camera':
+          if ('mediaDevices' in navigator) {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: type === 'camera', audio: false });
+            granted = true;
+            stream.getTracks().forEach(track => track.stop()); // Clean up
+          }
+          break;
+      }
+
+      if (granted) {
+        setPermissions(prev => ({ ...prev, [type]: true }));
+        toast({
+          title: "Permission granted ✅",
+          description: `${type} access has been enabled`
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Permission denied",
+        description: `Could not enable ${type} access. Please check your browser settings.`,
+        variant: "destructive"
+      });
+    }
   };
 
   const deleteAccount = async () => {
@@ -242,45 +271,17 @@ export const AppSettings = () => {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label className="font-semibold flex items-center gap-2">
-                <Clock size={16} />
-                Reminder Time
-              </Label>
-              <Input
-                type="time"
-                value={preferences.reminderTime}
-                onChange={(e) => 
-                  setPreferences(prev => ({ ...prev, reminderTime: e.target.value }))
-                }
-                className="w-full"
-              />
-            </div>
-
             <Separator />
 
             <div className="flex items-center justify-between">
               <div>
                 <Label className="font-semibold">Email Notifications</Label>
-                <p className="text-sm text-muted-foreground">Receive important updates via email</p>
+                <p className="text-sm text-muted-foreground">Mirror all reminders and insights via email</p>
               </div>
               <Switch
                 checked={preferences.emailNotifications}
                 onCheckedChange={(checked) => 
                   setPreferences(prev => ({ ...prev, emailNotifications: checked }))
-                }
-              />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div>
-                <Label className="font-semibold">Marketing Emails</Label>
-                <p className="text-sm text-muted-foreground">Get relationship tips and feature updates</p>
-              </div>
-              <Switch
-                checked={preferences.marketingEmails}
-                onCheckedChange={(checked) => 
-                  setPreferences(prev => ({ ...prev, marketingEmails: checked }))
                 }
               />
             </div>
@@ -312,58 +313,73 @@ export const AppSettings = () => {
           </CardContent>
         </Card>
 
-        {/* Privacy & Security */}
+        {/* Permissions */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 font-poppins">
               <Shield className="text-primary" size={20} />
-              Privacy & Security
+              App Permissions
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label className="font-semibold">Profile Visibility</Label>
-              <Select 
-                value={privacy.profileVisibility} 
-                onValueChange={(value: 'private' | 'couple' | 'public') => 
-                  setPrivacy(prev => ({ ...prev, profileVisibility: value }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="private">Private</SelectItem>
-                  <SelectItem value="couple">Couple Only</SelectItem>
-                  <SelectItem value="public">Public</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <Label className="font-semibold">Location Access</Label>
+                <p className="text-sm text-muted-foreground">Required for local date plan suggestions</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Switch
+                  checked={permissions.location}
+                  onCheckedChange={(checked) => 
+                    checked ? requestPermission('location') : setPermissions(prev => ({ ...prev, location: false }))
+                  }
+                />
+                {!permissions.location && (
+                  <Button size="sm" variant="outline" onClick={() => requestPermission('location')}>
+                    Enable
+                  </Button>
+                )}
+              </div>
             </div>
 
             <div className="flex items-center justify-between">
-              <div>
-                <Label className="font-semibold">Anonymous Analytics</Label>
-                <p className="text-sm text-muted-foreground">Help improve LoveSync with usage data</p>
+              <div className="flex-1">
+                <Label className="font-semibold">Media Library</Label>
+                <p className="text-sm text-muted-foreground">Upload photos to Memory Vault and stories</p>
               </div>
-              <Switch
-                checked={privacy.analytics}
-                onCheckedChange={(checked) => 
-                  setPrivacy(prev => ({ ...prev, analytics: checked }))
-                }
-              />
+              <div className="flex items-center gap-2">
+                <Switch
+                  checked={permissions.mediaLibrary}
+                  onCheckedChange={(checked) => 
+                    checked ? requestPermission('mediaLibrary') : setPermissions(prev => ({ ...prev, mediaLibrary: false }))
+                  }
+                />
+                {!permissions.mediaLibrary && (
+                  <Button size="sm" variant="outline" onClick={() => requestPermission('mediaLibrary')}>
+                    Enable
+                  </Button>
+                )}
+              </div>
             </div>
 
             <div className="flex items-center justify-between">
-              <div>
-                <Label className="font-semibold">Data Sharing</Label>
-                <p className="text-sm text-muted-foreground">Share anonymized data for research</p>
+              <div className="flex-1">
+                <Label className="font-semibold">Camera Access</Label>
+                <p className="text-sm text-muted-foreground">Capture new photos for stories and memories</p>
               </div>
-              <Switch
-                checked={privacy.dataSharing}
-                onCheckedChange={(checked) => 
-                  setPrivacy(prev => ({ ...prev, dataSharing: checked }))
-                }
-              />
+              <div className="flex items-center gap-2">
+                <Switch
+                  checked={permissions.camera}
+                  onCheckedChange={(checked) => 
+                    checked ? requestPermission('camera') : setPermissions(prev => ({ ...prev, camera: false }))
+                  }
+                />
+                {!permissions.camera && (
+                  <Button size="sm" variant="outline" onClick={() => requestPermission('camera')}>
+                    Enable
+                  </Button>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -377,15 +393,6 @@ export const AppSettings = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Button
-              variant="outline"
-              onClick={exportData}
-              className="w-full justify-start"
-            >
-              <Download className="mr-2" size={16} />
-              Export My Data
-            </Button>
-
             <Button
               variant="destructive"
               onClick={() => setShowDeleteDialog(true)}

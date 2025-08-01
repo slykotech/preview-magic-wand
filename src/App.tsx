@@ -7,6 +7,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./hooks/useAuth";
 import { useState } from "react";
 import SplashScreen from "./components/SplashScreen";
+import { SignupPermissionsFlow } from "./components/SignupPermissionsFlow";
+import { usePermissions } from "./hooks/usePermissions";
 import Index from "./pages/Index";
 import { Auth } from "./pages/Auth";
 import { Dashboard } from "./pages/Dashboard";
@@ -28,6 +30,7 @@ const queryClient = new QueryClient();
 
 const App = () => {
   const [showSplash, setShowSplash] = useState(true);
+  const { showPermissionsFlow, setShowPermissionsFlow } = usePermissions();
 
   if (showSplash) {
     return <SplashScreen onComplete={() => setShowSplash(false)} />;
@@ -45,6 +48,10 @@ const App = () => {
           <TooltipProvider>
             <Toaster />
             <Sonner />
+            <SignupPermissionsFlow 
+              isOpen={showPermissionsFlow}
+              onComplete={() => setShowPermissionsFlow(false)}
+            />
             <BrowserRouter>
               <Routes>
                 <Route path="/" element={<Index />} />

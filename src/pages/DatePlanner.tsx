@@ -12,6 +12,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import dateActivitiesImage from "@/assets/date-activities.jpg";
+import { PermissionBanner } from "@/components/PermissionBanner";
+import { usePermissions } from "@/hooks/usePermissions";
 
 interface DateIdea {
   id: string;
@@ -43,6 +45,7 @@ export const DatePlanner = () => {
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const { checkPermission } = usePermissions();
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -192,6 +195,16 @@ export const DatePlanner = () => {
         <h1 className="text-2xl font-extrabold font-poppins mb-2">Date Planner</h1>
         <p className="text-white/80 font-inter font-bold">Find the perfect date idea for you two</p>
       </div>
+
+      {/* Permission Banner */}
+      {!checkPermission('location') && (
+        <div className="p-4">
+          <PermissionBanner
+            type="location"
+            message="Please enable Location access to fetch nearby events and date suggestions."
+          />
+        </div>
+      )}
 
       {/* Category Filters */}
       <div className="p-4">
