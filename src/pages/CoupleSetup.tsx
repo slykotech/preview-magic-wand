@@ -110,11 +110,17 @@ export const CoupleSetup = () => {
     
     try {
       // Create demo mode couple (user paired with themselves)
+      console.log('Creating couple profile for user:', user?.id);
       const { data, error } = await supabase.functions.invoke('seed-data', {
         body: { userId: user?.id }
       });
 
-      if (error) throw error;
+      console.log('Seed data response:', { data, error });
+
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw error;
+      }
 
       // Update the user's display name in their profile
       await supabase
@@ -134,11 +140,22 @@ export const CoupleSetup = () => {
       setTimeout(() => {
         navigate('/dashboard');
       }, 2000);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating profile:', error);
+      
+      // More detailed error handling
+      let errorMessage = "Failed to create couple profile";
+      if (error.message?.includes('duplicate key')) {
+        errorMessage = "You already have a profile! Redirecting to dashboard...";
+        // If it's a duplicate key error, they already have a profile, so redirect
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 2000);
+      }
+      
       toast({
         title: "Error",
-        description: "Failed to create couple profile",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
