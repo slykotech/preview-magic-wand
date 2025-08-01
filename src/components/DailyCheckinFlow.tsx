@@ -50,7 +50,8 @@ export const DailyCheckinFlow: React.FC<DailyCheckinFlowProps> = ({
   const [connectionLevel, setConnectionLevel] = useState<string | null>(null);
   const [tomorrowIntention, setTomorrowIntention] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [hasExistingCheckin, setHasExistingCheckin] = useState(false);
+  const [hasAlreadyCheckedIn, setHasAlreadyCheckedIn] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
   const totalSteps = 2;
@@ -59,27 +60,25 @@ export const DailyCheckinFlow: React.FC<DailyCheckinFlowProps> = ({
   // Check for existing check-in on component mount
   useEffect(() => {
     const checkExistingCheckin = async () => {
-      if (!coupleId || !userId) return;
+      if (!coupleId || !userId) {
+        setIsLoading(false);
+        return;
+      }
       
       const today = new Date().toISOString().split('T')[0];
       const { data: existingCheckin } = await supabase
         .from('daily_checkins')
-        .select('id, relationship_feeling, gratitude')
+        .select('id')
         .eq('user_id', userId)
         .eq('couple_id', coupleId)
         .eq('checkin_date', today)
         .maybeSingle();
 
       if (existingCheckin) {
-        setHasExistingCheckin(true);
-        // Pre-fill form with existing data
-        if (existingCheckin.relationship_feeling) {
-          setConnectionLevel(existingCheckin.relationship_feeling);
-        }
-        if (existingCheckin.gratitude) {
-          setTomorrowIntention(existingCheckin.gratitude);
-        }
+        setHasAlreadyCheckedIn(true);
       }
+      
+      setIsLoading(false);
     };
 
     checkExistingCheckin();
@@ -388,55 +387,76 @@ export const DailyCheckinFlow: React.FC<DailyCheckinFlowProps> = ({
             {/* Content - Scrollable Area */}
             <div className="flex-1 overflow-y-auto bg-background">
               <div className="p-6">
-                {/* Show message if updating existing check-in */}
-                {hasExistingCheckin && (
-                  <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                      <p className="text-sm text-blue-700 font-medium">
-                        You've already checked in today! You can update your responses below.
+                {/* Show warning if already checked in today */}
+                {hasAlreadyCheckedIn ? (
+                  <div className="text-center space-y-6">
+                    <div className="w-20 h-20 mx-auto bg-green-100 rounded-full flex items-center justify-center">
+                      <div className="text-4xl">✅</div>
+                    </div>
+                    <div className="space-y-3">
+                      <h3 className="text-xl font-semibold text-foreground">You're Already Checked In Today!</h3>
+                      <p className="text-muted-foreground">
+                        You've completed your daily check-in for today. Come back tomorrow to continue your streak!
                       </p>
                     </div>
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                      <p className="text-sm text-green-700 font-medium">
+                        ⏰ Return back tomorrow to check in again
+                      </p>
+                    </div>
+                    <Button
+                      onClick={onClose}
+                      className="w-full bg-secondary hover:bg-secondary/90"
+                    >
+                      Got it!
+                    </Button>
                   </div>
+                ) : isLoading ? (
+                  <div className="text-center py-8">
+                    <div className="text-muted-foreground">Loading...</div>
+                  </div>
+                ) : (
+                  renderStepContent()
                 )}
-                {renderStepContent()}
               </div>
             </div>
 
             {/* Footer - Fixed at bottom */}
-            <div className="flex-shrink-0 border-t bg-background">
-              <div className="p-6">
-                <div className="flex space-x-3">
-                  {step > 1 && (
-                    <Button
-                      variant="outline"
-                      onClick={handlePrevious}
-                      className="flex-1"
-                    >
-                      Previous
-                    </Button>
-                  )}
-                  
-                  {step < totalSteps ? (
-                    <Button
-                      onClick={handleNext}
-                      disabled={!canProceed()}
-                      className="flex-1 bg-secondary hover:bg-secondary/90"
-                    >
-                      Next Step
-                    </Button>
-                  ) : (
-                    <Button
-                      onClick={handleComplete}
-                      disabled={!canProceed() || isSubmitting}
-                      className="flex-1 bg-secondary hover:bg-secondary/90"
-                    >
-                      {isSubmitting ? 'Saving...' : 'Complete Check-in'}
-                    </Button>
-                  )}
+            {!hasAlreadyCheckedIn && !isLoading && (
+              <div className="flex-shrink-0 border-t bg-background">
+                <div className="p-6">
+                  <div className="flex space-x-3">
+                    {step > 1 && (
+                      <Button
+                        variant="outline"
+                        onClick={handlePrevious}
+                        className="flex-1"
+                      >
+                        Previous
+                      </Button>
+                    )}
+                    
+                    {step < totalSteps ? (
+                      <Button
+                        onClick={handleNext}
+                        disabled={!canProceed()}
+                        className="flex-1 bg-secondary hover:bg-secondary/90"
+                      >
+                        Next Step
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={handleComplete}
+                        disabled={!canProceed() || isSubmitting}
+                        className="flex-1 bg-secondary hover:bg-secondary/90"
+                      >
+                        {isSubmitting ? 'Saving...' : 'Complete Check-in'}
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </CardContent>
         </Card>
       </div>
