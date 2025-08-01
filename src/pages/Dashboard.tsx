@@ -11,6 +11,7 @@ import { DailyCheckinFlow } from "@/components/DailyCheckinFlow";
 import { StoryViewer } from "@/components/StoryViewer";
 import { Chat } from "@/components/Chat";
 import { useEnhancedSyncScore } from "@/hooks/useEnhancedSyncScore";
+import { usePresence } from "@/hooks/usePresence";
 import { SyncScoreSkeleton, DashboardCardSkeleton, CompactCardSkeleton, MoodDisplaySkeleton } from "@/components/ui/skeleton";
 import { Calendar, Heart, MessageCircle, Sparkles, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -61,6 +62,12 @@ export const Dashboard = () => {
     logActivity,
     refreshSyncScore
   } = useEnhancedSyncScore(coupleId);
+
+  // Use presence tracking hook
+  const {
+    isUserOnline,
+    isPartnerOnline
+  } = usePresence(coupleId);
   useEffect(() => {
     if (!loading && !user) {
       navigate('/auth');
@@ -549,7 +556,7 @@ export const Dashboard = () => {
         <div className={`${isLoaded ? 'animate-fade-in' : 'opacity-0'}`} style={{
           animationDelay: '200ms'
         }}>
-          {isLoaded ? <CoupleAvatars syncScore={syncScore} animated={true} onUserAvatarClick={handleUserAvatarClick} onPartnerAvatarClick={handlePartnerAvatarClick} onCameraClick={handleCameraClick} hasUserStory={hasUserStory} hasPartnerStory={hasPartnerStory} /> : <div className="flex justify-center">
+          {isLoaded ? <CoupleAvatars syncScore={syncScore} animated={true} onUserAvatarClick={handleUserAvatarClick} onPartnerAvatarClick={handlePartnerAvatarClick} onCameraClick={handleCameraClick} hasUserStory={hasUserStory} hasPartnerStory={hasPartnerStory} isUserOnline={isUserOnline} isPartnerOnline={isPartnerOnline} /> : <div className="flex justify-center">
               <div className="flex items-center gap-4">
                 <div className="w-16 h-16 bg-muted animate-pulse rounded-full"></div>
                 <div className="w-8 h-8 bg-accent animate-pulse rounded-full"></div>
