@@ -19,24 +19,24 @@ interface DailyCheckinFlowProps {
 
 type MoodType = Database['public']['Enums']['mood_type'];
 
-// Daily Check-in focuses on productivity, energy, relationship, and gratitude
-// Mood is handled separately by the Mood Check feature
-const productivityLevels = [
-  { value: 'very_productive', label: 'Very Productive', emoji: '🚀', description: 'Accomplished a lot today' },
-  { value: 'productive', label: 'Productive', emoji: '📈', description: 'Got things done as planned' },
-  { value: 'somewhat_productive', label: 'Somewhat Productive', emoji: '📝', description: 'Made some progress' },
-  { value: 'less_productive', label: 'Less Productive', emoji: '📋', description: 'Struggled to get things done' },
-  { value: 'unproductive', label: 'Unproductive', emoji: '📉', description: 'Difficult to focus today' },
+// Simplified 2-step Daily Check-in focused on relationship goals
+const connectionLevels = [
+  { value: 'deeply_connected', label: 'Deeply Connected', emoji: '💕', description: 'Felt very close and bonded today' },
+  { value: 'connected', label: 'Connected', emoji: '❤️', description: 'Good connection and understanding' },
+  { value: 'neutral', label: 'Neutral', emoji: '😌', description: 'Things were steady and normal' },
+  { value: 'somewhat_distant', label: 'Somewhat Distant', emoji: '😐', description: 'Felt a bit disconnected' },
+  { value: 'distant', label: 'Distant', emoji: '😔', description: 'Struggled to connect today' },
 ];
 
-const energyLevels = [1, 2, 3, 4, 5];
-
-const relationshipFeelings = [
-  { value: 'connected', label: 'Connected', icon: Heart, description: 'Feeling close and bonded' },
-  { value: 'excited', label: 'Excited', icon: Star, description: 'Thrilled about your relationship' },
-  { value: 'neutral', label: 'Neutral', icon: Calendar, description: 'Things are steady' },
-  { value: 'distant', label: 'Distant', icon: Calendar, description: 'Feeling disconnected' },
-  { value: 'concerned', label: 'Concerned', icon: Calendar, description: 'Worried about something' },
+const relationshipPrompts = [
+  "Plan quality time together",
+  "Have a meaningful conversation",
+  "Express appreciation",
+  "Be more physically affectionate",
+  "Work on a shared goal",
+  "Surprise them with something small",
+  "Listen more actively",
+  "Share something vulnerable"
 ];
 
 export const DailyCheckinFlow: React.FC<DailyCheckinFlowProps> = ({
@@ -47,11 +47,8 @@ export const DailyCheckinFlow: React.FC<DailyCheckinFlowProps> = ({
   currentStreak = 0
 }) => {
   const [step, setStep] = useState(1);
-  const [selectedProductivity, setSelectedProductivity] = useState<string | null>(null);
-  const [energyLevel, setEnergyLevel] = useState<number | null>(null);
-  const [relationshipFeeling, setRelationshipFeeling] = useState<string | null>(null);
-  const [gratitude, setGratitude] = useState('');
-  const [additionalThoughts, setAdditionalThoughts] = useState('');
+  const [connectionLevel, setConnectionLevel] = useState<string | null>(null);
+  const [tomorrowIntention, setTomorrowIntention] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
@@ -71,7 +68,7 @@ export const DailyCheckinFlow: React.FC<DailyCheckinFlowProps> = ({
   };
 
   const handleComplete = async () => {
-    if (!coupleId || !selectedProductivity) {
+    if (!coupleId || !connectionLevel || !tomorrowIntention.trim()) {
       toast({
         title: "Please complete all required fields",
         variant: "destructive"
@@ -94,11 +91,11 @@ export const DailyCheckinFlow: React.FC<DailyCheckinFlowProps> = ({
         .maybeSingle();
 
       const checkinData = {
-        mood: 'content' as MoodType, // Default mood since Daily Check-in focuses on other aspects
-        energy_level: energyLevel,
-        relationship_feeling: relationshipFeeling,
-        gratitude: gratitude,
-        notes: additionalThoughts || null,
+        mood: 'content' as MoodType, // Default mood for simplified check-in
+        energy_level: null, // Not used in simplified version
+        relationship_feeling: connectionLevel,
+        gratitude: tomorrowIntention, // Store tomorrow's intention in gratitude field
+        notes: null,
       };
 
       if (existingCheckin) {
@@ -124,10 +121,8 @@ export const DailyCheckinFlow: React.FC<DailyCheckinFlowProps> = ({
           p_user_id: userId,
           p_activity_type: 'checkin',
           p_activity_data: {
-            energy_level: energyLevel,
-            relationship_feeling: relationshipFeeling,
-            gratitude: gratitude.trim(),
-            notes: additionalThoughts?.trim() || null
+            connection_level: connectionLevel,
+            tomorrow_intention: tomorrowIntention.trim()
           },
           p_points_awarded: 4 // Base points for individual checkin
         });
@@ -223,8 +218,8 @@ export const DailyCheckinFlow: React.FC<DailyCheckinFlowProps> = ({
 
   const canProceed = () => {
     switch (step) {
-      case 1: return selectedProductivity !== null && energyLevel !== null;
-      case 2: return relationshipFeeling !== null && gratitude.trim().length > 0;
+      case 1: return connectionLevel !== null;
+      case 2: return tomorrowIntention.trim().length > 0;
       default: return false;
     }
   };
@@ -235,67 +230,31 @@ export const DailyCheckinFlow: React.FC<DailyCheckinFlowProps> = ({
         return (
           <div className="space-y-6">
             <div className="text-center">
-              <h3 className="text-xl font-semibold text-foreground mb-2">How was your day?</h3>
-              <p className="text-sm text-muted-foreground">Tell us about your productivity and energy</p>
+              <h3 className="text-xl font-semibold text-foreground mb-2">How connected did you feel with your partner today?</h3>
+              <p className="text-sm text-muted-foreground">Your emotional connection is the heart of your relationship</p>
             </div>
             
-            {/* Productivity Section */}
-            <div className="space-y-4">
-              <h4 className="font-medium text-foreground">Productivity Level</h4>
-              <div className="space-y-2">
-                {productivityLevels.map((level) => (
-                  <Button
-                    key={level.value}
-                    variant={selectedProductivity === level.value ? "default" : "outline"}
-                    className={`w-full flex items-center justify-between p-3 h-auto ${
-                      selectedProductivity === level.value 
-                        ? 'bg-secondary text-white border-secondary' 
-                        : 'hover:bg-muted'
-                    }`}
-                    onClick={() => setSelectedProductivity(level.value)}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <span className="text-xl">{level.emoji}</span>
-                      <div className="text-left">
-                        <div className="font-medium text-sm">{level.label}</div>
-                        <div className="text-xs opacity-70">{level.description}</div>
-                      </div>
+            <div className="space-y-3">
+              {connectionLevels.map((level) => (
+                <Button
+                  key={level.value}
+                  variant={connectionLevel === level.value ? "default" : "outline"}
+                  className={`w-full flex items-center justify-start p-4 h-auto ${
+                    connectionLevel === level.value 
+                      ? 'bg-secondary text-white border-secondary' 
+                      : 'hover:bg-muted'
+                  }`}
+                  onClick={() => setConnectionLevel(level.value)}
+                >
+                  <div className="flex items-center space-x-3">
+                    <span className="text-2xl">{level.emoji}</span>
+                    <div className="text-left">
+                      <div className="font-medium text-base">{level.label}</div>
+                      <div className="text-sm opacity-70">{level.description}</div>
                     </div>
-                  </Button>
-                ))}
-              </div>
-            </div>
-
-            {/* Energy Level Section */}
-            <div className="space-y-4">
-              <h4 className="font-medium text-foreground">Energy Level</h4>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs text-muted-foreground">😴 Low</span>
-                <span className="text-xs text-muted-foreground">⚡ High</span>
-              </div>
-              <div className="flex justify-center space-x-3">
-                {energyLevels.map((level) => (
-                  <Button
-                    key={level}
-                    variant={energyLevel === level ? "default" : "outline"}
-                    className={`w-10 h-10 rounded-full text-sm ${
-                      energyLevel === level 
-                        ? 'bg-secondary text-white border-secondary' 
-                        : 'hover:bg-muted'
-                    }`}
-                    onClick={() => setEnergyLevel(level)}
-                  >
-                    {level}
-                  </Button>
-                ))}
-              </div>
-              {energyLevel && (
-                <div className="text-center">
-                  <p className="text-xs text-muted-foreground">
-                    Energy: {energyLevel}/5
-                  </p>
-                </div>
-              )}
+                  </div>
+                </Button>
+              ))}
             </div>
           </div>
         );
@@ -304,65 +263,39 @@ export const DailyCheckinFlow: React.FC<DailyCheckinFlowProps> = ({
         return (
           <div className="space-y-6">
             <div className="text-center">
-              <h3 className="text-xl font-semibold text-foreground mb-2">Your relationship & gratitude</h3>
-              <p className="text-sm text-muted-foreground">Share how you feel and what you're grateful for</p>
+              <h3 className="text-xl font-semibold text-foreground mb-2">What's one thing you want to do to strengthen your relationship tomorrow?</h3>
+              <p className="text-sm text-muted-foreground">Set an intention for building a stronger connection</p>
             </div>
             
-            {/* Relationship Feeling Section */}
             <div className="space-y-4">
-              <h4 className="font-medium text-foreground">How do you feel about your relationship today?</h4>
+              <div>
+                <Label htmlFor="intention" className="text-sm font-medium">
+                  Tomorrow's relationship intention *
+                </Label>
+                <Textarea
+                  id="intention"
+                  placeholder="I want to..."
+                  value={tomorrowIntention}
+                  onChange={(e) => setTomorrowIntention(e.target.value)}
+                  className="mt-2 min-h-[80px]"
+                />
+              </div>
+              
               <div className="space-y-2">
-                {relationshipFeelings.map((feeling) => {
-                  const Icon = feeling.icon;
-                  return (
+                <p className="text-xs text-muted-foreground font-medium">Need inspiration? Try one of these:</p>
+                <div className="flex flex-wrap gap-2">
+                  {relationshipPrompts.map((prompt, index) => (
                     <Button
-                      key={feeling.value}
-                      variant={relationshipFeeling === feeling.value ? "default" : "outline"}
-                      className={`w-full flex items-center justify-start p-3 h-auto ${
-                        relationshipFeeling === feeling.value 
-                          ? 'bg-secondary text-white border-secondary' 
-                          : 'hover:bg-muted'
-                      }`}
-                      onClick={() => setRelationshipFeeling(feeling.value)}
+                      key={index}
+                      variant="outline"
+                      size="sm"
+                      className="text-xs h-auto py-1 px-2"
+                      onClick={() => setTomorrowIntention(prompt)}
                     >
-                      <div className="flex items-center space-x-3">
-                        <Icon size={18} />
-                        <div className="text-left">
-                          <div className="font-medium text-sm">{feeling.label}</div>
-                          <div className="text-xs opacity-70">{feeling.description}</div>
-                        </div>
-                      </div>
+                      {prompt}
                     </Button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Gratitude Section */}
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="gratitude" className="text-sm font-medium">
-                  What are you grateful for today? *
-                </Label>
-                <Textarea
-                  id="gratitude"
-                  placeholder="I'm grateful for..."
-                  value={gratitude}
-                  onChange={(e) => setGratitude(e.target.value)}
-                  className="mt-2 min-h-[60px]"
-                />
-              </div>
-              <div>
-                <Label htmlFor="thoughts" className="text-sm font-medium">
-                  Additional thoughts (Optional)
-                </Label>
-                <Textarea
-                  id="thoughts"
-                  placeholder="Anything else on your mind..."
-                  value={additionalThoughts}
-                  onChange={(e) => setAdditionalThoughts(e.target.value)}
-                  className="mt-2 min-h-[60px]"
-                />
+                  ))}
+                </div>
               </div>
             </div>
           </div>
