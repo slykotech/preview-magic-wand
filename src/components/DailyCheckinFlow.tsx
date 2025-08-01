@@ -50,10 +50,40 @@ export const DailyCheckinFlow: React.FC<DailyCheckinFlowProps> = ({
   const [connectionLevel, setConnectionLevel] = useState<string | null>(null);
   const [tomorrowIntention, setTomorrowIntention] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [hasExistingCheckin, setHasExistingCheckin] = useState(false);
   const { toast } = useToast();
 
   const totalSteps = 2;
   const progress = (step / totalSteps) * 100;
+
+  // Check for existing check-in on component mount
+  useEffect(() => {
+    const checkExistingCheckin = async () => {
+      if (!coupleId || !userId) return;
+      
+      const today = new Date().toISOString().split('T')[0];
+      const { data: existingCheckin } = await supabase
+        .from('daily_checkins')
+        .select('id, relationship_feeling, gratitude')
+        .eq('user_id', userId)
+        .eq('couple_id', coupleId)
+        .eq('checkin_date', today)
+        .maybeSingle();
+
+      if (existingCheckin) {
+        setHasExistingCheckin(true);
+        // Pre-fill form with existing data
+        if (existingCheckin.relationship_feeling) {
+          setConnectionLevel(existingCheckin.relationship_feeling);
+        }
+        if (existingCheckin.gratitude) {
+          setTomorrowIntention(existingCheckin.gratitude);
+        }
+      }
+    };
+
+    checkExistingCheckin();
+  }, [coupleId, userId]);
 
   const handleNext = () => {
     if (step < totalSteps) {
@@ -358,6 +388,17 @@ export const DailyCheckinFlow: React.FC<DailyCheckinFlowProps> = ({
             {/* Content - Scrollable Area */}
             <div className="flex-1 overflow-y-auto bg-background">
               <div className="p-6">
+                {/* Show message if updating existing check-in */}
+                {hasExistingCheckin && (
+                  <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                      <p className="text-sm text-blue-700 font-medium">
+                        You've already checked in today! You can update your responses below.
+                      </p>
+                    </div>
+                  </div>
+                )}
                 {renderStepContent()}
               </div>
             </div>
