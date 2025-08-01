@@ -278,7 +278,7 @@ export const Chat: React.FC<ChatProps> = ({
       </div>
 
       {/* Messages Container - Reduced size */}
-      <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+      <div className="flex-1 overflow-hidden flex flex-col min-h-0 pb-20">
         <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-gradient-to-b from-background to-muted/20">
           {loading ? <div className="flex items-center justify-center h-full">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -373,54 +373,56 @@ export const Chat: React.FC<ChatProps> = ({
           </div>
         </div>}
 
-      {/* Message Input - Compact and aligned */}
-      <div className="border-t bg-background px-3 py-2 flex-shrink-0">
-        <div className="flex gap-1 items-center">
-          {/* Attachment Button */}
-          <Button variant="ghost" size="sm" onClick={() => {
-          setShowAttachments(!showAttachments);
-          setShowEmojiPicker(false);
-          setShowStickers(false);
-        }} className={`rounded-full h-8 w-8 p-0 ${showAttachments ? 'bg-muted' : ''}`}>
-            <Image className="h-4 w-4" />
-          </Button>
-          
-          <div className="flex-1 relative">
-            <Input ref={inputRef} placeholder="Type a message..." value={newMessage} onChange={e => setNewMessage(e.target.value)} onKeyPress={handleKeyPress} className="h-8 rounded-full border focus:border-primary text-sm" disabled={loading} />
+      {/* Message Input - Fixed at bottom like nav bar */}
+      <div className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-lg border-t border-border z-50">
+        <div className="max-w-md mx-auto px-3 py-2">
+          <div className="flex gap-1 items-center">
+            {/* Attachment Button */}
+            <Button variant="ghost" size="sm" onClick={() => {
+            setShowAttachments(!showAttachments);
+            setShowEmojiPicker(false);
+            setShowStickers(false);
+          }} className={`rounded-full h-8 w-8 p-0 ${showAttachments ? 'bg-muted' : ''}`}>
+              <Image className="h-4 w-4" />
+            </Button>
+            
+            <div className="flex-1 relative">
+              <Input ref={inputRef} placeholder="Type a message..." value={newMessage} onChange={e => setNewMessage(e.target.value)} onKeyPress={handleKeyPress} className="h-8 rounded-full border focus:border-primary text-sm" disabled={loading} />
+            </div>
+            
+            {/* Love Stickers Button */}
+            <Button variant="ghost" size="sm" onClick={() => {
+            setShowStickers(!showStickers);
+            setShowEmojiPicker(false);
+            setShowAttachments(false);
+          }} className={`rounded-full h-8 w-8 p-0 ${showStickers ? 'bg-muted' : ''}`}>
+              <Heart className="h-4 w-4 text-red-500" />
+            </Button>
+            
+            {/* Emoji Button */}
+            <Button variant="ghost" size="sm" onClick={() => {
+            setShowEmojiPicker(!showEmojiPicker);
+            setShowStickers(false);
+            setShowAttachments(false);
+          }} className={`rounded-full h-8 w-8 p-0 ${showEmojiPicker ? 'bg-muted' : ''}`}>
+              <Smile className="h-4 w-4" />
+            </Button>
+            
+            {/* Send Button */}
+            <Button onClick={() => sendMessage(newMessage)} disabled={loading || !newMessage.trim()} size="sm" className="rounded-full h-8 w-8 p-0">
+              <Send className="h-4 w-4" />
+            </Button>
           </div>
           
-          {/* Love Stickers Button */}
-          <Button variant="ghost" size="sm" onClick={() => {
-          setShowStickers(!showStickers);
-          setShowEmojiPicker(false);
-          setShowAttachments(false);
-        }} className={`rounded-full h-8 w-8 p-0 ${showStickers ? 'bg-muted' : ''}`}>
-            <Heart className="h-4 w-4 text-red-500" />
-          </Button>
-          
-          {/* Emoji Button */}
-          <Button variant="ghost" size="sm" onClick={() => {
-          setShowEmojiPicker(!showEmojiPicker);
-          setShowStickers(false);
-          setShowAttachments(false);
-        }} className={`rounded-full h-8 w-8 p-0 ${showEmojiPicker ? 'bg-muted' : ''}`}>
-            <Smile className="h-4 w-4" />
-          </Button>
-          
-          {/* Send Button */}
-          <Button onClick={() => sendMessage(newMessage)} disabled={loading || !newMessage.trim()} size="sm" className="rounded-full h-8 w-8 p-0">
-            <Send className="h-4 w-4" />
-          </Button>
+          {/* Hidden file input */}
+          <input ref={fileInputRef} type="file" accept="image/*,video/*" onChange={e => {
+          const file = e.target.files?.[0];
+          if (file) {
+            handleFileUpload(file);
+            e.target.value = '';
+          }
+        }} className="hidden" />
         </div>
-        
-        {/* Hidden file input */}
-        <input ref={fileInputRef} type="file" accept="image/*,video/*" onChange={e => {
-        const file = e.target.files?.[0];
-        if (file) {
-          handleFileUpload(file);
-          e.target.value = '';
-        }
-      }} className="hidden" />
       </div>
     </div>;
 };
