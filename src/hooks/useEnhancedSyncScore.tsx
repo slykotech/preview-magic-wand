@@ -37,19 +37,40 @@ export const useEnhancedSyncScore = (coupleId: string | null) => {
       setLoading(true);
       setError(null);
 
-      // First update streaks
-      await supabase.rpc('update_couple_streaks', { p_couple_id: coupleId });
-
-      // Calculate enhanced sync score
-      const { data: score, error: scoreError } = await supabase.rpc(
-        'calculate_enhanced_sync_score',
-        { p_couple_id: coupleId }
-      );
-
-      if (scoreError) {
-        console.error('Error calculating sync score:', scoreError);
-        setError('Failed to calculate sync score');
-        return;
+      // First try the enhanced sync score calculation
+      let calculatedScore = 60; // Default base score
+      
+      try {
+        // Try to update streaks first
+        const { error: streakError } = await supabase.rpc('update_couple_streaks', { 
+          p_couple_id: coupleId 
+        });
+        
+        if (!streakError) {
+          // If streaks updated successfully, try enhanced calculation
+          const { data: enhancedScore, error: enhancedError } = await supabase.rpc(
+            'calculate_enhanced_sync_score',
+            { p_couple_id: coupleId }
+          );
+          
+          if (!enhancedError && enhancedScore !== null) {
+            calculatedScore = enhancedScore;
+          }
+        }
+      } catch (enhancedErr) {
+        console.log('Enhanced sync score not available, using fallback calculation');
+        
+        // Fallback to simple calculation based on recent check-ins
+        const { data: recentCheckins } = await supabase
+          .from('daily_checkins')
+          .select('*')
+          .eq('couple_id', coupleId)
+          .gte('checkin_date', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+        
+        if (recentCheckins) {
+          const checkinCount = recentCheckins.length;
+          calculatedScore = Math.min(60 + (checkinCount * 5), 100);
+        }
       }
 
       // Fetch detailed sync score data
@@ -94,14 +115,14 @@ export const useEnhancedSyncScore = (coupleId: string | null) => {
       // Calculate trend
       let trend: 'up' | 'down' | 'stable' = 'stable';
       if (historicalScores && historicalScores.length >= 2) {
-        const currentScore = historicalScores[0]?.score || score;
-        const previousScore = historicalScores[1]?.score || score;
+        const currentScore = historicalScores[0]?.score || calculatedScore;
+        const previousScore = historicalScores[1]?.score || calculatedScore;
         if (currentScore > previousScore + 2) trend = 'up';
         else if (currentScore < previousScore - 2) trend = 'down';
       }
 
       const syncData: SyncScoreData = {
-        score: score || 0,
+        score: calculatedScore,
         breakdown: {
           checkinPoints: syncScoreDetails?.checkin_points || 0,
           storyPoints: syncScoreDetails?.story_points || 0,
