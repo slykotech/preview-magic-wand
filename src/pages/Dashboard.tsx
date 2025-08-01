@@ -13,7 +13,7 @@ import { Chat } from "@/components/Chat";
 import { useEnhancedSyncScore } from "@/hooks/useEnhancedSyncScore";
 import { usePresence } from "@/hooks/usePresence";
 import { SyncScoreSkeleton, DashboardCardSkeleton, CompactCardSkeleton, MoodDisplaySkeleton } from "@/components/ui/skeleton";
-import { Calendar, Heart, MessageCircle, Sparkles, Clock, Lightbulb, X } from "lucide-react";
+import { Calendar, Heart, MessageCircle, Sparkles, Clock, Lightbulb, X, Activity } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -611,9 +611,9 @@ export const Dashboard = () => {
               <div className="bg-card border rounded-lg p-3 shadow-sm cursor-pointer hover:shadow-md transition-all hover:scale-105 duration-200" onClick={() => setShowHealthTips(true)}>
                 <div className="flex items-center gap-2 mb-2">
                   <div className="w-8 h-8 bg-secondary rounded-full flex items-center justify-center">
-                    <Heart className="text-white" size={16} />
+                    <Activity className="text-white" size={16} />
                   </div>
-                  <div>
+                  <div className="flex-1">
                     <p className="text-xs text-muted-foreground">Relationship Health</p>
                     <div className="flex items-center gap-1">
                       <p className="text-lg font-bold text-secondary">{syncScore}%</p>
