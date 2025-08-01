@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { ProfileSection } from "@/components/ProfileSection";
 import { PartnerConnectionSection } from "@/components/PartnerConnectionSection";
-import { RelationshipInfoSection } from "@/components/RelationshipInfoSection";
 import { Heart, Users, Plus, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -191,9 +190,6 @@ export const CoupleSetup = () => {
 
             {/* Partner Connection Section */}
             <PartnerConnectionSection />
-
-            {/* Relationship Info Section */}
-            <RelationshipInfoSection />
 
             {/* Action Buttons */}
             <div className="flex gap-3 pt-2">

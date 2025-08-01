@@ -219,7 +219,7 @@ export const Profile = () => {
               icon={<Heart size={20} />}
               title="Relationship Preferences"
               subtitle="Customize your love language"
-              onClick={() => handleMenuClick("Preferences")}
+              onClick={() => handleMenuClick("Preferences", "/preferences")}
             />
           </div>
         </div>
