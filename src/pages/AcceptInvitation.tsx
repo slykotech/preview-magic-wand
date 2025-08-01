@@ -4,6 +4,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
 import { Loader2, Heart, CheckCircle2, XCircle } from 'lucide-react';
 
@@ -14,6 +16,13 @@ const AcceptInvitation = () => {
   const [processing, setProcessing] = useState(false);
   const [status, setStatus] = useState<'pending' | 'success' | 'error' | 'expired'>('pending');
   const [message, setMessage] = useState('');
+  
+  // New user signup states
+  const [showSignup, setShowSignup] = useState(false);
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   const email = searchParams.get('email');
   const senderId = searchParams.get('sender');
@@ -24,13 +33,91 @@ const AcceptInvitation = () => {
       setStatus('error');
       setMessage('Invalid invitation link. Please check the link and try again.');
     }
-  }, [authLoading, email, senderId]);
+    
+    // For new user invitations (type=invite), show signup form if not authenticated
+    if (!authLoading && invitationType === 'invite' && !user && email && senderId) {
+      setShowSignup(true);
+    }
+  }, [authLoading, email, senderId, invitationType, user]);
 
-  const handleAcceptInvitation = async () => {
-    if (!user) {
-      // Redirect to auth if not logged in
-      navigate(`/auth?redirect=/accept-invitation?${searchParams.toString()}`);
+  const handleSignup = async () => {
+    if (!email || !senderId || !firstName || !lastName || !password) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
       return;
+    }
+
+    if (password !== confirmPassword) {
+      toast({
+        title: "Password Mismatch",
+        description: "Passwords do not match.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (password.length < 6) {
+      toast({
+        title: "Password Too Short",
+        description: "Password must be at least 6 characters long.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setProcessing(true);
+    try {
+      // Sign up the new user
+      const { data: authData, error: signUpError } = await supabase.auth.signUp({
+        email: email,
+        password: password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+          data: {
+            first_name: firstName,
+            last_name: lastName,
+            display_name: `${firstName} ${lastName}`.trim(),
+          }
+        }
+      });
+
+      if (signUpError) {
+        console.error('Signup error:', signUpError);
+        throw signUpError;
+      }
+
+      if (authData.user) {
+        // Auto-connect with the inviter
+        await handleAcceptInvitation(authData.user);
+      } else {
+        throw new Error('User creation failed');
+      }
+    } catch (error: any) {
+      console.error('Error during signup:', error);
+      setStatus('error');
+      setMessage(error.message || 'Failed to create account and connect');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleAcceptInvitation = async (userOverride?: any) => {
+    const currentUser = userOverride || user;
+    
+    if (!currentUser) {
+      // For existing users, redirect to auth if not logged in
+      if (invitationType === 'connect') {
+        navigate(`/auth?redirect=/accept-invitation?${searchParams.toString()}`);
+        return;
+      } else {
+        // For new users, this shouldn't happen as we handle signup above
+        setStatus('error');
+        setMessage('Authentication required');
+        return;
+      }
     }
 
     if (!email || !senderId) {
@@ -103,10 +190,12 @@ const AcceptInvitation = () => {
           <CardTitle className="text-2xl">
             {status === 'success' ? 'Connection Successful!' : 
              status === 'error' ? 'Connection Failed' :
+             showSignup ? 'Join Love Sync!' :
              'Love Sync Invitation'}
           </CardTitle>
           <CardDescription>
-            {status === 'pending' && !user && 'Please sign in to accept this invitation'}
+            {showSignup && 'Create your account to connect with your partner'}
+            {status === 'pending' && !user && !showSignup && 'Please sign in to accept this invitation'}
             {status === 'pending' && user && 'Ready to connect with your partner'}
             {status === 'success' && 'You are now connected!'}
             {status === 'error' && 'There was an issue with your invitation'}
@@ -124,7 +213,99 @@ const AcceptInvitation = () => {
             </div>
           )}
 
-          {status === 'pending' && !user && (
+          {showSignup && status === 'pending' && (
+            <div className="space-y-4">
+              <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 p-4 rounded-lg">
+                <p className="text-sm text-purple-800 text-center">
+                  You've been invited to join Love Sync! Fill out the details below to create your account and automatically connect with your partner.
+                </p>
+              </div>
+              
+              <div className="space-y-3">
+                <div>
+                  <Label htmlFor="email">Email Address</Label>
+                  <Input 
+                    id="email" 
+                    type="email" 
+                    value={email || ''} 
+                    disabled 
+                    className="bg-gray-50" 
+                  />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label htmlFor="firstName">First Name</Label>
+                    <Input
+                      id="firstName"
+                      type="text"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      placeholder="First name"
+                      disabled={processing}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="lastName">Last Name</Label>
+                    <Input
+                      id="lastName"
+                      type="text"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      placeholder="Last name"
+                      disabled={processing}
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <Label htmlFor="password">Create Password</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Choose a secure password"
+                    disabled={processing}
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="confirmPassword">Confirm Password</Label>
+                  <Input
+                    id="confirmPassword"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Confirm your password"
+                    disabled={processing}
+                  />
+                </div>
+              </div>
+              
+              <Button 
+                onClick={handleSignup}
+                disabled={processing || !firstName || !lastName || !password || !confirmPassword}
+                className="w-full"
+                size="lg"
+              >
+                {processing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating Account & Connecting...
+                  </>
+                ) : (
+                  'Create Account & Connect'
+                )}
+              </Button>
+              
+              <p className="text-xs text-gray-600 text-center">
+                By creating an account, you agree to our Terms of Service and Privacy Policy.
+              </p>
+            </div>
+          )}
+
+          {status === 'pending' && !user && !showSignup && (
             <Button 
               onClick={() => navigate(`/auth?redirect=/accept-invitation?${searchParams.toString()}`)}
               className="w-full"
@@ -136,7 +317,7 @@ const AcceptInvitation = () => {
 
           {status === 'pending' && user && (
             <Button 
-              onClick={handleAcceptInvitation}
+              onClick={() => handleAcceptInvitation()}
               disabled={processing}
               className="w-full"
               size="lg"
