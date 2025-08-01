@@ -334,7 +334,7 @@ const AcceptInvitation = () => {
             </div>
           )}
 
-          {/* Show "Create Account" button for new users (invite type) who are not authenticated and not in signup mode */}
+          {/* Force signup for invite type regardless of showSignup state */}
           {(status === 'pending' && !user && invitationType === 'invite' && !showSignup) && (
             <div className="space-y-4">
               <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 p-4 rounded-lg">

@@ -55,11 +55,11 @@ Deno.serve(async (req) => {
       throw new Error('Email mismatch. Please sign in with the invited email address.')
     }
     
-    // For invite type, if user is already authenticated but with different email,
-    // treat this as a "connect" scenario since they're an existing user
+    // For invite type (new users), the user should have just signed up
+    // We still validate email match but provide better error messaging
     if (type === 'invite' && recipientUser.email?.toLowerCase() !== recipientEmail.toLowerCase()) {
-      console.log(`Authenticated user ${recipientUser.email} clicking invite link for ${recipientEmail} - treating as connect`)
-      throw new Error(`You're signed in as ${recipientUser.email}, but this invitation is for ${recipientEmail}. Please sign in with the correct email address.`)
+      console.error(`Email mismatch for invite: authenticated user has ${recipientUser.email}, but invitation was for ${recipientEmail}`)
+      throw new Error(`Email mismatch: Please ensure you're signing up with the invited email address (${recipientEmail})`)
     }
 
     // Get sender's profile
