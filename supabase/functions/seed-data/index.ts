@@ -59,11 +59,13 @@ Deno.serve(async (req) => {
     ])
 
     // Check if user already has a couple record
-    const { data: existingCouple } = await supabase
+    const { data: existingCouples } = await supabase
       .from('couples')
       .select('*')
       .or(`user1_id.eq.${userId},user2_id.eq.${userId}`)
-      .maybeSingle()
+      .limit(1)
+
+    const existingCouple = existingCouples && existingCouples.length > 0 ? existingCouples[0] : null
 
     let coupleId: string
 

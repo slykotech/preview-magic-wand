@@ -67,15 +67,26 @@ export const useCoupleData = (): UseCoupleDataReturn => {
     try {
       setLoading(true);
 
-      // Get couple data with timeout handling
-      const { data: couple, error: coupleError } = await supabase
+      // Get couple data - prioritize real partnerships over demo mode
+      const { data: couples, error: coupleError } = await supabase
         .from('couples')
         .select('*')
         .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
-        .maybeSingle();
+        .order('created_at', { ascending: false });
 
       if (coupleError) {
         console.error('Error fetching couple data:', coupleError);
+      }
+
+      // Find the best couple record - prefer real partnerships over demo mode
+      let couple = null;
+      if (couples && couples.length > 0) {
+        // First try to find a real partnership (user1_id !== user2_id)
+        couple = couples.find(c => c.user1_id !== c.user2_id);
+        // If no real partnership, use the most recent record
+        if (!couple) {
+          couple = couples[0];
+        }
       }
 
       setCoupleData(couple);
