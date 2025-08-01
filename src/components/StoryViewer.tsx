@@ -271,12 +271,18 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
 
   const startCamera = async () => {
     try {
-      console.log('Starting camera access...');
+      console.log('=== CAMERA ACCESS ATTEMPT ===');
+      console.log('Navigator.mediaDevices available:', !!navigator.mediaDevices);
+      console.log('getUserMedia available:', !!navigator.mediaDevices?.getUserMedia);
+      console.log('Current URL:', window.location.href);
+      console.log('User agent:', navigator.userAgent);
       
       // Step 1: Check basic camera support
       if (!checkCameraSupport()) {
+        console.log('Camera support check failed');
         return;
       }
+      console.log('Camera support check passed');
 
       // Step 2: Show loading state
       toast.loading('Requesting camera access...', { id: 'camera-loading' });
