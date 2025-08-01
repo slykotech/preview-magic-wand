@@ -29,19 +29,7 @@ const AcceptInvitation = () => {
   const invitationType = searchParams.get('type');
 
   useEffect(() => {
-    if (!authLoading && !email && !senderId) {
-      setStatus('error');
-      setMessage('Invalid invitation link. Please check the link and try again.');
-    }
-    
-    // For new user invitations (type=invite), show signup form if not authenticated
-    if (!authLoading && invitationType === 'invite' && !user && email && senderId) {
-      console.log('Setting showSignup to true for new user invitation');
-      setShowSignup(true);
-    }
-    
-    // Debug logging
-    console.log('AcceptInvitation state:', {
+    console.log('AcceptInvitation useEffect triggered:', {
       authLoading,
       invitationType,
       user: !!user,
@@ -49,6 +37,32 @@ const AcceptInvitation = () => {
       senderId,
       showSignup
     });
+
+    if (!authLoading && !email && !senderId) {
+      setStatus('error');
+      setMessage('Invalid invitation link. Please check the link and try again.');
+      return;
+    }
+
+    // Force new user signup flow for type=invite
+    if (!authLoading && invitationType === 'invite' && email && senderId) {
+      if (!user) {
+        console.log('Setting showSignup to true for new user invitation');
+        setShowSignup(true);
+        setStatus('pending');
+      } else {
+        console.log('User already authenticated, treating as connection request');
+        // User is authenticated but it's an invite link - treat as connection
+        setShowSignup(false);
+        setStatus('pending');
+      }
+    }
+
+    // For existing user connections (type=connect)
+    if (!authLoading && invitationType === 'connect' && email && senderId) {
+      setShowSignup(false);
+      setStatus('pending');
+    }
   }, [authLoading, email, senderId, invitationType, user]);
 
   const handleSignup = async () => {
