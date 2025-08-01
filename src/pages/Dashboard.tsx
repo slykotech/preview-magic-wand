@@ -581,10 +581,7 @@ export const Dashboard = () => {
         }}>
           {isLoaded ? <>
               {/* Last Check-in Card - Compact */}
-              <div 
-                className="bg-card border rounded-lg p-3 shadow-sm cursor-pointer hover:shadow-md transition-all hover:scale-105 duration-200"
-                onClick={() => setShowCheckinInsights(true)}
-              >
+              <div className="bg-card border rounded-lg p-3 shadow-sm cursor-pointer hover:shadow-md transition-all hover:scale-105 duration-200" onClick={() => setShowCheckinInsights(true)}>
                 <div className="flex items-center gap-2 mb-2">
                   <div className="w-8 h-8 bg-secondary rounded-full flex items-center justify-center">
                     <Heart className="text-white" size={16} />
@@ -594,35 +591,24 @@ export const Dashboard = () => {
                     <p className="text-xs font-medium">
                       {lastCheckin ? format(new Date(lastCheckin.checkin_date), 'd MMMM') : '28 July'}
                     </p>
-                    {lastCheckin && (
-                      <div className="space-y-1">
+                    {lastCheckin && <div className="space-y-1">
                         <p className="text-xs text-muted-foreground">
                           Mood: <span className="text-foreground font-medium capitalize">{lastCheckin.mood}</span>
                         </p>
-                        {lastCheckin.energy_level && (
-                          <p className="text-xs text-muted-foreground">
+                        {lastCheckin.energy_level && <p className="text-xs text-muted-foreground">
                             Energy: <span className="text-foreground font-medium">{lastCheckin.energy_level}/10</span>
-                          </p>
-                        )}
-                        {lastCheckin.relationship_feeling && (
-                          <p className="text-xs text-muted-foreground">
+                          </p>}
+                        {lastCheckin.relationship_feeling && <p className="text-xs text-muted-foreground">
                             Feeling: <span className="text-foreground font-medium">{lastCheckin.relationship_feeling}</span>
-                          </p>
-                        )}
-                      </div>
-                    )}
+                          </p>}
+                      </div>}
                   </div>
                 </div>
-                <p className="text-sm font-semibold text-foreground">
-                  {lastCheckin ? `Feeling ${lastCheckin.mood}...` : 'Feeling Ne...'}
-                </p>
+                
               </div>
 
               {/* Relationship Health Card - Dynamic */}
-              <div 
-                className="bg-card border rounded-lg p-3 shadow-sm cursor-pointer hover:shadow-md transition-all hover:scale-105 duration-200"
-                onClick={() => setShowHealthTips(true)}
-              >
+              <div className="bg-card border rounded-lg p-3 shadow-sm cursor-pointer hover:shadow-md transition-all hover:scale-105 duration-200" onClick={() => setShowHealthTips(true)}>
                 <div className="flex items-center gap-2 mb-2">
                   <div className="w-8 h-8 bg-secondary rounded-full flex items-center justify-center">
                     <Heart className="text-white" size={16} />
@@ -631,23 +617,14 @@ export const Dashboard = () => {
                     <p className="text-xs text-muted-foreground">Relationship Health</p>
                     <div className="flex items-center gap-1">
                       <p className="text-lg font-bold text-secondary">{syncScore}%</p>
-                      <span className={`text-xs ${
-                        syncScoreData?.trend === 'up' ? 'text-accent' : 
-                        syncScoreData?.trend === 'down' ? 'text-destructive' : 
-                        'text-muted-foreground'
-                      }`}>
-                        {syncScoreData?.trend === 'up' ? '↗' : 
-                         syncScoreData?.trend === 'down' ? '↘' : 
-                         '→'}
+                      <span className={`text-xs ${syncScoreData?.trend === 'up' ? 'text-accent' : syncScoreData?.trend === 'down' ? 'text-destructive' : 'text-muted-foreground'}`}>
+                        {syncScoreData?.trend === 'up' ? '↗' : syncScoreData?.trend === 'down' ? '↘' : '→'}
                       </span>
                     </div>
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {syncScore >= 80 ? 'Thriving together' :
-                   syncScore >= 60 ? 'Growing stronger' :
-                   syncScore >= 40 ? 'Building connection' :
-                   'Starting your journey'}
+                  {syncScore >= 80 ? 'Thriving together' : syncScore >= 60 ? 'Growing stronger' : syncScore >= 40 ? 'Building connection' : 'Starting your journey'}
                 </p>
               </div>
             </> : <>
@@ -779,16 +756,12 @@ export const Dashboard = () => {
             <div className="text-center p-4 bg-gradient-to-r from-primary/10 to-secondary/10 rounded-lg">
               <div className="text-2xl font-bold text-primary mb-1">{syncScore}%</div>
               <div className="text-sm text-muted-foreground">
-                {syncScore >= 80 ? 'Your relationship is thriving! 🌟' :
-                 syncScore >= 60 ? 'You\'re growing stronger together! 💪' :
-                 syncScore >= 40 ? 'Building a solid foundation! 🏗️' :
-                 'Every journey starts with a single step! 🌱'}
+                {syncScore >= 80 ? 'Your relationship is thriving! 🌟' : syncScore >= 60 ? 'You\'re growing stronger together! 💪' : syncScore >= 40 ? 'Building a solid foundation! 🏗️' : 'Every journey starts with a single step! 🌱'}
               </div>
             </div>
             
             <div className="space-y-3">
-              {syncScore < 40 && (
-                <>
+              {syncScore < 40 && <>
                   <div className="p-3 bg-card border rounded-lg">
                     <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
                       <Heart className="h-4 w-4 text-red-500" />
@@ -807,11 +780,9 @@ export const Dashboard = () => {
                       Practice active listening. Put devices away during conversations and show genuine interest in what your partner shares.
                     </p>
                   </div>
-                </>
-              )}
+                </>}
               
-              {syncScore >= 40 && syncScore < 60 && (
-                <>
+              {syncScore >= 40 && syncScore < 60 && <>
                   <div className="p-3 bg-card border rounded-lg">
                     <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
                       <Calendar className="h-4 w-4 text-green-500" />
@@ -830,11 +801,9 @@ export const Dashboard = () => {
                       Express gratitude daily. Notice the small things your partner does and acknowledge them verbally.
                     </p>
                   </div>
-                </>
-              )}
+                </>}
               
-              {syncScore >= 60 && syncScore < 80 && (
-                <>
+              {syncScore >= 60 && syncScore < 80 && <>
                   <div className="p-3 bg-card border rounded-lg">
                     <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
                       <Heart className="h-4 w-4 text-pink-500" />
@@ -853,11 +822,9 @@ export const Dashboard = () => {
                       Set relationship goals together. Discuss what you both want to achieve as a couple and support each other's individual growth.
                     </p>
                   </div>
-                </>
-              )}
+                </>}
               
-              {syncScore >= 80 && (
-                <>
+              {syncScore >= 80 && <>
                   <div className="p-3 bg-card border rounded-lg">
                     <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
                       <Sparkles className="h-4 w-4 text-gold-500" />
@@ -876,15 +843,11 @@ export const Dashboard = () => {
                       Your relationship is thriving! Consider mentoring other couples or sharing what's worked for you.
                     </p>
                   </div>
-                </>
-              )}
+                </>}
             </div>
             
             <div className="pt-4 border-t">
-              <Button 
-                className="w-full"
-                onClick={() => setShowHealthTips(false)}
-              >
+              <Button className="w-full" onClick={() => setShowHealthTips(false)}>
                 Start Improving Today!
               </Button>
             </div>
@@ -909,73 +872,52 @@ export const Dashboard = () => {
               <div className="text-sm text-muted-foreground">
                 {lastCheckin ? 'Your responses from your last check-in' : 'Start your check-in journey today!'}
               </div>
-              {checkinStreak > 0 && (
-                <div className="text-lg font-bold text-accent mt-2">
+              {checkinStreak > 0 && <div className="text-lg font-bold text-accent mt-2">
                   🔥 {checkinStreak} day streak!
-                </div>
-              )}
+                </div>}
             </div>
             
-            {lastCheckin ? (
-              <div className="space-y-3">
+            {lastCheckin ? <div className="space-y-3">
                 <div className="p-3 bg-card rounded-lg border">
                   <h4 className="font-medium text-sm mb-2">How are you feeling today?</h4>
                   <p className="text-sm text-foreground capitalize">{lastCheckin.mood}</p>
                 </div>
 
-                {lastCheckin.energy_level && (
-                  <div className="p-3 bg-card rounded-lg border">
+                {lastCheckin.energy_level && <div className="p-3 bg-card rounded-lg border">
                     <h4 className="font-medium text-sm mb-2">What's your energy level?</h4>
                     <p className="text-sm text-foreground">{lastCheckin.energy_level}/10</p>
-                  </div>
-                )}
+                  </div>}
 
-                {lastCheckin.relationship_feeling && (
-                  <div className="p-3 bg-card rounded-lg border">
+                {lastCheckin.relationship_feeling && <div className="p-3 bg-card rounded-lg border">
                     <h4 className="font-medium text-sm mb-2">How are you feeling about your relationship?</h4>
                     <p className="text-sm text-foreground">{lastCheckin.relationship_feeling}</p>
-                  </div>
-                )}
+                  </div>}
 
-                {lastCheckin.gratitude && (
-                  <div className="p-3 bg-card rounded-lg border">
+                {lastCheckin.gratitude && <div className="p-3 bg-card rounded-lg border">
                     <h4 className="font-medium text-sm mb-2">What are you grateful for today?</h4>
                     <p className="text-sm text-foreground">{lastCheckin.gratitude}</p>
-                  </div>
-                )}
+                  </div>}
 
-                {lastCheckin.notes && (
-                  <div className="p-3 bg-card rounded-lg border">
+                {lastCheckin.notes && <div className="p-3 bg-card rounded-lg border">
                     <h4 className="font-medium text-sm mb-2">Additional notes</h4>
                     <p className="text-sm text-foreground">{lastCheckin.notes}</p>
-                  </div>
-                )}
+                  </div>}
 
                 <div className="text-center text-xs text-muted-foreground pt-2">
                   Current streak: {checkinStreak} days
                 </div>
-              </div>
-            ) : (
-              <div className="text-center p-4">
+              </div> : <div className="text-center p-4">
                 <p className="text-sm text-muted-foreground">No check-in data available. Complete your first daily check-in to see your responses here!</p>
-              </div>
-            )}
+              </div>}
             
             <div className="pt-4 border-t space-y-2">
-              <Button 
-                className="w-full"
-                onClick={() => {
-                  setShowCheckinInsights(false);
-                  handleCheckinClick();
-                }}
-              >
+              <Button className="w-full" onClick={() => {
+              setShowCheckinInsights(false);
+              handleCheckinClick();
+            }}>
                 Start Today's Check-in
               </Button>
-              <Button 
-                variant="outline"
-                className="w-full"
-                onClick={() => setShowCheckinInsights(false)}
-              >
+              <Button variant="outline" className="w-full" onClick={() => setShowCheckinInsights(false)}>
                 Close
               </Button>
             </div>
