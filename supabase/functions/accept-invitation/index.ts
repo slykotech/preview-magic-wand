@@ -50,15 +50,16 @@ Deno.serve(async (req) => {
       throw new Error(`Authentication failed: ${authError?.message || 'Auth session missing!'}`)
     }
 
-    // For invite type (new users), they should have just signed up with the invited email
     // For connect type (existing users), verify they're signed in with the correct email
     if (type === 'connect' && recipientUser.email?.toLowerCase() !== recipientEmail.toLowerCase()) {
       throw new Error('Email mismatch. Please sign in with the invited email address.')
     }
     
-    // For invite type, the user should have just signed up with this email via the signup flow
+    // For invite type (new users), the user should have just signed up
+    // We still validate email match but provide better error messaging
     if (type === 'invite' && recipientUser.email?.toLowerCase() !== recipientEmail.toLowerCase()) {
-      throw new Error('Please sign up with the invited email address.')
+      console.error(`Email mismatch for invite: authenticated user has ${recipientUser.email}, but invitation was for ${recipientEmail}`)
+      throw new Error(`Email mismatch: Please ensure you're signing up with the invited email address (${recipientEmail})`)
     }
 
     // Get sender's profile
