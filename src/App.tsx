@@ -1,6 +1,7 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { ThemeProvider } from "next-themes";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./hooks/useAuth";
@@ -34,33 +35,40 @@ const App = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/messages" element={<Messages />} />
-              <Route path="/coach" element={<AICoach />} />
-              <Route path="/planner" element={<DatePlanner />} />
-              <Route path="/vault" element={<MemoryVault />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/couple-setup" element={<CoupleSetup />} />
-          <Route path="/preferences" element={<RelationshipPreferences />} />
-          <Route path="/important-dates" element={<ImportantDates />} />
-              <Route path="/insights" element={<RelationshipInsights />} />
-              <Route path="/app-settings" element={<AppSettings />} />
-              <Route path="/motto" element={<AppMottoPage onNext={() => {}} onBack={() => {}} />} />
-              <Route path="/onboarding" element={<OnboardingFlow />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
-      </AuthProvider>
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="system"
+        enableSystem
+        disableTransitionOnChange
+      >
+        <AuthProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/messages" element={<Messages />} />
+                <Route path="/coach" element={<AICoach />} />
+                <Route path="/planner" element={<DatePlanner />} />
+                <Route path="/vault" element={<MemoryVault />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/couple-setup" element={<CoupleSetup />} />
+            <Route path="/preferences" element={<RelationshipPreferences />} />
+            <Route path="/important-dates" element={<ImportantDates />} />
+                <Route path="/insights" element={<RelationshipInsights />} />
+                <Route path="/app-settings" element={<AppSettings />} />
+                <Route path="/motto" element={<AppMottoPage onNext={() => {}} onBack={() => {}} />} />
+                <Route path="/onboarding" element={<OnboardingFlow />} />
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 };
