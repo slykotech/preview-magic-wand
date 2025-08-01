@@ -49,27 +49,47 @@ export const useCoupleData = (): UseCoupleDataReturn => {
     }
   }, [user?.id]);
 
+  // Add timeout fallback for loading state
+  useEffect(() => {
+    if (loading) {
+      const timeout = setTimeout(() => {
+        console.log('Loading timeout reached, setting loading to false');
+        setLoading(false);
+      }, 10000); // 10 second timeout
+
+      return () => clearTimeout(timeout);
+    }
+  }, [loading]);
+
   const fetchCoupleData = async () => {
     if (!user?.id) return;
 
     try {
       setLoading(true);
 
-      // Get couple data
-      const { data: couple } = await supabase
+      // Get couple data with timeout handling
+      const { data: couple, error: coupleError } = await supabase
         .from('couples')
         .select('*')
         .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
         .maybeSingle();
 
+      if (coupleError) {
+        console.error('Error fetching couple data:', coupleError);
+      }
+
       setCoupleData(couple);
 
       if (couple) {
         // Get both profiles
-        const { data: profiles } = await supabase
+        const { data: profiles, error: profilesError } = await supabase
           .from('profiles')
           .select('*')
           .in('user_id', [couple.user1_id, couple.user2_id]);
+
+        if (profilesError) {
+          console.error('Error fetching profiles:', profilesError);
+        }
 
         if (profiles) {
           const currentUserProfile = profiles.find(p => p.user_id === user.id);

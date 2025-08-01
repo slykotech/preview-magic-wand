@@ -73,53 +73,110 @@ export const Profile = () => {
   } = useEnhancedSyncScore(coupleData?.id);
 
   useEffect(() => {
-    if (user && !coupleLoading) {
+    if (user) {
       fetchProfileData();
     }
-  }, [user, coupleLoading]);
+  }, [user, coupleData]);
+
+  // Add real-time listener for couple data changes
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const channel = supabase
+      .channel('couple-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'couples',
+          filter: `user1_id=eq.${user.id}`
+        },
+        () => {
+          console.log('Couple data changed, refreshing...');
+          fetchProfileData();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'couples',
+          filter: `user2_id=eq.${user.id}`
+        },
+        () => {
+          console.log('Couple data changed, refreshing...');
+          fetchProfileData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id]);
 
   const fetchProfileData = async () => {
-    if (!user?.id || !coupleData) return;
+    if (!user?.id) return;
 
     try {
       setLoading(true);
 
-      // Calculate relationship stats
-      const createdDate = new Date(coupleData.created_at);
-      const today = new Date();
-      const diffTime = Math.abs(today.getTime() - createdDate.getTime());
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      // If we have couple data, use it; otherwise set defaults
+      if (coupleData && coupleData.user1_id !== coupleData.user2_id) {
+        // Calculate relationship stats
+        const createdDate = new Date(coupleData.created_at);
+        const today = new Date();
+        const diffTime = Math.abs(today.getTime() - createdDate.getTime());
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-      // Get memories count
-      const { count: memoryCount } = await supabase
-        .from('memories')
-        .select('*', { count: 'exact', head: true })
-        .eq('couple_id', coupleData.id);
+        // Get memories count
+        const { count: memoryCount } = await supabase
+          .from('memories')
+          .select('*', { count: 'exact', head: true })
+          .eq('couple_id', coupleData.id);
 
-      // Get completed dates count
-      const { count: dateCount } = await supabase
-        .from('date_ideas')
-        .select('*', { count: 'exact', head: true })
-        .eq('couple_id', coupleData.id)
-        .eq('is_completed', true);
+        // Get completed dates count
+        const { count: dateCount } = await supabase
+          .from('date_ideas')
+          .select('*', { count: 'exact', head: true })
+          .eq('couple_id', coupleData.id)
+          .eq('is_completed', true);
 
-      // Get latest sync score
-      const { data: syncScore } = await supabase
-        .from('sync_scores')
-        .select('score')
-        .eq('couple_id', coupleData.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        // Get latest sync score
+        const { data: syncScore } = await supabase
+          .from('sync_scores')
+          .select('score')
+          .eq('couple_id', coupleData.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
 
-      setRelationshipStats({
-        daysConnected: diffDays,
-        memoryCount: memoryCount || 0,
-        dateCount: dateCount || 0,
-        averageSync: syncScore?.score || 0
-      });
+        setRelationshipStats({
+          daysConnected: diffDays,
+          memoryCount: memoryCount || 0,
+          dateCount: dateCount || 0,
+          averageSync: syncScore?.score || 0
+        });
+      } else {
+        // No partner connected, set default stats
+        setRelationshipStats({
+          daysConnected: 0,
+          memoryCount: 0,
+          dateCount: 0,
+          averageSync: 0
+        });
+      }
     } catch (error) {
       console.error('Error fetching profile data:', error);
+      // Set fallback stats on error
+      setRelationshipStats({
+        daysConnected: 0,
+        memoryCount: 0,
+        dateCount: 0,
+        averageSync: 0
+      });
     } finally {
       setLoading(false);
     }
@@ -175,7 +232,7 @@ export const Profile = () => {
           </div>
           <div className="flex-1">
             <h1 className="text-xl font-extrabold font-poppins">
-              {loading || coupleLoading ? 'Loading...' : 
+              {coupleLoading ? 'Loading...' : 
                coupleData && coupleData.user1_id !== coupleData.user2_id ? 
                  `${getUserDisplayName()} & ${getPartnerDisplayName()}` :
                  getUserDisplayName() || 'Setup Your Profile'
