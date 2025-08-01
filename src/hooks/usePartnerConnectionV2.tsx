@@ -167,7 +167,10 @@ export const usePartnerConnectionV2 = () => {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw error;
+      }
 
       if (data.success) {
         toast({
@@ -177,6 +180,7 @@ export const usePartnerConnectionV2 = () => {
         await loadConnectionData();
         return true;
       } else {
+        console.error('Function returned error:', data.error);
         throw new Error(data.error || 'Failed to send request');
       }
     } catch (error: any) {

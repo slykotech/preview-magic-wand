@@ -81,7 +81,7 @@ Deno.serve(async (req) => {
       if (type === 'connect') {
         // Send connection invitation to existing Love Sync user
         const { data, error } = await resend.emails.send({
-          from: 'Love Sync <onboarding@resend.dev>', // Using resend's test domain for now
+          from: 'Love Sync <hi@slyko.tech>', // Using verified sender email
           to: [email],
           subject: `${displayName} wants to connect with you on Love Sync! 💕`,
           html: `
@@ -142,7 +142,7 @@ Deno.serve(async (req) => {
       } else {
         // Send invitation to join Love Sync
         const { data, error } = await resend.emails.send({
-          from: 'Love Sync <onboarding@resend.dev>', // Using resend's test domain for now
+          from: 'Love Sync <hi@slyko.tech>', // Using verified sender email
           to: [email],
           subject: `${displayName} invited you to join Love Sync! 💕`,
           html: `

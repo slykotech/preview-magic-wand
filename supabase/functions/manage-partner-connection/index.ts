@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
     // Handle different actions
     switch (action) {
       case 'send_request':
-        return await handleSendRequest(supabase, user, partnerEmail!)
+        return await handleSendRequest(supabase, user, partnerEmail!, token)
       
       case 'accept_request':
         return await handleAcceptRequest(supabase, user, requestId!)
@@ -84,7 +84,7 @@ Deno.serve(async (req) => {
 })
 
 // Handle send partner request
-async function handleSendRequest(supabase: any, user: any, partnerEmail: string) {
+async function handleSendRequest(supabase: any, user: any, partnerEmail: string, token?: string) {
   console.log('Sending partner request to:', partnerEmail)
 
   // Validate input
@@ -190,6 +190,35 @@ async function handleSendRequest(supabase: any, user: any, partnerEmail: string)
   }
 
   console.log('Successfully created partner request:', newRequest)
+
+  // Send invitation email
+  try {
+    const emailType = partnerUser ? 'connect' : 'invite';
+    const emailResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-invitation-email`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'apikey': Deno.env.get('SUPABASE_ANON_KEY') || '',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        type: emailType,
+        email: partnerEmail
+      })
+    });
+
+    const emailData = await emailResponse.json();
+    
+    if (!emailResponse.ok || !emailData.success) {
+      console.error('Failed to send invitation email:', emailData.error);
+      // Don't fail the whole request, but log the email issue
+    } else {
+      console.log('Invitation email sent successfully');
+    }
+  } catch (emailError) {
+    console.error('Error calling send-invitation-email function:', emailError);
+    // Don't fail the whole request, but log the email issue
+  }
 
   const message = partnerUser 
     ? `Partner request sent to ${partnerEmail}! They will receive an email to accept the connection.`
