@@ -167,6 +167,7 @@ All colors MUST be HSL.
 
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
+  }
   
   /* Mobile keyboard and layout optimizations */
   .safe-area-inset-bottom {
