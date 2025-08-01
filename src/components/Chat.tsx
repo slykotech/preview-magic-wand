@@ -251,51 +251,53 @@ export const Chat: React.FC<ChatProps> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-background z-50 flex flex-col">
-      {/* Header - Fixed */}
-      <div className="bg-primary text-primary-foreground p-3 flex items-center gap-3 shadow-lg flex-shrink-0">
+    <div className="fixed inset-0 bg-background z-50 flex flex-col h-screen">
+      {/* Debug info */}
+      <div className="hidden">Chat component mounted - input should be visible</div>
+      {/* Header */}
+      <div className="bg-primary text-primary-foreground p-4 flex items-center gap-3 shadow-lg flex-shrink-0">
         <Button
           variant="ghost"
           size="icon"
           onClick={onClose}
-          className="text-primary-foreground hover:bg-primary-foreground/20 h-8 w-8"
+          className="text-primary-foreground hover:bg-primary-foreground/20"
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft className="h-5 w-5" />
         </Button>
         
-        <Avatar className="h-8 w-8">
+        <Avatar className="h-10 w-10">
           <AvatarImage src={partnerProfile?.avatar_url || undefined} />
-          <AvatarFallback className="bg-primary-foreground text-primary text-xs">
+          <AvatarFallback className="bg-primary-foreground text-primary">
             {getPartnerDisplayName().charAt(0).toUpperCase()}
           </AvatarFallback>
         </Avatar>
         
         <div className="flex-1">
-          <h3 className="font-semibold text-base">{getPartnerDisplayName()}</h3>
-          <p className="text-xs text-primary-foreground/80">Online</p>
+          <h3 className="font-semibold text-lg">{getPartnerDisplayName()}</h3>
+          <p className="text-sm text-primary-foreground/80">Online</p>
         </div>
         
         <Button
           variant="ghost"
           size="icon"
-          className="text-primary-foreground hover:bg-primary-foreground/20 h-8 w-8"
+          className="text-primary-foreground hover:bg-primary-foreground/20"
         >
-          <MoreVertical className="h-4 w-4" />
+          <MoreVertical className="h-5 w-5" />
         </Button>
       </div>
 
-      {/* Messages Area - Flexible */}
-      <div className="flex-1 min-h-0 bg-gradient-to-b from-background to-muted/20">
-        <div className="h-full overflow-y-auto p-3 space-y-3">
+      {/* Messages Container - Reduced size */}
+      <div className="flex-1 overflow-hidden flex flex-col min-h-0" style={{ maxHeight: 'calc(100vh - 200px)' }}>
+        <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-gradient-to-b from-background to-muted/20" style={{ maxHeight: 'calc(100vh - 280px)' }}>
           {loading ? (
             <div className="flex items-center justify-center h-full">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
           ) : messages.length === 0 ? (
             <div className="flex items-center justify-center h-full text-center">
               <div className="space-y-2">
-                <div className="text-4xl">💬</div>
-                <h3 className="text-base font-semibold text-muted-foreground">Start the conversation</h3>
+                <div className="text-6xl">💬</div>
+                <h3 className="text-lg font-semibold text-muted-foreground">Start the conversation</h3>
                 <p className="text-sm text-muted-foreground">Send your first message to {getPartnerDisplayName()}</p>
               </div>
             </div>
@@ -313,8 +315,8 @@ export const Chat: React.FC<ChatProps> = ({ isOpen, onClose }) => {
                     <div
                       className={`${
                         message.message_type === 'emoji' || message.message_type === 'sticker'
-                          ? 'text-2xl px-1 py-1 bg-transparent' 
-                          : `px-3 py-2 rounded-2xl text-sm ${
+                          ? 'text-3xl px-2 py-1 bg-transparent' 
+                          : `px-4 py-2 rounded-2xl ${
                               isOwn
                                 ? 'bg-primary text-primary-foreground ml-2'
                                 : 'bg-muted text-foreground mr-2'
@@ -325,14 +327,15 @@ export const Chat: React.FC<ChatProps> = ({ isOpen, onClose }) => {
                         <img 
                           src={message.message_text} 
                           alt="Shared image" 
-                          className="max-w-full h-auto rounded-lg cursor-pointer max-h-48"
+                          className="max-w-full h-auto rounded-lg cursor-pointer"
                           onClick={() => window.open(message.message_text, '_blank')}
                         />
                       ) : message.message_type === 'video' ? (
                         <video 
                           src={message.message_text} 
                           controls 
-                          className="max-w-full h-auto rounded-lg max-h-48"
+                          className="max-w-full h-auto rounded-lg"
+                          style={{ maxHeight: '300px' }}
                         />
                       ) : (
                         message.message_text
@@ -350,7 +353,7 @@ export const Chat: React.FC<ChatProps> = ({ isOpen, onClose }) => {
                   </div>
                   
                   {!isOwn && (
-                    <Avatar className={`h-6 w-6 ${isOwn ? 'order-1 mr-2' : 'order-2 ml-2'}`}>
+                    <Avatar className={`h-8 w-8 ${isOwn ? 'order-1 mr-2' : 'order-2 ml-2'}`}>
                       <AvatarImage src={partnerProfile?.avatar_url || undefined} />
                       <AvatarFallback className="text-xs bg-muted">
                         {senderName.charAt(0).toUpperCase()}
@@ -365,15 +368,15 @@ export const Chat: React.FC<ChatProps> = ({ isOpen, onClose }) => {
         </div>
       </div>
 
-      {/* Pickers - Conditional */}
+      {/* Emoji Picker */}
       {showEmojiPicker && (
-        <div className="border-t bg-background p-3 flex-shrink-0">
-          <div className="grid grid-cols-5 gap-2">
+        <div className="border-t bg-background p-4 flex-shrink-0">
+          <div className="grid grid-cols-5 gap-2 mb-2">
             {quickEmojis.map((emoji, index) => (
               <button
                 key={index}
                 onClick={() => handleEmojiClick(emoji)}
-                className="text-xl p-2 rounded-lg hover:bg-muted transition-colors"
+                className="text-2xl p-2 rounded-lg hover:bg-muted transition-colors"
               >
                 {emoji}
               </button>
@@ -382,27 +385,28 @@ export const Chat: React.FC<ChatProps> = ({ isOpen, onClose }) => {
         </div>
       )}
 
+      {/* Love Stickers */}
       {showStickers && (
-        <div className="border-t bg-background p-3 flex-shrink-0">
-          <h4 className="text-xs font-medium mb-2 text-muted-foreground">Love Stickers</h4>
-          <div className="grid grid-cols-6 gap-2 mb-3">
+        <div className="border-t bg-background p-4 flex-shrink-0">
+          <h4 className="text-sm font-medium mb-3 text-muted-foreground">Love Stickers</h4>
+          <div className="grid grid-cols-6 gap-2 mb-4">
             {loveStickers.map((sticker, index) => (
               <button
                 key={index}
                 onClick={() => handleStickerClick(sticker)}
-                className="text-xl p-1 rounded-lg hover:bg-muted transition-colors"
+                className="text-2xl p-2 rounded-lg hover:bg-muted transition-colors"
               >
                 {sticker}
               </button>
             ))}
           </div>
-          <h4 className="text-xs font-medium mb-2 text-muted-foreground">Action Stickers</h4>
+          <h4 className="text-sm font-medium mb-3 text-muted-foreground">Action Stickers</h4>
           <div className="grid grid-cols-6 gap-2">
             {actionStickers.map((sticker, index) => (
               <button
                 key={index}
                 onClick={() => handleStickerClick(sticker)}
-                className="text-xl p-1 rounded-lg hover:bg-muted transition-colors"
+                className="text-2xl p-2 rounded-lg hover:bg-muted transition-colors"
               >
                 {sticker}
               </button>
@@ -411,14 +415,15 @@ export const Chat: React.FC<ChatProps> = ({ isOpen, onClose }) => {
         </div>
       )}
 
+      {/* Attachments Panel */}
       {showAttachments && (
-        <div className="border-t bg-background p-3 flex-shrink-0">
-          <div className="grid grid-cols-3 gap-3">
+        <div className="border-t bg-background p-4 flex-shrink-0">
+          <div className="grid grid-cols-3 gap-4">
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="flex flex-col items-center gap-1 p-3 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-primary transition-colors"
+              className="flex flex-col items-center gap-2 p-4 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-primary transition-colors"
             >
-              <Camera className="h-5 w-5 text-primary" />
+              <Camera className="h-6 w-6 text-primary" />
               <span className="text-xs font-medium">Photo</span>
             </button>
             <button
@@ -428,9 +433,9 @@ export const Chat: React.FC<ChatProps> = ({ isOpen, onClose }) => {
                   fileInputRef.current.click();
                 }
               }}
-              className="flex flex-col items-center gap-1 p-3 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-primary transition-colors"
+              className="flex flex-col items-center gap-2 p-4 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-primary transition-colors"
             >
-              <Video className="h-5 w-5 text-primary" />
+              <Video className="h-6 w-6 text-primary" />
               <span className="text-xs font-medium">Video</span>
             </button>
             <button
@@ -440,18 +445,19 @@ export const Chat: React.FC<ChatProps> = ({ isOpen, onClose }) => {
                   fileInputRef.current.click();
                 }
               }}
-              className="flex flex-col items-center gap-1 p-3 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-primary transition-colors"
+              className="flex flex-col items-center gap-2 p-4 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-primary transition-colors"
             >
-              <Image className="h-5 w-5 text-primary" />
+              <Image className="h-6 w-6 text-primary" />
               <span className="text-xs font-medium">Gallery</span>
             </button>
           </div>
         </div>
       )}
 
-      {/* Input Bar - Fixed at Bottom */}
-      <div className="border-t bg-background p-2 flex-shrink-0">
-        <div className="flex gap-1 items-center">
+      {/* Message Input - Always visible at bottom */}
+      <div className="border-t bg-background p-4 flex-shrink-0">
+        <div className="flex gap-2 items-end">
+          {/* Attachment Button */}
           <Button
             variant="ghost"
             size="icon"
@@ -460,9 +466,9 @@ export const Chat: React.FC<ChatProps> = ({ isOpen, onClose }) => {
               setShowEmojiPicker(false);
               setShowStickers(false);
             }}
-            className={`rounded-full h-8 w-8 ${showAttachments ? 'bg-muted' : ''}`}
+            className={`rounded-full ${showAttachments ? 'bg-muted' : ''}`}
           >
-            <Image className="h-4 w-4" />
+            <Image className="h-5 w-5" />
           </Button>
           
           <div className="flex-1 relative">
@@ -472,11 +478,12 @@ export const Chat: React.FC<ChatProps> = ({ isOpen, onClose }) => {
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               onKeyPress={handleKeyPress}
-              className="rounded-full border-2 focus:border-primary h-8 text-sm"
+              className="pr-12 min-h-[44px] rounded-full border-2 focus:border-primary"
               disabled={loading}
             />
           </div>
           
+          {/* Love Stickers Button */}
           <Button
             variant="ghost"
             size="icon"
@@ -485,11 +492,12 @@ export const Chat: React.FC<ChatProps> = ({ isOpen, onClose }) => {
               setShowEmojiPicker(false);
               setShowAttachments(false);
             }}
-            className={`rounded-full h-8 w-8 ${showStickers ? 'bg-muted' : ''}`}
+            className={`rounded-full ${showStickers ? 'bg-muted' : ''}`}
           >
-            <Heart className="h-4 w-4 text-red-500" />
+            <Heart className="h-5 w-5 text-red-500" />
           </Button>
           
+          {/* Emoji Button */}
           <Button
             variant="ghost"
             size="icon"
@@ -498,21 +506,23 @@ export const Chat: React.FC<ChatProps> = ({ isOpen, onClose }) => {
               setShowStickers(false);
               setShowAttachments(false);
             }}
-            className={`rounded-full h-8 w-8 ${showEmojiPicker ? 'bg-muted' : ''}`}
+            className={`rounded-full ${showEmojiPicker ? 'bg-muted' : ''}`}
           >
-            <Smile className="h-4 w-4" />
+            <Smile className="h-5 w-5" />
           </Button>
           
+          {/* Send Button */}
           <Button
             onClick={() => sendMessage(newMessage)}
             disabled={loading || !newMessage.trim()}
             size="icon"
-            className="rounded-full h-8 w-8"
+            className="rounded-full min-w-[44px]"
           >
-            <Send className="h-4 w-4" />
+            <Send className="h-5 w-5" />
           </Button>
         </div>
         
+        {/* Hidden file input */}
         <input
           ref={fileInputRef}
           type="file"
