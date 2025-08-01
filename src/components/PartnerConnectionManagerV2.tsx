@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -49,6 +49,11 @@ export const PartnerConnectionManagerV2 = () => {
   const [anniversaryDate, setAnniversaryDate] = useState<Date | undefined>(
     coupleData?.anniversary_date ? new Date(coupleData.anniversary_date) : undefined
   );
+  
+  // Rate limiting state
+  const [isRateLimited, setIsRateLimited] = useState(false);
+  const [countdown, setCountdown] = useState(0);
+  const [buttonText, setButtonText] = useState("Send Partner Invitation");
 
   // Confirmation dialog states
   const [showDisconnectDialog, setShowDisconnectDialog] = useState(false);
@@ -56,13 +61,33 @@ export const PartnerConnectionManagerV2 = () => {
   const [showDeclineDialog, setShowDeclineDialog] = useState(false);
   const [selectedRequestId, setSelectedRequestId] = useState<string>("");
 
-  // Handle sending partner request
+  // Countdown timer effect
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (countdown > 0) {
+      timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+    } else if (isRateLimited && countdown === 0) {
+      setIsRateLimited(false);
+      setButtonText("Resend Invitation");
+    }
+    return () => clearTimeout(timer);
+  }, [countdown, isRateLimited]);
+
+  // Handle sending partner request with rate limiting
   const handleSendRequest = async () => {
-    if (!partnerEmail.trim()) return;
+    if (!partnerEmail.trim() || isRateLimited) return;
+    
+    // Start rate limiting immediately
+    setIsRateLimited(true);
+    setCountdown(30);
     
     const success = await sendPartnerRequest(partnerEmail);
     if (success) {
       setPartnerEmail("");
+    } else {
+      // If failed, reset rate limiting
+      setIsRateLimited(false);
+      setCountdown(0);
     }
   };
 
@@ -319,24 +344,50 @@ export const PartnerConnectionManagerV2 = () => {
         </Card>
       )}
 
-      {/* Connection Instructions - Show when unpaired */}
+      {/* Invite Partner - Show when unpaired */}
       {connectionStatus === 'unpaired' && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Mail size={20} />
-              Connect with Your Partner
+              <UserPlus size={20} />
+              Invite Your Partner
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
-              <h4 className="font-semibold text-blue-800 mb-2">Ready to Connect?</h4>
-              <p className="text-sm text-blue-700">
-                Ask your partner to send you a connection invitation via email. 
-                Once you receive the email, simply click the "Accept Connection" button 
-                to instantly pair your accounts!
+            <div>
+              <Label htmlFor="partnerEmail">Partner's Email Address</Label>
+              <Input
+                id="partnerEmail"
+                type="email"
+                value={partnerEmail}
+                onChange={(e) => setPartnerEmail(e.target.value)}
+                placeholder="partner@example.com"
+                className="mt-1"
+                disabled={isRateLimited}
+              />
+              <p className="text-sm text-muted-foreground mt-1">
+                Enter your partner's email to send a connection invitation
               </p>
             </div>
+            <Button 
+              onClick={handleSendRequest}
+              disabled={isProcessing || !partnerEmail.trim() || isRateLimited}
+              className="w-full bg-gradient-secondary hover:opacity-90 text-white shadow-romantic"
+            >
+              {isRateLimited ? (
+                `Wait ${countdown}s before sending another invitation`
+              ) : isProcessing ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Sending Invitation...
+                </>
+              ) : (
+                <>
+                  <Send size={16} className="mr-2" />
+                  {buttonText}
+                </>
+              )}
+            </Button>
             <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg">
               <h4 className="font-semibold text-amber-800 mb-2">📧 Email Connection Only</h4>
               <p className="text-sm text-amber-700">

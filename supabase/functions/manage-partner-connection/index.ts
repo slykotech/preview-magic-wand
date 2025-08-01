@@ -83,9 +83,32 @@ Deno.serve(async (req) => {
   }
 })
 
-// Handle send partner request
+// Handle send partner request  
 async function handleSendRequest(supabase: any, user: any, partnerEmail: string, token?: string) {
   console.log('Sending partner request to:', partnerEmail)
+  
+  // Check for duplicate request within the last 30 seconds to prevent spam
+  const thirtySecondsAgo = new Date(Date.now() - 30000).toISOString()
+  const { data: recentRequests } = await supabase
+    .from('partner_requests')
+    .select('*')
+    .eq('requester_id', user.id)
+    .eq('requested_email', partnerEmail)
+    .gte('created_at', thirtySecondsAgo)
+  
+  if (recentRequests && recentRequests.length > 0) {
+    console.log('Duplicate request detected within 30 seconds, blocking')
+    return new Response(
+      JSON.stringify({ 
+        success: false, 
+        error: 'Please wait before sending another invitation to the same email.' 
+      }),
+      { 
+        status: 429, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
+    )
+  }
 
   // Validate input
   if (!partnerEmail) {

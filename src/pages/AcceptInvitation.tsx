@@ -65,10 +65,7 @@ const AcceptInvitation = () => {
           description: "You are now connected with your partner. Redirecting to dashboard...",
         });
 
-        // Redirect to dashboard after a short delay
-        setTimeout(() => {
-          navigate('/dashboard');
-        }, 3000);
+        // Stay on confirmation page - don't auto redirect
       } else {
         setStatus('error');
         setMessage(data.error || 'Failed to accept invitation');
@@ -156,10 +153,13 @@ const AcceptInvitation = () => {
           )}
 
           {status === 'success' && (
-            <div className="text-center">
-              <p className="text-sm text-muted-foreground mb-4">
-                Redirecting to your dashboard in a few seconds...
-              </p>
+            <div className="text-center space-y-3">
+              <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
+                <h4 className="font-semibold text-green-800 mb-2">🎉 Connection Successful!</h4>
+                <p className="text-sm text-green-700">
+                  You and your partner are now connected. Both of your profiles have been automatically updated to "Paired" status.
+                </p>
+              </div>
               <Button 
                 onClick={() => navigate('/dashboard')}
                 className="w-full"
