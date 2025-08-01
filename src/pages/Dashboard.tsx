@@ -898,16 +898,16 @@ export const Dashboard = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Heart className="h-5 w-5 text-red-500" />
-              Check-in Insights & Tips
+              Your Last Check-in
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="text-center p-4 bg-gradient-to-r from-secondary/10 to-primary/10 rounded-lg">
               <div className="text-lg font-bold text-secondary mb-1">
-                {lastCheckin ? `Last check-in: ${format(new Date(lastCheckin.checkin_date), 'd MMMM')}` : 'No recent check-in'}
+                {lastCheckin ? format(new Date(lastCheckin.checkin_date), 'd MMMM') : 'No recent check-in'}
               </div>
               <div className="text-sm text-muted-foreground">
-                {lastCheckin ? `Feeling ${lastCheckin.mood}` : 'Start your check-in journey today!'}
+                {lastCheckin ? 'Your responses from your last check-in' : 'Start your check-in journey today!'}
               </div>
               {checkinStreak > 0 && (
                 <div className="text-lg font-bold text-accent mt-2">
@@ -916,99 +916,50 @@ export const Dashboard = () => {
               )}
             </div>
             
-            <div className="space-y-3">
-              {!lastCheckin && (
-                <>
-                  <div className="p-3 bg-card border rounded-lg">
-                    <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
-                      <MessageCircle className="h-4 w-4 text-blue-500" />
-                      Start Your First Check-in
-                    </h4>
-                    <p className="text-sm text-muted-foreground">
-                      Daily check-ins are the foundation of relationship health. Start by sharing your mood and what's on your mind today.
-                    </p>
+            {lastCheckin ? (
+              <div className="space-y-3">
+                <div className="p-3 bg-card rounded-lg border">
+                  <h4 className="font-medium text-sm mb-2">How are you feeling today?</h4>
+                  <p className="text-sm text-foreground capitalize">{lastCheckin.mood}</p>
+                </div>
+
+                {lastCheckin.energy_level && (
+                  <div className="p-3 bg-card rounded-lg border">
+                    <h4 className="font-medium text-sm mb-2">What's your energy level?</h4>
+                    <p className="text-sm text-foreground">{lastCheckin.energy_level}/10</p>
                   </div>
-                  <div className="p-3 bg-card border rounded-lg">
-                    <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-purple-500" />
-                      Make It a Habit
-                    </h4>
-                    <p className="text-sm text-muted-foreground">
-                      Choose a consistent time each day for check-ins. Morning coffee or evening wind-down are great options.
-                    </p>
+                )}
+
+                {lastCheckin.relationship_feeling && (
+                  <div className="p-3 bg-card rounded-lg border">
+                    <h4 className="font-medium text-sm mb-2">How are you feeling about your relationship?</h4>
+                    <p className="text-sm text-foreground">{lastCheckin.relationship_feeling}</p>
                   </div>
-                </>
-              )}
-              
-              {lastCheckin && checkinStreak === 0 && (
-                <>
-                  <div className="p-3 bg-card border rounded-lg">
-                    <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
-                      <Heart className="h-4 w-4 text-red-500" />
-                      Restart Your Streak
-                    </h4>
-                    <p className="text-sm text-muted-foreground">
-                      Great job on your last check-in! Consistency is key to building deeper connection. Let's get that streak going again.
-                    </p>
+                )}
+
+                {lastCheckin.gratitude && (
+                  <div className="p-3 bg-card rounded-lg border">
+                    <h4 className="font-medium text-sm mb-2">What are you grateful for today?</h4>
+                    <p className="text-sm text-foreground">{lastCheckin.gratitude}</p>
                   </div>
-                  <div className="p-3 bg-card border rounded-lg">
-                    <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
-                      <Lightbulb className="h-4 w-4 text-yellow-500" />
-                      Set Reminders
-                    </h4>
-                    <p className="text-sm text-muted-foreground">
-                      Consider setting a daily reminder on your phone to help establish this important relationship ritual.
-                    </p>
+                )}
+
+                {lastCheckin.notes && (
+                  <div className="p-3 bg-card rounded-lg border">
+                    <h4 className="font-medium text-sm mb-2">Additional notes</h4>
+                    <p className="text-sm text-foreground">{lastCheckin.notes}</p>
                   </div>
-                </>
-              )}
-              
-              {checkinStreak > 0 && checkinStreak < 7 && (
-                <>
-                  <div className="p-3 bg-card border rounded-lg">
-                    <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
-                      <Sparkles className="h-4 w-4 text-purple-500" />
-                      Building Momentum
-                    </h4>
-                    <p className="text-sm text-muted-foreground">
-                      You're building a great habit! Aim for 7 days to establish a solid foundation. Share deeper thoughts and feelings.
-                    </p>
-                  </div>
-                  <div className="p-3 bg-card border rounded-lg">
-                    <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
-                      <MessageCircle className="h-4 w-4 text-blue-500" />
-                      Go Deeper
-                    </h4>
-                    <p className="text-sm text-muted-foreground">
-                      Beyond mood, share what made you grateful today or something you're looking forward to together.
-                    </p>
-                  </div>
-                </>
-              )}
-              
-              {checkinStreak >= 7 && (
-                <>
-                  <div className="p-3 bg-card border rounded-lg">
-                    <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
-                      <Heart className="h-4 w-4 text-red-500" />
-                      Amazing Consistency!
-                    </h4>
-                    <p className="text-sm text-muted-foreground">
-                      Your dedication to daily check-ins is strengthening your relationship. Keep this wonderful habit going!
-                    </p>
-                  </div>
-                  <div className="p-3 bg-card border rounded-lg">
-                    <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
-                      <Lightbulb className="h-4 w-4 text-yellow-500" />
-                      Level Up Your Check-ins
-                    </h4>
-                    <p className="text-sm text-muted-foreground">
-                      Try themed check-ins: "Appreciation Monday," "Dream Wednesday," or "Growth Friday" to add variety.
-                    </p>
-                  </div>
-                </>
-              )}
-            </div>
+                )}
+
+                <div className="text-center text-xs text-muted-foreground pt-2">
+                  Current streak: {checkinStreak} days
+                </div>
+              </div>
+            ) : (
+              <div className="text-center p-4">
+                <p className="text-sm text-muted-foreground">No check-in data available. Complete your first daily check-in to see your responses here!</p>
+              </div>
+            )}
             
             <div className="pt-4 border-t space-y-2">
               <Button 
