@@ -35,12 +35,10 @@ const AcceptInvitation = () => {
       senderId,
       invitationType,
       user: !!user,
-      showSignup,
-      currentUrl: window.location.href
+      showSignup
     });
 
-    if (!authLoading && (!email || !senderId)) {
-      console.log('Invalid invitation link - missing email or senderId');
+    if (!authLoading && !email && !senderId) {
       setStatus('error');
       setMessage('Invalid invitation link. Please check the link and try again.');
       return;
@@ -190,28 +188,13 @@ const AcceptInvitation = () => {
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p className="text-sm text-gray-600">Loading invitation details...</p>
-          <div className="mt-2 text-xs text-gray-500">
-            Debug: email={email}, sender={senderId}, type={invitationType}
-          </div>
-        </div>
+        <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/10 to-romantic/10 flex items-center justify-center p-4">
-      {/* Debug Panel - Remove this in production */}
-      <div className="fixed top-4 left-4 bg-black text-white p-2 rounded text-xs z-50">
-        <div>Email: {email || 'null'}</div>
-        <div>Sender: {senderId || 'null'}</div>
-        <div>Type: {invitationType || 'null'}</div>
-        <div>User: {user ? 'authenticated' : 'not authenticated'}</div>
-        <div>ShowSignup: {showSignup ? 'true' : 'false'}</div>
-        <div>Status: {status}</div>
-      </div>
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mx-auto w-16 h-16 bg-gradient-to-br from-primary to-romantic rounded-full flex items-center justify-center mb-4">
@@ -343,8 +326,7 @@ const AcceptInvitation = () => {
             </div>
           )}
 
-          {/* Force signup for invite type regardless of showSignup state */}
-          {(status === 'pending' && !user && invitationType === 'invite' && !showSignup) && (
+          {(status === 'pending' && !user && !showSignup && invitationType === 'invite') && (
             <div className="space-y-4">
               <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 p-4 rounded-lg">
                 <p className="text-sm text-purple-800 text-center">
@@ -352,10 +334,7 @@ const AcceptInvitation = () => {
                 </p>
               </div>
               <Button 
-                onClick={() => {
-                  console.log('Manual signup trigger clicked');
-                  setShowSignup(true);
-                }}
+                onClick={() => setShowSignup(true)}
                 className="w-full"
                 size="lg"
               >
@@ -364,7 +343,7 @@ const AcceptInvitation = () => {
             </div>
           )}
 
-          {(status === 'pending' && !user && invitationType === 'connect') && (
+          {(status === 'pending' && !user && !showSignup && invitationType === 'connect') && (
             <Button 
               onClick={() => navigate(`/auth?redirect=/accept-invitation?${searchParams.toString()}`)}
               className="w-full"
