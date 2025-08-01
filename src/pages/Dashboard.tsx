@@ -594,7 +594,7 @@ export const Dashboard = () => {
                 </p>
               </div>
 
-              {/* Relationship Health Card - Compact */}
+              {/* Relationship Health Card - Dynamic */}
               <div className="bg-card border rounded-lg p-3 shadow-sm">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="w-8 h-8 bg-secondary rounded-full flex items-center justify-center">
@@ -603,12 +603,25 @@ export const Dashboard = () => {
                   <div>
                     <p className="text-xs text-muted-foreground">Relationship Health</p>
                     <div className="flex items-center gap-1">
-                      <p className="text-lg font-bold text-secondary">50%</p>
-                      <span className="text-secondary text-xs">↗</span>
+                      <p className="text-lg font-bold text-secondary">{syncScore}%</p>
+                      <span className={`text-xs ${
+                        syncScoreData?.trend === 'up' ? 'text-accent' : 
+                        syncScoreData?.trend === 'down' ? 'text-destructive' : 
+                        'text-muted-foreground'
+                      }`}>
+                        {syncScoreData?.trend === 'up' ? '↗' : 
+                         syncScoreData?.trend === 'down' ? '↘' : 
+                         '→'}
+                      </span>
                     </div>
                   </div>
                 </div>
-                <p className="text-xs text-muted-foreground">Growing together</p>
+                <p className="text-xs text-muted-foreground">
+                  {syncScore >= 80 ? 'Thriving together' :
+                   syncScore >= 60 ? 'Growing stronger' :
+                   syncScore >= 40 ? 'Building connection' :
+                   'Starting your journey'}
+                </p>
               </div>
             </> : <>
               <CompactCardSkeleton />
