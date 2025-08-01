@@ -830,6 +830,24 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
             }}
           />
 
+          {/* Quick Emoji Reactions (for partner's stories) */}
+          {!isOwnStory && (
+            <div className="absolute bottom-32 left-4 right-4">
+              <div className="flex gap-2 mb-3 justify-center">
+                {quickEmojis.map((emoji, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleEmojiResponse(emoji)}
+                    className="text-2xl p-2 rounded-full bg-white/20 hover:bg-white/30 transition-all duration-200 hover:scale-110 active:scale-95"
+                    disabled={loading}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Caption */}
           {currentStory.caption && (
             <div className="absolute bottom-20 left-4 right-4 text-white">
@@ -841,19 +859,6 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
         {/* Response Section (only for partner's stories) */}
         {!isOwnStory && (
           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent p-4">
-            {/* Quick Emoji Reactions */}
-            <div className="flex gap-2 mb-3 justify-center">
-              {quickEmojis.map((emoji, index) => (
-                <button
-                  key={index}
-                  onClick={() => handleEmojiResponse(emoji)}
-                  className="text-2xl p-2 rounded-full bg-white/20 hover:bg-white/30 transition-all duration-200 hover:scale-110 active:scale-95"
-                  disabled={loading}
-                >
-                  {emoji}
-                </button>
-              ))}
-            </div>
             
             {/* Text Input */}
             <div className="flex gap-2">
