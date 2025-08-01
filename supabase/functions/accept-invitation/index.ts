@@ -50,8 +50,9 @@ Deno.serve(async (req) => {
 
     console.log(`Processing ${type} invitation acceptance from ${senderUserId} to ${recipientEmail}`)
 
-    // Verify the recipient email matches the authenticated user
-    if (recipientUser.email?.toLowerCase() !== recipientEmail.toLowerCase()) {
+    // For connect type, allow any authenticated user to accept (existing user flow)
+    // For invite type, require email match (new user flow) 
+    if (type === 'invite' && recipientUser.email?.toLowerCase() !== recipientEmail.toLowerCase()) {
       throw new Error('Email mismatch. Please sign in with the invited email address.')
     }
 
