@@ -1,7 +1,8 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { Calendar, Heart, MessageCircle, Camera, Trophy, Zap } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Calendar, Heart, MessageCircle, Camera, Trophy, Zap, X } from 'lucide-react';
 
 interface SyncScoreBreakdownProps {
   score: number;
@@ -13,12 +14,14 @@ interface SyncScoreBreakdownProps {
     streakBonus: number;
   };
   className?: string;
+  onClose?: () => void;
 }
 
 export const SyncScoreBreakdown: React.FC<SyncScoreBreakdownProps> = ({
   score,
   breakdown,
-  className = ''
+  className = '',
+  onClose
 }) => {
   const categories = [
     {
@@ -81,6 +84,16 @@ export const SyncScoreBreakdown: React.FC<SyncScoreBreakdownProps> = ({
           <div className="flex items-center gap-2">
             <span className={`text-3xl font-bold ${scoreLevel.color}`}>{score}%</span>
             <span className="text-2xl">{scoreLevel.emoji}</span>
+            {onClose && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onClose}
+                className="ml-2 h-8 w-8 p-0"
+              >
+                <X size={16} />
+              </Button>
+            )}
           </div>
         </CardTitle>
         <p className={`text-sm ${scoreLevel.color} font-medium`}>

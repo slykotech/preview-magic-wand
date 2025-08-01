@@ -287,16 +287,8 @@ export const Profile = () => {
             <SyncScoreBreakdown
               score={syncScoreData.score}
               breakdown={syncScoreData.breakdown}
+              onClose={() => setShowSyncBreakdown(false)}
             />
-            <div className="mt-4 text-center">
-              <Button
-                onClick={() => setShowSyncBreakdown(false)}
-                variant="outline"
-                className="bg-background"
-              >
-                Close
-              </Button>
-            </div>
           </div>
         </div>
       )}
