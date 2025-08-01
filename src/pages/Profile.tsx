@@ -230,9 +230,9 @@ export const Profile = () => {
           <div className="bg-card rounded-2xl p-2 shadow-soft">
             <ProfileMenuItem
               icon={<Award size={20} />}
-              title="Relationship Quests"
-              subtitle={`Sync Score: ${relationshipStats.averageSync}`}
-              onClick={() => handleMenuClick("Quests")}
+              title="LoveLog: Dates That Matter"
+              subtitle="Manage important dates & milestones"
+              onClick={() => handleMenuClick("Important Dates", "/important-dates")}
             />
             <ProfileMenuItem
               icon={<Calendar size={20} />}

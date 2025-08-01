@@ -382,6 +382,42 @@ export type Database = {
         }
         Relationships: []
       }
+      important_dates: {
+        Row: {
+          couple_id: string
+          created_at: string
+          created_by: string
+          date_type: string
+          date_value: string
+          description: string | null
+          id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          couple_id: string
+          created_at?: string
+          created_by: string
+          date_type?: string
+          date_value: string
+          description?: string | null
+          id?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          couple_id?: string
+          created_at?: string
+          created_by?: string
+          date_type?: string
+          date_value?: string
+          description?: string | null
+          id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       memories: {
         Row: {
           couple_id: string

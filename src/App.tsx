@@ -17,6 +17,7 @@ import { Profile } from "./pages/Profile";
 import { CoupleSetup } from "./pages/CoupleSetup";
 import { RelationshipInsights } from "./pages/RelationshipInsights";
 import { RelationshipPreferences } from "./pages/RelationshipPreferences";
+import { ImportantDates } from "./pages/ImportantDates";
 import AppMottoPage from "./pages/AppMotto";
 import OnboardingFlow from "./pages/OnboardingFlow";
 import NotFound from "./pages/NotFound";
@@ -47,7 +48,8 @@ const App = () => {
               <Route path="/vault" element={<MemoryVault />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/couple-setup" element={<CoupleSetup />} />
-              <Route path="/preferences" element={<RelationshipPreferences />} />
+          <Route path="/preferences" element={<RelationshipPreferences />} />
+          <Route path="/important-dates" element={<ImportantDates />} />
               <Route path="/insights" element={<RelationshipInsights />} />
               <Route path="/motto" element={<AppMottoPage onNext={() => {}} onBack={() => {}} />} />
               <Route path="/onboarding" element={<OnboardingFlow />} />
