@@ -93,6 +93,36 @@ export const Dashboard = () => {
     };
   }, [user]);
 
+  // Date change detection for auto-refresh
+  useEffect(() => {
+    if (!user) return;
+
+    const checkDateChange = () => {
+      const currentDate = new Date().toDateString();
+      const lastKnownDate = localStorage.getItem('lastDashboardDate');
+      
+      if (lastKnownDate && lastKnownDate !== currentDate) {
+        console.log('Date changed detected, refreshing dashboard...');
+        // Clear date-related cached data
+        localStorage.removeItem('mood_updated');
+        localStorage.removeItem('checkin_completed');
+        // Refresh dashboard data
+        fetchDashboardData();
+      }
+      
+      // Update the stored date
+      localStorage.setItem('lastDashboardDate', currentDate);
+    };
+
+    // Check immediately
+    checkDateChange();
+    
+    // Set up interval to check every minute for date changes
+    const interval = setInterval(checkDateChange, 60000);
+    
+    return () => clearInterval(interval);
+  }, [user]);
+
   const fetchDashboardData = async () => {
     try {
       console.log('Fetching dashboard data for user:', user?.id);
