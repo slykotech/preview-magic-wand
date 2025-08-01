@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { LoveSyncLogo } from "@/components/LoveSyncLogo";
-import { Heart, Sparkles } from "lucide-react";
+import { Heart, Sparkles, Calendar, Camera } from "lucide-react";
 const Index = () => {
   const {
     user,
@@ -56,6 +56,20 @@ const Index = () => {
             <div>
               <h3 className="font-poppins font-bold">Sync Score</h3>
               <p className="text-sm text-white/80 font-inter font-semibold">Track your relationship harmony daily</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 p-3 bg-white/10 rounded-xl">
+            <Calendar className="text-gold-accent" size={24} />
+            <div>
+              <h3 className="font-poppins font-bold">Date Planner</h3>
+              <p className="text-sm text-white/80 font-inter font-semibold">Plan perfect dates and create memories together</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 p-3 bg-white/10 rounded-xl">
+            <Camera className="text-sunrise-coral" size={24} />
+            <div>
+              <h3 className="font-poppins font-bold">Memories Vault</h3>
+              <p className="text-sm text-white/80 font-inter font-semibold">Store and cherish your special moments</p>
             </div>
           </div>
         </div>
