@@ -296,8 +296,7 @@ export const Chat: React.FC<ChatProps> = ({
           const isOwn = message.sender_id === user?.id;
           const senderName = isOwn ? getUserDisplayName() : getPartnerDisplayName();
           return <div key={message.id} className={`flex ${isOwn ? 'justify-end' : 'justify-start'} animate-fade-in mb-4`}>
-                  <div className="max-w-[80%] rounded-2xl p-4 shadow-soft">
-                    <div className={`${message.message_type === 'emoji' || message.message_type === 'sticker' ? 'text-3xl bg-transparent' : isOwn ? 'bg-gradient-to-br from-primary to-primary/80 text-primary-foreground rounded-2xl p-4' : 'bg-card rounded-2xl p-4'}`}>
+                  <div className={`max-w-[80%] rounded-2xl p-4 shadow-soft ${message.message_type === 'emoji' || message.message_type === 'sticker' ? 'text-3xl bg-transparent' : isOwn ? 'bg-gradient-to-br from-primary to-primary/80 text-primary-foreground' : 'bg-card'}`}>
                       {message.message_type === 'image' ? <img src={message.message_text} alt="Shared image" className="max-w-full h-auto rounded-lg cursor-pointer" onClick={() => window.open(message.message_text, '_blank')} /> : message.message_type === 'video' ? <video src={message.message_text} controls className="max-w-full h-auto rounded-lg" style={{
                   maxHeight: '300px'
                 }} /> : <div className="text-sm leading-relaxed">
@@ -318,7 +317,6 @@ export const Chat: React.FC<ChatProps> = ({
                           )}
                         </div>
                       )}
-                    </div>
                   </div>
                 </div>;
         })}
