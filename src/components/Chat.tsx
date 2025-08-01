@@ -255,14 +255,14 @@ export const Chat: React.FC<ChatProps> = ({ isOpen, onClose }) => {
       {/* Debug info */}
       <div className="hidden">Chat component mounted - input should be visible</div>
       {/* Header */}
-      <div className="bg-primary text-primary-foreground p-4 flex items-center gap-3 shadow-lg flex-shrink-0">
+      <div className="bg-primary text-primary-foreground p-3 flex items-center gap-3 shadow-lg flex-shrink-0">
         <Button
           variant="ghost"
-          size="icon"
+          size="sm"
           onClick={onClose}
-          className="text-primary-foreground hover:bg-primary-foreground/20"
+          className="text-primary-foreground hover:bg-primary-foreground/20 h-8 w-8 p-0 rounded-full"
         >
-          <ArrowLeft className="h-5 w-5" />
+          <ArrowLeft className="h-4 w-4" />
         </Button>
         
         <Avatar className="h-10 w-10">
