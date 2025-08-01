@@ -3,17 +3,32 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { format } from "date-fns";
 import { TimePicker } from "@/components/ui/time-picker";
 import { BottomNavigation } from "@/components/BottomNavigation";
-import { CalendarIcon, MapPin, Clock, DollarSign, Heart, Star, CalendarPlus } from "lucide-react";
+import { 
+  CalendarIcon, 
+  MapPin, 
+  Clock, 
+  Heart, 
+  Star, 
+  CalendarPlus, 
+  Edit,
+  Calendar as CalendarClock,
+  Plus,
+  Sparkles,
+  Music,
+  Save,
+  X
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import dateActivitiesImage from "@/assets/date-activities.jpg";
-import { PermissionBanner } from "@/components/PermissionBanner";
-import { usePermissions } from "@/hooks/usePermissions";
+import { useCoupleData } from '@/hooks/useCoupleData';
 
 interface DateIdea {
   id: string;
@@ -31,21 +46,38 @@ interface DateIdea {
   completed_date?: string;
   notes?: string;
   rating?: number;
+  scheduled_date?: string;
+  scheduled_time?: string;
 }
 
-const categories = ['All', 'outdoor', 'indoor', 'adventure', 'relaxing', 'creative'];
+interface UpcomingEvent {
+  id: string;
+  title: string;
+  distance: string;
+  timing: string;
+  description: string;
+  category: string;
+}
 
 export const DatePlanner = () => {
-  const [activeCategory, setActiveCategory] = useState('All');
-  const [selectedIdea, setSelectedIdea] = useState<DateIdea | null>(null);
-  const [selectedDate, setSelectedDate] = useState<Date>();
-  const [selectedTime, setSelectedTime] = useState('');
-  const [dateIdeas, setDateIdeas] = useState<DateIdea[]>([]);
+  const [activeTab, setActiveTab] = useState<'planned' | 'upcoming'>('planned');
+  const [plannedDates, setPlannedDates] = useState<DateIdea[]>([]);
+  const [upcomingEvents, setUpcomingEvents] = useState<UpcomingEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newEvent, setNewEvent] = useState({
+    title: '',
+    description: '',
+    location: '',
+    date: undefined as Date | undefined,
+    time: '',
+    category: 'romantic'
+  });
+  
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
+  const { coupleData } = useCoupleData();
   const navigate = useNavigate();
-  const { checkPermission } = usePermissions();
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -54,134 +86,142 @@ export const DatePlanner = () => {
     }
 
     if (user) {
-      fetchDateIdeas();
+      fetchPlannedDates();
+      fetchUpcomingEvents();
     }
   }, [user, authLoading, navigate]);
 
-  const fetchDateIdeas = async () => {
+  const fetchPlannedDates = async () => {
     try {
-      // Get user's couple ID first
-      const { data: coupleData } = await supabase
-        .from('couples')
-        .select('id')
-        .or(`user1_id.eq.${user?.id},user2_id.eq.${user?.id}`)
-        .maybeSingle();
+      if (!coupleData?.id) return;
 
       const { data, error } = await supabase
         .from('date_ideas')
         .select('*')
-        .eq('couple_id', coupleData?.id)
-        .order('created_at', { ascending: false });
+        .eq('couple_id', coupleData.id)
+        .not('scheduled_date', 'is', null)
+        .order('scheduled_date', { ascending: true });
 
       if (error) throw error;
-
-      if (data && data.length > 0) {
-        setDateIdeas(data);
-      } else if (coupleData?.id) {
-        // Insert some default date ideas if none exist
-        const defaultIdeas = [
-          {
-            title: 'Sunset Picnic in the Park',
-            description: 'Pack your favorite snacks and watch the sunset together in a beautiful park setting.',
-            category: 'outdoor',
-            estimated_duration: '3 hours',
-            estimated_cost: '$',
-            location: 'Local Park',
-            couple_id: coupleData.id,
-            created_by: user?.id
-          },
-          {
-            title: 'Cooking Class for Two',
-            description: 'Learn to make pasta from scratch while enjoying wine and each other\'s company.',
-            category: 'indoor',
-            estimated_duration: '4 hours',
-            estimated_cost: '$$$',
-            location: 'Culinary Studio',
-            couple_id: coupleData.id,
-            created_by: user?.id
-          },
-          {
-            title: 'Stargazing Adventure',
-            description: 'Drive to a dark sky location with blankets and hot cocoa for a romantic night under the stars.',
-            category: 'outdoor',
-            estimated_duration: '5 hours',
-            estimated_cost: '$',
-            location: 'Dark Sky Area',
-            couple_id: coupleData.id,
-            created_by: user?.id
-          }
-        ];
-
-        const { data: insertedData, error: insertError } = await supabase
-          .from('date_ideas')
-          .insert(defaultIdeas)
-          .select();
-
-        if (!insertError && insertedData) {
-          setDateIdeas(insertedData);
-        }
-      }
+      setPlannedDates(data || []);
     } catch (error) {
-      console.error('Error fetching date ideas:', error);
+      console.error('Error fetching planned dates:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const filteredIdeas = activeCategory === 'All' 
-    ? dateIdeas 
-    : dateIdeas.filter(idea => idea.category === activeCategory);
-
-  const handleSchedule = (idea: DateIdea) => {
-    setSelectedIdea(idea);
-    setSelectedDate(undefined);
-    setSelectedTime('');
-    toast({
-      title: "Great choice! 💕",
-      description: `Let's schedule "${idea.title}" for you two!`,
-    });
+  const fetchUpcomingEvents = async () => {
+    // Mock upcoming events for now - in a real app this would come from external APIs
+    const mockEvents: UpcomingEvent[] = [
+      {
+        id: '1',
+        title: 'Jazz Under the Stars 🎷',
+        distance: '3 km away',
+        timing: 'Friday, 8:30 PM',
+        description: 'Feel the rhythm of love as you sway under moonlight and melody.',
+        category: 'Music'
+      },
+      {
+        id: '2',
+        title: 'Candlelit Wine Tasting 🍷',
+        distance: '1.2 km away',
+        timing: 'Saturday, 7:00 PM',
+        description: 'Discover new flavors together in an intimate candlelit setting.',
+        category: 'Food & Drink'
+      },
+      {
+        id: '3',
+        title: 'Moonlight Art Gallery 🎨',
+        distance: '5 km away',
+        timing: 'Sunday, 6:00 PM',
+        description: 'Explore beautiful art pieces while sharing whispered conversations.',
+        category: 'Culture'
+      }
+    ];
+    
+    setUpcomingEvents(mockEvents);
   };
 
-  const confirmSchedule = async () => {
-    if (!selectedDate || !selectedTime || !selectedIdea) {
+  const handleAddEvent = async () => {
+    if (!newEvent.title || !newEvent.date || !newEvent.time || !coupleData?.id) {
       toast({
         title: "Missing details! ⏰",
-        description: "Please select both date and time",
+        description: "Please fill in all required fields",
         variant: "destructive"
       });
       return;
     }
 
     try {
-      // Get user's couple ID first
-      const { data: coupleData } = await supabase
-        .from('couples')
-        .select('id')
-        .or(`user1_id.eq.${user?.id},user2_id.eq.${user?.id}`)
-        .single();
-
-      const scheduledDateTime = selectedDate ? new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate()) : new Date();
-
       const { error } = await supabase
         .from('date_ideas')
-        .update({
-          is_completed: true,
-          completed_date: new Date().toISOString().split('T')[0],
-          notes: `Scheduled for ${scheduledDateTime.toLocaleDateString()}`
-        })
-        .eq('id', selectedIdea.id);
+        .insert({
+          title: newEvent.title,
+          description: newEvent.description,
+          location: newEvent.location,
+          category: newEvent.category,
+          couple_id: coupleData.id,
+          created_by: user?.id,
+          scheduled_date: newEvent.date.toISOString().split('T')[0],
+          scheduled_time: newEvent.time,
+          is_completed: false
+        });
 
       if (error) throw error;
-      
+
       toast({
-        title: "Date scheduled! 🎉",
-        description: `${selectedIdea.title} on ${new Date(selectedDate).toLocaleDateString()} at ${selectedTime}`,
+        title: "Date added! 💕",
+        description: `${newEvent.title} has been added to your planner`,
       });
-      setSelectedIdea(null);
+
+      setShowAddForm(false);
+      setNewEvent({
+        title: '',
+        description: '',
+        location: '',
+        date: undefined,
+        time: '',
+        category: 'romantic'
+      });
+      
+      fetchPlannedDates();
     } catch (error) {
-      console.error('Error scheduling date:', error);
+      console.error('Error adding event:', error);
       toast({
-        title: "Error scheduling date",
+        title: "Error adding event",
+        description: "Please try again",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleSaveUpcomingEvent = async (event: UpcomingEvent) => {
+    if (!coupleData?.id) return;
+
+    try {
+      const { error } = await supabase
+        .from('date_ideas')
+        .insert({
+          title: event.title,
+          description: event.description,
+          category: event.category,
+          couple_id: coupleData.id,
+          created_by: user?.id,
+          location: 'TBD',
+          is_completed: false
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Event saved! ✨",
+        description: `${event.title} has been saved to your ideas`,
+      });
+    } catch (error) {
+      console.error('Error saving event:', error);
+      toast({
+        title: "Error saving event",
         description: "Please try again",
         variant: "destructive"
       });
@@ -193,163 +233,276 @@ export const DatePlanner = () => {
       {/* Header */}
       <div className="bg-gradient-romance text-white p-6 shadow-romantic">
         <h1 className="text-2xl font-extrabold font-poppins mb-2">Date Planner</h1>
-        <p className="text-white/80 font-inter font-bold">Find the perfect date idea for you two</p>
+        <p className="text-white/80 font-inter font-bold">Turning time into memories 💫</p>
       </div>
 
-      {/* Permission Banner */}
-      {!checkPermission('location') && (
-        <div className="p-4">
-          <PermissionBanner
-            type="location"
-            message="Please enable Location access to fetch nearby events and date suggestions."
-          />
+      {/* Toggle Tabs */}
+      <div className="p-6 pb-0">
+        <div className="flex bg-muted rounded-xl p-1">
+          <button
+            onClick={() => setActiveTab('planned')}
+            className={`flex-1 py-3 px-4 rounded-lg transition-all duration-200 ${
+              activeTab === 'planned'
+                ? 'bg-white text-foreground shadow-soft'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <div className="text-center">
+              <div className="font-bold font-poppins">Planned</div>
+              <div className="text-xs mt-1 font-inter">Your scheduled love moments</div>
+            </div>
+          </button>
+          <button
+            onClick={() => setActiveTab('upcoming')}
+            className={`flex-1 py-3 px-4 rounded-lg transition-all duration-200 ${
+              activeTab === 'upcoming'
+                ? 'bg-white text-foreground shadow-soft'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <div className="text-center">
+              <div className="font-bold font-poppins">Upcoming</div>
+              <div className="text-xs mt-1 font-inter">Sweet surprises waiting nearby</div>
+            </div>
+          </button>
         </div>
-      )}
+      </div>
 
-      {/* Category Filters */}
-      <div className="p-4">
-        <div className="flex gap-2 overflow-x-auto pb-2">
-          {categories.map((category) => (
-            <Badge
-              key={category}
-              variant={activeCategory === category ? "default" : "outline"}
-              className={`px-4 py-2 rounded-full cursor-pointer whitespace-nowrap transition-all duration-200 ${
-                activeCategory === category 
-                  ? 'bg-secondary text-secondary-foreground shadow-romantic transform scale-105' 
-                  : 'hover:bg-muted hover:scale-102'
-              } font-bold`}
-              onClick={() => setActiveCategory(category)}
+      {/* Content */}
+      <div className="px-6 mt-6">
+        {activeTab === 'planned' ? (
+          <div className="space-y-4">
+            {/* Add Event Button */}
+            <Button
+              onClick={() => setShowAddForm(true)}
+              className="w-full bg-gradient-secondary hover:opacity-90 text-white py-3"
+              size="lg"
             >
-              {category}
-            </Badge>
-          ))}
-        </div>
-      </div>
+              <Plus size={20} className="mr-2" />
+              Add Your Own Date
+            </Button>
 
-      {/* Date Ideas Grid */}
-      <div className="px-4 space-y-4">
-        {loading ? (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground font-bold">Loading amazing date ideas...</p>
-          </div>
-        ) : filteredIdeas.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground font-bold">No date ideas found for this category</p>
+            {/* Planned Events */}
+            {loading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                <p className="text-muted-foreground font-bold">Loading your planned dates...</p>
+              </div>
+            ) : plannedDates.length === 0 ? (
+              <div className="text-center py-12">
+                <CalendarClock className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
+                <p className="text-lg font-bold text-muted-foreground">
+                  Nothing on the calendar yet — go make some magic!
+                </p>
+              </div>
+            ) : (
+              plannedDates.map((date, index) => (
+                <div
+                  key={date.id}
+                  className="bg-card rounded-2xl p-6 shadow-soft hover:shadow-romantic transition-all duration-200 transform hover:scale-102 animate-fade-in"
+                  style={{ animationDelay: `${index * 100}ms` }}
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div>
+                      <h3 className="text-xl font-extrabold font-poppins text-foreground mb-2">
+                        {date.title} 
+                        {date.category === 'romantic' && ' 🍷'}
+                        {date.category === 'adventure' && ' 🌟'}
+                        {date.category === 'relaxing' && ' 🌸'}
+                      </h3>
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <CalendarIcon size={16} />
+                          <span className="font-bold">
+                            {date.scheduled_date && format(new Date(date.scheduled_date), "EEEE, MMM d")}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Clock size={16} />
+                          <span className="font-bold">{date.scheduled_time}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <Badge className="bg-red-50 text-red-600 border-red-200">
+                      <Heart size={12} className="mr-1" />
+                      Planned Together
+                    </Badge>
+                  </div>
+                  
+                  {date.description && (
+                    <p className="text-muted-foreground font-inter mb-4 leading-relaxed">
+                      {date.description}
+                    </p>
+                  )}
+                  
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" className="flex-1">
+                      <Edit size={14} className="mr-1" />
+                      Edit
+                    </Button>
+                    <Button variant="outline" size="sm" className="flex-1">
+                      <CalendarIcon size={14} className="mr-1" />
+                      Reschedule
+                    </Button>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         ) : (
-          filteredIdeas.map((idea, index) => (
-            <div
-              key={idea.id}
-              className="bg-card rounded-2xl overflow-hidden shadow-soft hover:shadow-romantic transition-all duration-200 transform hover:scale-102 animate-fade-in"
-              style={{ animationDelay: `${index * 100}ms` }}
-            >
-              {/* Image */}
-              <div className="h-48 relative overflow-hidden">
-                <img 
-                  src={dateActivitiesImage} 
-                  alt={idea.title}
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute top-4 right-4">
-                  <Badge className="bg-gold-accent text-accent-foreground">
-                    <Star size={12} className="mr-1" />
-                    4.8
-                  </Badge>
-                </div>
-              </div>
-
-              {/* Content */}
-              <div className="p-6">
-                <div className="flex items-start justify-between mb-3">
-                  <h3 className="text-xl font-extrabold font-poppins text-foreground">{idea.title}</h3>
-                  <Badge variant="outline" className="ml-2 font-bold">
-                    {idea.category}
-                  </Badge>
-                </div>
-
-                <p className="text-muted-foreground font-inter mb-4 leading-relaxed font-medium">
-                  {idea.description}
+          <div className="space-y-4">
+            {/* Upcoming Events */}
+            {upcomingEvents.length === 0 ? (
+              <div className="text-center py-12">
+                <Sparkles className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
+                <p className="text-lg font-bold text-muted-foreground">
+                  We're searching the city for your next romantic moment...
                 </p>
-
-                {/* Details */}
-                <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Clock size={16} />
-                    <span className="font-bold">{idea.estimated_duration || '2-3 hours'}</span>
+              </div>
+            ) : (
+              upcomingEvents.map((event, index) => (
+                <div
+                  key={event.id}
+                  className="bg-card rounded-2xl p-6 shadow-soft hover:shadow-romantic transition-all duration-200 transform hover:scale-102 animate-fade-in"
+                  style={{ animationDelay: `${index * 100}ms` }}
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div>
+                      <h3 className="text-xl font-extrabold font-poppins text-foreground mb-2">
+                        {event.title}
+                      </h3>
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <MapPin size={16} />
+                          <span className="font-bold">{event.distance}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Clock size={16} />
+                          <span className="font-bold">{event.timing}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <Badge variant="outline" className="bg-blue-50 text-blue-600 border-blue-200">
+                      {event.category}
+                    </Badge>
                   </div>
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <DollarSign size={16} />
-                    <span className="font-bold">{idea.estimated_cost || '$'}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-muted-foreground col-span-2">
-                    <MapPin size={16} />
-                    <span className="font-bold">{idea.location || 'Various locations'}</span>
+                  
+                  <p className="text-muted-foreground font-inter mb-4 leading-relaxed italic">
+                    {event.description}
+                  </p>
+                  
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="romantic" 
+                      size="sm" 
+                      className="flex-1"
+                      onClick={() => handleSaveUpcomingEvent(event)}
+                    >
+                      <CalendarPlus size={14} className="mr-1" />
+                      Add to Planner
+                    </Button>
+                    <Button variant="outline" size="sm" className="flex-1">
+                      <Heart size={14} className="mr-1" />
+                      Save for Later
+                    </Button>
                   </div>
                 </div>
-
-                {/* Action Button */}
-                <Button 
-                  onClick={() => handleSchedule(idea)}
-                  variant="romantic"
-                  className="w-full"
-                >
-                  <CalendarIcon className="mr-2" size={18} />
-                  Schedule This Date
-                </Button>
-              </div>
-            </div>
-          ))
+              ))
+            )}
+          </div>
         )}
       </div>
 
-      {/* Schedule Modal (Compact version) */}
-      {selectedIdea && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-2">
-          <div className="bg-card rounded-xl p-4 w-full max-w-xs shadow-romantic animate-slide-up max-h-[90vh] overflow-y-auto">
-            <div className="text-center mb-4">
-              <Heart className="mx-auto text-secondary mb-2" size={24} />
-              <h3 className="text-lg font-extrabold font-poppins mb-1">Schedule Date</h3>
-              <p className="text-muted-foreground font-inter font-bold text-sm">
-                {selectedIdea.title}
-              </p>
+      {/* Add Event Form Modal */}
+      {showAddForm && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-card rounded-xl p-6 w-full max-w-md shadow-romantic animate-slide-up max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-extrabold font-poppins">Add Your Own Date</h3>
+              <Button variant="ghost" size="sm" onClick={() => setShowAddForm(false)}>
+                <X size={20} />
+              </Button>
             </div>
 
-            <div className="space-y-3">
-              <div className="space-y-2">
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="title">Event Title*</Label>
+                <Input
+                  id="title"
+                  value={newEvent.title}
+                  onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
+                  placeholder="e.g., Candlelight Dinner"
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  value={newEvent.description}
+                  onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
+                  placeholder="What makes this date special?"
+                  className="mt-1"
+                  rows={3}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="location">Location</Label>
+                <Input
+                  id="location"
+                  value={newEvent.location}
+                  onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })}
+                  placeholder="Where will this happen?"
+                  className="mt-1"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs font-bold text-foreground mb-1 block">Select Date</label>
+                  <Label>Date*</Label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
-                        className="w-full justify-start text-left font-normal text-sm h-8"
+                        className="w-full justify-start text-left font-normal mt-1"
                       >
-                        <CalendarIcon className="mr-2 h-3 w-3" />
-                        {selectedDate ? format(selectedDate, "MMM d, yyyy") : <span>Pick a date</span>}
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {newEvent.date ? format(newEvent.date, "MMM d, yyyy") : <span>Pick a date</span>}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
                       <CalendarComponent
                         mode="single"
-                        selected={selectedDate}
-                        onSelect={setSelectedDate}
+                        selected={newEvent.date}
+                        onSelect={(date) => setNewEvent({ ...newEvent, date })}
                         initialFocus
-                        className="p-2 pointer-events-auto text-sm"
                       />
                     </PopoverContent>
                   </Popover>
                 </div>
+
                 <div>
-                  <label className="text-xs font-bold text-foreground mb-1 block">Select Time</label>
-                  <div className="scale-75 origin-top">
-                    <TimePicker
-                      value={selectedTime}
-                      onChange={setSelectedTime}
-                      onConfirm={confirmSchedule}
-                      onCancel={() => setSelectedIdea(null)}
-                    />
-                  </div>
+                  <Label htmlFor="time">Time*</Label>
+                  <Input
+                    id="time"
+                    type="time"
+                    value={newEvent.time}
+                    onChange={(e) => setNewEvent({ ...newEvent, time: e.target.value })}
+                    className="mt-1"
+                  />
                 </div>
+              </div>
+
+              <div className="flex gap-2 pt-4">
+                <Button variant="outline" onClick={() => setShowAddForm(false)} className="flex-1">
+                  Cancel
+                </Button>
+                <Button onClick={handleAddEvent} className="flex-1 bg-gradient-secondary hover:opacity-90 text-white">
+                  <Save size={16} className="mr-2" />
+                  Add Date
+                </Button>
               </div>
             </div>
           </div>
