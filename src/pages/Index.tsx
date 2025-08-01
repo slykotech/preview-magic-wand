@@ -35,18 +35,14 @@ const Index = () => {
             <LoveSyncLogo size="lg" />
             <div className="text-left">
               <p className="text-lg text-white/90 font-inter font-medium">Introducing</p>
-              <h1 className="text-3xl font-extrabold font-poppins">
-                LovSync
-              </h1>
+              <h1 className="text-3xl font-extrabold font-poppins">Love Sync</h1>
             </div>
           </div>
           <div className="space-y-4">
             <h2 className="text-2xl font-bold font-poppins text-white">
               Your Relationship Co-Pilot
             </h2>
-            <p className="text-base text-white/90 font-inter leading-relaxed">
-              Strengthen emotional bonds, plan meaningful moments, and grow together — one day at a time.
-            </p>
+            <p className="text-base text-white/90 font-inter leading-relaxed">Strengthen emotional bonds, plan meaningful moments, and grow together one day at a time.</p>
           </div>
         </div>
 
@@ -66,7 +62,7 @@ const Index = () => {
               <Heart className="text-white" size={20} />
             </div>
             <div className="flex-1">
-              <h3 className="font-poppins font-bold text-white">AI Coaching</h3>
+              <h3 className="font-poppins font-bold text-white">Soul Syncing</h3>
             </div>
             <div className="text-2xl">🤖</div>
           </div>
