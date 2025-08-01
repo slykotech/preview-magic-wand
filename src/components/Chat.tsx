@@ -265,19 +265,23 @@ export const Chat: React.FC<ChatProps> = ({
           const senderName = isOwn ? getUserDisplayName() : getPartnerDisplayName();
           return <div key={message.id} className={`flex ${isOwn ? 'justify-end' : 'justify-start'} animate-fade-in`}>
                   <div className={`max-w-[75%] ${isOwn ? 'order-2' : 'order-1'}`}>
-                    <div className={`${message.message_type === 'emoji' || message.message_type === 'sticker' ? 'text-3xl px-2 py-1 bg-transparent' : `px-4 py-2 rounded-2xl ${isOwn ? 'bg-primary text-primary-foreground ml-2' : 'bg-muted text-foreground mr-2'}`}`}>
+                    <div className={`${message.message_type === 'emoji' || message.message_type === 'sticker' ? 'text-3xl px-2 py-1 bg-transparent' : `px-4 py-2 rounded-2xl relative ${isOwn ? 'bg-primary text-primary-foreground ml-2' : 'bg-muted text-foreground mr-2'}`}`}>
                       {message.message_type === 'image' ? <img src={message.message_text} alt="Shared image" className="max-w-full h-auto rounded-lg cursor-pointer" onClick={() => window.open(message.message_text, '_blank')} /> : message.message_type === 'video' ? <video src={message.message_text} controls className="max-w-full h-auto rounded-lg" style={{
                   maxHeight: '300px'
                 }} /> : message.message_text}
-                    </div>
-                    
-                    <div className={`text-xs text-muted-foreground mt-1 ${isOwn ? 'text-right mr-2' : 'ml-2'}`}>
-                      {formatDistanceToNow(new Date(message.created_at), {
-                  addSuffix: true
-                })}
-                      {isOwn && <span className="ml-1">
-                          {message.is_read ? '✓✓' : '✓'}
-                        </span>}
+                      
+                      {(message.message_type !== 'emoji' && message.message_type !== 'sticker') && (
+                        <div className={`absolute bottom-1 right-2 text-xs ${isOwn ? 'text-primary-foreground/70' : 'text-muted-foreground'} flex items-center gap-1`}>
+                          <span>
+                            {formatDistanceToNow(new Date(message.created_at), {
+                              addSuffix: true
+                            })}
+                          </span>
+                          {isOwn && <span>
+                              {message.is_read ? '✓✓' : '✓'}
+                            </span>}
+                        </div>
+                      )}
                     </div>
                   </div>
                   
