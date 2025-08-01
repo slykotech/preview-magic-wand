@@ -69,21 +69,38 @@ export const Chat: React.FC<ChatProps> = ({
   useEffect(() => {
     if (!conversation?.id) return;
 
-    // Set up real-time subscription for new messages
-    const channel = supabase.channel('messages').on('postgres_changes', {
-      event: 'INSERT',
-      schema: 'public',
-      table: 'messages',
-      filter: `conversation_id=eq.${conversation.id}`
-    }, payload => {
-      const newMessage = payload.new as Message;
-      setMessages(prev => [...prev, newMessage]);
+    // Set up real-time subscription for new messages and updates
+    const channel = supabase
+      .channel(`messages:${conversation.id}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'messages',
+        filter: `conversation_id=eq.${conversation.id}`
+      }, payload => {
+        const newMessage = payload.new as Message;
+        setMessages(prev => [...prev, newMessage]);
 
-      // Mark message as read if it's from partner
-      if (newMessage.sender_id !== user?.id) {
-        markMessageAsRead(newMessage.id);
-      }
-    }).subscribe();
+        // Mark message as read if it's from partner
+        if (newMessage.sender_id !== user?.id) {
+          markMessageAsRead(newMessage.id);
+        }
+      })
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'messages',
+        filter: `conversation_id=eq.${conversation.id}`
+      }, payload => {
+        const updatedMessage = payload.new as Message;
+        setMessages(prev => 
+          prev.map(msg => 
+            msg.id === updatedMessage.id ? updatedMessage : msg
+          )
+        );
+      })
+      .subscribe();
+      
     return () => {
       supabase.removeChannel(channel);
     };
