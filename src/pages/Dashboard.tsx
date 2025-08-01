@@ -13,7 +13,8 @@ import { Chat } from "@/components/Chat";
 import { useEnhancedSyncScore } from "@/hooks/useEnhancedSyncScore";
 import { usePresence } from "@/hooks/usePresence";
 import { SyncScoreSkeleton, DashboardCardSkeleton, CompactCardSkeleton, MoodDisplaySkeleton } from "@/components/ui/skeleton";
-import { Calendar, Heart, MessageCircle, Sparkles, Clock } from "lucide-react";
+import { Calendar, Heart, MessageCircle, Sparkles, Clock, Lightbulb, X } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -46,6 +47,7 @@ export const Dashboard = () => {
   const [partnerId, setPartnerId] = useState<string>();
   const [showChat, setShowChat] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [showHealthTips, setShowHealthTips] = useState(false);
   const {
     toast
   } = useToast();
@@ -595,7 +597,10 @@ export const Dashboard = () => {
               </div>
 
               {/* Relationship Health Card - Dynamic */}
-              <div className="bg-card border rounded-lg p-3 shadow-sm">
+              <div 
+                className="bg-card border rounded-lg p-3 shadow-sm cursor-pointer hover:shadow-md transition-all hover:scale-105 duration-200"
+                onClick={() => setShowHealthTips(true)}
+              >
                 <div className="flex items-center gap-2 mb-2">
                   <div className="w-8 h-8 bg-secondary rounded-full flex items-center justify-center">
                     <Heart className="text-white" size={16} />
@@ -739,6 +744,131 @@ export const Dashboard = () => {
       fetchUnreadCount(); // Refresh unread count when closing chat
     }} />}
 
+      {/* Relationship Health Tips Modal */}
+      <Dialog open={showHealthTips} onOpenChange={setShowHealthTips}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Lightbulb className="h-5 w-5 text-yellow-500" />
+              Relationship Enhancement Tips
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="text-center p-4 bg-gradient-to-r from-primary/10 to-secondary/10 rounded-lg">
+              <div className="text-2xl font-bold text-primary mb-1">{syncScore}%</div>
+              <div className="text-sm text-muted-foreground">
+                {syncScore >= 80 ? 'Your relationship is thriving! 🌟' :
+                 syncScore >= 60 ? 'You\'re growing stronger together! 💪' :
+                 syncScore >= 40 ? 'Building a solid foundation! 🏗️' :
+                 'Every journey starts with a single step! 🌱'}
+              </div>
+            </div>
+            
+            <div className="space-y-3">
+              {syncScore < 40 && (
+                <>
+                  <div className="p-3 bg-card border rounded-lg">
+                    <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                      <Heart className="h-4 w-4 text-red-500" />
+                      Daily Connection
+                    </h4>
+                    <p className="text-sm text-muted-foreground">
+                      Start with daily check-ins. Share how you're feeling and ask about your partner's day. Small daily connections build strong foundations.
+                    </p>
+                  </div>
+                  <div className="p-3 bg-card border rounded-lg">
+                    <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                      <MessageCircle className="h-4 w-4 text-blue-500" />
+                      Open Communication
+                    </h4>
+                    <p className="text-sm text-muted-foreground">
+                      Practice active listening. Put devices away during conversations and show genuine interest in what your partner shares.
+                    </p>
+                  </div>
+                </>
+              )}
+              
+              {syncScore >= 40 && syncScore < 60 && (
+                <>
+                  <div className="p-3 bg-card border rounded-lg">
+                    <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-green-500" />
+                      Quality Time
+                    </h4>
+                    <p className="text-sm text-muted-foreground">
+                      Schedule regular date nights. Try new activities together to create shared memories and strengthen your bond.
+                    </p>
+                  </div>
+                  <div className="p-3 bg-card border rounded-lg">
+                    <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                      <Sparkles className="h-4 w-4 text-purple-500" />
+                      Appreciation
+                    </h4>
+                    <p className="text-sm text-muted-foreground">
+                      Express gratitude daily. Notice the small things your partner does and acknowledge them verbally.
+                    </p>
+                  </div>
+                </>
+              )}
+              
+              {syncScore >= 60 && syncScore < 80 && (
+                <>
+                  <div className="p-3 bg-card border rounded-lg">
+                    <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                      <Heart className="h-4 w-4 text-pink-500" />
+                      Deeper Intimacy
+                    </h4>
+                    <p className="text-sm text-muted-foreground">
+                      Share your dreams, fears, and aspirations. Create space for vulnerable conversations that deepen emotional intimacy.
+                    </p>
+                  </div>
+                  <div className="p-3 bg-card border rounded-lg">
+                    <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                      <Lightbulb className="h-4 w-4 text-yellow-500" />
+                      Growth Together
+                    </h4>
+                    <p className="text-sm text-muted-foreground">
+                      Set relationship goals together. Discuss what you both want to achieve as a couple and support each other's individual growth.
+                    </p>
+                  </div>
+                </>
+              )}
+              
+              {syncScore >= 80 && (
+                <>
+                  <div className="p-3 bg-card border rounded-lg">
+                    <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                      <Sparkles className="h-4 w-4 text-gold-500" />
+                      Maintain Excellence
+                    </h4>
+                    <p className="text-sm text-muted-foreground">
+                      Keep nurturing what works! Continue your daily rituals and don't take your strong connection for granted.
+                    </p>
+                  </div>
+                  <div className="p-3 bg-card border rounded-lg">
+                    <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                      <Heart className="h-4 w-4 text-red-500" />
+                      Inspire Others
+                    </h4>
+                    <p className="text-sm text-muted-foreground">
+                      Your relationship is thriving! Consider mentoring other couples or sharing what's worked for you.
+                    </p>
+                  </div>
+                </>
+              )}
+            </div>
+            
+            <div className="pt-4 border-t">
+              <Button 
+                className="w-full"
+                onClick={() => setShowHealthTips(false)}
+              >
+                Start Improving Today!
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Bottom Navigation - hidden during splash */}
       {!showSplash && <BottomNavigation />}
