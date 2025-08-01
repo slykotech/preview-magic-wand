@@ -45,28 +45,40 @@ const Index = () => {
         {/* Features */}
         <div className="space-y-4 text-left">
           <div className="flex items-center gap-3 p-3 bg-white/10 rounded-xl">
-            <Sparkles className="text-gold-accent" size={24} />
+            <div className="flex items-center gap-2">
+              <div className="text-2xl">🤖</div>
+              <Sparkles className="text-gold-accent" size={24} />
+            </div>
             <div>
               <h3 className="font-poppins font-bold">AI Relationship Coach</h3>
               <p className="text-xs text-white/80 font-inter font-semibold">Get personalized advice for your relationship</p>
             </div>
           </div>
           <div className="flex items-center gap-3 p-3 bg-white/10 rounded-xl">
-            <Heart className="text-sunrise-coral" size={24} />
+            <div className="flex items-center gap-2">
+              <div className="text-2xl">💕</div>
+              <Heart className="text-sunrise-coral" size={24} />
+            </div>
             <div>
               <h3 className="font-poppins font-bold">Sync Score</h3>
               <p className="text-xs text-white/80 font-inter font-semibold">Track your relationship harmony daily</p>
             </div>
           </div>
           <div className="flex items-center gap-3 p-3 bg-white/10 rounded-xl">
-            <Calendar className="text-gold-accent" size={24} />
+            <div className="flex items-center gap-2">
+              <div className="text-2xl">👫</div>
+              <Calendar className="text-gold-accent" size={24} />
+            </div>
             <div>
               <h3 className="font-poppins font-bold">Date Planner</h3>
               <p className="text-xs text-white/80 font-inter font-semibold">Plan perfect dates and create memories together</p>
             </div>
           </div>
           <div className="flex items-center gap-3 p-3 bg-white/10 rounded-xl">
-            <Camera className="text-sunrise-coral" size={24} />
+            <div className="flex items-center gap-2">
+              <div className="text-2xl">📸</div>
+              <Camera className="text-sunrise-coral" size={24} />
+            </div>
             <div>
               <h3 className="font-poppins font-bold">Memories Vault</h3>
               <p className="text-xs text-white/80 font-inter font-semibold">Store and cherish your special moments</p>
