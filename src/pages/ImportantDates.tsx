@@ -359,7 +359,7 @@ export const ImportantDates = () => {
       <div className="mt-8 pt-6 border-t border-border">
         <Button 
           onClick={() => navigate('/dashboard')}
-          className="w-full bg-gradient-glow text-foreground hover:opacity-90 font-poppins font-bold"
+          className="w-full bg-gradient-primary hover:opacity-90 text-white font-poppins font-bold"
         >
           Go to Dashboard
         </Button>
