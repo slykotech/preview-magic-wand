@@ -30,6 +30,19 @@ export const CoupleSetup = () => {
     }
   }, [user]);
 
+  // Listen for focus events to refresh data when user returns to page
+  useEffect(() => {
+    const handleFocus = () => {
+      if (user) {
+        console.log('Page focused, refreshing couple data...');
+        fetchUserData();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [user]);
+
   const fetchUserData = async () => {
     try {
       // Fetch user profile
