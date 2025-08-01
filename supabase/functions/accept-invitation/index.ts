@@ -34,14 +34,6 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     )
 
-    // Verify the JWT token and get recipient user
-    const { data: { user: recipientUser }, error: authError } = await supabase.auth.getUser(token)
-
-    if (authError || !recipientUser) {
-      console.error('Auth error:', authError)
-      throw new Error(`Authentication failed: ${authError?.message || 'Auth session missing!'}`)
-    }
-
     const { senderUserId, recipientEmail, type }: AcceptInvitationRequest = await req.json()
 
     if (!senderUserId || !recipientEmail) {
@@ -50,9 +42,23 @@ Deno.serve(async (req) => {
 
     console.log(`Processing ${type} invitation acceptance from ${senderUserId} to ${recipientEmail}`)
 
-    // Verify the recipient email matches the authenticated user
-    if (recipientUser.email?.toLowerCase() !== recipientEmail.toLowerCase()) {
+    // Verify the JWT token and get recipient user
+    const { data: { user: recipientUser }, error: authError } = await supabase.auth.getUser(token)
+
+    if (authError || !recipientUser) {
+      console.error('Auth error:', authError)
+      throw new Error(`Authentication failed: ${authError?.message || 'Auth session missing!'}`)
+    }
+
+    // For invite type (new users), they should have just signed up with the invited email
+    // For connect type (existing users), verify they're signed in with the correct email
+    if (type === 'connect' && recipientUser.email?.toLowerCase() !== recipientEmail.toLowerCase()) {
       throw new Error('Email mismatch. Please sign in with the invited email address.')
+    }
+    
+    // For invite type, the user should have just signed up with this email via the signup flow
+    if (type === 'invite' && recipientUser.email?.toLowerCase() !== recipientEmail.toLowerCase()) {
+      throw new Error('Please sign up with the invited email address.')
     }
 
     // Get sender's profile
