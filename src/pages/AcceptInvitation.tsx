@@ -51,12 +51,6 @@ const AcceptInvitation = () => {
       console.log('Setting showSignup to true for new user invitation');
       setShowSignup(true);
     }
-    
-    // If user is already authenticated with invite type, proceed with connection
-    if (!authLoading && invitationType === 'invite' && user && email && senderId) {
-      console.log('User already authenticated for invite - proceeding with connection');
-      handleAcceptInvitation();
-    }
   }, [authLoading, email, senderId, invitationType, user]);
 
   const handleSignup = async () => {
@@ -209,15 +203,6 @@ const AcceptInvitation = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/10 to-romantic/10 flex items-center justify-center p-4">
-      {/* Debug Panel - Remove this in production */}
-      <div className="fixed top-4 left-4 bg-black text-white p-2 rounded text-xs z-50">
-        <div>Email: {email || 'null'}</div>
-        <div>Sender: {senderId || 'null'}</div>
-        <div>Type: {invitationType || 'null'}</div>
-        <div>User: {user ? 'authenticated' : 'not authenticated'}</div>
-        <div>ShowSignup: {showSignup ? 'true' : 'false'}</div>
-        <div>Status: {status}</div>
-      </div>
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mx-auto w-16 h-16 bg-gradient-to-br from-primary to-romantic rounded-full flex items-center justify-center mb-4">
