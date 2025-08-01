@@ -79,9 +79,12 @@ Deno.serve(async (req) => {
 
     // Create enhanced email template with better deliverability
     const createEmailTemplate = (isConnectType: boolean, partnerName: string, email: string) => {
+      // Use the new resolver-based URLs for clear flow separation
       const acceptUrl = isConnectType 
-        ? `${appUrl}/accept-invitation?email=${encodeURIComponent(email)}&sender=${encodeURIComponent(user.id)}&type=connect`
-        : `${appUrl}/accept-invitation?email=${encodeURIComponent(email)}&sender=${encodeURIComponent(user.id)}&type=invite`
+        ? `${appUrl}/invite-resolver?email=${encodeURIComponent(email)}&sender=${encodeURIComponent(user.id)}&type=connect`
+        : `${appUrl}/invite-resolver?email=${encodeURIComponent(email)}&sender=${encodeURIComponent(user.id)}&type=invite`
+      
+      console.log('Generated invitation URL:', acceptUrl, 'Type:', isConnectType ? 'connect' : 'invite');
       
       return `
         <!DOCTYPE html>

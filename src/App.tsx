@@ -26,6 +26,9 @@ import OnboardingFlow from "./pages/OnboardingFlow";
 import NotFound from "./pages/NotFound";
 import { AppSettings } from "./pages/AppSettings";
 import AcceptInvitation from "./pages/AcceptInvitation";
+import InviteResolver from "./pages/InviteResolver";
+import NewUserInvite from "./pages/NewUserInvite";
+import ExistingUserConnect from "./pages/ExistingUserConnect";
 
 const queryClient = new QueryClient();
 
@@ -71,6 +74,9 @@ const App = () => {
                 <Route path="/motto" element={<AppMottoPage onNext={() => {}} onBack={() => {}} />} />
                 <Route path="/onboarding" element={<OnboardingFlow />} />
                 <Route path="/accept-invitation" element={<AcceptInvitation />} />
+                <Route path="/invite-resolver" element={<InviteResolver />} />
+                <Route path="/new-user-invite" element={<NewUserInvite />} />
+                <Route path="/existing-user-connect" element={<ExistingUserConnect />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>

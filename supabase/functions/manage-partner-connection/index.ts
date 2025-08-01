@@ -164,6 +164,7 @@ async function handleSendRequest(supabase: any, user: any, partnerEmail: string,
   }
 
   const partnerUser = authUsers.users.find((u: any) => u.email === partnerEmail)
+  console.log('Partner user found:', !!partnerUser, 'for email:', partnerEmail)
   
   // Check for any existing requests to this email and clean them up if needed
   const { data: existingRequests, error: requestError } = await supabase
