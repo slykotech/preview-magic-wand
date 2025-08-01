@@ -164,11 +164,26 @@ export const Chat: React.FC<ChatProps> = ({
   };
   const markMessageAsRead = async (messageId: string) => {
     try {
+      // Update local state immediately for better UX
+      setMessages(prev => 
+        prev.map(msg => 
+          msg.id === messageId ? { ...msg, is_read: true } : msg
+        )
+      );
+
+      // Update in database
       await supabase.from('messages').update({
         is_read: true
       }).eq('id', messageId);
     } catch (error) {
       console.error('Error marking message as read:', error);
+      
+      // Revert local state on error
+      setMessages(prev => 
+        prev.map(msg => 
+          msg.id === messageId ? { ...msg, is_read: false } : msg
+        )
+      );
     }
   };
   const sendMessage = async (text: string, type: 'text' | 'emoji' | 'sticker' | 'image' | 'video' = 'text') => {
