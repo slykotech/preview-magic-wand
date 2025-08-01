@@ -251,11 +251,11 @@ export const Chat: React.FC<ChatProps> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-background z-50 flex flex-col">
+    <div className="fixed inset-0 bg-background z-50 flex flex-col h-screen">
       {/* Debug info */}
       <div className="hidden">Chat component mounted - input should be visible</div>
       {/* Header */}
-      <div className="bg-primary text-primary-foreground p-4 flex items-center gap-3 shadow-lg">
+      <div className="bg-primary text-primary-foreground p-4 flex items-center gap-3 shadow-lg flex-shrink-0">
         <Button
           variant="ghost"
           size="icon"
@@ -286,8 +286,8 @@ export const Chat: React.FC<ChatProps> = ({ isOpen, onClose }) => {
         </Button>
       </div>
 
-      {/* Messages Container - Takes remaining space */}
-      <div className="flex-1 overflow-hidden flex flex-col">
+      {/* Messages Container - Takes remaining space but leaves room for input */}
+      <div className="flex-1 overflow-hidden flex flex-col min-h-0">
         <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-gradient-to-b from-background to-muted/20">
           {loading ? (
             <div className="flex items-center justify-center h-full">
@@ -370,7 +370,7 @@ export const Chat: React.FC<ChatProps> = ({ isOpen, onClose }) => {
 
       {/* Emoji Picker */}
       {showEmojiPicker && (
-        <div className="border-t bg-background p-4">
+        <div className="border-t bg-background p-4 flex-shrink-0">
           <div className="grid grid-cols-5 gap-2 mb-2">
             {quickEmojis.map((emoji, index) => (
               <button
@@ -387,7 +387,7 @@ export const Chat: React.FC<ChatProps> = ({ isOpen, onClose }) => {
 
       {/* Love Stickers */}
       {showStickers && (
-        <div className="border-t bg-background p-4">
+        <div className="border-t bg-background p-4 flex-shrink-0">
           <h4 className="text-sm font-medium mb-3 text-muted-foreground">Love Stickers</h4>
           <div className="grid grid-cols-6 gap-2 mb-4">
             {loveStickers.map((sticker, index) => (
@@ -417,7 +417,7 @@ export const Chat: React.FC<ChatProps> = ({ isOpen, onClose }) => {
 
       {/* Attachments Panel */}
       {showAttachments && (
-        <div className="border-t bg-background p-4">
+        <div className="border-t bg-background p-4 flex-shrink-0">
           <div className="grid grid-cols-3 gap-4">
             <button
               onClick={() => fileInputRef.current?.click()}
@@ -455,7 +455,7 @@ export const Chat: React.FC<ChatProps> = ({ isOpen, onClose }) => {
       )}
 
       {/* Message Input - Always visible at bottom */}
-      <div className="border-t bg-background p-4 min-h-[80px] sticky bottom-0 z-50">
+      <div className="border-t bg-background p-4 flex-shrink-0">
         <div className="flex gap-2 items-end">
           {/* Attachment Button */}
           <Button
