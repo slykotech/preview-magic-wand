@@ -286,9 +286,9 @@ export const Chat: React.FC<ChatProps> = ({ isOpen, onClose }) => {
         </Button>
       </div>
 
-      {/* Messages Container - Takes remaining space but leaves room for input */}
-      <div className="flex-1 overflow-hidden flex flex-col min-h-0">
-        <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-gradient-to-b from-background to-muted/20">
+      {/* Messages Container - Reduced size */}
+      <div className="flex-1 overflow-hidden flex flex-col min-h-0" style={{ maxHeight: 'calc(100vh - 200px)' }}>
+        <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-gradient-to-b from-background to-muted/20" style={{ maxHeight: 'calc(100vh - 280px)' }}>
           {loading ? (
             <div className="flex items-center justify-center h-full">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
