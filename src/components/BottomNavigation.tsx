@@ -13,6 +13,11 @@ export const BottomNavigation = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
+  // Hide navigation when in chat/messages view
+  if (location.pathname === '/messages') {
+    return null;
+  }
+
   const getIconAnimation = (iconId: string, isActive: boolean) => {
     if (!isActive) return '';
     
