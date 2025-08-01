@@ -323,6 +323,7 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
         console.log('Camera video started playing');
         
         setShowCamera(true);
+        console.log('Camera UI should now be visible - showCamera set to true');
         toast.dismiss('camera-loading');
         toast.success('Camera is ready! Position yourself and click "Capture" to take a photo.');
       }
