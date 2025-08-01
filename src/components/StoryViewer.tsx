@@ -278,16 +278,10 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
         return;
       }
 
-      // Step 2: Check existing permissions
-      const hasPermission = await checkPermissions();
-      if (!hasPermission) {
-        return;
-      }
-
-      // Step 3: Show loading state
+      // Step 2: Show loading state
       toast.loading('Requesting camera access...', { id: 'camera-loading' });
 
-      // Step 4: Request camera access with comprehensive settings
+      // Step 3: Request camera access - this will trigger the permission prompt
       console.log('Requesting camera stream...');
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: { 
