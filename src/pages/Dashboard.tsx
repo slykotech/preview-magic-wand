@@ -48,6 +48,7 @@ export const Dashboard = () => {
   const [showChat, setShowChat] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showHealthTips, setShowHealthTips] = useState(false);
+  const [showCheckinInsights, setShowCheckinInsights] = useState(false);
   const {
     toast
   } = useToast();
@@ -579,7 +580,10 @@ export const Dashboard = () => {
         }}>
           {isLoaded ? <>
               {/* Last Check-in Card - Compact */}
-              <div className="bg-card border rounded-lg p-3 shadow-sm">
+              <div 
+                className="bg-card border rounded-lg p-3 shadow-sm cursor-pointer hover:shadow-md transition-all hover:scale-105 duration-200"
+                onClick={() => setShowCheckinInsights(true)}
+              >
                 <div className="flex items-center gap-2 mb-2">
                   <div className="w-8 h-8 bg-secondary rounded-full flex items-center justify-center">
                     <Heart className="text-white" size={16} />
@@ -864,6 +868,146 @@ export const Dashboard = () => {
                 onClick={() => setShowHealthTips(false)}
               >
                 Start Improving Today!
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Check-in Insights Modal */}
+      <Dialog open={showCheckinInsights} onOpenChange={setShowCheckinInsights}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Heart className="h-5 w-5 text-red-500" />
+              Check-in Insights & Tips
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="text-center p-4 bg-gradient-to-r from-secondary/10 to-primary/10 rounded-lg">
+              <div className="text-lg font-bold text-secondary mb-1">
+                {lastCheckin ? `Last check-in: ${new Date(lastCheckin.checkin_date).toLocaleDateString()}` : 'No recent check-in'}
+              </div>
+              <div className="text-sm text-muted-foreground">
+                {lastCheckin ? `Feeling ${lastCheckin.mood}` : 'Start your check-in journey today!'}
+              </div>
+              {checkinStreak > 0 && (
+                <div className="text-lg font-bold text-accent mt-2">
+                  🔥 {checkinStreak} day streak!
+                </div>
+              )}
+            </div>
+            
+            <div className="space-y-3">
+              {!lastCheckin && (
+                <>
+                  <div className="p-3 bg-card border rounded-lg">
+                    <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                      <MessageCircle className="h-4 w-4 text-blue-500" />
+                      Start Your First Check-in
+                    </h4>
+                    <p className="text-sm text-muted-foreground">
+                      Daily check-ins are the foundation of relationship health. Start by sharing your mood and what's on your mind today.
+                    </p>
+                  </div>
+                  <div className="p-3 bg-card border rounded-lg">
+                    <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-purple-500" />
+                      Make It a Habit
+                    </h4>
+                    <p className="text-sm text-muted-foreground">
+                      Choose a consistent time each day for check-ins. Morning coffee or evening wind-down are great options.
+                    </p>
+                  </div>
+                </>
+              )}
+              
+              {lastCheckin && checkinStreak === 0 && (
+                <>
+                  <div className="p-3 bg-card border rounded-lg">
+                    <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                      <Heart className="h-4 w-4 text-red-500" />
+                      Restart Your Streak
+                    </h4>
+                    <p className="text-sm text-muted-foreground">
+                      Great job on your last check-in! Consistency is key to building deeper connection. Let's get that streak going again.
+                    </p>
+                  </div>
+                  <div className="p-3 bg-card border rounded-lg">
+                    <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                      <Lightbulb className="h-4 w-4 text-yellow-500" />
+                      Set Reminders
+                    </h4>
+                    <p className="text-sm text-muted-foreground">
+                      Consider setting a daily reminder on your phone to help establish this important relationship ritual.
+                    </p>
+                  </div>
+                </>
+              )}
+              
+              {checkinStreak > 0 && checkinStreak < 7 && (
+                <>
+                  <div className="p-3 bg-card border rounded-lg">
+                    <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                      <Sparkles className="h-4 w-4 text-purple-500" />
+                      Building Momentum
+                    </h4>
+                    <p className="text-sm text-muted-foreground">
+                      You're building a great habit! Aim for 7 days to establish a solid foundation. Share deeper thoughts and feelings.
+                    </p>
+                  </div>
+                  <div className="p-3 bg-card border rounded-lg">
+                    <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                      <MessageCircle className="h-4 w-4 text-blue-500" />
+                      Go Deeper
+                    </h4>
+                    <p className="text-sm text-muted-foreground">
+                      Beyond mood, share what made you grateful today or something you're looking forward to together.
+                    </p>
+                  </div>
+                </>
+              )}
+              
+              {checkinStreak >= 7 && (
+                <>
+                  <div className="p-3 bg-card border rounded-lg">
+                    <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                      <Heart className="h-4 w-4 text-red-500" />
+                      Amazing Consistency!
+                    </h4>
+                    <p className="text-sm text-muted-foreground">
+                      Your dedication to daily check-ins is strengthening your relationship. Keep this wonderful habit going!
+                    </p>
+                  </div>
+                  <div className="p-3 bg-card border rounded-lg">
+                    <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                      <Lightbulb className="h-4 w-4 text-yellow-500" />
+                      Level Up Your Check-ins
+                    </h4>
+                    <p className="text-sm text-muted-foreground">
+                      Try themed check-ins: "Appreciation Monday," "Dream Wednesday," or "Growth Friday" to add variety.
+                    </p>
+                  </div>
+                </>
+              )}
+            </div>
+            
+            <div className="pt-4 border-t space-y-2">
+              <Button 
+                className="w-full"
+                onClick={() => {
+                  setShowCheckinInsights(false);
+                  handleCheckinClick();
+                }}
+              >
+                Start Today's Check-in
+              </Button>
+              <Button 
+                variant="outline"
+                className="w-full"
+                onClick={() => setShowCheckinInsights(false)}
+              >
+                Close
               </Button>
             </div>
           </div>
