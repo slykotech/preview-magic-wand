@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { SyncScoreBreakdown } from "@/components/SyncScoreBreakdown";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { User, Heart, Settings, Award, Calendar, LogOut, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useCoupleData } from '@/hooks/useCoupleData';
+import { useEnhancedSyncScore } from "@/hooks/useEnhancedSyncScore";
 import { supabase } from "@/integrations/supabase/client";
 import coupleImage from "@/assets/couple-avatars.jpg";
 
@@ -57,11 +59,18 @@ export const Profile = () => {
     averageSync: 0
   });
   const [loading, setLoading] = useState(true);
+  const [showSyncBreakdown, setShowSyncBreakdown] = useState(false);
   
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { getUserDisplayName, getPartnerDisplayName, coupleData, loading: coupleLoading } = useCoupleData();
+  
+  // Use enhanced sync score hook
+  const { 
+    syncScoreData, 
+    loading: syncScoreLoading
+  } = useEnhancedSyncScore(coupleData?.id);
 
   useEffect(() => {
     if (user && !coupleLoading) {
@@ -239,6 +248,12 @@ export const Profile = () => {
           <h2 className="text-lg font-extrabold font-poppins text-foreground mb-4">Settings</h2>
           <div className="bg-card rounded-2xl p-2 shadow-soft">
             <ProfileMenuItem
+              icon={<Award size={20} />}
+              title="View Score Breakdown"
+              subtitle="See detailed sync score analysis"
+              onClick={() => setShowSyncBreakdown(true)}
+            />
+            <ProfileMenuItem
               icon={<Settings size={20} />}
               title="App Settings"
               subtitle="Notifications, privacy & more"
@@ -264,6 +279,27 @@ export const Profile = () => {
           </p>
         </div>
       </div>
+
+      {/* Sync Score Breakdown Dialog */}
+      {showSyncBreakdown && syncScoreData && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <SyncScoreBreakdown
+              score={syncScoreData.score}
+              breakdown={syncScoreData.breakdown}
+            />
+            <div className="mt-4 text-center">
+              <Button
+                onClick={() => setShowSyncBreakdown(false)}
+                variant="outline"
+                className="bg-background"
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <BottomNavigation />
     </div>

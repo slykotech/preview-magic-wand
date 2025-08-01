@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { CoupleAvatars } from "@/components/CoupleAvatars";
 import { SyncScoreCircle } from "@/components/SyncScoreCircle";
-import { SyncScoreBreakdown } from "@/components/SyncScoreBreakdown";
+
 import { DashboardCard } from "@/components/DashboardCard";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { StreakDisplay } from "@/components/StreakDisplay";
@@ -52,7 +52,7 @@ export const Dashboard = () => {
   const [partnerId, setPartnerId] = useState<string>();
   const [showChat, setShowChat] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [showSyncBreakdown, setShowSyncBreakdown] = useState(false);
+  
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user, loading } = useAuth();
@@ -580,15 +580,6 @@ export const Dashboard = () => {
                   score={syncScoreData?.score || syncScore} 
                   animated={true} 
                 />
-                {syncScoreData && (
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowSyncBreakdown(true)}
-                    className="w-full"
-                  >
-                    View Score Breakdown
-                  </Button>
-                )}
               </div>
             ) : (
               <SyncScoreSkeleton />
@@ -853,26 +844,6 @@ export const Dashboard = () => {
         />
       )}
 
-      {/* Sync Score Breakdown Dialog */}
-      {showSyncBreakdown && syncScoreData && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <SyncScoreBreakdown
-              score={syncScoreData.score}
-              breakdown={syncScoreData.breakdown}
-            />
-            <div className="mt-4 text-center">
-              <Button
-                onClick={() => setShowSyncBreakdown(false)}
-                variant="outline"
-                className="bg-background"
-              >
-                Close
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Bottom Navigation - hidden during splash */}
       {!showSplash && <BottomNavigation />}
