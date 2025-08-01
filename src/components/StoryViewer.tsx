@@ -327,11 +327,20 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
       // Enhanced error handling with specific solutions
       if (error.name === 'NotAllowedError') {
         toast.error(
-          'Camera access denied. To fix this:\n' +
-          '1. Look for the camera icon in your browser\'s address bar\n' +
-          '2. Click it and select "Allow"\n' +
-          '3. Or go to browser settings and enable camera for this site\n' +
-          '4. Refresh and try again'
+          '🚫 Camera access is BLOCKED for this site. To fix this:\n\n' +
+          '📍 CHROME/EDGE:\n' +
+          '1. Click the 🔒 lock icon (or 🎥 camera icon) in your address bar\n' +
+          '2. Change Camera from "Block" to "Allow"\n' +
+          '3. Refresh the page\n\n' +
+          '📍 FIREFOX:\n' +
+          '1. Click the 🛡️ shield icon in your address bar\n' +
+          '2. Click "Allow Camera"\n' +
+          '3. Refresh the page\n\n' +
+          '📍 SAFARI:\n' +
+          '1. Go to Safari > Settings > Websites > Camera\n' +
+          '2. Find this site and change to "Allow"\n' +
+          '3. Refresh the page',
+          { duration: 15000 }
         );
       } else if (error.name === 'NotFoundError') {
         toast.error(
