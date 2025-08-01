@@ -251,7 +251,7 @@ export const Chat: React.FC<ChatProps> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-background z-50 flex flex-col h-screen">
+    <div className="fixed inset-0 bg-background z-50 flex flex-col h-screen max-h-screen overflow-hidden">
       {/* Debug info */}
       <div className="hidden">Chat component mounted - input should be visible</div>
       {/* Header */}
@@ -286,9 +286,9 @@ export const Chat: React.FC<ChatProps> = ({ isOpen, onClose }) => {
         </Button>
       </div>
 
-      {/* Messages Container - Reduced size */}
-      <div className="flex-1 overflow-hidden flex flex-col min-h-0" style={{ maxHeight: 'calc(100vh - 200px)' }}>
-        <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-gradient-to-b from-background to-muted/20" style={{ maxHeight: 'calc(100vh - 280px)' }}>
+      {/* Messages Container - Compact and responsive */}
+      <div className="flex-1 min-h-0 overflow-hidden">
+        <div className="h-full p-3 overflow-y-auto space-y-3 bg-gradient-to-b from-background to-muted/20">
           {loading ? (
             <div className="flex items-center justify-center h-full">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -455,8 +455,8 @@ export const Chat: React.FC<ChatProps> = ({ isOpen, onClose }) => {
       )}
 
       {/* Message Input - Always visible at bottom */}
-      <div className="border-t bg-background p-4 flex-shrink-0">
-        <div className="flex gap-2 items-end">
+      <div className="border-t bg-background p-2 sm:p-3 flex-shrink-0">
+        <div className="flex gap-1 sm:gap-2 items-center max-w-full">
           {/* Attachment Button */}
           <Button
             variant="ghost"
