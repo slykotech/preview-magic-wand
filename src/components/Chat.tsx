@@ -17,6 +17,7 @@ interface Message {
   is_read: boolean;
   created_at: string;
   updated_at: string;
+  delivery_status?: 'sending' | 'sent' | 'delivered' | 'seen';
 }
 interface Conversation {
   id: string;
@@ -48,6 +49,7 @@ export const Chat: React.FC<ChatProps> = ({
   const [loading, setLoading] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showStickers, setShowStickers] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
   const [showAttachments, setShowAttachments] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -188,24 +190,60 @@ export const Chat: React.FC<ChatProps> = ({
   };
   const sendMessage = async (text: string, type: 'text' | 'emoji' | 'sticker' | 'image' | 'video' = 'text') => {
     if (!text.trim() || !conversation?.id || !user?.id) return;
+    
+    // Create optimistic message with sending status
+    const optimisticMessage: Message = {
+      id: `temp-${Date.now()}`,
+      conversation_id: conversation.id,
+      sender_id: user.id,
+      message_text: text.trim(),
+      message_type: type,
+      is_read: false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      delivery_status: 'sending'
+    };
+    
+    // Add optimistic message immediately
+    setMessages(prev => [...prev, optimisticMessage]);
+    setNewMessage('');
+    setShowEmojiPicker(false);
+    setShowStickers(false);
+    setShowAttachments(false);
+    scrollToBottom();
+    
     try {
-      const {
-        error
-      } = await supabase.from('messages').insert({
-        conversation_id: conversation.id,
-        sender_id: user.id,
-        message_text: text.trim(),
-        message_type: type,
-        is_read: false
-      });
+      const { data, error } = await supabase
+        .from('messages')
+        .insert({
+          conversation_id: conversation.id,
+          sender_id: user.id,
+          message_text: text.trim(),
+          message_type: type,
+          is_read: false
+        })
+        .select()
+        .single();
+
       if (error) throw error;
-      setNewMessage('');
-      setShowEmojiPicker(false);
-      setShowStickers(false);
-      setShowAttachments(false);
+      
+      // Replace optimistic message with real one
+      setMessages(prev => prev.map(msg => 
+        msg.id === optimisticMessage.id 
+          ? { 
+              ...data, 
+              message_type: data.message_type as Message['message_type'],
+              delivery_status: 'sent' as const
+            } as Message
+          : msg
+      ));
+      
     } catch (error) {
       console.error('Error sending message:', error);
       toast.error('Failed to send message');
+      
+      // Remove failed message
+      setMessages(prev => prev.filter(msg => msg.id !== optimisticMessage.id));
     }
   };
   const handleFileUpload = async (file: File) => {
@@ -312,8 +350,12 @@ export const Chat: React.FC<ChatProps> = ({
                             })}
                           </span>
                           {isOwn && (
-                            <span className={`${message.is_read ? 'text-blue-400' : 'text-primary-foreground/60'}`}>
-                              {message.is_read ? '✓✓' : '✓'}
+                            <span className="flex items-center gap-1">
+                              {message.delivery_status === 'sending' && <span className="text-muted-foreground">⏳</span>}
+                              {message.delivery_status === 'sent' && <span className="text-primary-foreground/60">✓</span>}
+                              {message.delivery_status === 'delivered' && <span className="text-primary-foreground/80">✓✓</span>}
+                              {message.is_read && <span className="text-blue-400">✓✓</span>}
+                              {!message.delivery_status && !message.is_read && <span className="text-primary-foreground/60">✓</span>}
                             </span>
                           )}
                         </div>
@@ -398,7 +440,20 @@ export const Chat: React.FC<ChatProps> = ({
           </Button>
           
           <div className="flex-1 relative">
-            <Input ref={inputRef} placeholder="Type a message..." value={newMessage} onChange={e => setNewMessage(e.target.value)} onKeyPress={handleKeyPress} className="h-8 rounded-full border focus:border-primary text-sm" disabled={loading} />
+            <Input 
+              ref={inputRef} 
+              placeholder={loading ? "Sending..." : "Type a message..."} 
+              value={newMessage} 
+              onChange={(e) => setNewMessage(e.target.value)} 
+              onKeyPress={handleKeyPress}
+              onFocus={() => setIsFocused(true)}
+              onBlur={() => setIsFocused(false)}
+              className="h-8 rounded-full border focus:border-primary text-sm" 
+              disabled={loading}
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="sentences"
+            />
           </div>
           
           {/* Love Stickers Button */}

@@ -207,5 +207,37 @@ All colors MUST be HSL.
       padding-right: env(safe-area-inset-right);
       padding-bottom: env(safe-area-inset-bottom);
     }
+    
+    /* Improve input font size to prevent zoom on iOS */
+    .chat-input-area input {
+      font-size: 16px !important;
+    }
+  }
+  
+  /* Animation for smooth message appearance */
+  .animate-fade-in {
+    animation: fade-in 0.3s ease-in-out;
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  /* Full-screen chat specific styles */
+  .chat-fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1000;
+    background: hsl(var(--background));
   }
 }
