@@ -10,6 +10,8 @@ interface CoupleAvatarsProps {
   onCameraClick?: () => void;
   hasUserStory?: boolean;
   hasPartnerStory?: boolean;
+  isUserOnline?: boolean;
+  isPartnerOnline?: boolean;
 }
 
 export const CoupleAvatars = ({ 
@@ -19,7 +21,9 @@ export const CoupleAvatars = ({
   onPartnerAvatarClick,
   onCameraClick,
   hasUserStory = false,
-  hasPartnerStory = false 
+  hasPartnerStory = false,
+  isUserOnline = false,
+  isPartnerOnline = false
 }: CoupleAvatarsProps) => {
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -82,11 +86,9 @@ export const CoupleAvatars = ({
               />
             </div>
           )}
-          {/* Mood Indicator */}
+          {/* Online Status Indicator */}
           <div className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-2 border-white ${
-            syncScore >= 80 ? 'bg-gold-accent animate-pulse' :
-            syncScore >= 60 ? 'bg-sunrise-coral' :
-            syncScore >= 40 ? 'bg-yellow-400' : 'bg-gray-400'
+            isUserOnline ? 'bg-green-500' : 'bg-red-500'
           }`}></div>
         </div>
 
@@ -120,11 +122,9 @@ export const CoupleAvatars = ({
               />
             </div>
           )}
-          {/* Mood Indicator */}
+          {/* Online Status Indicator */}
           <div className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-2 border-white ${
-            syncScore >= 80 ? 'bg-gold-accent animate-pulse' :
-            syncScore >= 60 ? 'bg-sunrise-coral' :
-            syncScore >= 40 ? 'bg-yellow-400' : 'bg-gray-400'
+            isPartnerOnline ? 'bg-green-500' : 'bg-red-500'
           }`}></div>
         </div>
       </div>
