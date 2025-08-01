@@ -4,11 +4,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { LoveSyncLogo } from "@/components/LoveSyncLogo";
 import { Heart, Sparkles } from "lucide-react";
-
 const Index = () => {
-  const { user, loading } = useAuth();
+  const {
+    user,
+    loading
+  } = useAuth();
   const navigate = useNavigate();
-
   useEffect(() => {
     if (!loading) {
       if (user) {
@@ -16,22 +17,17 @@ const Index = () => {
       }
     }
   }, [user, loading, navigate]);
-
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-romance flex items-center justify-center">
+    return <div className="min-h-screen bg-gradient-romance flex items-center justify-center">
         <div className="text-center">
           <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
             <Heart size={40} className="text-white" />
           </div>
           <p className="text-white font-inter font-bold">Loading Love Sync...</p>
         </div>
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="min-h-screen bg-gradient-romance flex flex-col items-center justify-center p-6 text-white">
+  return <div className="min-h-screen bg-gradient-romance flex flex-col items-center justify-center p-6 text-white">
       <div className="max-w-md w-full text-center space-y-8">
         {/* Logo */}
         <div className="space-y-4">
@@ -66,21 +62,12 @@ const Index = () => {
 
         {/* CTA */}
         <div className="space-y-3">
-          <Button 
-            onClick={() => navigate('/motto')}
-            variant="secondary"
-            size="lg"
-            className="w-full text-lg font-bold"
-          >
+          <Button onClick={() => navigate('/motto')} variant="secondary" size="lg" className="w-full text-lg font-bold">
             Get Started
           </Button>
-          <p className="text-sm text-white/70 font-inter font-semibold">
-            Already have an account? Sign in to continue your love journey
-          </p>
+          
         </div>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default Index;
