@@ -77,6 +77,131 @@ Deno.serve(async (req) => {
 
     console.log(`Sending ${type} email to ${email} from ${displayName}`)
 
+    // Create enhanced email template with better deliverability
+    const createEmailTemplate = (isConnectType: boolean, partnerName: string, email: string) => {
+      const acceptUrl = isConnectType 
+        ? `${appUrl}/accept-invitation?email=${encodeURIComponent(email)}&sender=${encodeURIComponent(user.id)}&type=connect`
+        : `${appUrl}/accept-invitation?email=${encodeURIComponent(email)}&sender=${encodeURIComponent(user.id)}&type=invite`
+      
+      return `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Love Sync Invitation</title>
+          <!--[if mso]>
+          <noscript>
+            <xml>
+              <o:OfficeDocumentSettings>
+                <o:PixelsPerInch>96</o:PixelsPerInch>
+              </o:OfficeDocumentSettings>
+            </xml>
+          </noscript>
+          <![endif]-->
+        </head>
+        <body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+          <table role="presentation" style="width: 100%; border-collapse: collapse;">
+            <tr>
+              <td style="padding: 40px 20px;">
+                <table role="presentation" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); overflow: hidden;">
+                  
+                  <!-- Header with Logo -->
+                  <tr>
+                    <td style="padding: 30px 40px; text-align: center; background: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);">
+                      <h1 style="margin: 0; color: #ffffff; font-size: 32px; font-weight: 700; letter-spacing: -0.5px;">
+                        💕 Love Sync
+                      </h1>
+                      <p style="margin: 8px 0 0 0; color: rgba(255, 255, 255, 0.9); font-size: 16px;">
+                        Strengthen your relationship together
+                      </p>
+                    </td>
+                  </tr>
+                  
+                  <!-- Main Content -->
+                  <tr>
+                    <td style="padding: 40px;">
+                      
+                      <!-- Invitation Card -->
+                      <div style="background: linear-gradient(135deg, #8B5CF6, #EC4899); padding: 30px; border-radius: 12px; text-align: center; margin-bottom: 32px;">
+                        <h2 style="margin: 0 0 12px 0; color: #ffffff; font-size: 24px; font-weight: 600;">
+                          ${isConnectType ? 'You have a new connection request!' : 'You\'re invited to join Love Sync!'}
+                        </h2>
+                        <p style="margin: 0; color: rgba(255, 255, 255, 0.95); font-size: 18px; line-height: 1.4;">
+                          ${partnerName} wants to ${isConnectType ? 'start their Love Sync journey' : 'start their relationship journey'} with you
+                        </p>
+                      </div>
+                      
+                      <!-- Description -->
+                      <div style="margin-bottom: 32px;">
+                        <p style="margin: 0 0 20px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+                          ${isConnectType 
+                            ? 'Love Sync helps couples strengthen their relationship through daily check-ins, shared memories, and personalized insights. ' + partnerName + ' is inviting you to connect and start building a stronger relationship together.'
+                            : 'Love Sync is designed to help couples grow closer through meaningful daily interactions and insights.'
+                          }
+                        </p>
+                        
+                        ${!isConnectType ? `
+                        <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                          <h3 style="margin: 0 0 12px 0; color: #1f2937; font-size: 18px; font-weight: 600;">What you'll get:</h3>
+                          <ul style="margin: 0; padding-left: 20px; color: #374151; font-size: 15px; line-height: 1.7;">
+                            <li>💝 Daily mood sync and relationship scores</li>
+                            <li>🤖 AI-powered relationship coaching</li>
+                            <li>📸 Private memory vault and story sharing</li>
+                            <li>📅 Collaborative date planning tools</li>
+                            <li>📊 Personalized relationship insights</li>
+                          </ul>
+                        </div>
+                        ` : ''}
+                      </div>
+                      
+                      <!-- CTA Button -->
+                      <div style="text-align: center; margin: 32px 0;">
+                        <a href="${acceptUrl}" 
+                           style="display: inline-block; background: linear-gradient(135deg, #8B5CF6, #EC4899); color: #ffffff; text-decoration: none; padding: 18px 36px; border-radius: 12px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3); transition: all 0.3s ease;">
+                          ${isConnectType ? 'Accept Connection Request' : 'Join Love Sync & Connect'}
+                        </a>
+                      </div>
+                      
+                      <!-- Alternative Link -->
+                      <div style="text-align: center; margin: 20px 0;">
+                        <p style="margin: 0; color: #6b7280; font-size: 14px;">
+                          Can't see the button? 
+                          <a href="${acceptUrl}" style="color: #8B5CF6; text-decoration: none;">Click here to accept</a>
+                        </p>
+                      </div>
+                      
+                    </td>
+                  </tr>
+                  
+                  <!-- Footer -->
+                  <tr>
+                    <td style="padding: 30px 40px; background-color: #f8fafc; border-top: 1px solid #e5e7eb;">
+                      <div style="text-align: center;">
+                        <p style="margin: 0 0 8px 0; color: #6b7280; font-size: 14px;">
+                          This invitation will expire in 7 days.
+                        </p>
+                        <p style="margin: 0 0 16px 0; color: #6b7280; font-size: 14px;">
+                          If you didn't expect this email, you can safely ignore it.
+                        </p>
+                        <p style="margin: 0; color: #6b7280; font-size: 12px;">
+                          Sent with 💜 from Love Sync • 
+                          <a href="${appUrl}" style="color: #8B5CF6; text-decoration: none;">lovesync.app</a> • 
+                          <a href="mailto:hi@slyko.tech" style="color: #8B5CF6; text-decoration: none;">Support</a>
+                        </p>
+                      </div>
+                    </td>
+                  </tr>
+                  
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
+        </html>
+      `
+    }
+
     try {
       if (type === 'connect') {
         // Send connection invitation to existing Love Sync user
@@ -84,39 +209,14 @@ Deno.serve(async (req) => {
           from: 'Love Sync <hi@slyko.tech>', // Using verified sender email
           to: [email],
           subject: `${displayName} wants to connect with you on Love Sync! 💕`,
-          html: `
-            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-              <div style="text-align: center; margin-bottom: 30px;">
-                <h1 style="color: #8B5CF6; margin: 0; font-size: 28px;">💕 Love Sync</h1>
-              </div>
-              
-              <div style="background: linear-gradient(135deg, #8B5CF6, #EC4899); padding: 30px; border-radius: 16px; color: white; text-align: center; margin-bottom: 30px;">
-                <h2 style="margin: 0 0 15px 0; font-size: 24px;">You have a new connection request!</h2>
-                <p style="margin: 0; font-size: 18px; opacity: 0.9;">${displayName} wants to start their Love Sync journey with you</p>
-              </div>
-              
-              <div style="background: #F9FAFB; padding: 25px; border-radius: 12px; margin-bottom: 30px;">
-                <p style="margin: 0 0 20px 0; color: #374151; font-size: 16px; line-height: 1.6;">
-                  Love Sync helps couples strengthen their relationship through daily check-ins, shared memories, and personalized insights. 
-                  ${displayName} is inviting you to connect and start building a stronger relationship together.
-                </p>
-                
-                <div style="text-align: center;">
-                  <a href="${appUrl}/auth" style="display: inline-block; background: linear-gradient(135deg, #8B5CF6, #EC4899); color: white; text-decoration: none; padding: 16px 32px; border-radius: 12px; font-weight: 600; font-size: 16px; margin: 10px;">
-                    Accept Connection Request
-                  </a>
-                </div>
-              </div>
-              
-              <div style="text-align: center; color: #6B7280; font-size: 14px;">
-                <p>This invitation will expire in 7 days.</p>
-                <p style="margin-top: 20px;">
-                  Sent with 💜 from Love Sync<br>
-                  <a href="${appUrl}" style="color: #8B5CF6;">lovesync.app</a>
-                </p>
-              </div>
-            </div>
-          `,
+          html: createEmailTemplate(true, displayName, email),
+          headers: {
+            'X-Priority': '1',
+            'X-MSMail-Priority': 'High',
+            'Importance': 'high',
+            'List-Unsubscribe': `<mailto:hi@slyko.tech?subject=Unsubscribe>`,
+            'X-Entity-Ref-ID': `love-sync-connect-${Date.now()}`,
+          },
         })
 
         if (error) {
@@ -145,46 +245,14 @@ Deno.serve(async (req) => {
           from: 'Love Sync <hi@slyko.tech>', // Using verified sender email
           to: [email],
           subject: `${displayName} invited you to join Love Sync! 💕`,
-          html: `
-            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-              <div style="text-align: center; margin-bottom: 30px;">
-                <h1 style="color: #8B5CF6; margin: 0; font-size: 28px;">💕 Love Sync</h1>
-              </div>
-              
-              <div style="background: linear-gradient(135deg, #8B5CF6, #EC4899); padding: 30px; border-radius: 16px; color: white; text-align: center; margin-bottom: 30px;">
-                <h2 style="margin: 0 0 15px 0; font-size: 24px;">You're invited to join Love Sync!</h2>
-                <p style="margin: 0; font-size: 18px; opacity: 0.9;">${displayName} wants to start their relationship journey with you</p>
-              </div>
-              
-              <div style="background: #F9FAFB; padding: 25px; border-radius: 12px; margin-bottom: 30px;">
-                <p style="margin: 0 0 20px 0; color: #374151; font-size: 16px; line-height: 1.6;">
-                  Love Sync is an app designed to help couples strengthen their relationship through:
-                </p>
-                
-                <ul style="color: #374151; font-size: 16px; line-height: 1.8; margin: 0 0 20px 0; padding-left: 20px;">
-                  <li>💝 Daily mood check-ins and sync scores</li>
-                  <li>🤖 AI-powered relationship coaching</li>
-                  <li>📸 Shared memory vault and stories</li>
-                  <li>📅 Collaborative date planning</li>
-                  <li>📊 Relationship insights and growth tracking</li>
-                </ul>
-                
-                <div style="text-align: center;">
-                  <a href="${appUrl}/auth" style="display: inline-block; background: linear-gradient(135deg, #8B5CF6, #EC4899); color: white; text-decoration: none; padding: 16px 32px; border-radius: 12px; font-weight: 600; font-size: 16px; margin: 10px;">
-                    Join Love Sync & Connect
-                  </a>
-                </div>
-              </div>
-              
-              <div style="text-align: center; color: #6B7280; font-size: 14px;">
-                <p>Create your account and connect with ${displayName} to start your journey together!</p>
-                <p style="margin-top: 20px;">
-                  Sent with 💜 from Love Sync<br>
-                  <a href="${appUrl}" style="color: #8B5CF6;">lovesync.app</a>
-                </p>
-              </div>
-            </div>
-          `,
+          html: createEmailTemplate(false, displayName, email),
+          headers: {
+            'X-Priority': '1',
+            'X-MSMail-Priority': 'High',
+            'Importance': 'high',
+            'List-Unsubscribe': `<mailto:hi@slyko.tech?subject=Unsubscribe>`,
+            'X-Entity-Ref-ID': `love-sync-invite-${Date.now()}`,
+          },
         })
 
         if (error) {
