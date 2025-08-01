@@ -586,7 +586,7 @@ export const Dashboard = () => {
                   <div className="w-8 h-8 bg-secondary rounded-full flex items-center justify-center">
                     <Heart className="text-white" size={16} />
                   </div>
-                  <div className="space-y-1">
+                  <div className="flex-1 space-y-1">
                     <p className="text-xs text-muted-foreground">Last Check-in</p>
                     <p className="text-xs font-medium">
                       {lastCheckin ? format(new Date(lastCheckin.checkin_date), 'd MMMM') : '28 July'}
