@@ -115,7 +115,7 @@ export const Dashboard = () => {
       
       // If no couple relationship exists, show setup message
       if (!currentCoupleId) {
-        setSyncScore(75);
+        setSyncScore(0); // Start from 0% instead of 75%
         setUpcomingDate(null);
         setRecentMemory(null);
         setLastCheckin(null);
@@ -134,7 +134,7 @@ export const Dashboard = () => {
       const isTestingWithSelf = currentPartnerId === user?.id;
 
       // Fetch or calculate sync score
-      let syncScore = 75; // Default
+      let syncScore = 0; // Start from 0% instead of 75%
       const { data: syncData } = await supabase
         .from('sync_scores')
         .select('score')

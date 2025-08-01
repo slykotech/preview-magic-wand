@@ -38,7 +38,7 @@ export const useEnhancedSyncScore = (coupleId: string | null) => {
       setError(null);
 
       // First try the enhanced sync score calculation
-      let calculatedScore = 60; // Default base score
+      let calculatedScore = 0; // Start from 0% base score
       
       try {
         // Try to update streaks first
@@ -69,7 +69,7 @@ export const useEnhancedSyncScore = (coupleId: string | null) => {
         
         if (recentCheckins) {
           const checkinCount = recentCheckins.length;
-          calculatedScore = Math.min(60 + (checkinCount * 5), 100);
+          calculatedScore = Math.min(checkinCount * 5, 100); // Start from 0%, add 5 points per checkin
         }
       }
 
