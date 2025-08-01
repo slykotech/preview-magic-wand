@@ -273,8 +273,8 @@ export const Chat: React.FC<ChatProps> = ({
                         </div>}
                       
                       {(message.message_type !== 'emoji' && message.message_type !== 'sticker') && (
-                        <div className={`absolute bottom-1 right-3 text-xs ${isOwn ? 'text-primary-foreground/80' : 'text-muted-foreground/80'} flex items-center gap-1 leading-none`}>
-                          <span className="font-medium">
+                        <div className={`absolute bottom-1 right-2 text-xs ${isOwn ? 'text-primary-foreground/80' : 'text-muted-foreground/80'} flex items-center gap-1 leading-none`}>
+                          <span className="font-normal">
                             {new Date(message.created_at).toLocaleTimeString('en-US', {
                               hour: 'numeric',
                               minute: '2-digit',
@@ -282,7 +282,7 @@ export const Chat: React.FC<ChatProps> = ({
                             })}
                           </span>
                           {isOwn && (
-                            <span className={`${message.is_read ? 'text-blue-400' : 'text-primary-foreground/60'} ml-1`}>
+                            <span className={`${message.is_read ? 'text-blue-400' : 'text-primary-foreground/60'}`}>
                               {message.is_read ? '✓✓' : '✓'}
                             </span>
                           )}
