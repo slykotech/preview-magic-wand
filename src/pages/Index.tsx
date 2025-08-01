@@ -50,7 +50,7 @@ const Index = () => {
               <Sparkles className="text-gold-accent" size={24} />
             </div>
             <div>
-              <h3 className="font-poppins font-bold">AI Relationship Coach</h3>
+              <h3 className="font-poppins font-bold">Soul Sync</h3>
               <p className="text-xs text-white/80 font-inter font-semibold">Get personalized advice for your relationship</p>
             </div>
           </div>
