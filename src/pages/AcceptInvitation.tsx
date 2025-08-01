@@ -90,16 +90,8 @@ const AcceptInvitation = () => {
       }
 
       if (authData.user) {
-        // Wait a moment for the session to be fully established
-        setTimeout(async () => {
-          try {
-            await handleAcceptInvitation(authData.user);
-          } catch (error) {
-            console.error('Error during auto-connection:', error);
-            setStatus('error');
-            setMessage('Account created successfully, but failed to connect automatically. Please try connecting manually.');
-          }
-        }, 1000);
+        // Auto-connect with the inviter
+        await handleAcceptInvitation(authData.user);
       } else {
         throw new Error('User creation failed');
       }
