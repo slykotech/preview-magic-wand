@@ -301,7 +301,9 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
       console.log('Camera stream obtained successfully');
       
       // Step 5: Set up video element
+      console.log('Setting up video element, videoRef available:', !!videoRef.current);
       if (videoRef.current) {
+        console.log('Video element found, setting stream...');
         videoRef.current.srcObject = stream;
         
         // Wait for video to be ready
@@ -327,6 +329,9 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
         toast.dismiss('camera-loading');
         toast.dismiss(); // Dismiss all toasts to ensure loading message is gone
         toast.success('Camera is ready! Position yourself and click "Capture" to take a photo.');
+      } else {
+        console.error('Video element not found! videoRef.current is null');
+        toast.error('Camera setup failed - video element not available');
       }
     } catch (error: any) {
       console.error('Camera access error:', error);
