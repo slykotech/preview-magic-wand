@@ -68,7 +68,7 @@ export const AICoach = () => {
       // Add welcome message
       const welcomeMessage: Message = {
         id: '1',
-        content: "Hello! I'm your AI relationship coach. I'm here to help you and your partner strengthen your connection. What would you like to talk about today? 💕",
+        content: "Welcome to Soul Syncing 💞. A cozy corner just for you two — to share feelings, rediscover each other, and grow closer with every word. What’s on your heart today? Let’s open up and sync your souls together.",
         role: 'assistant',
         timestamp: new Date()
       };
