@@ -55,7 +55,7 @@ export const DailyCheckinFlow: React.FC<DailyCheckinFlowProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
-  const totalSteps = 4;
+  const totalSteps = 2;
   const progress = (step / totalSteps) * 100;
 
   const handleNext = () => {
@@ -223,10 +223,8 @@ export const DailyCheckinFlow: React.FC<DailyCheckinFlowProps> = ({
 
   const canProceed = () => {
     switch (step) {
-      case 1: return selectedProductivity !== null;
-      case 2: return energyLevel !== null;
-      case 3: return relationshipFeeling !== null;
-      case 4: return gratitude.trim().length > 0;
+      case 1: return selectedProductivity !== null && energyLevel !== null;
+      case 2: return relationshipFeeling !== null && gratitude.trim().length > 0;
       default: return false;
     }
   };
@@ -237,31 +235,67 @@ export const DailyCheckinFlow: React.FC<DailyCheckinFlowProps> = ({
         return (
           <div className="space-y-6">
             <div className="text-center">
-              <h3 className="text-xl font-semibold text-foreground mb-2">How productive was your day?</h3>
-              <p className="text-sm text-muted-foreground">Your daily productivity check-in</p>
+              <h3 className="text-xl font-semibold text-foreground mb-2">How was your day?</h3>
+              <p className="text-sm text-muted-foreground">Tell us about your productivity and energy</p>
             </div>
-            <div className="space-y-3">
-              {productivityLevels.map((level) => (
-                <Button
-                  key={level.value}
-                  variant={selectedProductivity === level.value ? "default" : "outline"}
-                  className={`w-full flex items-center justify-between p-4 h-auto ${
-                    selectedProductivity === level.value 
-                      ? 'bg-secondary text-white border-secondary' 
-                      : 'hover:bg-muted'
-                  }`}
-                  onClick={() => setSelectedProductivity(level.value)}
-                >
-                  <div className="flex items-center space-x-3">
-                    <span className="text-2xl">{level.emoji}</span>
-                    <div className="text-left">
-                      <div className="font-medium">{level.label}</div>
-                      <div className="text-xs opacity-70">{level.description}</div>
+            
+            {/* Productivity Section */}
+            <div className="space-y-4">
+              <h4 className="font-medium text-foreground">Productivity Level</h4>
+              <div className="space-y-2">
+                {productivityLevels.map((level) => (
+                  <Button
+                    key={level.value}
+                    variant={selectedProductivity === level.value ? "default" : "outline"}
+                    className={`w-full flex items-center justify-between p-3 h-auto ${
+                      selectedProductivity === level.value 
+                        ? 'bg-secondary text-white border-secondary' 
+                        : 'hover:bg-muted'
+                    }`}
+                    onClick={() => setSelectedProductivity(level.value)}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <span className="text-xl">{level.emoji}</span>
+                      <div className="text-left">
+                        <div className="font-medium text-sm">{level.label}</div>
+                        <div className="text-xs opacity-70">{level.description}</div>
+                      </div>
                     </div>
-                  </div>
-                  <span className="text-sm text-muted-foreground">Tap to select</span>
-                </Button>
-              ))}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            {/* Energy Level Section */}
+            <div className="space-y-4">
+              <h4 className="font-medium text-foreground">Energy Level</h4>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-muted-foreground">😴 Low</span>
+                <span className="text-xs text-muted-foreground">⚡ High</span>
+              </div>
+              <div className="flex justify-center space-x-3">
+                {energyLevels.map((level) => (
+                  <Button
+                    key={level}
+                    variant={energyLevel === level ? "default" : "outline"}
+                    className={`w-10 h-10 rounded-full text-sm ${
+                      energyLevel === level 
+                        ? 'bg-secondary text-white border-secondary' 
+                        : 'hover:bg-muted'
+                    }`}
+                    onClick={() => setEnergyLevel(level)}
+                  >
+                    {level}
+                  </Button>
+                ))}
+              </div>
+              {energyLevel && (
+                <div className="text-center">
+                  <p className="text-xs text-muted-foreground">
+                    Energy: {energyLevel}/5
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         );
@@ -270,100 +304,52 @@ export const DailyCheckinFlow: React.FC<DailyCheckinFlowProps> = ({
         return (
           <div className="space-y-6">
             <div className="text-center">
-              <h3 className="text-xl font-semibold text-foreground mb-2">What's your energy level?</h3>
-              <p className="text-sm text-muted-foreground">How energized do you feel right now?</p>
+              <h3 className="text-xl font-semibold text-foreground mb-2">Your relationship & gratitude</h3>
+              <p className="text-sm text-muted-foreground">Share how you feel and what you're grateful for</p>
             </div>
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-sm text-muted-foreground flex items-center">
-                😴 Low Energy
-              </span>
-              <span className="text-sm text-muted-foreground flex items-center">
-                ⚡ High Energy
-              </span>
-            </div>
-            <div className="flex justify-center space-x-4">
-              {energyLevels.map((level) => (
-                <Button
-                  key={level}
-                  variant={energyLevel === level ? "default" : "outline"}
-                  className={`w-12 h-12 rounded-full ${
-                    energyLevel === level 
-                      ? 'bg-secondary text-white border-secondary' 
-                      : 'hover:bg-muted'
-                  }`}
-                  onClick={() => setEnergyLevel(level)}
-                >
-                  {level}
-                </Button>
-              ))}
-            </div>
-            {energyLevel && (
-              <div className="text-center">
-                <p className="text-sm text-muted-foreground">
-                  Selected: {energyLevel}/5
-                </p>
-              </div>
-            )}
-          </div>
-        );
-
-      case 3:
-        return (
-          <div className="space-y-6">
-            <div className="text-center">
-              <h3 className="text-xl font-semibold text-foreground mb-2">
-                How do you feel about your relationship today?
-              </h3>
-              <p className="text-sm text-muted-foreground">Your connection with your partner</p>
-            </div>
-            <div className="space-y-3">
-              {relationshipFeelings.map((feeling) => {
-                const Icon = feeling.icon;
-                return (
-                  <Button
-                    key={feeling.value}
-                    variant={relationshipFeeling === feeling.value ? "default" : "outline"}
-                    className={`w-full flex items-center justify-start p-4 h-auto ${
-                      relationshipFeeling === feeling.value 
-                        ? 'bg-secondary text-white border-secondary' 
-                        : 'hover:bg-muted'
-                    }`}
-                    onClick={() => setRelationshipFeeling(feeling.value)}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <Icon size={20} />
-                      <div className="text-left">
-                        <div className="font-medium">{feeling.label}</div>
-                        <div className="text-xs opacity-70">{feeling.description}</div>
+            
+            {/* Relationship Feeling Section */}
+            <div className="space-y-4">
+              <h4 className="font-medium text-foreground">How do you feel about your relationship today?</h4>
+              <div className="space-y-2">
+                {relationshipFeelings.map((feeling) => {
+                  const Icon = feeling.icon;
+                  return (
+                    <Button
+                      key={feeling.value}
+                      variant={relationshipFeeling === feeling.value ? "default" : "outline"}
+                      className={`w-full flex items-center justify-start p-3 h-auto ${
+                        relationshipFeeling === feeling.value 
+                          ? 'bg-secondary text-white border-secondary' 
+                          : 'hover:bg-muted'
+                      }`}
+                      onClick={() => setRelationshipFeeling(feeling.value)}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <Icon size={18} />
+                        <div className="text-left">
+                          <div className="font-medium text-sm">{feeling.label}</div>
+                          <div className="text-xs opacity-70">{feeling.description}</div>
+                        </div>
                       </div>
-                    </div>
-                  </Button>
-                );
-              })}
+                    </Button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        );
 
-      case 4:
-        return (
-          <div className="space-y-6">
-            <div className="text-center">
-              <h3 className="text-xl font-semibold text-foreground mb-2">
-                What are you grateful for today?
-              </h3>
-              <p className="text-sm text-muted-foreground">Express your appreciation and thoughts</p>
-            </div>
+            {/* Gratitude Section */}
             <div className="space-y-4">
               <div>
                 <Label htmlFor="gratitude" className="text-sm font-medium">
-                  Gratitude *
+                  What are you grateful for today? *
                 </Label>
                 <Textarea
                   id="gratitude"
                   placeholder="I'm grateful for..."
                   value={gratitude}
                   onChange={(e) => setGratitude(e.target.value)}
-                  className="mt-1 min-h-[80px]"
+                  className="mt-2 min-h-[60px]"
                 />
               </div>
               <div>
@@ -375,7 +361,7 @@ export const DailyCheckinFlow: React.FC<DailyCheckinFlowProps> = ({
                   placeholder="Anything else on your mind..."
                   value={additionalThoughts}
                   onChange={(e) => setAdditionalThoughts(e.target.value)}
-                  className="mt-1 min-h-[80px]"
+                  className="mt-2 min-h-[60px]"
                 />
               </div>
             </div>
