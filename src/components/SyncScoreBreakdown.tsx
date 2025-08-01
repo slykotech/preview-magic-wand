@@ -1,8 +1,8 @@
 import React from 'react';
+import { X, Heart, Calendar, MessageSquare, Camera, Zap, TrendingUp } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
-import { Calendar, Heart, MessageCircle, Camera, Trophy, Zap, X } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
 
 interface SyncScoreBreakdownProps {
   score: number;
@@ -13,149 +13,172 @@ interface SyncScoreBreakdownProps {
     milestonePoints: number;
     streakBonus: number;
   };
-  className?: string;
   onClose?: () => void;
+  className?: string;
 }
 
 export const SyncScoreBreakdown: React.FC<SyncScoreBreakdownProps> = ({
   score,
   breakdown,
+  onClose,
   className = '',
-  onClose
 }) => {
-  const categories = [
-    {
-      name: 'Daily Check-ins',
-      points: breakdown.checkinPoints,
-      maxPoints: 40,
-      icon: Calendar,
-      color: 'from-blue-500 to-blue-600',
-      description: 'Points from daily mood and relationship check-ins'
-    },
-    {
-      name: 'Story Sharing',
-      points: breakdown.storyPoints,
-      maxPoints: 30,
-      icon: Camera,
-      color: 'from-purple-500 to-purple-600',
-      description: 'Points from sharing and interacting with stories'
-    },
-    {
-      name: 'Communication',
-      points: breakdown.communicationPoints,
-      maxPoints: 20,
-      icon: MessageCircle,
-      color: 'from-green-500 to-green-600',
-      description: 'Points from messages and conversations'
-    },
-    {
-      name: 'Milestones',
-      points: breakdown.milestonePoints,
-      maxPoints: 10,
-      icon: Heart,
-      color: 'from-red-500 to-red-600',
-      description: 'Points from creating memories and completing dates'
-    },
-    {
-      name: 'Streak Bonus',
-      points: breakdown.streakBonus,
-      maxPoints: 10,
-      icon: Zap,
-      color: 'from-yellow-500 to-yellow-600',
-      description: 'Bonus points for maintaining daily activity streaks'
-    }
-  ];
-
-  const getScoreLevel = (score: number) => {
-    if (score >= 90) return { level: 'Excellent', color: 'text-green-600', emoji: '🔥' };
-    if (score >= 75) return { level: 'Great', color: 'text-blue-600', emoji: '✨' };
-    if (score >= 60) return { level: 'Good', color: 'text-yellow-600', emoji: '⭐' };
-    if (score >= 40) return { level: 'Fair', color: 'text-orange-600', emoji: '💫' };
-    return { level: 'Needs Work', color: 'text-red-600', emoji: '💪' };
+  const getScoreColor = (score: number) => {
+    if (score >= 80) return 'text-green-500';
+    if (score >= 50) return 'text-orange-500';
+    return 'text-red-500';
   };
 
-  const scoreLevel = getScoreLevel(score);
+  const getComponentColor = (points: number, maxPoints: number) => {
+    const percentage = Math.abs(points) / maxPoints * 100;
+    if (points > 0) {
+      if (percentage >= 80) return 'text-green-500 bg-green-500/10 border-green-500/20';
+      if (percentage >= 50) return 'text-green-600 bg-green-600/10 border-green-600/20';
+      return 'text-green-700 bg-green-700/10 border-green-700/20';
+    } else if (points < 0) {
+      return 'text-red-500 bg-red-500/10 border-red-500/20';
+    }
+    return 'text-muted-foreground bg-muted/10 border-muted/20';
+  };
+
+  const formatPoints = (points: number) => {
+    return points > 0 ? `+${points}` : points.toString();
+  };
+
+  const components = [
+    {
+      icon: <Calendar className="w-5 h-5" />,
+      label: 'Daily Check-ins',
+      points: breakdown.checkinPoints,
+      maxPoints: 14,
+      description: 'Both check-in: +2pts, One: -1pt, None: -2pts per day'
+    },
+    {
+      icon: <Camera className="w-5 h-5" />,
+      label: 'Story Sharing',
+      points: breakdown.storyPoints,
+      maxPoints: 19, // 14 base + 5 interaction bonus
+      description: 'Both share: +2pts, One: -1pt, None: -2pts per day'
+    },
+    {
+      icon: <MessageSquare className="w-5 h-5" />,
+      label: 'Communication',
+      points: breakdown.communicationPoints,
+      maxPoints: 20,
+      description: '1pt per 2 messages sent in past 7 days'
+    },
+    {
+      icon: <Heart className="w-5 h-5" />,
+      label: 'Milestones',
+      points: breakdown.milestonePoints,
+      maxPoints: 15,
+      description: 'Memories: +5pts each, Completed dates: +10pts each'
+    },
+    {
+      icon: <Zap className="w-5 h-5" />,
+      label: 'Streak Bonus',
+      points: breakdown.streakBonus,
+      maxPoints: 10,
+      description: '1pt per day of active streaks (check-ins + stories)'
+    },
+  ];
 
   return (
-    <Card className={`${className} border-none shadow-elegant bg-gradient-to-br from-background to-muted/20`}>
+    <Card className={`w-full max-w-md mx-auto bg-background border shadow-lg ${className}`}>
       <CardHeader className="pb-4">
-        <CardTitle className="flex items-center justify-between">
-          <span className="text-lg font-bold">Sync Score Breakdown</span>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <span className={`text-3xl font-bold ${scoreLevel.color}`}>{score}%</span>
-              <span className="text-2xl">{scoreLevel.emoji}</span>
-            </div>
-            {onClose && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onClose}
-                className="h-8 w-8 p-0 hover:bg-muted/50"
-              >
-                <X size={18} />
-              </Button>
-            )}
-          </div>
-        </CardTitle>
-        <p className={`text-sm ${scoreLevel.color} font-medium`}>
-          {scoreLevel.level}
-        </p>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2 text-foreground">
+            <TrendingUp className="w-5 h-5 text-primary" />
+            Love Sync Score Breakdown
+          </CardTitle>
+          {onClose && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onClose}
+              className="h-8 w-8"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
       </CardHeader>
       
-      <CardContent className="space-y-4">
-        {categories.map((category) => {
-          const percentage = (category.points / category.maxPoints) * 100;
-          const Icon = category.icon;
+      <CardContent className="space-y-6">
+        {/* Overall Score */}
+        <div className="text-center p-4 bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl">
+          <div className={`text-3xl font-bold ${getScoreColor(score)} mb-1`}>
+            {score}%
+          </div>
+          <p className="text-sm text-muted-foreground">
+            {score >= 80 ? '💚 Healthy' : score >= 50 ? '🧡 Moderate' : '❤️ Needs Work'}
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Base: 50% + Activity Modifiers
+          </p>
+        </div>
+
+        {/* Component Breakdown */}
+        <div className="space-y-3">
+          <h3 className="text-sm font-semibold text-foreground">Score Components:</h3>
           
-          return (
-            <div key={category.name} className="space-y-2">
-              <div className="flex items-center justify-between">
+          {components.map((component, index) => (
+            <div key={index} className={`p-3 rounded-lg border ${getComponentColor(component.points, component.maxPoints)}`}>
+              <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
-                  <div className={`p-2 rounded-lg bg-gradient-to-br ${category.color} text-white shadow-md`}>
-                    <Icon size={16} />
+                  <div className={component.points >= 0 ? 'text-current' : 'text-red-500'}>
+                    {component.icon}
                   </div>
-                  <div>
-                    <p className="font-medium text-sm">{category.name}</p>
-                    <p className="text-xs text-muted-foreground">{category.description}</p>
-                  </div>
+                  <span className="font-medium text-sm">{component.label}</span>
                 </div>
                 <div className="text-right">
-                  <p className="font-bold text-sm">{category.points}/{category.maxPoints}</p>
-                  <p className="text-xs text-muted-foreground">{Math.round(percentage)}%</p>
+                  <div className={`font-bold text-sm ${
+                    component.points > 0 ? 'text-green-600' : 
+                    component.points < 0 ? 'text-red-500' : 'text-muted-foreground'
+                  }`}>
+                    {formatPoints(component.points)} pts
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    / ±{component.maxPoints}
+                  </div>
                 </div>
               </div>
               
-              <Progress 
-                value={percentage} 
-                className="h-2"
-              />
+              {/* Progress Bar */}
+              <div className="mb-2">
+                <Progress 
+                  value={Math.abs(component.points) / component.maxPoints * 100} 
+                  className="h-2"
+                />
+              </div>
+              
+              <p className="text-xs text-muted-foreground">
+                {component.description}
+              </p>
             </div>
-          );
-        })}
-        
-        <div className="mt-6 p-4 rounded-lg bg-muted/50 border">
-          <div className="flex items-center gap-2 mb-2">
-            <Trophy className="text-accent" size={18} />
-            <span className="font-semibold text-sm">Tips to Improve</span>
-          </div>
-          <div className="text-xs text-muted-foreground space-y-1">
-            {breakdown.checkinPoints < 20 && (
-              <p>• Complete daily check-ins together for maximum points</p>
-            )}
-            {breakdown.storyPoints < 15 && (
-              <p>• Share more stories and interact with your partner's posts</p>
-            )}
-            {breakdown.communicationPoints < 10 && (
-              <p>• Send more messages and have deeper conversations</p>
-            )}
-            {breakdown.milestonePoints < 5 && (
-              <p>• Create memories and complete date activities together</p>
-            )}
-            {breakdown.streakBonus < 5 && (
-              <p>• Maintain daily activity streaks for bonus points</p>
-            )}
-          </div>
+          ))}
+        </div>
+
+        {/* Calculation Formula */}
+        <div className="p-3 bg-muted/10 rounded-lg">
+          <h4 className="text-xs font-semibold text-muted-foreground mb-2">Formula:</h4>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            <strong>50% base</strong> + Check-ins ({formatPoints(breakdown.checkinPoints)}) + 
+            Stories ({formatPoints(breakdown.storyPoints)}) + Communication (+{breakdown.communicationPoints}) + 
+            Milestones (+{breakdown.milestonePoints}) + Streaks (+{breakdown.streakBonus}) = <strong>{score}%</strong>
+          </p>
+        </div>
+
+        {/* Tips */}
+        <div className="p-3 bg-primary/5 rounded-lg">
+          <h4 className="text-xs font-semibold text-primary mb-2">💡 Tips to Improve:</h4>
+          <ul className="text-xs text-muted-foreground space-y-1">
+            <li>• Both partners check-in daily for maximum points</li>
+            <li>• Share stories together for bonus points</li>
+            <li>• Maintain communication throughout the week</li>
+            <li>• Create memories and complete date plans</li>
+            <li>• Keep your streaks alive for bonus points</li>
+          </ul>
         </div>
       </CardContent>
     </Card>
