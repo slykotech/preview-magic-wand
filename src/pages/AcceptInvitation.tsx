@@ -36,8 +36,19 @@ const AcceptInvitation = () => {
     
     // For new user invitations (type=invite), show signup form if not authenticated
     if (!authLoading && invitationType === 'invite' && !user && email && senderId) {
+      console.log('Setting showSignup to true for new user invitation');
       setShowSignup(true);
     }
+    
+    // Debug logging
+    console.log('AcceptInvitation state:', {
+      authLoading,
+      invitationType,
+      user: !!user,
+      email,
+      senderId,
+      showSignup
+    });
   }, [authLoading, email, senderId, invitationType, user]);
 
   const handleSignup = async () => {
