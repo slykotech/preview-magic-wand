@@ -255,7 +255,7 @@ export const AICoach = () => {
             <div
               className={`max-w-[80%] rounded-2xl p-4 ${
                 message.role === 'user'
-                  ? 'bg-twilight-blue text-white ml-12'
+                  ? 'bg-primary text-primary-foreground ml-12'
                   : 'bg-card shadow-soft mr-12'
               }`}
             >
