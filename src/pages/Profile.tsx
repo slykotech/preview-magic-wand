@@ -148,7 +148,7 @@ export const Profile = () => {
         description: "You've been logged out successfully",
         variant: "destructive"
       });
-      navigate('/');
+      navigate('/auth');
     }
   };
 
