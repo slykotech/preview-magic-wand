@@ -7,7 +7,6 @@ import { Heart, Plus, Edit3, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
-
 interface CoupleMoodDisplayProps {
   userMood?: string;
   partnerMood?: string;
@@ -17,21 +16,29 @@ interface CoupleMoodDisplayProps {
   onMoodUpdate?: () => void;
   splashMode?: boolean;
 }
-
 type MoodType = Database['public']['Enums']['mood_type'];
-
-const quickMoods = [
-  { value: 'happy' as MoodType, emoji: '😊' },
-  { value: 'excited' as MoodType, emoji: '🤗' },
-  { value: 'love' as MoodType, emoji: '😍' },
-  { value: 'content' as MoodType, emoji: '😌' },
-  { value: 'stressed' as MoodType, emoji: '😰' },
-  { value: 'sad' as MoodType, emoji: '😢' },
-];
-
-export const CoupleMoodDisplay: React.FC<CoupleMoodDisplayProps> = ({ 
-  userMood, 
-  partnerMood, 
+const quickMoods = [{
+  value: 'happy' as MoodType,
+  emoji: '😊'
+}, {
+  value: 'excited' as MoodType,
+  emoji: '🤗'
+}, {
+  value: 'love' as MoodType,
+  emoji: '😍'
+}, {
+  value: 'content' as MoodType,
+  emoji: '😌'
+}, {
+  value: 'stressed' as MoodType,
+  emoji: '😰'
+}, {
+  value: 'sad' as MoodType,
+  emoji: '😢'
+}];
+export const CoupleMoodDisplay: React.FC<CoupleMoodDisplayProps> = ({
+  userMood,
+  partnerMood,
   className = '',
   userId,
   coupleId,
@@ -40,9 +47,15 @@ export const CoupleMoodDisplay: React.FC<CoupleMoodDisplayProps> = ({
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showMoodSelector, setShowMoodSelector] = useState(false);
-  const [floatingEmojis, setFloatingEmojis] = useState<{ emoji: string; id: number; x: number; y: number }[]>([]);
-  const { toast } = useToast();
-
+  const [floatingEmojis, setFloatingEmojis] = useState<{
+    emoji: string;
+    id: number;
+    x: number;
+    y: number;
+  }[]>([]);
+  const {
+    toast
+  } = useToast();
   const handleQuickMoodSelect = async (mood: MoodType, event: React.MouseEvent) => {
     if (!userId || !coupleId) {
       toast({
@@ -61,55 +74,45 @@ export const CoupleMoodDisplay: React.FC<CoupleMoodDisplayProps> = ({
     // Trigger floating animation
     const selectedMoodEmoji = quickMoods.find(m => m.value === mood)?.emoji || '';
     const animationId = Date.now() + Math.random(); // Ensure unique IDs
-    
-    setFloatingEmojis(prev => [
-      ...prev,
-      { emoji: selectedMoodEmoji, id: animationId, x, y }
-    ]);
-    
+
+    setFloatingEmojis(prev => [...prev, {
+      emoji: selectedMoodEmoji,
+      id: animationId,
+      x,
+      y
+    }]);
+
     // Remove animation after it completes
     setTimeout(() => {
       setFloatingEmojis(prev => prev.filter(anim => anim.id !== animationId));
     }, 1000);
-
     setIsSubmitting(true);
-    
     try {
       const today = new Date().toISOString().split('T')[0];
-      
-      // Check if checkin already exists for today
-      const { data: existingCheckin } = await supabase
-        .from('daily_checkins')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('couple_id', coupleId)
-        .eq('checkin_date', today)
-        .maybeSingle();
 
+      // Check if checkin already exists for today
+      const {
+        data: existingCheckin
+      } = await supabase.from('daily_checkins').select('id').eq('user_id', userId).eq('couple_id', coupleId).eq('checkin_date', today).maybeSingle();
       if (existingCheckin) {
         // Update existing checkin
-        await supabase
-          .from('daily_checkins')
-          .update({ mood })
-          .eq('id', existingCheckin.id);
+        await supabase.from('daily_checkins').update({
+          mood
+        }).eq('id', existingCheckin.id);
       } else {
         // Create new checkin
-        await supabase
-          .from('daily_checkins')
-          .insert({
-            user_id: userId,
-            couple_id: coupleId,
-            checkin_date: today,
-            mood
-          });
+        await supabase.from('daily_checkins').insert({
+          user_id: userId,
+          couple_id: coupleId,
+          checkin_date: today,
+          mood
+        });
       }
-
       onMoodUpdate?.();
       setShowMoodSelector(false);
-      
       toast({
         title: "Mood Updated! 💕",
-        description: `You're feeling ${mood} today`,
+        description: `You're feeling ${mood} today`
       });
     } catch (error) {
       console.error('Error updating mood:', error);
@@ -122,24 +125,17 @@ export const CoupleMoodDisplay: React.FC<CoupleMoodDisplayProps> = ({
       setIsSubmitting(false);
     }
   };
-
-  return (
-    <div className="relative">
+  return <div className="relative">
       {/* Floating Animation Overlays */}
-      {floatingEmojis.map((animation) => (
-        <div 
-          key={animation.id}
-          className="fixed pointer-events-none z-50"
-          style={{
-            left: animation.x - 30, // Center the emoji
-            top: animation.y - 30,
-          }}
-        >
+      {floatingEmojis.map(animation => <div key={animation.id} className="fixed pointer-events-none z-50" style={{
+      left: animation.x - 30,
+      // Center the emoji
+      top: animation.y - 30
+    }}>
           <div className="animate-float-up text-6xl">
             {animation.emoji}
           </div>
-        </div>
-      ))}
+        </div>)}
       
       <Card className={`${className} ${splashMode ? 'bg-white/10 border-white/20 backdrop-blur-sm' : 'bg-gradient-to-br from-soft-cloud to-background border border-border/50'} shadow-sm`}>
         <CardContent className="p-6">
@@ -151,64 +147,40 @@ export const CoupleMoodDisplay: React.FC<CoupleMoodDisplayProps> = ({
           <div className="flex items-center justify-around">
             {/* User Mood */}
             <div className="flex-1 text-center">
-              {userMood && !showMoodSelector ? (
-                <div className="relative group">
+              {userMood && !showMoodSelector ? <div className="relative group">
                   <MoodBitmoji mood={userMood} size="lg" />
-                  <button
-                    onClick={() => setShowMoodSelector(true)}
-                    className="absolute -top-1 -right-1 w-6 h-6 bg-white rounded-full shadow-sm border flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                    disabled={isSubmitting}
-                  >
+                  <button onClick={() => setShowMoodSelector(true)} className="absolute -top-1 -right-1 w-6 h-6 bg-white rounded-full shadow-sm border flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" disabled={isSubmitting}>
                     <Edit3 size={12} className="text-muted-foreground" />
                   </button>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <button
-                    onClick={() => setShowMoodSelector(true)}
-                    className="w-20 h-20 bg-muted/50 rounded-full flex items-center justify-center mx-auto border-2 border-dashed border-muted-foreground/30 hover:border-primary/50 hover:bg-primary/5 transition-all duration-200"
-                  >
+                </div> : <div className="space-y-3">
+                  <button onClick={() => setShowMoodSelector(true)} className="w-20 h-20 bg-muted/50 rounded-full flex items-center justify-center mx-auto border-2 border-dashed border-muted-foreground/30 hover:border-primary/50 hover:bg-primary/5 transition-all duration-200">
                     <Plus className="text-muted-foreground" size={24} />
                   </button>
                   <p className="text-xs text-muted-foreground text-center">
                     {userMood ? 'Update Mood' : 'Quick Check-in'}
                   </p>
-                </div>
-              )}
+                </div>}
             </div>
             
             {/* Mood Selection Modal */}
             <Dialog open={showMoodSelector} onOpenChange={setShowMoodSelector}>
               <DialogContent className="sm:max-w-md rounded-3xl border-2 border-primary/20 shadow-2xl">
                 <DialogHeader className="text-center pb-4">
-                  <div className="w-16 h-16 border-2 border-dashed border-muted-foreground/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Plus className="text-muted-foreground" size={20} />
-                  </div>
+                  
                   <DialogTitle className="text-xl font-semibold text-primary">
                     {userMood ? 'Update Mood' : 'Update Mood'}
                   </DialogTitle>
                 </DialogHeader>
                 
                 <div className="grid grid-cols-3 gap-4 py-6">
-                  {quickMoods.map((mood) => (
-                    <button
-                      key={mood.value}
-                      className="flex flex-col items-center p-4 rounded-2xl bg-gradient-to-br from-white to-muted/30 hover:from-primary/10 hover:to-primary/5 hover:scale-105 transition-all duration-300 shadow-sm hover:shadow-md disabled:opacity-50 border border-border/20 group"
-                      onClick={(e) => handleQuickMoodSelect(mood.value, e)}
-                      disabled={isSubmitting}
-                    >
+                  {quickMoods.map(mood => <button key={mood.value} className="flex flex-col items-center p-4 rounded-2xl bg-gradient-to-br from-white to-muted/30 hover:from-primary/10 hover:to-primary/5 hover:scale-105 transition-all duration-300 shadow-sm hover:shadow-md disabled:opacity-50 border border-border/20 group" onClick={e => handleQuickMoodSelect(mood.value, e)} disabled={isSubmitting}>
                       <span className="text-3xl mb-2 group-hover:animate-bounce">{mood.emoji}</span>
                       <span className="text-sm text-foreground font-medium capitalize">{mood.value}</span>
-                    </button>
-                  ))}
+                    </button>)}
                 </div>
                 
                 <div className="flex justify-center pt-4">
-                  <Button
-                    variant="ghost"
-                    onClick={() => setShowMoodSelector(false)}
-                    className="text-muted-foreground hover:text-foreground rounded-full px-8"
-                  >
+                  <Button variant="ghost" onClick={() => setShowMoodSelector(false)} className="text-muted-foreground hover:text-foreground rounded-full px-8">
                     Cancel
                   </Button>
                 </div>
@@ -224,23 +196,16 @@ export const CoupleMoodDisplay: React.FC<CoupleMoodDisplayProps> = ({
             
             {/* Partner Mood */}
             <div className="flex-1 text-center">
-              {partnerMood ? (
-                <MoodBitmoji mood={partnerMood} size="lg" isPartner />
-              ) : (
-                <div className="w-20 h-20 bg-muted/50 rounded-full flex items-center justify-center mx-auto mb-2">
+              {partnerMood ? <MoodBitmoji mood={partnerMood} size="lg" isPartner /> : <div className="w-20 h-20 bg-muted/50 rounded-full flex items-center justify-center mx-auto mb-2">
                   <span className="text-2xl text-muted-foreground">?</span>
-                </div>
-              )}
+                </div>}
             </div>
           </div>
           
-          {!userMood && !partnerMood && !showMoodSelector && (
-            <p className="text-center text-sm text-muted-foreground mt-4">
+          {!userMood && !partnerMood && !showMoodSelector && <p className="text-center text-sm text-muted-foreground mt-4">
               Tap an emoji above to share your mood!
-            </p>
-          )}
+            </p>}
         </CardContent>
       </Card>
-    </div>
-  );
+    </div>;
 };
