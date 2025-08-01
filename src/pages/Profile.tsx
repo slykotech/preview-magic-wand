@@ -217,7 +217,7 @@ export const Profile = () => {
             />
             <ProfileMenuItem
               icon={<Heart size={20} />}
-              title="Relationship Preferences"
+              title="Relationship Info"
               subtitle="Customize your love language"
               onClick={() => handleMenuClick("Preferences", "/preferences")}
             />
