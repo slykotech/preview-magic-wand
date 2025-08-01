@@ -284,10 +284,13 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
       }
       console.log('Camera support check passed');
 
-      // Step 2: Show loading state
-      toast.loading('Requesting camera access...', { id: 'camera-loading' });
+      // Step 3: Show camera UI first so video element is rendered
+      setShowCamera(true);
+      
+      // Step 4: Wait a moment for the video element to be rendered
+      await new Promise(resolve => setTimeout(resolve, 100));
 
-      // Step 3: Request camera access - this will trigger the permission prompt
+      // Step 5: Request camera access - this will trigger the permission prompt
       console.log('Requesting camera stream...');
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: { 
@@ -300,7 +303,7 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
       
       console.log('Camera stream obtained successfully');
       
-      // Step 5: Set up video element
+      // Step 6: Set up video element
       console.log('Setting up video element, videoRef available:', !!videoRef.current);
       if (videoRef.current) {
         console.log('Video element found, setting stream...');
@@ -324,13 +327,12 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
         await videoRef.current.play();
         console.log('Camera video started playing');
         
-        setShowCamera(true);
-        console.log('Camera UI should now be visible - showCamera set to true');
         toast.dismiss('camera-loading');
         toast.dismiss(); // Dismiss all toasts to ensure loading message is gone
         toast.success('Camera is ready! Position yourself and click "Capture" to take a photo.');
       } else {
         console.error('Video element not found! videoRef.current is null');
+        setShowCamera(false); // Hide camera UI if setup failed
         toast.error('Camera setup failed - video element not available');
       }
     } catch (error: any) {
