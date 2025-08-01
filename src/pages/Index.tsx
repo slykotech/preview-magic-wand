@@ -30,58 +30,60 @@ const Index = () => {
   return <div className="min-h-screen bg-gradient-romance flex flex-col items-center justify-center p-6 text-white">
       <div className="max-w-md w-full text-center space-y-8">
         {/* Logo */}
-        <div className="space-y-4">
-          <LoveSyncLogo size="lg" />
-          <div className="space-y-2">
-            <h1 className="text-4xl font-extrabold font-poppins">
-              Love Sync
-            </h1>
-            <p className="text-xl text-white/90 font-inter font-bold">
-              Where hearts connect and love grows
+        <div className="space-y-6">
+          <div className="flex items-center justify-center gap-3">
+            <LoveSyncLogo size="lg" />
+            <div className="text-left">
+              <p className="text-lg text-white/90 font-inter font-medium">Introducing</p>
+              <h1 className="text-3xl font-extrabold font-poppins">
+                LovSync
+              </h1>
+            </div>
+          </div>
+          <div className="space-y-4">
+            <h2 className="text-2xl font-bold font-poppins text-white">
+              Your Relationship Co-Pilot
+            </h2>
+            <p className="text-base text-white/90 font-inter leading-relaxed">
+              Strengthen emotional bonds, plan meaningful moments, and grow together — one day at a time.
             </p>
           </div>
         </div>
 
         {/* Features */}
-        <div className="space-y-4 text-left">
-          <div className="flex items-center gap-3 p-3 bg-white/10 rounded-xl">
-            <div className="flex items-center gap-2">
-              <div className="text-2xl">🤖</div>
-              <Sparkles className="text-gold-accent" size={24} />
+        <div className="space-y-3 text-left">
+          <div className="flex items-center gap-4 p-4 bg-white/20 rounded-2xl backdrop-blur-sm">
+            <div className="w-10 h-10 bg-white/30 rounded-xl flex items-center justify-center">
+              <Heart className="text-white" size={20} />
             </div>
-            <div>
-              <h3 className="font-poppins font-bold">Soul Sync</h3>
-              <p className="text-xs text-white/80 font-inter font-semibold">Get personalized advice for your relationship</p>
+            <div className="flex-1">
+              <h3 className="font-poppins font-bold text-white">Quality Time</h3>
             </div>
           </div>
-          <div className="flex items-center gap-3 p-3 bg-white/10 rounded-xl">
-            <div className="flex items-center gap-2">
-              <div className="text-2xl">💕</div>
-              <Heart className="text-sunrise-coral" size={24} />
+          <div className="flex items-center gap-4 p-4 bg-white/20 rounded-2xl backdrop-blur-sm">
+            <div className="w-10 h-10 bg-white/30 rounded-xl flex items-center justify-center">
+              <Heart className="text-white" size={20} />
             </div>
-            <div>
-              <h3 className="font-poppins font-bold">Sync Score</h3>
-              <p className="text-xs text-white/80 font-inter font-semibold">Track your relationship harmony daily</p>
+            <div className="flex-1">
+              <h3 className="font-poppins font-bold text-white">AI Coaching</h3>
             </div>
           </div>
-          <div className="flex items-center gap-3 p-3 bg-white/10 rounded-xl">
-            <div className="flex items-center gap-2">
-              <div className="text-2xl">👫</div>
-              <Calendar className="text-gold-accent" size={24} />
+          <div className="flex items-center gap-4 p-4 bg-white/20 rounded-2xl backdrop-blur-sm">
+            <div className="w-10 h-10 bg-white/30 rounded-xl flex items-center justify-center">
+              <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center">
+                <div className="w-2 h-2 bg-purple-600 rounded-full"></div>
+              </div>
             </div>
-            <div>
-              <h3 className="font-poppins font-bold">Date Planner</h3>
-              <p className="text-xs text-white/80 font-inter font-semibold">Plan perfect dates and create memories together</p>
+            <div className="flex-1">
+              <h3 className="font-poppins font-bold text-white">Connection Check-In</h3>
             </div>
           </div>
-          <div className="flex items-center gap-3 p-3 bg-white/10 rounded-xl">
-            <div className="flex items-center gap-2">
-              <div className="text-2xl">📸</div>
-              <Camera className="text-sunrise-coral" size={24} />
+          <div className="flex items-center gap-4 p-4 bg-white/20 rounded-2xl backdrop-blur-sm">
+            <div className="w-10 h-10 bg-white/30 rounded-xl flex items-center justify-center">
+              <Calendar className="text-white" size={20} />
             </div>
-            <div>
-              <h3 className="font-poppins font-bold">Memories Vault</h3>
-              <p className="text-xs text-white/80 font-inter font-semibold">Store and cherish your special moments</p>
+            <div className="flex-1">
+              <h3 className="font-poppins font-bold text-white">Memory Vault</h3>
             </div>
           </div>
         </div>
