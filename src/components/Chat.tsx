@@ -312,7 +312,7 @@ export const Chat: React.FC<ChatProps> = ({
                             hour12: true
                           })}
                           {isOwn && (
-                            <span className="ml-1">
+                            <span className={`ml-1 ${message.is_read ? 'text-blue-400' : 'text-muted-foreground'}`}>
                               {message.is_read ? '✓✓' : '✓'}
                             </span>
                           )}
