@@ -295,26 +295,24 @@ export const Chat: React.FC<ChatProps> = ({
             </div> : messages.map(message => {
           const isOwn = message.sender_id === user?.id;
           const senderName = isOwn ? getUserDisplayName() : getPartnerDisplayName();
-          return <div key={message.id} className={`flex ${isOwn ? 'justify-end' : 'justify-start'} animate-fade-in mb-2`}>
-                  <div className={`max-w-[80%] ${isOwn ? 'order-2' : 'order-1'}`}>
-                    <div className={`${message.message_type === 'emoji' || message.message_type === 'sticker' ? 'text-3xl px-2 py-1 bg-transparent' : `px-3 py-2 rounded-2xl relative ${isOwn ? 'bg-primary text-primary-foreground ml-2 rounded-br-md' : 'bg-muted text-foreground mr-2 rounded-bl-md'} shadow-sm`}`}>
+          return <div key={message.id} className={`flex ${isOwn ? 'justify-end' : 'justify-start'} animate-fade-in mb-4`}>
+                  <div className="max-w-[80%] rounded-2xl p-4 shadow-soft">
+                    <div className={`${message.message_type === 'emoji' || message.message_type === 'sticker' ? 'text-3xl bg-transparent' : isOwn ? 'bg-gradient-to-br from-primary to-primary/80 text-primary-foreground rounded-2xl p-4' : 'bg-card rounded-2xl p-4'}`}>
                       {message.message_type === 'image' ? <img src={message.message_text} alt="Shared image" className="max-w-full h-auto rounded-lg cursor-pointer" onClick={() => window.open(message.message_text, '_blank')} /> : message.message_type === 'video' ? <video src={message.message_text} controls className="max-w-full h-auto rounded-lg" style={{
                   maxHeight: '300px'
-                }} /> : <div className="pr-16">
+                }} /> : <div className="text-sm leading-relaxed">
                           {message.message_text}
                         </div>}
                       
                       {(message.message_type !== 'emoji' && message.message_type !== 'sticker') && (
-                        <div className={`absolute bottom-1 right-2 text-xs ${isOwn ? 'text-primary-foreground/80' : 'text-muted-foreground/80'} flex items-center gap-1 leading-none`}>
-                          <span className="font-normal">
-                            {new Date(message.created_at).toLocaleTimeString('en-US', {
-                              hour: 'numeric',
-                              minute: '2-digit',
-                              hour12: true
-                            })}
-                          </span>
+                        <div className="mt-2 text-xs opacity-70 text-right">
+                          {new Date(message.created_at).toLocaleTimeString('en-US', {
+                            hour: 'numeric',
+                            minute: '2-digit',
+                            hour12: true
+                          })}
                           {isOwn && (
-                            <span className={`${message.is_read ? 'text-blue-400' : 'text-primary-foreground/60'}`}>
+                            <span className="ml-1">
                               {message.is_read ? '✓✓' : '✓'}
                             </span>
                           )}
@@ -322,11 +320,6 @@ export const Chat: React.FC<ChatProps> = ({
                       )}
                     </div>
                   </div>
-                  
-                  {!isOwn && <Avatar className={`h-8 w-8 ${isOwn ? 'order-1 mr-2' : 'order-2 ml-2'}`}>
-                      <AvatarImage src={partnerProfile?.avatar_url || undefined} />
-                      
-                    </Avatar>}
                 </div>;
         })}
           <div ref={messagesEndRef} />
