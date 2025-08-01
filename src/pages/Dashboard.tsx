@@ -878,10 +878,7 @@ export const Dashboard = () => {
             </div>
             
             {lastCheckin ? <div className="space-y-3">
-                <div className="p-3 bg-card rounded-lg border">
-                  <h4 className="font-medium text-sm mb-2">How are you feeling today?</h4>
-                  <p className="text-sm text-foreground capitalize">{lastCheckin.mood}</p>
-                </div>
+                
 
                 {lastCheckin.energy_level && <div className="p-3 bg-card rounded-lg border">
                     <h4 className="font-medium text-sm mb-2">What's your energy level?</h4>
@@ -903,9 +900,7 @@ export const Dashboard = () => {
                     <p className="text-sm text-foreground">{lastCheckin.notes}</p>
                   </div>}
 
-                <div className="text-center text-xs text-muted-foreground pt-2">
-                  Current streak: {checkinStreak} days
-                </div>
+                
               </div> : <div className="text-center p-4">
                 <p className="text-sm text-muted-foreground">No check-in data available. Complete your first daily check-in to see your responses here!</p>
               </div>}
