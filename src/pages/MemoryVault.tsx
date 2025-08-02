@@ -71,6 +71,7 @@ export const MemoryVault = () => {
   const [filterType, setFilterType] = useState<'all' | 'photos' | 'notes' | 'favorites'>('all');
   const [createMode, setCreateMode] = useState<'photo' | 'note'>('photo');
   const [showSelection, setShowSelection] = useState(false);
+  const [fabExpanded, setFabExpanded] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const {
     toast
@@ -406,27 +407,45 @@ export const MemoryVault = () => {
           </div>}
       </div>
 
-      {/* Floating Action Buttons */}
-      <div className="fixed bottom-24 right-6 z-50 flex flex-col gap-3">
+      {/* Expandable Floating Action Button */}
+      <div className="fixed bottom-24 right-6 z-50 flex flex-col items-end gap-3">
+        {/* Note Button - appears when expanded */}
+        <div className={`transform transition-all duration-300 ${fabExpanded ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-8 opacity-0 scale-75 pointer-events-none'}`}>
+          <Button 
+            onClick={() => {
+              setCreateMode('note');
+              setShowCreateForm(true);
+              setFabExpanded(false);
+            }}
+            size="fab" 
+            className="bg-white hover:bg-gray-50 text-purple-600 shadow-lg border border-gray-200"
+          >
+            <FileText size={20} />
+          </Button>
+        </div>
+
+        {/* Camera Button - appears when expanded */}
+        <div className={`transform transition-all duration-300 ${fabExpanded ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-4 opacity-0 scale-75 pointer-events-none'}`}>
+          <Button 
+            onClick={() => {
+              setCreateMode('photo');
+              setShowCreateForm(true);
+              setFabExpanded(false);
+            }}
+            size="fab" 
+            className="bg-white hover:bg-gray-50 text-purple-600 shadow-lg border border-gray-200"
+          >
+            <Camera size={20} />
+          </Button>
+        </div>
+
+        {/* Main FAB - always visible */}
         <Button 
-          onClick={() => {
-            setCreateMode('note');
-            setShowCreateForm(true);
-          }}
+          onClick={() => setFabExpanded(!fabExpanded)}
           size="fab" 
-          className="bg-gradient-primary hover:opacity-90 text-white shadow-lg"
+          className={`bg-gradient-primary hover:opacity-90 text-white shadow-lg transform transition-all duration-300 ${fabExpanded ? 'rotate-45' : 'rotate-0'}`}
         >
-          <FileText size={20} />
-        </Button>
-        <Button 
-          onClick={() => {
-            setCreateMode('photo');
-            setShowCreateForm(true);
-          }}
-          size="fab" 
-          className="bg-gradient-primary hover:opacity-90 text-white shadow-lg"
-        >
-          <Camera size={20} />
+          <Plus size={24} />
         </Button>
       </div>
 
