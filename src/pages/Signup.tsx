@@ -61,6 +61,8 @@ export const Signup = () => {
     setLoading(true);
 
     try {
+      console.log('Sending verification email request...');
+      
       // Call the verification email function
       const { data, error } = await supabase.functions.invoke('send-verification-email', {
         body: {
@@ -71,21 +73,27 @@ export const Signup = () => {
         }
       });
 
-      console.log('Function response:', { data, error });
+      console.log('Function response received:', { data, error });
 
-      // For edge functions, 400 status codes still return data with the response body
-      // Only handle true invocation failures (network issues, function not found, etc.)
+      // For edge functions, check if there was a complete invocation failure
       if (error && !data) {
-        console.error('Function invocation error:', error);
+        console.error('Function invocation error (network/timeout):', error);
         throw new Error('Failed to connect to email service. Please check your internet connection and try again.');
       }
 
-      // Handle application logic errors (like user already exists)
-      // Check data.success whether or not there was an "error" (400 status)
+      // Handle application logic errors from the function response
       const responseData = data || {};
+      console.log('Response data details:', responseData);
+
       if (!responseData.success) {
+        console.error('Function returned error:', responseData.error);
+        
         // Provide more specific error messages based on the error type
         const errorMessage = responseData.error || 'Failed to send verification email';
+        
+        if (errorMessage.includes('already exists')) {
+          throw new Error('An account with this email already exists. Please sign in instead.');
+        }
         
         if (errorMessage.includes('domain')) {
           throw new Error('Email service configuration issue. Please contact support.');
@@ -95,7 +103,7 @@ export const Signup = () => {
           throw new Error('Too many requests. Please wait a moment and try again.');
         }
         
-        if (errorMessage.includes('api_key')) {
+        if (errorMessage.includes('api_key') || errorMessage.includes('configuration')) {
           throw new Error('Email service unavailable. Please contact support.');
         }
         
@@ -103,16 +111,24 @@ export const Signup = () => {
       }
 
       // Success case
+      console.log('Verification email sent successfully');
       setVerificationSent(true);
       toast({
         title: "Verification email sent! 📧",
         description: "Check your email and click the verification link to complete your signup"
       });
+
     } catch (error: any) {
-      console.error('Signup error:', error);
+      console.error('Signup error details:', {
+        message: error.message,
+        name: error.name,
+        stack: error.stack
+      });
+      
+      // Show user-friendly error message
       toast({
         title: "Sign up failed",
-        description: error.message || "An unexpected error occurred",
+        description: error.message || "An unexpected error occurred. Please try again.",
         variant: "destructive"
       });
     } finally {
