@@ -333,48 +333,128 @@ export const MemoryVault = () => {
             </p>
           </div>}
 
-        {/* Grid View */}
-        {viewMode === 'grid' && filteredItems.length > 0 && <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredItems.map(item => <div key={`${item.type}-${item.id}`} className="group bg-card rounded-2xl overflow-hidden shadow-soft hover:shadow-romantic transition-all duration-300 cursor-pointer transform hover:scale-102" onClick={() => {
-          if (item.type === 'memory') {
-            setSelectedMemory(item as Memory);
-          } else {
-            setSelectedNote(item as Note);
-          }
-        }}>
-                {/* Item header with type indicator */}
-                <div className="p-4 border-b border-border/5">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-2 min-w-0 flex-1">
-                      <div className={`p-1.5 rounded-lg ${item.type === 'memory' ? 'bg-blue-100 text-blue-600' : 'bg-green-100 text-green-600'}`}>
-                        {item.type === 'memory' ? <Camera size={14} /> : <FileText size={14} />}
+        {/* Masonry Grid View */}
+        {viewMode === 'grid' && filteredItems.length > 0 && (
+          <div className="columns-1 sm:columns-2 lg:columns-3 gap-4 space-y-4">
+            {filteredItems.map((item) => (
+              <div 
+                key={`${item.type}-${item.id}`}
+                className="break-inside-avoid mb-4 group cursor-pointer"
+                onClick={() => {
+                  if (item.type === 'memory') {
+                    setSelectedMemory(item as Memory);
+                  } else {
+                    setSelectedNote(item as Note);
+                  }
+                }}
+              >
+                {/* Photo Memory Card */}
+                {item.type === 'memory' && (item as Memory).images && (item as Memory).images!.length > 0 ? (
+                  <div className="relative rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300">
+                    <div className="relative h-64 md:h-80">
+                      <img 
+                        src={(item as Memory).images![0].image_url} 
+                        alt={item.title}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                      <div className="absolute top-3 right-3">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleFavorite(item.id, item.type, item.is_favorite);
+                          }}
+                          className="p-2 rounded-full bg-black/30 backdrop-blur-sm hover:bg-black/50 transition-all"
+                        >
+                          <Star 
+                            size={16} 
+                            className={item.is_favorite ? 'fill-yellow-400 text-yellow-400' : 'text-white'}
+                          />
+                        </button>
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <h3 className="font-bold text-foreground text-sm truncate group-hover:text-primary transition-colors">
-                          {item.title}
-                        </h3>
+                      <div className="absolute bottom-0 left-0 right-0 p-4">
+                        <h3 className="text-white font-bold text-lg mb-1">{item.title}</h3>
+                        {(item as Memory).description && (
+                          <p className="text-white/80 text-sm line-clamp-2 mb-2">
+                            {(item as Memory).description}
+                          </p>
+                        )}
+                        <p className="text-white/60 text-xs">
+                          {(item as Memory).memory_date ? formatDate((item as Memory).memory_date!) : formatDate(item.created_at)}
+                        </p>
                       </div>
+                      {(item as Memory).images!.length > 1 && (
+                        <div className="absolute top-3 left-3 px-2 py-1 bg-black/30 backdrop-blur-sm rounded-full">
+                          <span className="text-white text-xs font-medium">
+                            +{(item as Memory).images!.length - 1}
+                          </span>
+                        </div>
+                      )}
                     </div>
-                    <button onClick={e => {
-                e.stopPropagation();
-                toggleFavorite(item.id, item.type, item.is_favorite);
-              }} className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-muted rounded">
-                      <Star size={14} className={item.is_favorite ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'} />
-                    </button>
                   </div>
-                </div>
-
-                {/* Content area */}
-                <div className="p-4">
-                  {/* Date footer */}
-                  <div className="mt-auto">
-                    <p className="text-muted-foreground text-xs">
-                      {item.type === 'memory' && (item as Memory).memory_date ? formatDate((item as Memory).memory_date!) : formatDate(item.created_at)}
-                    </p>
-                  </div>
-                </div>
-              </div>)}
-          </div>}
+                ) : (
+                  /* Text Memory/Note Card */
+                  <Card className="bg-white shadow-md hover:shadow-lg transition-all duration-300 group-hover:scale-[1.02]">
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <div className={`p-1.5 rounded-lg ${
+                            item.type === 'memory' 
+                              ? 'bg-blue-100 text-blue-600' 
+                              : 'bg-green-100 text-green-600'
+                          }`}>
+                            {item.type === 'memory' ? <Camera size={14} /> : <FileText size={14} />}
+                          </div>
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleFavorite(item.id, item.type, item.is_favorite);
+                          }}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-muted rounded"
+                        >
+                          <Star 
+                            size={14} 
+                            className={item.is_favorite ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'}
+                          />
+                        </button>
+                      </div>
+                      
+                      <h3 className="font-bold text-foreground text-lg mb-2 group-hover:text-primary transition-colors">
+                        {item.title}
+                      </h3>
+                      
+                      {item.type === 'memory' && (item as Memory).description && (
+                        <p className="text-muted-foreground text-sm mb-3 line-clamp-3">
+                          {(item as Memory).description}
+                        </p>
+                      )}
+                      
+                      {item.type === 'note' && (item as Note).content && (
+                        <p className="text-muted-foreground text-sm mb-3 line-clamp-4">
+                          {(item as Note).content}
+                        </p>
+                      )}
+                      
+                      <div className="flex items-center justify-between">
+                        <p className="text-muted-foreground text-xs">
+                          {item.type === 'memory' && (item as Memory).memory_date 
+                            ? formatDate((item as Memory).memory_date!) 
+                            : formatDate(item.created_at)}
+                        </p>
+                        {item.type === 'note' && (
+                          <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
+                            {formatDate(item.created_at).split(',')[0]}
+                          </span>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Timeline View */}
         {viewMode === 'timeline' && filteredItems.length > 0 && <div className="relative">
