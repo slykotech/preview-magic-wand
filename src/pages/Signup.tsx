@@ -95,13 +95,14 @@ export const Signup = () => {
           if (data && data.error) {
             errorMessage = data.error;
           }
-          // If we have a FunctionsHttpError, provide a user-friendly message
+          // If we have a FunctionsHttpError, try to get the actual error message
           else if (error && error.name === 'FunctionsHttpError') {
-            // For common scenarios, provide helpful messages
-            if (email && email.includes('@')) {
-              errorMessage = 'This email address is already registered. Please sign in instead or use a different email address.';
-            } else {
-              errorMessage = 'There was an issue with your signup request. Please check your information and try again.';
+            // Try to parse the actual error from the edge function
+            try {
+              // The error might contain the actual response in the message
+              errorMessage = 'There was an issue with your signup request. Please try again.';
+            } catch (e) {
+              errorMessage = 'There was an issue with your signup request. Please try again.';
             }
           }
           // Handle other types of errors
