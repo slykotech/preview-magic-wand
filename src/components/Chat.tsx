@@ -63,7 +63,7 @@ export const Chat: React.FC<ChatProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const quickEmojis = ['❤️', '😂', '😍', '🥰', '😘', '🔥', '👏', '💯', '🙌', '✨'];
-  const reactionEmojis = ['❤️', '😂', '😍', '😮', '😢', '👏'];
+  const reactionEmojis = ['❤️', '😍', '🥰', '😘', '💕', '💖'];
   const loveStickers = ['💕', '💖', '💗', '💓', '💘', '💝', '💞', '💟', '❣️', '💋', '🌹', '💐'];
   const actionStickers = ['🫶', '👫', '💏', '👪', '🥳', '🎉', '🎊', '🔥', '⭐', '✨', '💫', '🌟'];
   useEffect(() => {
@@ -468,14 +468,14 @@ export const Chat: React.FC<ChatProps> = ({
                         <button
                           key={reaction.emoji}
                           onClick={() => handleReaction(message.id, reaction.emoji)}
-                          className={`flex items-center gap-1 px-2 py-1 text-xs rounded-full border transition-colors ${
+                          className={`flex items-center gap-0.5 px-1.5 py-0.5 text-xs rounded-full border transition-colors ${
                             reaction.users.includes(user?.id || '') 
                               ? 'bg-primary/20 border-primary text-primary' 
                               : 'bg-muted/50 border-muted hover:bg-muted'
                           }`}
                         >
-                          <span className="text-sm">{reaction.emoji}</span>
-                          <span className="text-xs">{reaction.count}</span>
+                          <span className="text-xs">{reaction.emoji}</span>
+                          <span className="text-xs font-medium">{reaction.count}</span>
                         </button>
                       ))}
                     </div>
