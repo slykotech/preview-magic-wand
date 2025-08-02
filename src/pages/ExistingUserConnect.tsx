@@ -70,11 +70,6 @@ const ExistingUserConnect = () => {
           title: "Connection Successful! 💕",
           description: "You are now connected with your partner.",
         });
-
-        // Force refresh by reloading the page to ensure fresh data
-        setTimeout(() => {
-          window.location.href = '/dashboard';
-        }, 2000);
       } else {
         setStatus('error');
         setMessage(data.error || 'Failed to accept connection');
