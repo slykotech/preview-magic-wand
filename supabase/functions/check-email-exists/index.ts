@@ -36,9 +36,15 @@ Deno.serve(async (req) => {
       throw new Error(`Authentication failed: ${authError?.message || 'Auth session missing!'}`)
     }
 
-    // Get email from query parameters
-    const url = new URL(req.url)
-    const email = url.searchParams.get('email')
+    // Get email from query parameters or request body
+    let email;
+    if (req.method === 'GET') {
+      const url = new URL(req.url)
+      email = url.searchParams.get('email')
+    } else {
+      const body = await req.json()
+      email = body.email
+    }
 
     if (!email) {
       return new Response(

@@ -70,6 +70,11 @@ const ExistingUserConnect = () => {
           title: "Connection Successful! 💕",
           description: "You are now connected with your partner.",
         });
+
+        // Redirect to dashboard after a short delay
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 2000);
       } else {
         setStatus('error');
         setMessage(data.error || 'Failed to accept connection');

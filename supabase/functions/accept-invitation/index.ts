@@ -85,7 +85,7 @@ Deno.serve(async (req) => {
       .from('couples')
       .select('*')
       .or(`and(user1_id.eq.${senderUserId},user2_id.eq.${recipientUser.id}),and(user1_id.eq.${recipientUser.id},user2_id.eq.${senderUserId})`)
-      .single()
+      .maybeSingle()
 
     if (existingCouple) {
       return new Response(
@@ -101,27 +101,27 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Check if sender already has a different partner
+    // Check if sender already has a different partner (excluding demo mode)
     const { data: senderCouple, error: senderCoupleError } = await supabase
       .from('couples')
       .select('*')
       .or(`user1_id.eq.${senderUserId},user2_id.eq.${senderUserId}`)
-      .neq('user1_id', senderUserId) // Exclude self-pairing entries
-      .neq('user2_id', senderUserId)
-      .single()
+      .not('user1_id', 'eq', senderUserId) // Exclude demo mode where user1_id == user2_id
+      .not('user2_id', 'eq', senderUserId)
+      .maybeSingle()
 
     if (senderCouple) {
       throw new Error('The sender is already connected with someone else')
     }
 
-    // Check if recipient already has a partner
+    // Check if recipient already has a partner (excluding demo mode)
     const { data: recipientCouple, error: recipientCoupleError } = await supabase
       .from('couples')
       .select('*')
       .or(`user1_id.eq.${recipientUser.id},user2_id.eq.${recipientUser.id}`)
-      .neq('user1_id', recipientUser.id) // Exclude self-pairing entries  
-      .neq('user2_id', recipientUser.id)
-      .single()
+      .not('user1_id', 'eq', recipientUser.id) // Exclude demo mode where user1_id == user2_id
+      .not('user2_id', 'eq', recipientUser.id)
+      .maybeSingle()
 
     if (recipientCouple) {
       throw new Error('You are already connected with someone else')
