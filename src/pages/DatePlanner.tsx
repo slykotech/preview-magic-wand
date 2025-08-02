@@ -44,12 +44,21 @@ interface UpcomingEvent {
   timing: string;
   description: string;
   category: string;
+  venue?: string;
+  city?: string;
+  price?: string;
+  image?: string;
+  bookingUrl?: string;
+  date?: string;
+  time?: string;
 }
 export const DatePlanner = () => {
   const [activeTab, setActiveTab] = useState<'planned' | 'upcoming'>('planned');
   const [plannedDates, setPlannedDates] = useState<DateIdea[]>([]);
   const [upcomingEvents, setUpcomingEvents] = useState<UpcomingEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [eventsLoading, setEventsLoading] = useState(false);
+  const [userLocation, setUserLocation] = useState<{latitude: number, longitude: number} | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [showScheduleForm, setShowScheduleForm] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
@@ -96,9 +105,15 @@ export const DatePlanner = () => {
     }
     if (user && coupleData?.id) {
       fetchPlannedDates();
-      fetchUpcomingEvents();
+      getUserLocation();
     }
   }, [user, authLoading, navigate, coupleData?.id]);
+
+  useEffect(() => {
+    if (userLocation) {
+      fetchUpcomingEvents();
+    }
+  }, [userLocation]);
   const fetchPlannedDates = async () => {
     try {
       if (!coupleData?.id) return;
@@ -121,32 +136,96 @@ export const DatePlanner = () => {
       setLoading(false);
     }
   };
+  const getUserLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude
+          });
+        },
+        (error) => {
+          console.error('Error getting location:', error);
+          // Fallback to a default location (e.g., city center)
+          setUserLocation({
+            latitude: 40.7128, // Default to NYC
+            longitude: -74.0060
+          });
+        }
+      );
+    } else {
+      // Fallback for browsers without geolocation
+      setUserLocation({
+        latitude: 40.7128,
+        longitude: -74.0060
+      });
+    }
+  };
+
   const fetchUpcomingEvents = async () => {
-    // Mock upcoming events for now - in a real app this would come from external APIs
-    const mockEvents: UpcomingEvent[] = [{
+    if (!userLocation) return;
+    
+    setEventsLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('fetch-events', {
+        body: {
+          latitude: userLocation.latitude,
+          longitude: userLocation.longitude,
+          radius: 25, // 25km radius
+          size: 20 // Get 20 events
+        }
+      });
+
+      if (error) {
+        console.error('Error fetching events:', error);
+        // Fall back to mock events if API fails
+        setUpcomingEvents(getMockEvents());
+        return;
+      }
+
+      setUpcomingEvents(data.events || []);
+    } catch (error) {
+      console.error('Error in fetchUpcomingEvents:', error);
+      // Fall back to mock events if there's an error
+      setUpcomingEvents(getMockEvents());
+    } finally {
+      setEventsLoading(false);
+    }
+  };
+
+  const getMockEvents = (): UpcomingEvent[] => [
+    {
       id: '1',
       title: 'Jazz Under the Stars 🎷',
       distance: '3 km away',
       timing: 'Friday, 8:30 PM',
       description: 'Feel the rhythm of love as you sway under moonlight and melody.',
-      category: 'Music'
-    }, {
-      id: '2',
+      category: 'Music',
+      venue: 'Central Park',
+      price: 'From $25'
+    },
+    {
+      id: '2', 
       title: 'Candlelit Wine Tasting 🍷',
       distance: '1.2 km away',
       timing: 'Saturday, 7:00 PM',
       description: 'Discover new flavors together in an intimate candlelit setting.',
-      category: 'Food & Drink'
-    }, {
+      category: 'Food & Drink',
+      venue: 'Wine & Dine',
+      price: 'From $45'
+    },
+    {
       id: '3',
       title: 'Moonlight Art Gallery 🎨',
-      distance: '5 km away',
+      distance: '5 km away', 
       timing: 'Sunday, 6:00 PM',
       description: 'Explore beautiful art pieces while sharing whispered conversations.',
-      category: 'Culture'
-    }];
-    setUpcomingEvents(mockEvents);
-  };
+      category: 'Culture',
+      venue: 'Modern Art Museum',
+      price: 'From $15'
+    }
+  ];
   const handleAddEvent = async () => {
     if (!newEvent.title || !newEvent.date || !newEvent.time || !coupleData?.id) {
       toast({
@@ -499,20 +578,31 @@ export const DatePlanner = () => {
           
           <TabsContent value="upcoming" className="space-y-4">
             {/* Upcoming Events */}
-            {upcomingEvents.length === 0 ? <div className="text-center py-12">
+            {eventsLoading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                <p className="text-muted-foreground font-bold">Finding romantic events near you...</p>
+              </div>
+            ) : upcomingEvents.length === 0 ? (
+              <div className="text-center py-12">
                 <Sparkles className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
                 <p className="text-lg font-bold text-muted-foreground">
-                  We're searching the city for your next romantic moment...
+                  No events found nearby. Try again later!
                 </p>
-              </div> : upcomingEvents.map((event, index) => <div key={event.id} className="bg-card rounded-2xl p-6 shadow-soft hover:shadow-romantic transition-all duration-200 transform hover:scale-102 animate-fade-in" style={{
-            animationDelay: `${index * 100}ms`
-          }}>
+              </div>
+            ) : (
+              upcomingEvents.map((event, index) => (
+                <div 
+                  key={event.id} 
+                  className="bg-card rounded-2xl p-6 shadow-soft hover:shadow-romantic transition-all duration-200 transform hover:scale-102 animate-fade-in" 
+                  style={{ animationDelay: `${index * 100}ms` }}
+                >
                   <div className="flex items-start justify-between mb-4">
-                    <div>
+                    <div className="flex-1">
                       <h3 className="text-xl font-extrabold font-poppins text-foreground mb-2">
                         {event.title}
                       </h3>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
                         <div className="flex items-center gap-1">
                           <MapPin size={16} />
                           <span className="font-bold">{event.distance}</span>
@@ -522,24 +612,58 @@ export const DatePlanner = () => {
                           <span className="font-bold">{event.timing}</span>
                         </div>
                       </div>
+                      {event.venue && (
+                        <p className="text-sm text-muted-foreground mb-1">
+                          📍 {event.venue} {event.city && `• ${event.city}`}
+                        </p>
+                      )}
+                      {event.price && (
+                        <p className="text-sm font-bold text-green-600 mb-2">
+                          💰 {event.price}
+                        </p>
+                      )}
                     </div>
-                    <Badge variant="outline" className="bg-blue-50 text-blue-600 border-blue-200">
+                    <Badge className="bg-purple-50 text-purple-600 border-purple-200">
+                      <Sparkles size={12} className="mr-1" />
                       {event.category}
                     </Badge>
                   </div>
                   
-                  <p className="text-muted-foreground font-inter mb-4 leading-relaxed italic">
+                  <p className="text-muted-foreground font-inter mb-4 leading-relaxed">
                     {event.description}
                   </p>
                   
                   <div className="flex gap-2">
-                     <Button variant="romantic" size="sm" className="flex-1" onClick={() => handleScheduleUpcomingEvent(event)}>
-                       <CalendarPlus size={14} className="mr-1" />
-                       Add to Planner
-                     </Button>
-                    
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex-1" 
+                      onClick={() => handleSaveUpcomingEvent(event)}
+                    >
+                      <Save size={14} className="mr-1" />
+                      Save Idea
+                    </Button>
+                    <Button 
+                      className="bg-gradient-secondary hover:opacity-90 text-white flex-1" 
+                      size="sm"
+                      onClick={() => handleScheduleUpcomingEvent(event)}
+                    >
+                      <CalendarPlus size={14} className="mr-1" />
+                      Schedule
+                    </Button>
+                    {event.bookingUrl && (
+                      <Button 
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(event.bookingUrl, '_blank')}
+                      >
+                        Book Now
+                      </Button>
+                    )}
                   </div>
-                </div>)}
+                </div>
+              ))
+            )}
           </TabsContent>
         </Tabs>
       </div>
