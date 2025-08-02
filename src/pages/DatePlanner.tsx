@@ -682,13 +682,30 @@ export const DatePlanner = () => {
                        <CalendarPlus size={14} className="mr-1" />
                        Schedule
                      </Button>
-                     {event.bookingUrl && event.source !== 'google' && event.source !== 'bookmyshow' && (
+                     
+                     {/* Get Directions button for Google Places events */}
+                     {event.source === 'google' && event.bookingUrl && (
                        <Button 
                          variant="outline"
                          size="sm"
                          onClick={() => window.open(event.bookingUrl, '_blank')}
                          className="flex-1"
                        >
+                         <MapPin size={14} className="mr-1" />
+                         Get Directions
+                       </Button>
+                     )}
+                     
+                     {/* Book button for web-scraped events */}
+                     {event.source !== 'google' && event.bookingUrl && 
+                      ['bookmyshow', 'paytm-insider', 'district', 'ticketmaster', 'eventbrite', 'facebook', 'meetup'].includes(event.source) && (
+                       <Button 
+                         variant="outline"
+                         size="sm"
+                         onClick={() => window.open(event.bookingUrl, '_blank')}
+                         className="flex-1"
+                       >
+                         <CalendarClock size={14} className="mr-1" />
                          Book Now
                        </Button>
                      )}
