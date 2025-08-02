@@ -225,10 +225,12 @@ export const DatePlanner = () => {
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'planned' | 'upcoming')} className="w-full">
           <TabsContent value="planned" className="space-y-4">
             {/* Add Event Button */}
-            <Button onClick={() => setShowAddForm(true)} className="w-full bg-gradient-secondary hover:opacity-90 text-white py-3" size="sm">
-              <Plus size={10} className="mr-2" />
-              Add Your Own Date
-            </Button>
+            <div className="flex justify-center">
+              <Button onClick={() => setShowAddForm(true)} className="bg-gradient-secondary hover:opacity-90 text-white px-6 py-2" size="sm">
+                <Plus size={16} className="mr-2" />
+                Add Your Own Date
+              </Button>
+            </div>
 
             {/* Planned Events */}
             {loading ? <div className="text-center py-8">
