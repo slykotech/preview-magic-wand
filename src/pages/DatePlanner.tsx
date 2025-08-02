@@ -207,7 +207,7 @@ export const DatePlanner = () => {
       >
         {/* Enhanced Tab Navigation */}
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'planned' | 'upcoming')} className="w-full">
-          <TabsList className="grid w-auto grid-cols-2 max-w-sm mx-auto">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="planned" className="flex-col gap-1">
               <span className="font-bold">Planned</span>
               <span className="text-xs opacity-80">scheduled love moments</span>
@@ -221,12 +221,12 @@ export const DatePlanner = () => {
       </GradientHeader>
 
       {/* Content with Tab System */}
-      <div className="px-6">
+      <div className="px-4">
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'planned' | 'upcoming')} className="w-full">
           <TabsContent value="planned" className="space-y-4">
             {/* Add Event Button */}
-            <Button onClick={() => setShowAddForm(true)} className="w-full bg-gradient-secondary hover:opacity-90 text-white py-3" size="lg">
-              <Plus size={20} className="mr-2" />
+            <Button onClick={() => setShowAddForm(true)} className="w-full bg-gradient-secondary hover:opacity-90 text-white py-3" size="sm">
+              <Plus size={10} className="mr-2" />
               Add Your Own Date
             </Button>
 
