@@ -333,20 +333,9 @@ export const Chat: React.FC<ChatProps> = ({
       {/* Attachments Panel */}
       {showAttachments && <div className="border-t bg-background p-4 flex-shrink-0">
           <div className="grid grid-cols-3 gap-4">
-            <button onClick={() => fileInputRef.current?.click()} className="flex flex-col items-center gap-2 p-4 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-primary transition-colors">
-              <Camera className="h-6 w-6 text-primary" />
-              <span className="text-xs font-medium">Photo</span>
-            </button>
             
-            <button onClick={() => {
-          if (fileInputRef.current) {
-            fileInputRef.current.accept = 'image/*,video/*';
-            fileInputRef.current.click();
-          }
-        }} className="flex flex-col items-center gap-2 p-4 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-primary transition-colors">
-              <Image className="h-6 w-6 text-primary" />
-              <span className="text-xs font-medium">Gallery</span>
-            </button>
+            
+            
           </div>
         </div>}
 
@@ -367,12 +356,12 @@ export const Chat: React.FC<ChatProps> = ({
             <div className="flex-1 relative">
               <Input ref={inputRef} placeholder="Type a message..." value={newMessage} onChange={e => setNewMessage(e.target.value)} onKeyPress={handleKeyPress} className="h-8 rounded-full border focus:border-primary text-sm pl-10" disabled={loading} />
               <Button variant="ghost" size="sm" onClick={() => {
-                if (fileInputRef.current) {
-                  fileInputRef.current.accept = 'image/*';
-                  fileInputRef.current.setAttribute('capture', 'environment');
-                  fileInputRef.current.click();
-                }
-              }} className="absolute left-1 top-1/2 -translate-y-1/2 rounded-full h-6 w-6 p-0">
+              if (fileInputRef.current) {
+                fileInputRef.current.accept = 'image/*';
+                fileInputRef.current.setAttribute('capture', 'environment');
+                fileInputRef.current.click();
+              }
+            }} className="absolute left-1 top-1/2 -translate-y-1/2 rounded-full h-6 w-6 p-0">
                 <Camera className="h-3 w-3" />
               </Button>
             </div>
