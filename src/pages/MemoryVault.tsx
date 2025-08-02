@@ -406,47 +406,29 @@ export const MemoryVault = () => {
           </div>}
       </div>
 
-      {/* Floating Action Button */}
-      <div className="fixed bottom-24 right-6 z-50">
-        <Button onClick={() => setShowSelection(true)} size="fab" className="bg-gradient-primary hover:opacity-90 text-white shadow-lg">
-          <Plus size={24} />
+      {/* Floating Action Buttons */}
+      <div className="fixed bottom-24 right-6 z-50 flex flex-col gap-3">
+        <Button 
+          onClick={() => {
+            setCreateMode('note');
+            setShowCreateForm(true);
+          }}
+          size="fab" 
+          className="bg-gradient-primary hover:opacity-90 text-white shadow-lg"
+        >
+          <FileText size={20} />
+        </Button>
+        <Button 
+          onClick={() => {
+            setCreateMode('photo');
+            setShowCreateForm(true);
+          }}
+          size="fab" 
+          className="bg-gradient-primary hover:opacity-90 text-white shadow-lg"
+        >
+          <Camera size={20} />
         </Button>
       </div>
-
-      {/* Selection Modal */}
-      <Dialog open={showSelection} onOpenChange={setShowSelection}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="text-center">What would you like to create?</DialogTitle>
-          </DialogHeader>
-          <div className="grid grid-cols-2 gap-4 py-4">
-            <Button 
-              onClick={() => {
-                setCreateMode('note');
-                setShowSelection(false);
-                setShowCreateForm(true);
-              }}
-              className="h-24 flex-col gap-2"
-              variant="outline"
-            >
-              <FileText size={32} />
-              <span>Note</span>
-            </Button>
-            <Button 
-              onClick={() => {
-                setCreateMode('photo');
-                setShowSelection(false);
-                setShowCreateForm(true);
-              }}
-              className="h-24 flex-col gap-2"
-              variant="outline"
-            >
-              <Camera size={32} />
-              <span>Photo</span>
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Create Form Modal */}
       <Dialog open={showCreateForm} onOpenChange={setShowCreateForm}>
@@ -476,17 +458,49 @@ export const MemoryVault = () => {
               })} placeholder="Tell the story..." rows={3} />
                 </div>
                 <div>
-                  <Label htmlFor="memory-date">Memory Date</Label>
+                  <Label htmlFor="memory-date">Date</Label>
                   <Input id="memory-date" type="date" value={newMemory.memory_date} onChange={e => setNewMemory({
                 ...newMemory,
                 memory_date: e.target.value
-              })} />
+              })} placeholder="dd-mm-yyyy" />
                 </div>
+                
+                {/* File Upload Area */}
+                <div className="border-2 border-dashed border-muted-foreground/20 rounded-lg p-8 text-center bg-muted/20">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={(e) => {
+                      if (e.target.files) {
+                        setUploadedFiles(Array.from(e.target.files));
+                      }
+                    }}
+                    className="hidden"
+                  />
+                  <Upload className="h-8 w-8 text-primary mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground mb-2">Drag & drop images here, or click to select</p>
+                  <Button 
+                    type="button"
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    Choose Files
+                  </Button>
+                  {uploadedFiles.length > 0 && (
+                    <p className="text-xs text-primary mt-2">
+                      {uploadedFiles.length} file(s) selected
+                    </p>
+                  )}
+                </div>
+                
                 <div className="flex gap-2">
                   <Button onClick={() => setShowCreateForm(false)} variant="outline" className="flex-1">
                     Cancel
                   </Button>
-                  <Button onClick={createMemory} className="flex-1">
+                  <Button onClick={createMemory} className="flex-1 bg-primary">
                     Create Memory
                   </Button>
                 </div>
