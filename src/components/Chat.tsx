@@ -81,8 +81,8 @@ export const Chat: React.FC<ChatProps> = ({
   useEffect(() => {
     if (!conversation?.id) return;
 
-    // Set up real-time subscription for new messages and updates
-    const channel = supabase.channel(`messages:${conversation.id}`)
+    // Set up real-time subscription for messages only
+    const messagesChannel = supabase.channel(`messages:${conversation.id}`)
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
@@ -106,19 +106,36 @@ export const Chat: React.FC<ChatProps> = ({
         const updatedMessage = payload.new as Message;
         setMessages(prev => prev.map(msg => msg.id === updatedMessage.id ? updatedMessage : msg));
       })
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(messagesChannel);
+    };
+  }, [conversation?.id, user?.id]);
+
+  // Set up reactions subscription when messages are available
+  useEffect(() => {
+    if (!messages.length || !conversation?.id) return;
+
+    const reactionsChannel = supabase.channel(`reactions:${conversation.id}`)
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
         table: 'message_reactions'
       }, payload => {
         const newReaction = payload.new as MessageReaction;
-        setMessageReactions(prev => ({
-          ...prev,
-          [newReaction.message_id]: [
-            ...(prev[newReaction.message_id] || []),
-            newReaction
-          ]
-        }));
+        // Only process if it's for one of our current messages
+        if (messages.some(m => m.id === newReaction.message_id)) {
+          setMessageReactions(prev => ({
+            ...prev,
+            [newReaction.message_id]: [
+              ...(prev[newReaction.message_id] || []).filter(r => 
+                !(r.user_id === newReaction.user_id && r.emoji === newReaction.emoji)
+              ),
+              newReaction
+            ]
+          }));
+        }
       })
       .on('postgres_changes', {
         event: 'DELETE',
@@ -133,11 +150,11 @@ export const Chat: React.FC<ChatProps> = ({
         }));
       })
       .subscribe();
-    
+
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(reactionsChannel);
     };
-  }, [conversation?.id, user?.id]);
+  }, [messages]);
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({
       behavior: 'smooth'
