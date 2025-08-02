@@ -149,33 +149,43 @@ serve(async (req) => {
     // If locationName is provided instead of coordinates, geocode it
     if (locationName && (!latitude || !longitude)) {
       const googleKey = Deno.env.get('GOOGLE_EVENTS_API_KEY');
-      if (googleKey) {
-        try {
-          console.log(`Attempting to geocode: "${locationName}"`);
-          const geocodeResponse = await fetch(
-            `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(locationName)}&key=${googleKey}`
-          );
-          const geocodeData = await geocodeResponse.json();
-          
-          console.log('Geocoding response:', JSON.stringify(geocodeData, null, 2));
-          
-          if (geocodeData.status === 'OK' && geocodeData.results && geocodeData.results.length > 0) {
-            const result = geocodeData.results[0];
-            finalLatitude = result.geometry.location.lat;
-            finalLongitude = result.geometry.location.lng;
-            resolvedLocation = result.formatted_address;
-            console.log(`Successfully geocoded "${locationName}" to: ${finalLatitude}, ${finalLongitude} (${resolvedLocation})`);
-          } else {
-            console.error('Geocoding failed:', geocodeData);
-            throw new Error(`Could not geocode location: ${locationName}. Status: ${geocodeData.status}`);
-          }
-        } catch (geocodeError) {
-          console.error('Geocoding error:', geocodeError);
-          throw new Error(`Failed to find coordinates for: ${locationName}`);
+      console.log(`Geocoding request for: "${locationName}"`);
+      console.log('Google API key available:', !!googleKey);
+      
+      if (!googleKey) {
+        console.error('Google API key not found');
+        throw new Error('Google API key not configured for geocoding');
+      }
+      
+      try {
+        console.log(`Attempting to geocode: "${locationName}"`);
+        const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(locationName)}&key=${googleKey}`;
+        console.log('Geocoding URL (without key):', geocodeUrl.replace(googleKey, '***'));
+        
+        const geocodeResponse = await fetch(geocodeUrl);
+        console.log('Geocoding response status:', geocodeResponse.status);
+        
+        if (!geocodeResponse.ok) {
+          throw new Error(`Geocoding HTTP error: ${geocodeResponse.status}`);
         }
-      } else {
-        console.error('Google API key not available for geocoding');
-        throw new Error('Google API key not available for geocoding');
+        
+        const geocodeData = await geocodeResponse.json();
+        console.log('Geocoding response:', JSON.stringify(geocodeData, null, 2));
+        
+        if (geocodeData.status === 'OK' && geocodeData.results && geocodeData.results.length > 0) {
+          const result = geocodeData.results[0];
+          finalLatitude = result.geometry.location.lat;
+          finalLongitude = result.geometry.location.lng;
+          resolvedLocation = result.formatted_address;
+          console.log(`Successfully geocoded "${locationName}" to: ${finalLatitude}, ${finalLongitude} (${resolvedLocation})`);
+        } else {
+          console.error('Geocoding failed with status:', geocodeData.status);
+          console.error('Full geocoding response:', geocodeData);
+          throw new Error(`Could not geocode location: ${locationName}. Status: ${geocodeData.status}, Error: ${geocodeData.error_message || 'Unknown error'}`);
+        }
+      } catch (geocodeError) {
+        console.error('Geocoding error details:', geocodeError);
+        throw new Error(`Failed to find coordinates for: ${locationName}. Error: ${geocodeError.message}`);
       }
     }
     
