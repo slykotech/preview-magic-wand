@@ -257,7 +257,7 @@ const MemoryVault = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted">
-      <GradientHeader title="Memory Vault" subtitle="Your love story collection" />
+      <GradientHeader title="Memory Vault" subtitle="Your love story collection" icon={<Heart />} />
 
       <div className="container mx-auto px-4 py-6 pb-24">
         {/* Search and Controls */}

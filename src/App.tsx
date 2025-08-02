@@ -14,7 +14,7 @@ import { Auth } from "./pages/Auth";
 import { Dashboard } from "./pages/Dashboard";
 import { AICoach } from "./pages/AICoach";
 import { DatePlanner } from "./pages/DatePlanner";
-import { MemoryVault } from "./pages/MemoryVault";
+import MemoryVault from "./pages/MemoryVault";
 import { Messages } from "./pages/Messages";
 import { Profile } from "./pages/Profile";
 import { CoupleSetup } from "./pages/CoupleSetup";
