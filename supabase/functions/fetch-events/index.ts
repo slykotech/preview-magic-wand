@@ -140,8 +140,44 @@ serve(async (req) => {
   }
 
   try {
-    const { latitude, longitude, radius = 25, size = 20, keyword = '' } = await req.json();
+    const { latitude, longitude, radius = 25, size = 20, keyword = '', locationName = '' } = await req.json();
     
+    let finalLatitude = latitude;
+    let finalLongitude = longitude;
+    let resolvedLocation = '';
+    
+    // If locationName is provided instead of coordinates, geocode it
+    if (locationName && (!latitude || !longitude)) {
+      const googleKey = Deno.env.get('GOOGLE_EVENTS_API_KEY');
+      if (googleKey) {
+        try {
+          const geocodeResponse = await fetch(
+            `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(locationName)}&key=${googleKey}`
+          );
+          const geocodeData = await geocodeResponse.json();
+          
+          if (geocodeData.results && geocodeData.results.length > 0) {
+            const result = geocodeData.results[0];
+            finalLatitude = result.geometry.location.lat;
+            finalLongitude = result.geometry.location.lng;
+            resolvedLocation = result.formatted_address;
+            console.log(`Geocoded "${locationName}" to: ${finalLatitude}, ${finalLongitude} (${resolvedLocation})`);
+          } else {
+            throw new Error(`Could not geocode location: ${locationName}`);
+          }
+        } catch (geocodeError) {
+          console.error('Geocoding error:', geocodeError);
+          throw new Error(`Failed to find coordinates for: ${locationName}`);
+        }
+      } else {
+        throw new Error('Google API key not available for geocoding');
+      }
+    }
+    
+    if (!finalLatitude || !finalLongitude) {
+      throw new Error('Location coordinates are required');
+    }
+
     const ticketmasterKey = Deno.env.get('TICKETMASTER_API_KEY');
     const eventbriteKey = Deno.env.get('EVENTBRITE_API_KEY');
     const googleKey = Deno.env.get('GOOGLE_EVENTS_API_KEY');
@@ -152,12 +188,14 @@ serve(async (req) => {
       google: !!googleKey
     });
 
+    console.log(`Fetching events for coordinates: ${finalLatitude}, ${finalLongitude}`);
+
     const allEvents: UnifiedEvent[] = [];
 
     // Fetch from Ticketmaster
     if (ticketmasterKey) {
       try {
-        const tmEvents = await fetchTicketmasterEvents(ticketmasterKey, latitude, longitude, radius, size, keyword);
+        const tmEvents = await fetchTicketmasterEvents(ticketmasterKey, finalLatitude, finalLongitude, radius, size, keyword);
         allEvents.push(...tmEvents);
         console.log(`Fetched ${tmEvents.length} events from Ticketmaster`);
       } catch (error) {
@@ -168,7 +206,7 @@ serve(async (req) => {
     // Fetch from Eventbrite
     if (eventbriteKey) {
       try {
-        const ebEvents = await fetchEventbriteEvents(eventbriteKey, latitude, longitude, radius, size, keyword);
+        const ebEvents = await fetchEventbriteEvents(eventbriteKey, finalLatitude, finalLongitude, radius, size, keyword);
         allEvents.push(...ebEvents);
         console.log(`Fetched ${ebEvents.length} events from Eventbrite`);
       } catch (error) {
@@ -179,7 +217,7 @@ serve(async (req) => {
     // Fetch from Google Events (Places API)
     if (googleKey) {
       try {
-        const googleEvents = await fetchGoogleEvents(googleKey, latitude, longitude, radius);
+        const googleEvents = await fetchGoogleEvents(googleKey, finalLatitude, finalLongitude, radius);
         allEvents.push(...googleEvents);
         console.log(`Fetched ${googleEvents.length} events from Google`);
       } catch (error) {
@@ -199,7 +237,11 @@ serve(async (req) => {
     return new Response(JSON.stringify({
       events: sortedEvents.slice(0, size), // Limit to requested size
       totalEvents: sortedEvents.length,
-      location: { latitude, longitude },
+      location: { 
+        latitude: finalLatitude, 
+        longitude: finalLongitude,
+        resolvedLocation: resolvedLocation || locationName || `${finalLatitude}, ${finalLongitude}`
+      },
       sources: {
         ticketmaster: allEvents.filter(e => e.source === 'ticketmaster').length,
         eventbrite: allEvents.filter(e => e.source === 'eventbrite').length,

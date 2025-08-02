@@ -140,12 +140,12 @@ export const DatePlanner = () => {
   };
   const handleLocationSelect = async (location: string) => {
     setLocationInput(location);
+    setEventsLoading(true);
     
-    // Simple location handling - in production you'd want a proper geocoding service
-    // For now, we'll just set a default location and let the backend handle it
+    // Send location name to backend for geocoding
     setUserLocation({
-      latitude: 40.7128, // Default coordinates (you could enhance this with a geocoding service)
-      longitude: -74.0060,
+      latitude: 0, // Will be resolved by backend
+      longitude: 0, // Will be resolved by backend
       city: location
     });
     setShowLocationSelector(false);
@@ -190,27 +190,67 @@ export const DatePlanner = () => {
     
     setEventsLoading(true);
     try {
+      const requestBody = userLocation.city && (userLocation.latitude === 0 || !userLocation.latitude) 
+        ? {
+            locationName: userLocation.city,
+            radius: 25,
+            size: 20
+          }
+        : {
+            latitude: userLocation.latitude,
+            longitude: userLocation.longitude,
+            radius: 25,
+            size: 20
+          };
+
+      console.log('Requesting events with:', requestBody);
+
       const { data, error } = await supabase.functions.invoke('fetch-events', {
-        body: {
-          latitude: userLocation.latitude,
-          longitude: userLocation.longitude,
-          radius: 25, // 25km radius
-          size: 20 // Get 20 events
-        }
+        body: requestBody
       });
 
       if (error) {
         console.error('Error fetching events:', error);
         // Fall back to mock events if API fails
         setUpcomingEvents(getMockEvents());
+        toast({
+          title: "Using sample events",
+          description: "Couldn't fetch live events, showing sample data",
+          variant: "destructive"
+        });
         return;
       }
 
-      setUpcomingEvents(data.events || []);
+      if (data.events && data.events.length > 0) {
+        setUpcomingEvents(data.events);
+        console.log(`Loaded ${data.events.length} events from:`, data.sources);
+        
+        // Update location with resolved coordinates if available
+        if (data.location && data.location.resolvedLocation) {
+          setUserLocation(prev => ({
+            ...prev!,
+            latitude: data.location.latitude,
+            longitude: data.location.longitude,
+            city: data.location.resolvedLocation
+          }));
+        }
+      } else {
+        setUpcomingEvents([]);
+        toast({
+          title: "No events found",
+          description: `No events found near ${userLocation.city}. Try a different location.`,
+          variant: "destructive"
+        });
+      }
     } catch (error) {
       console.error('Error in fetchUpcomingEvents:', error);
       // Fall back to mock events if there's an error
       setUpcomingEvents(getMockEvents());
+      toast({
+        title: "Error loading events",
+        description: "Using sample events instead",
+        variant: "destructive"
+      });
     } finally {
       setEventsLoading(false);
     }
