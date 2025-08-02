@@ -370,13 +370,7 @@ export const Chat: React.FC<ChatProps> = ({
             
             
             {/* Emoji Button */}
-            <Button variant="ghost" size="sm" onClick={() => {
-            setShowEmojiPicker(!showEmojiPicker);
-            setShowStickers(false);
-            setShowAttachments(false);
-          }} className={`rounded-full h-8 w-8 p-0 ${showEmojiPicker ? 'bg-muted' : ''}`}>
-              <Smile className="h-4 w-4" />
-            </Button>
+            
             
             {/* Send Button */}
             <Button onClick={() => sendMessage(newMessage)} disabled={loading || !newMessage.trim()} size="sm" className="rounded-full h-8 w-8 p-0">
