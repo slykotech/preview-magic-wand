@@ -317,6 +317,47 @@ export const DatePlanner = () => {
       });
     }
   };
+
+  const handleDateFeedback = async (dateId: string, wasSuccessful: boolean) => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      
+      const { error } = await supabase
+        .from('date_ideas')
+        .update({
+          is_completed: true,
+          completed_date: today,
+          rating: wasSuccessful ? 5 : 2,
+          notes: wasSuccessful ? 'Date was successful!' : 'Date did not go as planned',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', dateId);
+
+      if (error) throw error;
+
+      toast({
+        title: wasSuccessful ? "Great! Date added to history" : "Thanks for the feedback",
+        description: wasSuccessful 
+          ? "Your successful date has been added to your date history in the profile tab." 
+          : "Better luck next time! You can plan another date anytime.",
+      });
+
+      fetchPlannedDates();
+    } catch (error) {
+      console.error('Error updating date feedback:', error);
+      toast({
+        title: "Error saving feedback",
+        description: "There was an error saving your feedback. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const isDateCompleted = (scheduledDate: string) => {
+    const today = new Date();
+    const dateToCheck = new Date(scheduledDate);
+    return dateToCheck < today;
+  };
   return <div className="min-h-screen bg-background pb-20">
       {/* Gradient Header */}
       <GradientHeader
@@ -400,10 +441,35 @@ export const DatePlanner = () => {
                        <Edit size={14} className="mr-1" />
                        Edit
                      </Button>
-                    <Button variant="outline" size="sm" className="flex-1">
-                      <CalendarIcon size={14} className="mr-1" />
-                      Reschedule
-                    </Button>
+                    {date.scheduled_date && isDateCompleted(date.scheduled_date) ? (
+                      // Show feedback options for completed dates
+                      <div className="flex gap-1 flex-1">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="flex-1 bg-green-50 text-green-600 border-green-200 hover:bg-green-100" 
+                          onClick={() => handleDateFeedback(date.id, true)}
+                        >
+                          <Heart size={14} className="mr-1" />
+                          Successful
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="flex-1 bg-red-50 text-red-600 border-red-200 hover:bg-red-100" 
+                          onClick={() => handleDateFeedback(date.id, false)}
+                        >
+                          <X size={14} className="mr-1" />
+                          Not Great
+                        </Button>
+                      </div>
+                    ) : (
+                      // Show reschedule for future dates
+                      <Button variant="outline" size="sm" className="flex-1">
+                        <CalendarIcon size={14} className="mr-1" />
+                        Reschedule
+                      </Button>
+                    )}
                   </div>
                 </div>)}
           </TabsContent>
