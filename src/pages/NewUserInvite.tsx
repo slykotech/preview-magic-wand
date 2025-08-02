@@ -144,13 +144,13 @@ const NewUserInvite = () => {
             )}
           </div>
           <CardTitle className="text-2xl">
-            {status === 'success' ? 'Almost There!' : 
+            {status === 'success' ? 'Welcome to Love Sync!' : 
              status === 'error' ? 'Signup Failed' :
              'Join Love Sync!'}
           </CardTitle>
           <CardDescription>
             {status === 'pending' && 'Create your account to connect with your partner'}
-            {status === 'success' && 'Check your email to complete the verification process'}
+            {status === 'success' && 'You are now connected and ready to start your journey!'}
             {status === 'error' && 'There was an issue with your invitation'}
           </CardDescription>
         </CardHeader>
@@ -238,10 +238,10 @@ const NewUserInvite = () => {
               
               <div className="bg-amber-50 border border-amber-200 p-3 rounded-lg">
                 <div className="flex items-center gap-2 text-amber-800 mb-1">
-                  <span className="font-semibold text-xs">📧 Email Verification Required</span>
+                  <span className="font-semibold text-xs">🚀 Instant Connection</span>
                 </div>
                 <p className="text-xs text-amber-700">
-                  After clicking "Create Account", you'll receive a verification email. Once verified, you'll automatically connect with your partner.
+                  After clicking "Create Account & Connect", your account will be created and you'll automatically connect with your partner.
                 </p>
               </div>
               
@@ -255,10 +255,10 @@ const NewUserInvite = () => {
                 {processing ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Sending Verification Email...
+                    Creating Account & Connecting...
                   </>
                 ) : (
-                  'Create Account & Send Verification'
+                  'Create Account & Connect'
                 )}
               </Button>
               
@@ -271,22 +271,22 @@ const NewUserInvite = () => {
           {status === 'success' && (
             <div className="text-center space-y-3">
               <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
-                <h4 className="font-semibold text-green-800 mb-2">📧 Check Your Email!</h4>
+                <h4 className="font-semibold text-green-800 mb-2">🎉 Welcome to Love Sync!</h4>
                 <p className="text-sm text-green-700 mb-3">
-                  We've sent a verification link to <strong>{email}</strong>
+                  Your account has been created and you're automatically connected with your partner. You can now start your Love Sync journey together!
                 </p>
                 <div className="text-xs text-green-600 space-y-1">
-                  <p>• Click the verification link in your email</p>
-                  <p>• Your account will be created automatically</p>
-                  <p>• You'll then be able to sign in and connect</p>
+                  <p>• Account created successfully</p>
+                  <p>• Automatically connected with your partner</p>
+                  <p>• Ready to start your relationship journey</p>
                 </div>
               </div>
               <Button 
-                onClick={() => navigate('/auth')}
+                onClick={() => navigate('/dashboard')}
                 className="w-full"
-                variant="outline"
+                variant="default"
               >
-                Go to Sign In Page
+                Go to Dashboard
               </Button>
             </div>
           )}
