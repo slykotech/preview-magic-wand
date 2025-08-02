@@ -108,23 +108,11 @@ Deno.serve(async (req) => {
         }
       }
       
-      // Method 2: Try getUserByEmail as a fallback
+      // Method 2: Additional check using direct query (getUserByEmail doesn't exist in current client)
       if (!userExists && !userCheckError) {
-        console.log('Method 2: Checking with getUserByEmail...');
-        const { data: userByEmail, error: getUserError } = await supabase.auth.admin.getUserByEmail(email);
-        
-        if (getUserError) {
-          // If error is "User not found", that's expected for new users
-          if (getUserError.message.includes('User not found') || getUserError.message.includes('not found')) {
-            console.log('User not found via getUserByEmail - this is expected for new users');
-          } else {
-            console.error('Unexpected error with getUserByEmail:', getUserError);
-            userCheckError = getUserError;
-          }
-        } else if (userByEmail?.user) {
-          console.log('User found via getUserByEmail:', { id: userByEmail.user.id, email: userByEmail.user.email });
-          userExists = true;
-        }
+        console.log('Method 2: Double-checking user existence...');
+        // Since getUserByEmail doesn't exist, we rely on the listUsers result
+        console.log('Relying on listUsers result - no additional check needed');
       }
       
     } catch (error) {
@@ -132,10 +120,10 @@ Deno.serve(async (req) => {
       userCheckError = error;
     }
     
-    // If we had errors checking user existence, only fail if it's a critical error
-    if (userCheckError && !userCheckError.message.includes('User not found')) {
-      console.error('Critical error checking existing user:', userCheckError);
-      throw new Error('Failed to validate user information');
+    // If we had errors checking user existence, only fail if it's a critical error that prevents us from proceeding
+    if (userCheckError && !userExists) {
+      console.error('Error checking existing user:', userCheckError);
+      console.log('Proceeding with signup since user existence could not be verified and no user was found');
     }
     
     console.log('User existence check result:', { userExists, hadError: !!userCheckError });

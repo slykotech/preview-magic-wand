@@ -65,7 +65,7 @@ export const Signup = () => {
       
       try {
         // Call the standalone signup invite function
-        const { data, error } = await supabase.functions.invoke('send-signup-invite', {
+        const response = await supabase.functions.invoke('send-signup-invite', {
           body: {
             email,
             firstName,
@@ -74,10 +74,10 @@ export const Signup = () => {
           }
         });
 
-        console.log('Function response received:', { data, error });
+        console.log('Function response received:', response);
 
         // Handle successful response
-        if (data && data.success) {
+        if (response.data && response.data.success) {
           console.log('Verification email sent successfully');
           setVerificationSent(true);
           toast({
@@ -87,35 +87,17 @@ export const Signup = () => {
           return;
         }
 
-        // Handle error responses - including non-2xx status codes
-        if (error || (data && !data.success)) {
-          let errorMessage = 'Failed to send verification email';
-          
-          // Try to get error from data first (successful function call but application error)
-          if (data && data.error) {
-            errorMessage = data.error;
-          }
-          // If we have a FunctionsHttpError, try to get the actual error message
-          else if (error && error.name === 'FunctionsHttpError') {
-            // Try to parse the actual error from the edge function
-            try {
-              // The error might contain the actual response in the message
-              errorMessage = 'There was an issue with your signup request. Please try again.';
-            } catch (e) {
-              errorMessage = 'There was an issue with your signup request. Please try again.';
-            }
-          }
-          // Handle other types of errors
-          else if (error) {
-            if (error.message && error.message.includes('network')) {
-              errorMessage = 'Network error. Please check your internet connection and try again.';
-            } else {
-              errorMessage = 'Failed to connect to email service. Please try again.';
-            }
-          }
-
+        // Handle error in response data (function ran but returned error)
+        if (response.data && !response.data.success) {
+          const errorMessage = response.data.error || 'Failed to send verification email';
           console.error('Function returned error:', errorMessage);
           throw new Error(errorMessage);
+        }
+
+        // Handle FunctionsHttpError (non-2xx status codes)
+        if (response.error) {
+          console.error('Function HTTP error:', response.error);
+          throw new Error('There was an issue with your signup request. Please try again.');
         }
 
         // This shouldn't happen, but handle unexpected responses
