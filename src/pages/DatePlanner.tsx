@@ -371,7 +371,7 @@ export const DatePlanner = () => {
           <TabsList className="grid w-auto grid-cols-2 gap-2 max-w-sm mx-auto">
             <TabsTrigger value="planned" className="flex-col gap-1">
               <span className="font-bold">Planned</span>
-              <span className="text-xs opacity-80">scheduled love moments</span>
+              <span className="text-xs opacity-80">Scheduled love moments</span>
             </TabsTrigger>
             <TabsTrigger value="upcoming" className="flex-col gap-1">
               <span className="font-bold">Upcoming</span>
@@ -400,7 +400,7 @@ export const DatePlanner = () => {
               </div> : plannedDates.length === 0 ? <div className="text-center py-12">
                 <CalendarClock className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
                 <p className="text-lg font-bold text-muted-foreground">
-                  Nothing on the calendar yet — go make some magic!
+                  Nothing on the calendar yet. Go make some magic!
                 </p>
               </div> : plannedDates.map((date, index) => <div key={date.id} className="bg-card rounded-2xl p-6 shadow-soft hover:shadow-romantic transition-all duration-200 transform hover:scale-102 animate-fade-in" style={{
           animationDelay: `${index * 100}ms`
