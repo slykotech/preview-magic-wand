@@ -82,10 +82,10 @@ export const useEnhancedSyncScore = (coupleId: string | null) => {
           // Count days where both partners checked in (2 users per day)
           const bothCheckinDays = Object.values(usersPerDay).filter(users => users.size >= 2).length;
           
-          // Base 50% + bonus for activity
-          calculatedScore = Math.min(50 + (bothCheckinDays * 10), 100);
+          // Base 0% + bonus for activity
+          calculatedScore = Math.min(0 + (bothCheckinDays * 10), 100);
         } else {
-          calculatedScore = 50; // Base score when no data
+          calculatedScore = 0; // Base score when no data
         }
       }
 
