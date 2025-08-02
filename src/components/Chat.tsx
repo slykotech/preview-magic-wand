@@ -476,17 +476,43 @@ export const Chat: React.FC<ChatProps> = ({
 
   const startCamera = async () => {
     try {
+      // Request camera permission first
+      const permission = await navigator.permissions.query({ name: 'camera' as PermissionName });
+      
+      if (permission.state === 'denied') {
+        toast.error('Camera permission denied. Please allow camera access in your browser settings.');
+        return;
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode }
+        video: { 
+          facingMode,
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        }
       });
+      
       setCameraStream(stream);
       setShowCamera(true);
+      
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        // Ensure video plays
+        videoRef.current.onloadedmetadata = () => {
+          videoRef.current?.play();
+        };
       }
     } catch (error) {
       console.error('Error accessing camera:', error);
-      toast.error('Failed to access camera');
+      if (error instanceof Error) {
+        if (error.name === 'NotAllowedError') {
+          toast.error('Camera access denied. Please allow camera permission and try again.');
+        } else if (error.name === 'NotFoundError') {
+          toast.error('No camera found on this device.');
+        } else {
+          toast.error('Failed to access camera. Please check your device settings.');
+        }
+      }
     }
   };
 
@@ -499,27 +525,65 @@ export const Chat: React.FC<ChatProps> = ({
   };
 
   const switchCamera = async () => {
+    if (!cameraStream) {
+      toast.error('Camera not active');
+      return;
+    }
+
     const newFacingMode = facingMode === 'user' ? 'environment' : 'user';
-    setFacingMode(newFacingMode);
     
-    if (cameraStream) {
-      stopCamera();
-      // Add small delay to ensure camera is released
-      setTimeout(() => {
-        setFacingMode(newFacingMode);
-        startCamera();
-      }, 100);
+    // Stop current stream
+    cameraStream.getTracks().forEach(track => track.stop());
+    setCameraStream(null);
+    
+    try {
+      // Start new stream with different facing mode
+      const newStream = await navigator.mediaDevices.getUserMedia({
+        video: { 
+          facingMode: newFacingMode,
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        }
+      });
+      
+      setFacingMode(newFacingMode);
+      setCameraStream(newStream);
+      
+      if (videoRef.current) {
+        videoRef.current.srcObject = newStream;
+        videoRef.current.onloadedmetadata = () => {
+          videoRef.current?.play();
+        };
+      }
+    } catch (error) {
+      console.error('Error switching camera:', error);
+      toast.error('Failed to switch camera');
+      // Fallback to original camera
+      setFacingMode(facingMode);
+      startCamera();
     }
   };
 
   const capturePhoto = () => {
-    if (!videoRef.current || !canvasRef.current) return;
+    if (!videoRef.current || !canvasRef.current || !cameraStream) {
+      toast.error('Camera not ready');
+      return;
+    }
     
     const video = videoRef.current;
     const canvas = canvasRef.current;
     const context = canvas.getContext('2d');
     
-    if (!context) return;
+    if (!context) {
+      toast.error('Failed to capture photo');
+      return;
+    }
+    
+    // Ensure video is ready
+    if (video.readyState !== 4) {
+      toast.error('Camera still loading, please wait');
+      return;
+    }
     
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
@@ -530,6 +594,9 @@ export const Chat: React.FC<ChatProps> = ({
         const file = new File([blob], `photo_${Date.now()}.jpg`, { type: 'image/jpeg' });
         handleFileUpload(file);
         stopCamera();
+        toast.success('Photo captured!');
+      } else {
+        toast.error('Failed to capture photo');
       }
     }, 'image/jpeg', 0.8);
   };
