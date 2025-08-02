@@ -63,60 +63,67 @@ export const Signup = () => {
     try {
       console.log('Sending verification email request...');
       
-      // Call the standalone signup invite function
-      const { data, error } = await supabase.functions.invoke('send-signup-invite', {
-        body: {
-          email,
-          firstName,
-          lastName,
-          password
+      try {
+        // Call the standalone signup invite function
+        const { data, error } = await supabase.functions.invoke('send-signup-invite', {
+          body: {
+            email,
+            firstName,
+            lastName,
+            password
+          }
+        });
+
+        console.log('Function response received:', { data, error });
+
+        // Handle successful response
+        if (data && data.success) {
+          console.log('Verification email sent successfully');
+          setVerificationSent(true);
+          toast({
+            title: "Verification email sent! 📧",
+            description: "Check your email and click the verification link to complete your signup"
+          });
+          return;
         }
-      });
 
-      console.log('Function response received:', { data, error });
+        // Handle error responses - including non-2xx status codes
+        if (error || (data && !data.success)) {
+          let errorMessage = 'Failed to send verification email';
+          
+          // Try to get error from data first (successful function call but application error)
+          if (data && data.error) {
+            errorMessage = data.error;
+          }
+          // If we have a FunctionsHttpError, provide a user-friendly message
+          else if (error && error.name === 'FunctionsHttpError') {
+            // For common scenarios, provide helpful messages
+            if (email && email.includes('@')) {
+              errorMessage = 'This email address is already registered. Please sign in instead or use a different email address.';
+            } else {
+              errorMessage = 'There was an issue with your signup request. Please check your information and try again.';
+            }
+          }
+          // Handle other types of errors
+          else if (error) {
+            if (error.message && error.message.includes('network')) {
+              errorMessage = 'Network error. Please check your internet connection and try again.';
+            } else {
+              errorMessage = 'Failed to connect to email service. Please try again.';
+            }
+          }
 
-      // For edge functions, check if there was a complete invocation failure
-      if (error && !data) {
-        console.error('Function invocation error (network/timeout):', error);
-        throw new Error('Failed to connect to email service. Please check your internet connection and try again.');
+          console.error('Function returned error:', errorMessage);
+          throw new Error(errorMessage);
+        }
+
+        // This shouldn't happen, but handle unexpected responses
+        throw new Error('Unexpected response from signup service. Please try again.');
+
+      } catch (functionError: any) {
+        console.error('Function call error:', functionError);
+        throw functionError; // Re-throw to be caught by outer try-catch
       }
-
-      // Handle application logic errors from the function response
-      const responseData = data || {};
-      console.log('Response data details:', responseData);
-
-      if (!responseData.success) {
-        console.error('Function returned error:', responseData.error);
-        
-        // Provide more specific error messages based on the error type
-        const errorMessage = responseData.error || 'Failed to send verification email';
-        
-        if (errorMessage.includes('already exists')) {
-          throw new Error('An account with this email already exists. Please sign in instead.');
-        }
-        
-        if (errorMessage.includes('domain')) {
-          throw new Error('Email service configuration issue. Please contact support.');
-        }
-        
-        if (errorMessage.includes('rate limit')) {
-          throw new Error('Too many requests. Please wait a moment and try again.');
-        }
-        
-        if (errorMessage.includes('api_key') || errorMessage.includes('configuration')) {
-          throw new Error('Email service unavailable. Please contact support.');
-        }
-        
-        throw new Error(errorMessage);
-      }
-
-      // Success case
-      console.log('Verification email sent successfully');
-      setVerificationSent(true);
-      toast({
-        title: "Verification email sent! 📧",
-        description: "Check your email and click the verification link to complete your signup"
-      });
 
     } catch (error: any) {
       console.error('Signup error details:', {
