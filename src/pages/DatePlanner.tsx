@@ -465,7 +465,7 @@ export const DatePlanner = () => {
                       </div>
                     ) : (
                       // Show reschedule for future dates
-                      <Button variant="outline" size="sm" className="flex-1">
+                      <Button variant="outline" size="sm" className="flex-1" onClick={() => handleEditDate(date)}>
                         <CalendarIcon size={14} className="mr-1" />
                         Reschedule
                       </Button>
