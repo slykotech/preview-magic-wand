@@ -76,7 +76,7 @@ const Index = () => {
             </div>
           </div>
           <div className="flex items-center gap-4 p-4 bg-white/20 rounded-2xl backdrop-blur-sm">
-            <div className="w-10 h-10">
+            <div className="w-16 h-16">
               <img 
                 src="/lovable-uploads/d445b99d-8fa2-4613-9412-94521632578d.png" 
                 alt="Connection Check-In Avatar" 
