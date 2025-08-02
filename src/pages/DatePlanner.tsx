@@ -18,6 +18,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useCoupleData } from '@/hooks/useCoupleData';
+import { useLocation } from '@/hooks/useLocation';
+import { useEventsData, EventData } from '@/hooks/useEventsData';
+
 interface DateIdea {
   id: string;
   title: string;
@@ -37,34 +40,16 @@ interface DateIdea {
   scheduled_date?: string;
   scheduled_time?: string;
 }
-interface UpcomingEvent {
-  id: string;
-  title: string;
-  distance: string;
-  timing: string;
-  description: string;
-  category: string;
-  venue?: string;
-  city?: string;
-  price?: string;
-  image?: string;
-  bookingUrl?: string;
-  date?: string;
-  time?: string;
-}
+
 export const DatePlanner = () => {
   const [activeTab, setActiveTab] = useState<'planned' | 'upcoming'>('planned');
   const [plannedDates, setPlannedDates] = useState<DateIdea[]>([]);
-  const [upcomingEvents, setUpcomingEvents] = useState<UpcomingEvent[]>([]);
   const [loading, setLoading] = useState(true);
-  const [eventsLoading, setEventsLoading] = useState(false);
-  const [userLocation, setUserLocation] = useState<{latitude: number, longitude: number, city?: string} | null>(null);
-  const [showLocationSelector, setShowLocationSelector] = useState(false);
   const [locationInput, setLocationInput] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
   const [showScheduleForm, setShowScheduleForm] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
-  const [selectedUpcomingEvent, setSelectedUpcomingEvent] = useState<UpcomingEvent | null>(null);
+  const [selectedUpcomingEvent, setSelectedUpcomingEvent] = useState<EventData | null>(null);
   const [editingDate, setEditingDate] = useState<DateIdea | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [dateToDelete, setDateToDelete] = useState<DateIdea | null>(null);
@@ -89,17 +74,30 @@ export const DatePlanner = () => {
     time: '',
     category: 'romantic'
   });
-  const {
-    toast
-  } = useToast();
-  const {
-    user,
-    loading: authLoading
-  } = useAuth();
-  const {
-    coupleData
-  } = useCoupleData();
+
+  const { toast } = useToast();
+  const { user, loading: authLoading } = useAuth();
+  const { coupleData } = useCoupleData();
   const navigate = useNavigate();
+  
+  // Use new hooks for location and events
+  const {
+    location,
+    isGettingLocation,
+    getCurrentLocation,
+    setManualLocation,
+    clearLocation,
+    updateLocationCoordinates
+  } = useLocation();
+  
+  const {
+    events: upcomingEvents,
+    isLoading: eventsLoading,
+    error: eventsError,
+    fetchEvents,
+    clearEvents,
+    refreshEvents
+  } = useEventsData();
   useEffect(() => {
     if (!authLoading && !user) {
       navigate('/auth');
@@ -107,22 +105,27 @@ export const DatePlanner = () => {
     }
     if (user && coupleData?.id) {
       fetchPlannedDates();
-      // Don't auto-fetch location, let user select it
     }
   }, [user, authLoading, navigate, coupleData?.id]);
 
+  // Auto-fetch events when location changes and we're on upcoming tab
   useEffect(() => {
-    if (userLocation && activeTab === 'upcoming') {
-      fetchUpcomingEvents();
+    if (location && activeTab === 'upcoming') {
+      fetchEvents(location, updateLocationCoordinates);
     }
-  }, [userLocation, activeTab]);
+  }, [location, activeTab, fetchEvents, updateLocationCoordinates]);
+
+  // Clear events when switching away from upcoming tab
+  useEffect(() => {
+    if (activeTab !== 'upcoming') {
+      clearEvents();
+    }
+  }, [activeTab, clearEvents]);
+
   const fetchPlannedDates = async () => {
     try {
       if (!coupleData?.id) return;
-      const {
-        data,
-        error
-      } = await supabase
+      const { data, error } = await supabase
         .from('date_ideas')
         .select('*')
         .eq('couple_id', coupleData.id)
@@ -138,168 +141,25 @@ export const DatePlanner = () => {
       setLoading(false);
     }
   };
-  const handleLocationSelect = async (location: string) => {
-    setLocationInput(location);
-    setEventsLoading(true);
-    
-    // Send location name to backend for geocoding
-    setUserLocation({
-      latitude: 0, // Will be resolved by backend
-      longitude: 0, // Will be resolved by backend
-      city: location
-    });
-    setShowLocationSelector(false);
-    
-    toast({
-      title: "Location set! 📍",
-      description: `Looking for events near ${location}`,
-    });
-  };
 
-  const handleUseCurrentLocation = () => {
-    if (navigator.geolocation) {
-      setEventsLoading(true);
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const lat = position.coords.latitude;
-          const lng = position.coords.longitude;
-          
-          setUserLocation({
-            latitude: lat,
-            longitude: lng,
-            city: 'Current Location'
-          });
-          setShowLocationSelector(false);
-          
-          toast({
-            title: "Location obtained! 📍",
-            description: "Searching for events near you...",
-          });
-        },
-        (error) => {
-          console.error('Error getting location:', error);
-          setEventsLoading(false);
-          toast({
-            title: "Location access denied",
-            description: "Please enable location access in your browser settings or enter your location manually",
-            variant: "destructive"
-          });
-        }
-      );
-    } else {
-      toast({
-        title: "Geolocation not supported",
-        description: "Please enter your location manually",
-        variant: "destructive"
-      });
+  const handleLocationSubmit = () => {
+    if (locationInput.trim()) {
+      setManualLocation(locationInput.trim());
+      setLocationInput('');
     }
   };
 
-  const fetchUpcomingEvents = async () => {
-    if (!userLocation) return;
-    
-    setEventsLoading(true);
-    try {
-      const requestBody = userLocation.city && (userLocation.latitude === 0 || !userLocation.latitude) 
-        ? {
-            locationName: userLocation.city,
-            radius: 25,
-            size: 20
-          }
-        : {
-            latitude: userLocation.latitude,
-            longitude: userLocation.longitude,
-            radius: 25,
-            size: 20
-          };
-
-      console.log('Requesting events with:', requestBody);
-
-      const { data, error } = await supabase.functions.invoke('fetch-events', {
-        body: requestBody
-      });
-
-      if (error) {
-        console.error('Error fetching events:', error);
-        // Fall back to mock events if API fails
-        setUpcomingEvents(getMockEvents());
-        toast({
-          title: "Using sample events",
-          description: "Couldn't fetch live events, showing sample data",
-          variant: "destructive"
-        });
-        setEventsLoading(false);
-        return;
-      }
-
-      if (data.events && data.events.length > 0) {
-        setUpcomingEvents(data.events);
-        console.log(`Loaded ${data.events.length} events from:`, data.sources);
-        
-        // Update location with resolved coordinates if available
-        if (data.location && data.location.resolvedLocation) {
-          setUserLocation(prev => ({
-            ...prev!,
-            latitude: data.location.latitude,
-            longitude: data.location.longitude,
-            city: data.location.resolvedLocation
-          }));
-        }
-      } else {
-        setUpcomingEvents([]);
-        toast({
-          title: "No events found",
-          description: `No events found near ${userLocation.city}. Try a different location.`,
-          variant: "destructive"
-        });
-      }
-    } catch (error) {
-      console.error('Error in fetchUpcomingEvents:', error);
-      // Fall back to mock events if there's an error
-      setUpcomingEvents(getMockEvents());
-      toast({
-        title: "Error loading events",
-        description: "Using sample events instead",
-        variant: "destructive"
-      });
-      setEventsLoading(false);
-    } finally {
-      setEventsLoading(false);
-    }
+  const handleClearLocation = () => {
+    clearLocation();
+    clearEvents();
+    setLocationInput('');
   };
 
-  const getMockEvents = (): UpcomingEvent[] => [
-    {
-      id: '1',
-      title: 'Jazz Under the Stars 🎷',
-      distance: '3 km away',
-      timing: 'Friday, 8:30 PM',
-      description: 'Feel the rhythm of love as you sway under moonlight and melody.',
-      category: 'Music',
-      venue: 'Central Park',
-      price: 'From $25'
-    },
-    {
-      id: '2', 
-      title: 'Candlelit Wine Tasting 🍷',
-      distance: '1.2 km away',
-      timing: 'Saturday, 7:00 PM',
-      description: 'Discover new flavors together in an intimate candlelit setting.',
-      category: 'Food & Drink',
-      venue: 'Wine & Dine',
-      price: 'From $45'
-    },
-    {
-      id: '3',
-      title: 'Moonlight Art Gallery 🎨',
-      distance: '5 km away', 
-      timing: 'Sunday, 6:00 PM',
-      description: 'Explore beautiful art pieces while sharing whispered conversations.',
-      category: 'Culture',
-      venue: 'Modern Art Museum',
-      price: 'From $15'
+  const handleRefreshEvents = () => {
+    if (location) {
+      refreshEvents(location, updateLocationCoordinates);
     }
-  ];
+  };
   const handleAddEvent = async () => {
     if (!newEvent.title || !newEvent.date || !newEvent.time || !coupleData?.id) {
       toast({
@@ -347,7 +207,7 @@ export const DatePlanner = () => {
       });
     }
   };
-  const handleScheduleUpcomingEvent = (event: UpcomingEvent) => {
+  const handleScheduleUpcomingEvent = (event: EventData) => {
     setSelectedUpcomingEvent(event);
     setScheduleData({
       date: undefined,
@@ -445,7 +305,7 @@ export const DatePlanner = () => {
       });
     }
   };
-  const handleSaveUpcomingEvent = async (event: UpcomingEvent) => {
+  const handleSaveUpcomingEvent = async (event: EventData) => {
     if (!coupleData?.id) return;
     try {
       const {
@@ -652,7 +512,7 @@ export const DatePlanner = () => {
           
           <TabsContent value="upcoming" className="space-y-4">
             {/* Location Selector */}
-            {!userLocation ? (
+            {!location ? (
               <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 rounded-2xl p-6 text-center">
                 <MapPin className="mx-auto h-16 w-16 text-purple-500 mb-4" />
                 <h3 className="text-xl font-bold text-foreground mb-2">
@@ -669,18 +529,22 @@ export const DatePlanner = () => {
                       value={locationInput}
                       onChange={(e) => setLocationInput(e.target.value)}
                       onKeyPress={(e) => {
-                        if (e.key === 'Enter' && locationInput.trim()) {
-                          handleLocationSelect(locationInput.trim());
+                        if (e.key === 'Enter') {
+                          handleLocationSubmit();
                         }
                       }}
                       className="flex-1"
                     />
                     <Button 
-                      onClick={() => locationInput.trim() && handleLocationSelect(locationInput.trim())}
-                      disabled={!locationInput.trim()}
+                      onClick={handleLocationSubmit}
+                      disabled={!locationInput.trim() || eventsLoading}
                       className="bg-gradient-secondary hover:opacity-90 text-white"
                     >
-                      Search
+                      {eventsLoading ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      ) : (
+                        'Search'
+                      )}
                     </Button>
                   </div>
                   
@@ -692,11 +556,11 @@ export const DatePlanner = () => {
                   
                   <Button 
                     variant="outline" 
-                    onClick={handleUseCurrentLocation}
+                    onClick={getCurrentLocation}
                     className="w-full"
-                    disabled={eventsLoading}
+                    disabled={isGettingLocation || eventsLoading}
                   >
-                    {eventsLoading ? (
+                    {isGettingLocation ? (
                       <>
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2"></div>
                         Getting location...
@@ -717,37 +581,56 @@ export const DatePlanner = () => {
                   <div className="flex items-center gap-2">
                     <MapPin size={16} className="text-primary" />
                     <span className="font-medium">
-                      Events near: {userLocation.city || `${userLocation.latitude.toFixed(2)}, ${userLocation.longitude.toFixed(2)}`}
+                      Events near: {location.displayName}
                     </span>
                   </div>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => {
-                      setUserLocation(null);
-                      setLocationInput('');
-                      setUpcomingEvents([]);
-                    }}
-                  >
-                    Change Location
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={handleRefreshEvents}
+                      disabled={eventsLoading}
+                    >
+                      {eventsLoading ? (
+                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-primary"></div>
+                      ) : (
+                        'Refresh'
+                      )}
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={handleClearLocation}
+                    >
+                      Change Location
+                    </Button>
+                  </div>
                 </div>
 
                 {/* Events Loading and Display */}
-            {/* Upcoming Events */}
-            {eventsLoading ? (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-                <p className="text-muted-foreground font-bold">Finding romantic events near you...</p>
-              </div>
-            ) : upcomingEvents.length === 0 ? (
-              <div className="text-center py-12">
-                <Sparkles className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
-                <p className="text-lg font-bold text-muted-foreground">
-                  No events found nearby. Try again later!
-                </p>
-              </div>
-            ) : (
+                {eventsLoading ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                    <p className="text-muted-foreground font-bold">Finding romantic events near you...</p>
+                  </div>
+                ) : eventsError ? (
+                  <div className="text-center py-12">
+                    <Sparkles className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
+                    <p className="text-lg font-bold text-muted-foreground mb-2">
+                      {eventsError}
+                    </p>
+                    <Button onClick={handleRefreshEvents} variant="outline">
+                      Try Again
+                    </Button>
+                  </div>
+                ) : upcomingEvents.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Sparkles className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
+                    <p className="text-lg font-bold text-muted-foreground">
+                      No events found nearby. Try again later!
+                    </p>
+                  </div>
+                ) : (
               upcomingEvents.map((event, index) => (
                 <div 
                   key={event.id} 
