@@ -210,7 +210,7 @@ export const DatePlanner = () => {
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="planned" className="flex-col gap-1">
               <span className="font-bold">Planned</span>
-              <span className="text-xs opacity-80">Your scheduled love moments</span>
+              <span className="text-xs opacity-80">scheduled love moments</span>
             </TabsTrigger>
             <TabsTrigger value="upcoming" className="flex-col gap-1">
               <span className="font-bold">Upcoming</span>
