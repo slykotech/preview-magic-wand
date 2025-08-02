@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Smile, ArrowLeft, MoreVertical, Image, Video, Heart, Camera, Trash2, Settings, Download } from 'lucide-react';
+import { Send, Smile, ArrowLeft, MoreVertical, Image, Video, Heart, Camera, Trash2, Settings, Download, RotateCcw, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -60,9 +60,14 @@ export const Chat: React.FC<ChatProps> = ({
   const [showReactions, setShowReactions] = useState<string | null>(null);
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
   const [messageReactions, setMessageReactions] = useState<Record<string, MessageReaction[]>>({});
+  const [showCamera, setShowCamera] = useState(false);
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const quickEmojis = ['❤️', '😂', '😍', '🥰', '😘', '🔥', '👏', '💯', '🙌', '✨'];
   const reactionEmojis = ['❤️', '😍', '🥰', '😘', '💕', '💖'];
   const loveStickers = ['💕', '💖', '💗', '💓', '💘', '💝', '💞', '💟', '❣️', '💋', '🌹', '💐'];
@@ -468,6 +473,76 @@ export const Chat: React.FC<ChatProps> = ({
     
     setShowReactions(null);
   };
+
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode }
+      });
+      setCameraStream(stream);
+      setShowCamera(true);
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch (error) {
+      console.error('Error accessing camera:', error);
+      toast.error('Failed to access camera');
+    }
+  };
+
+  const stopCamera = () => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop());
+      setCameraStream(null);
+    }
+    setShowCamera(false);
+  };
+
+  const switchCamera = async () => {
+    const newFacingMode = facingMode === 'user' ? 'environment' : 'user';
+    setFacingMode(newFacingMode);
+    
+    if (cameraStream) {
+      stopCamera();
+      // Add small delay to ensure camera is released
+      setTimeout(() => {
+        setFacingMode(newFacingMode);
+        startCamera();
+      }, 100);
+    }
+  };
+
+  const capturePhoto = () => {
+    if (!videoRef.current || !canvasRef.current) return;
+    
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const context = canvas.getContext('2d');
+    
+    if (!context) return;
+    
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    context.drawImage(video, 0, 0);
+    
+    canvas.toBlob((blob) => {
+      if (blob) {
+        const file = new File([blob], `photo_${Date.now()}.jpg`, { type: 'image/jpeg' });
+        handleFileUpload(file);
+        stopCamera();
+      }
+    }, 'image/jpeg', 0.8);
+  };
+
+  // Cleanup camera stream on unmount
+  useEffect(() => {
+    return () => {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [cameraStream]);
+
   if (!isOpen) return null;
 
   // Close reactions when clicking outside
@@ -634,13 +709,7 @@ export const Chat: React.FC<ChatProps> = ({
             
             <div className="flex-1 relative">
               <Input ref={inputRef} placeholder="Type a message..." value={newMessage} onChange={e => setNewMessage(e.target.value)} onKeyPress={handleKeyPress} className="h-8 rounded-full border focus:border-primary text-sm pl-10" disabled={loading} />
-              <Button variant="ghost" size="sm" onClick={() => {
-              if (fileInputRef.current) {
-                fileInputRef.current.accept = 'image/*';
-                fileInputRef.current.setAttribute('capture', 'environment');
-                fileInputRef.current.click();
-              }
-            }} className="absolute left-1 top-1/2 -translate-y-1/2 rounded-full h-6 w-6 p-0">
+              <Button variant="ghost" size="sm" onClick={startCamera} className="absolute left-1 top-1/2 -translate-y-1/2 rounded-full h-6 w-6 p-0">
                 <Camera className="h-3 w-3" />
               </Button>
             </div>
@@ -667,5 +736,53 @@ export const Chat: React.FC<ChatProps> = ({
         }} className="hidden" />
         </div>
       </div>
+
+      {/* Camera Interface */}
+      {showCamera && (
+        <div className="fixed inset-0 bg-black z-[60] flex flex-col">
+          <div className="flex-1 relative">
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              className="w-full h-full object-cover"
+            />
+            <canvas ref={canvasRef} className="hidden" />
+            
+            {/* Camera Controls */}
+            <div className="absolute top-4 left-4 right-4 flex justify-between items-center">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={stopCamera}
+                className="bg-black/50 text-white hover:bg-black/70"
+              >
+                <X className="h-6 w-6" />
+              </Button>
+              
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={switchCamera}
+                className="bg-black/50 text-white hover:bg-black/70"
+              >
+                <RotateCcw className="h-6 w-6" />
+              </Button>
+            </div>
+            
+            {/* Capture Button */}
+            <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2">
+              <Button
+                size="lg"
+                onClick={capturePhoto}
+                className="rounded-full w-16 h-16 bg-white hover:bg-gray-200 border-4 border-white"
+              >
+                <div className="w-12 h-12 rounded-full bg-white border-2 border-gray-300" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>;
 };
