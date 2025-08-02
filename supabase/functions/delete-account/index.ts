@@ -58,20 +58,24 @@ Deno.serve(async (req) => {
 
     // Start deleting user data in order (respecting foreign key constraints)
     
-    // 1. Delete AI coach messages first
+  // 1. Delete AI coach messages first
+  // Get AI coach session IDs first
+  const { data: userSessions } = await supabaseAdmin
+    .from('ai_coach_sessions')
+    .select('id')
+    .eq('user_id', userId)
+  
+  if (userSessions && userSessions.length > 0) {
+    const sessionIds = userSessions.map(session => session.id)
     const { error: aiMessagesError } = await supabaseAdmin
       .from('ai_coach_messages')
       .delete()
-      .in('session_id', 
-        supabaseAdmin
-          .from('ai_coach_sessions')
-          .select('id')
-          .eq('user_id', userId)
-      )
+      .in('session_id', sessionIds)
     
     if (aiMessagesError) {
       console.log('Error deleting AI coach messages:', aiMessagesError)
     }
+  }
 
     // 2. Delete AI coach sessions
     const { error: aiSessionsError } = await supabaseAdmin
