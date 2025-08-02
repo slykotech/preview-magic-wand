@@ -465,18 +465,17 @@ export const Chat: React.FC<ChatProps> = ({
                   {messageReactions[message.id] && messageReactions[message.id].length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-2 ml-2">
                       {messageReactions[message.id].map((reaction) => (
-                        <button
+                        <span
                           key={reaction.emoji}
-                          onClick={() => handleReaction(message.id, reaction.emoji)}
-                          className={`flex items-center gap-0.5 px-1.5 py-0.5 text-xs rounded-full border transition-colors ${
+                          className={`flex items-center gap-0.5 px-1.5 py-0.5 text-xs rounded-full border ${
                             reaction.users.includes(user?.id || '') 
                               ? 'bg-primary/20 border-primary text-primary' 
-                              : 'bg-muted/50 border-muted hover:bg-muted'
+                              : 'bg-muted/50 border-muted'
                           }`}
                         >
                           <span className="text-xs">{reaction.emoji}</span>
                           <span className="text-xs font-medium">{reaction.count}</span>
-                        </button>
+                        </span>
                       ))}
                     </div>
                   )}
