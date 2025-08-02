@@ -170,18 +170,28 @@ export const DatePlanner = () => {
             city: 'Current Location'
           });
           setShowLocationSelector(false);
-          setEventsLoading(false);
+          
+          toast({
+            title: "Location obtained! 📍",
+            description: "Searching for events near you...",
+          });
         },
         (error) => {
           console.error('Error getting location:', error);
           setEventsLoading(false);
           toast({
             title: "Location access denied",
-            description: "Please enter your location manually",
+            description: "Please enable location access in your browser settings or enter your location manually",
             variant: "destructive"
           });
         }
       );
+    } else {
+      toast({
+        title: "Geolocation not supported",
+        description: "Please enter your location manually",
+        variant: "destructive"
+      });
     }
   };
 
