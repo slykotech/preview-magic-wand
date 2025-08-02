@@ -483,73 +483,103 @@ async function fetchGoogleEvents(
   longitude: number,
   radius: number
 ): Promise<UnifiedEvent[]> {
-  // Using Google Places API to find event venues and entertainment
+  // Using Google Places API (New) to find event venues and entertainment
   const radiusMeters = radius * 1000; // Convert km to meters
   
-  const params = new URLSearchParams({
-    location: `${latitude},${longitude}`,
-    radius: radiusMeters.toString(),
-    type: 'night_club,movie_theater,museum,art_gallery,amusement_park',
-    key: apiKey
-  });
-
-  const googleUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?${params.toString()}`;
-  
-  console.log('Fetching venues from Google Places');
-
-  const response = await fetch(googleUrl);
-  const data = await response.json();
-
-  if (!response.ok || data.status !== 'OK') {
-    console.error('Google Places API error:', data);
-    throw new Error(`Google Places API error: ${data.status}`);
-  }
-
-  const events = data.results?.slice(0, 10).map((place: GoogleEvent) => {
-    const distance = `${Math.round(Math.random() * radius)} km away`;
-    
-    // Generate event timing for next few days
-    const eventDate = new Date();
-    eventDate.setDate(eventDate.getDate() + Math.floor(Math.random() * 7) + 1);
-    const timing = eventDate.toLocaleDateString('en-US', {
-      weekday: 'long',
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit'
+  try {
+    const params = new URLSearchParams({
+      includedTypes: 'night_club,movie_theater,museum,art_gallery,amusement_park,tourist_attraction,performing_arts_theater',
+      location: `${latitude},${longitude}`,
+      maxResultCount: '10',
+      key: apiKey
     });
 
-    const category = getCategoryFromGoogleTypes(place.types);
+    const googleUrl = `https://places.googleapis.com/v1/places:searchNearby`;
     
-    const descriptions = [
-      'Discover this amazing venue together',
-      'Perfect spot for a romantic outing',
-      'Create beautiful memories at this location',
-      'Enjoy a wonderful time together here',
-      'A great place to spend quality time'
-    ];
+    console.log('Fetching venues from Google Places (New API)');
 
-    return {
-      id: `gp_${place.place_id}`,
-      title: `Visit ${place.name}`,
-      distance,
-      timing,
-      description: descriptions[Math.floor(Math.random() * descriptions.length)],
-      category,
-      venue: place.name,
-      city: place.vicinity || '',
-      price: 'Varies',
-      image: place.photos?.[0] ? 
-        `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${place.photos[0].photo_reference}&key=${apiKey}` :
-        '',
-      bookingUrl: `https://www.google.com/maps/place/?q=place_id:${place.place_id}`,
-      date: eventDate.toISOString().split('T')[0],
-      time: '19:00',
-      source: 'google' as const
-    };
-  }) || [];
+    const response = await fetch(googleUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': apiKey,
+        'X-Goog-FieldMask': 'places.id,places.displayName,places.location,places.types,places.rating,places.photos'
+      },
+      body: JSON.stringify({
+        includedTypes: ['night_club', 'movie_theater', 'museum', 'art_gallery', 'amusement_park', 'tourist_attraction', 'performing_arts_theater'],
+        maxResultCount: 10,
+        locationRestriction: {
+          circle: {
+            center: {
+              latitude: latitude,
+              longitude: longitude
+            },
+            radius: radiusMeters
+          }
+        }
+      })
+    });
 
-  return events;
+    if (!response.ok) {
+      console.error('Google Places API error response:', response.status, response.statusText);
+      const errorText = await response.text();
+      console.error('Error details:', errorText);
+      throw new Error(`Google Places API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log('Google Places response:', JSON.stringify(data, null, 2));
+
+    const events = data.places?.slice(0, 10).map((place: any) => {
+      const distance = `${Math.round(Math.random() * radius)} km away`;
+      
+      // Generate event timing for next few days
+      const eventDate = new Date();
+      eventDate.setDate(eventDate.getDate() + Math.floor(Math.random() * 7) + 1);
+      const timing = eventDate.toLocaleDateString('en-US', {
+        weekday: 'long',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit'
+      });
+
+      const category = getCategoryFromGoogleTypes(place.types || []);
+      
+      const descriptions = [
+        'Discover this amazing venue together',
+        'Perfect spot for a romantic outing',
+        'Create beautiful memories at this location',
+        'Enjoy a wonderful time together here',
+        'A great place to spend quality time'
+      ];
+
+      return {
+        id: `gp_${place.id}`,
+        title: `Visit ${place.displayName?.text || 'Local Venue'}`,
+        distance,
+        timing,
+        description: descriptions[Math.floor(Math.random() * descriptions.length)],
+        category,
+        venue: place.displayName?.text || 'Local Venue',
+        city: '',
+        price: 'Varies',
+        image: place.photos?.[0] ? 
+          `https://places.googleapis.com/v1/places/${place.id}/photos/${place.photos[0].name}/media?maxWidthPx=400&key=${apiKey}` :
+          '',
+        bookingUrl: `https://www.google.com/maps/place/?q=place_id:${place.id}`,
+        date: eventDate.toISOString().split('T')[0],
+        time: '19:00',
+        source: 'google' as const
+      };
+    }) || [];
+
+    return events;
+  } catch (error) {
+    console.error('Google Places API error:', error);
+    // Fallback to empty array if Google Places fails
+    return [];
+  }
 }
 
 function filterCoupleEvents(events: UnifiedEvent[]): UnifiedEvent[] {
