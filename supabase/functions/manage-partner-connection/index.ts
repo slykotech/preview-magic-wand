@@ -215,27 +215,23 @@ async function handleSendRequest(supabase: any, user: any, partnerEmail: string,
 
   console.log('Successfully created partner request:', newRequest)
 
-  // Send invitation email
+  // Send invitation email using proper Supabase function invoke
   try {
     const emailType = partnerUser ? 'connect' : 'invite';
-    const emailResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-invitation-email`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'apikey': Deno.env.get('SUPABASE_ANON_KEY') || '',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
+    console.log(`Sending ${emailType} email to ${partnerEmail}`);
+    
+    const { data: emailData, error: emailError } = await supabase.functions.invoke('send-invitation-email', {
+      body: {
         type: emailType,
         email: partnerEmail
-      })
+      }
     });
-
-    const emailData = await emailResponse.json();
     
-    if (!emailResponse.ok || !emailData.success) {
-      console.error('Failed to send invitation email:', emailData.error);
+    if (emailError) {
+      console.error('Failed to send invitation email:', emailError);
       // Don't fail the whole request, but log the email issue
+    } else if (!emailData?.success) {
+      console.error('Email function returned error:', emailData?.error);
     } else {
       console.log('Invitation email sent successfully');
     }
