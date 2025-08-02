@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Heart, Search, Grid3X3, List, Star, Trash2, Camera, Upload, X, Calendar, Image as ImageIcon, FileText } from 'lucide-react';
+import { Heart, Search, Grid3X3, List, Star, Trash2, Camera, Upload, X, Plus, Calendar, Image as ImageIcon, FileText } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 
 // Data Models
@@ -67,6 +67,7 @@ const MemoryVault = () => {
   const [filterType, setFilterType] = useState<'all' | 'photos' | 'notes' | 'favorites'>('all');
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [createType, setCreateType] = useState<'memory' | 'note'>('memory');
+  const [showFabOptions, setShowFabOptions] = useState(false);
   const [newMemory, setNewMemory] = useState({ title: "", description: "", memory_date: "" });
   const [newNote, setNewNote] = useState({ title: "", content: "" });
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
@@ -363,14 +364,43 @@ const MemoryVault = () => {
         )}
 
         {/* FAB */}
-        <div className="fixed bottom-24 right-4 flex flex-col gap-2">
-          <Button size="lg" className="rounded-full shadow-lg" onClick={() => { setCreateType('memory'); setShowCreateForm(true); }}>
-            <Camera className="h-5 w-5 mr-2" />
-            Add Memory
-          </Button>
-          <Button variant="outline" size="lg" className="rounded-full shadow-lg" onClick={() => { setCreateType('note'); setShowCreateForm(true); }}>
-            <FileText className="h-5 w-5 mr-2" />
-            Add Note
+        <div className="fixed bottom-24 right-4 flex flex-col items-end gap-3">
+          {/* Expandable Options */}
+          <div className={`flex flex-col gap-2 transition-all duration-300 ${showFabOptions ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}>
+            <Button 
+              size="sm" 
+              className="rounded-full shadow-lg min-w-[120px]" 
+              onClick={() => { 
+                setCreateType('memory'); 
+                setShowCreateForm(true); 
+                setShowFabOptions(false);
+              }}
+            >
+              <Camera className="h-4 w-4 mr-2" />
+              Add Memory
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="rounded-full shadow-lg min-w-[120px]" 
+              onClick={() => { 
+                setCreateType('note'); 
+                setShowCreateForm(true); 
+                setShowFabOptions(false);
+              }}
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              Add Note
+            </Button>
+          </div>
+
+          {/* Main FAB */}
+          <Button 
+            size="lg" 
+            className={`rounded-full shadow-lg transition-transform duration-300 ${showFabOptions ? 'rotate-45' : 'rotate-0'}`}
+            onClick={() => setShowFabOptions(!showFabOptions)}
+          >
+            <Plus className="h-6 w-6" />
           </Button>
         </div>
       </div>
