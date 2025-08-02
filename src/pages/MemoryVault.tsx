@@ -442,102 +442,75 @@ const MemoryVault: React.FC = () => {
           </div>
         ) : viewMode === 'grid' ? (
           /* Masonry Grid View */
-          <div className="columns-1 md:columns-2 lg:columns-3 gap-6 space-y-6">
-            {filteredItems.map((item, index) => {
-              // Define color schemes for different card types
-              const colorSchemes = [
-                'bg-slate-600', // Dark blue-gray like "Vacation"
-                'bg-red-500',   // Red like "Our Cat"
-                'bg-amber-400', // Yellow like "Anniversary"
-                'bg-emerald-500', // Green
-                'bg-purple-500',  // Purple
-                'bg-pink-500',    // Pink
-                'bg-indigo-500',  // Indigo
-                'bg-orange-500',  // Orange
-              ];
-              
-              const isNote = item.type === 'note';
-              const hasImage = item.type === 'memory' && item.images && item.images.length > 0;
-              const cardColor = isNote ? 'bg-white' : colorSchemes[index % colorSchemes.length];
-              
-              return (
-                <div
-                  key={`${item.type}-${item.id}`}
-                  className={`break-inside-avoid rounded-3xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 ${
-                    isNote ? 'border border-gray-200' : cardColor
-                  }`}
-                >
-                  {/* Image for memory cards */}
-                  {hasImage && (
-                    <div className="relative">
-                      <img 
-                        src={item.images![0].image_url} 
-                        alt={item.title} 
-                        className="w-full h-40 object-cover" 
-                      />
-                      {item.images!.length > 1 && (
-                        <div className="absolute top-3 right-3 bg-black/60 text-white px-2 py-1 rounded-full text-xs font-medium">
-                          +{item.images!.length - 1}
-                        </div>
-                      )}
+          <div className="columns-1 md:columns-2 lg:columns-3 gap-4 space-y-4">
+            {filteredItems.map((item) => (
+              <Card 
+                key={`${item.type}-${item.id}`} 
+                className="break-inside-avoid overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
+              >
+                {item.type === 'memory' && item.images && item.images.length > 0 && (
+                  <div className="relative">
+                    <img 
+                      src={item.images[0].image_url} 
+                      alt={item.title} 
+                      className="w-full h-48 object-cover" 
+                    />
+                    {item.images.length > 1 && (
+                      <div className="absolute top-2 right-2 bg-black/50 text-white px-2 py-1 rounded-full text-xs">
+                        +{item.images.length - 1} more
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div className="p-4">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1 pr-2">
+                      <h3 className="font-bold text-[#2C3E50] line-clamp-2 mb-1">{item.title}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {format(parseISO(item.created_at), 'MMM d, yyyy')}
+                      </p>
                     </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => toggleFavorite(item.id, item.type, item.is_favorite)}
+                      className="p-1"
+                    >
+                      <Star className={`h-5 w-5 ${item.is_favorite ? 'fill-[#F1C40F] text-[#F1C40F]' : 'text-muted-foreground'}`} />
+                    </Button>
+                  </div>
+
+                  {item.type === 'note' && item.content && (
+                    <p className="text-sm text-muted-foreground mb-2 line-clamp-3">
+                      {item.content}
+                    </p>
                   )}
 
-                  <div className={`p-6 ${isNote ? '' : 'text-white'}`}>
-                    {/* Star favorite button */}
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="flex-1">
-                        <h3 className={`font-bold text-xl leading-tight mb-2 ${
-                          isNote ? 'text-gray-800' : 'text-white'
-                        }`}>
-                          {item.title}
-                        </h3>
-                      </div>
-                      {item.is_favorite && (
-                        <Star className="h-5 w-5 fill-yellow-400 text-yellow-400 flex-shrink-0 ml-2" />
+                  {item.description && (
+                    <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
+                      {item.description}
+                    </p>
+                  )}
+
+                  <div className="flex items-center justify-between">
+                    <Badge variant={item.type === 'memory' ? 'default' : 'secondary'} className="text-xs">
+                      {item.type === 'memory' ? (
+                        <>
+                          <ImageIcon className="h-3 w-3 mr-1" />
+                          Memory
+                        </>
+                      ) : (
+                        <>
+                          <FileText className="h-3 w-3 mr-1" />
+                          Note
+                        </>
                       )}
-                    </div>
-
-                    {/* Content for notes */}
-                    {isNote && item.content && (
-                      <p className="text-gray-600 text-sm leading-relaxed mb-4 line-clamp-4">
-                        "{item.content}"
-                      </p>
-                    )}
-
-                    {/* Description for memories */}
-                    {!isNote && item.description && (
-                      <p className="text-white/90 text-sm mb-4 line-clamp-2">
-                        {item.description}
-                      </p>
-                    )}
-
-                    {/* Date and type info */}
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className={`text-xs font-medium ${
-                          isNote ? 'text-gray-500' : 'text-white/70'
-                        }`}>
-                          {item.type === 'note' ? 'Note' : 'Memory'} • {format(parseISO(item.created_at), 'MMM d, yyyy')}
-                        </p>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => toggleFavorite(item.id, item.type, item.is_favorite)}
-                        className={`p-1 hover:bg-transparent ${isNote ? 'hover:bg-gray-100' : 'hover:bg-white/20'}`}
-                      >
-                        <Star className={`h-4 w-4 ${
-                          item.is_favorite 
-                            ? 'fill-yellow-400 text-yellow-400' 
-                            : isNote ? 'text-gray-400' : 'text-white/60'
-                        }`} />
-                      </Button>
-                    </div>
+                    </Badge>
                   </div>
                 </div>
-              );
-            })}
+              </Card>
+            ))}
           </div>
         ) : (
           /* Timeline View */
