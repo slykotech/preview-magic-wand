@@ -42,9 +42,11 @@ Deno.serve(async (req) => {
     )
 
     // Check if user already exists
-    const { data: existingUser } = await supabase.auth.admin.getUserByEmail(email)
+    const { data: existingUser } = await supabase.auth.admin.listUsers({
+      filter: `email.eq.${email}`
+    })
     
-    if (existingUser.user) {
+    if (existingUser.users && existingUser.users.length > 0) {
       return new Response(
         JSON.stringify({ 
           success: false, 
