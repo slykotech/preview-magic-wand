@@ -488,11 +488,11 @@ export const DatePlanner = () => {
                   {date.description && <p className="text-muted-foreground font-inter mb-4 leading-relaxed">
                       {date.description}
                     </p>}
-                  
-                  <div className="flex gap-2">
-                     <Button variant="outline" size="sm" className="flex-1" onClick={() => handleEditDate(date)}>
-                       <Edit size={14} className="mr-1" />
-                       Edit
+                   
+                   <div className="flex gap-2">
+                      <Button variant="outline" size="sm" className="flex-1" onClick={() => handleEditDate(date)}>
+                        <Edit size={14} className="mr-1" />
+                        Edit
                      </Button>
                     {date.scheduled_date && isDateCompleted(date.scheduled_date) && (
                       <div className="flex gap-1 flex-1">
@@ -673,34 +673,26 @@ export const DatePlanner = () => {
                     {event.description}
                   </p>
                   
-                  <div className="flex gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="flex-1" 
-                      onClick={() => handleSaveUpcomingEvent(event)}
-                    >
-                      <Save size={14} className="mr-1" />
-                      Save Idea
-                    </Button>
-                    <Button 
-                      className="bg-gradient-secondary hover:opacity-90 text-white flex-1" 
-                      size="sm"
-                      onClick={() => handleScheduleUpcomingEvent(event)}
-                    >
-                      <CalendarPlus size={14} className="mr-1" />
-                      Schedule
-                    </Button>
-                    {event.bookingUrl && (
-                      <Button 
-                        variant="outline"
-                        size="sm"
-                        onClick={() => window.open(event.bookingUrl, '_blank')}
-                      >
-                        Book Now
-                      </Button>
-                    )}
-                  </div>
+                   <div className="flex gap-2">
+                     <Button 
+                       className="bg-gradient-secondary hover:opacity-90 text-white flex-1" 
+                       size="sm"
+                       onClick={() => handleScheduleUpcomingEvent(event)}
+                     >
+                       <CalendarPlus size={14} className="mr-1" />
+                       Schedule
+                     </Button>
+                     {event.bookingUrl && (
+                       <Button 
+                         variant="outline"
+                         size="sm"
+                         onClick={() => window.open(event.bookingUrl, '_blank')}
+                         className="flex-1"
+                       >
+                         Book Now
+                       </Button>
+                     )}
+                   </div>
                 </div>
               ))
             )}
