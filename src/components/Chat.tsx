@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Smile, ArrowLeft, MoreVertical, Image, Video, Heart, Camera } from 'lucide-react';
+import { Send, Smile, ArrowLeft, MoreVertical, Image, Video, Heart, Camera, Trash2, Settings, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useCoupleData } from '@/hooks/useCoupleData';
@@ -239,6 +240,46 @@ export const Chat: React.FC<ChatProps> = ({
       sendMessage(newMessage);
     }
   };
+
+  const handleClearChat = async () => {
+    if (!conversation?.id) return;
+    
+    try {
+      const { error } = await supabase
+        .from('messages')
+        .delete()
+        .eq('conversation_id', conversation.id);
+      
+      if (error) throw error;
+      
+      setMessages([]);
+      toast.success('Chat cleared successfully');
+    } catch (error) {
+      console.error('Error clearing chat:', error);
+      toast.error('Failed to clear chat');
+    }
+  };
+
+  const handleExportChat = () => {
+    const chatData = messages.map(msg => ({
+      sender: msg.sender_id === user?.id ? getUserDisplayName() : getPartnerDisplayName(),
+      message: msg.message_text,
+      timestamp: new Date(msg.created_at).toLocaleString(),
+      type: msg.message_type
+    }));
+    
+    const dataStr = JSON.stringify(chatData, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `chat-export-${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+    
+    URL.revokeObjectURL(url);
+    toast.success('Chat exported successfully');
+  };
   if (!isOpen) return null;
   return <div className="fixed inset-0 bg-background z-50 flex flex-col h-screen">
       {/* Debug info */}
@@ -261,9 +302,24 @@ export const Chat: React.FC<ChatProps> = ({
           <p className="text-sm text-primary-foreground/80">Online</p>
         </div>
         
-        <Button variant="ghost" size="icon" className="text-primary-foreground hover:bg-primary-foreground/20">
-          <MoreVertical className="h-5 w-5" />
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="text-primary-foreground hover:bg-primary-foreground/20">
+              <MoreVertical className="h-5 w-5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuItem onClick={handleExportChat}>
+              <Download className="h-4 w-4 mr-2" />
+              Export Chat
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleClearChat} className="text-destructive">
+              <Trash2 className="h-4 w-4 mr-2" />
+              Clear Chat
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Messages Container - Reduced size */}
