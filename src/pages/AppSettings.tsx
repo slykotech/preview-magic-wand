@@ -183,12 +183,50 @@ export const AppSettings = () => {
   };
 
   const deleteAccount = async () => {
-    toast({
-      title: "Account deletion initiated ⚠️",
-      description: "Please check your email for confirmation instructions",
-      variant: "destructive"
-    });
-    setShowDeleteDialog(false);
+    try {
+      setSaving(true);
+      
+      // Get the current session token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error('No valid session found');
+      }
+
+      // Call the delete-account edge function
+      const { data, error } = await supabase.functions.invoke('delete-account', {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      });
+
+      if (error) throw error;
+
+      // Clear local storage and state
+      localStorage.clear();
+      
+      // Sign out (this will also clear the session)
+      await supabase.auth.signOut();
+
+      // Show success message
+      toast({
+        title: "Account deleted successfully",
+        description: "Your account and data have been permanently deleted."
+      });
+
+      // Redirect to signup page
+      navigate('/signup', { replace: true });
+      
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      toast({
+        title: "Unable to delete your account",
+        description: "Please try again. If the problem persists, contact support.",
+        variant: "destructive"
+      });
+    } finally {
+      setSaving(false);
+      setShowDeleteDialog(false);
+    }
   };
 
   if (loading) {
@@ -432,14 +470,15 @@ export const AppSettings = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                This action cannot be undone. This will permanently delete your account and remove all your data from our servers.
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Are you sure you want to permanently delete your account and all of your data (memories, check-ins, profiles, partner connections)? This action cannot be undone.
               </p>
               <div className="flex gap-2">
                 <Button
                   variant="outline"
                   onClick={() => setShowDeleteDialog(false)}
                   className="flex-1"
+                  disabled={saving}
                 >
                   Cancel
                 </Button>
@@ -447,8 +486,9 @@ export const AppSettings = () => {
                   variant="destructive"
                   onClick={deleteAccount}
                   className="flex-1"
+                  disabled={saving}
                 >
-                  Delete Account
+                  {saving ? "Deleting..." : "Delete Forever"}
                 </Button>
               </div>
             </CardContent>
