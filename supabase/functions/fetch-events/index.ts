@@ -492,6 +492,20 @@ serve(async (req) => {
 
     console.log(`Processed ${sortedEvents.length} unique couple-friendly events from ${allEvents.length} total events`);
 
+    // Get updated quota info if user is authenticated
+    let quotaInfo = null;
+    if (userId) {
+      try {
+        const { data: updatedQuotaData } = await supabase.rpc('check_user_quota', { 
+          p_user_id: userId, 
+          p_estimated_cost: 0
+        });
+        quotaInfo = updatedQuotaData;
+      } catch (error) {
+        console.error('Error getting updated quota:', error);
+      }
+    }
+
     const responseData = {
       events: sortedEvents.slice(0, size), // Limit to requested size
       totalEvents: sortedEvents.length,
@@ -511,6 +525,7 @@ serve(async (req) => {
         meetup: allEvents.filter(e => e.source === 'meetup').length,
         local: allEvents.filter(e => e.source === 'local').length
       },
+      quota_info: quotaInfo,
       metadata: {
         cached: false,
         usageStats: usageStats,

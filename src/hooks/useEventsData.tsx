@@ -146,6 +146,25 @@ export const useEventsData = () => {
           title: `Events loaded! 🎉${cacheStatus}`,
           description: `Found ${data.events.length} events near ${location.displayName} (${freeSourcesCount} free, ${paidSourcesCount} paid sources)`,
         });
+        
+        // Check for quota warnings  
+        if (data.quota_info) {
+          const quota = data.quota_info;
+          if (quota.daily_remaining <= 2) {
+            toast({
+              title: "API quota warning",
+              description: `Only ${quota.daily_remaining} requests remaining today`,
+              variant: "destructive"
+            });
+          }
+          if (quota.monthly_cost_remaining <= 1) {
+            toast({
+              title: "Cost limit warning", 
+              description: `$${quota.monthly_cost_remaining.toFixed(2)} remaining this month`,
+              variant: "destructive"
+            });
+          }
+        }
       } else {
         // No events found, but API call was successful
         setEvents([]);
@@ -159,6 +178,19 @@ export const useEventsData = () => {
       }
     } catch (error) {
       console.error('Error fetching events:', error);
+      
+      // Handle quota exceeded error specifically
+      if (error.message && error.message.includes('quota exceeded')) {
+        setEvents([]);
+        setError('API quota exceeded. Please try again tomorrow or upgrade your plan.');
+        
+        toast({
+          title: "API quota exceeded",
+          description: "You've reached your daily API limit. Please try again tomorrow.",
+          variant: "destructive"
+        });
+        return;
+      }
       
       // Fallback to mock events on error
       const mockEvents = getMockEvents();
