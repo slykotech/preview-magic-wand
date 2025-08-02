@@ -49,13 +49,16 @@ const Index = () => {
         {/* Features */}
         <div className="space-y-3 text-left">
           <div className="flex items-center gap-4 p-4 bg-white/20 rounded-2xl backdrop-blur-sm">
-            <div className="w-10 h-10 bg-white/30 rounded-xl flex items-center justify-center">
-              <Heart className="text-white" size={20} />
+            <div className="w-12 h-12 rounded-xl overflow-hidden">
+              <img 
+                src="/lovable-uploads/60e9a823-d70b-4be5-949d-e0f8315086ec.png" 
+                alt="Quality Time" 
+                className="w-full h-full object-cover"
+              />
             </div>
             <div className="flex-1">
               <h3 className="font-poppins font-bold text-white">Quality Time</h3>
             </div>
-            <div className="text-2xl">💑</div>
           </div>
           <div className="flex items-center gap-4 p-4 bg-white/20 rounded-2xl backdrop-blur-sm">
             <div className="w-10 h-10 bg-white/30 rounded-xl flex items-center justify-center">
