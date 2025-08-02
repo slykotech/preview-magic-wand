@@ -24,6 +24,12 @@ export const AICoach = () => {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [isVoiceMode, setIsVoiceMode] = useState(false);
+  const [isOutOfTokens, setIsOutOfTokens] = useState(false);
+  const [tokenUsage, setTokenUsage] = useState<{
+    tokensUsed: number;
+    tokensRemaining: number;
+    dailyLimit: number;
+  } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const {
     toast
@@ -134,7 +140,22 @@ export const AICoach = () => {
           userContext: "Couple relationship coaching session"
         }
       });
-      if (error) throw error;
+      
+      if (error) {
+        // Check if it's a token limit error (429 status)
+        if (error.message && error.message.includes('Daily token limit reached')) {
+          setIsOutOfTokens(true);
+          setIsTyping(false);
+          toast({
+            title: "Daily Token Limit Reached",
+            description: "You've used your daily AI coach allowance. Reset tomorrow!",
+            variant: "destructive"
+          });
+          return;
+        }
+        throw error;
+      }
+      
       const aiResponse: Message = {
         id: (Date.now() + 1).toString(),
         content: data.message,
@@ -142,6 +163,21 @@ export const AICoach = () => {
         timestamp: new Date()
       };
       setMessages(prev => [...prev, aiResponse]);
+      
+      // Update token usage if available
+      if (data.tokenUsage) {
+        setTokenUsage(data.tokenUsage);
+        // Check if close to limit (90% used)
+        const usagePercentage = (data.tokenUsage.tokensUsed / data.tokenUsage.dailyLimit) * 100;
+        if (usagePercentage >= 90 && usagePercentage < 100) {
+          toast({
+            title: "Token Usage Warning",
+            description: `You've used ${Math.round(usagePercentage)}% of your daily tokens`,
+            variant: "default"
+          });
+        }
+      }
+      
       setIsTyping(false);
 
       // Save AI response to database
@@ -240,8 +276,42 @@ export const AICoach = () => {
         <div ref={messagesEndRef} />
       </div>
 
+      
+      {/* Out of Tokens Message */}
+      {isOutOfTokens && <div className="px-4 pb-4">
+          <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-2 h-2 bg-destructive rounded-full" />
+              <span className="text-sm font-semibold text-destructive">Daily Limit Reached</span>
+            </div>
+            <p className="text-sm text-muted-foreground mb-3">
+              You've used your daily AI coach allowance of 10,000 tokens. Your limit will reset tomorrow.
+            </p>
+            <div className="text-xs text-muted-foreground">
+              Come back tomorrow for more personalized relationship guidance! 💕
+            </div>
+          </div>
+        </div>}
+      
+      {/* Token Usage Display */}
+      {tokenUsage && !isOutOfTokens && <div className="px-4 pb-2">
+          <div className="bg-card/50 rounded-lg p-3 border border-muted/20">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">Daily Usage</span>
+              <span className="text-xs font-medium">
+                {tokenUsage.tokensUsed.toLocaleString()} / {tokenUsage.dailyLimit.toLocaleString()} tokens
+              </span>
+            </div>
+            <div className="w-full bg-muted rounded-full h-1.5 mt-2">
+              <div className="bg-primary h-1.5 rounded-full transition-all duration-300" style={{
+              width: `${(tokenUsage.tokensUsed / tokenUsage.dailyLimit) * 100}%`
+            }} />
+            </div>
+          </div>
+        </div>}
+
       {/* Suggestions */}
-      {suggestions.length > 0 && <div className="px-4 pb-2">
+      {suggestions.length > 0 && !isOutOfTokens && <div className="px-4 pb-2">
           <div className="flex items-center gap-2 mb-3">
             <Lightbulb size={16} className="text-secondary" />
             <span className="text-sm font-medium text-muted-foreground">Quick suggestions:</span>
@@ -271,14 +341,14 @@ export const AICoach = () => {
       {/* Input */}
       <div className="p-4 bg-card border-t border-border">
         <div className="flex gap-3">
-          <Input value={newMessage} onChange={e => setNewMessage(e.target.value)} onKeyPress={handleKeyPress} placeholder={isVoiceMode ? "Tap mic to speak or type..." : "Share what's on your mind..."} className="flex-1 rounded-full border-muted focus:border-secondary font-inter" disabled={isTyping || isRecording || isProcessing} />
+          <Input value={newMessage} onChange={e => setNewMessage(e.target.value)} onKeyPress={handleKeyPress} placeholder={isOutOfTokens ? "Daily token limit reached - come back tomorrow!" : isVoiceMode ? "Tap mic to speak or type..." : "Share what's on your mind..."} className="flex-1 rounded-full border-muted focus:border-secondary font-inter" disabled={isTyping || isRecording || isProcessing || isOutOfTokens} />
           
           {/* Voice Button */}
           
 
           {/* Send Button */}
-          <Button onClick={() => handleSendMessage()} disabled={!newMessage.trim() || isTyping || isRecording || isProcessing} variant="floating" size="fab" className="shrink-0">
-            <Send size={20} className={newMessage.trim() ? 'animate-pulse' : ''} />
+          <Button onClick={() => handleSendMessage()} disabled={!newMessage.trim() || isTyping || isRecording || isProcessing || isOutOfTokens} variant="floating" size="fab" className="shrink-0">
+            <Send size={20} className={newMessage.trim() && !isOutOfTokens ? 'animate-pulse' : ''} />
           </Button>
         </div>
       </div>
