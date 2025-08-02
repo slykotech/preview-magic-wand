@@ -218,6 +218,7 @@ export const DatePlanner = () => {
           description: "Couldn't fetch live events, showing sample data",
           variant: "destructive"
         });
+        setEventsLoading(false);
         return;
       }
 
@@ -251,6 +252,7 @@ export const DatePlanner = () => {
         description: "Using sample events instead",
         variant: "destructive"
       });
+      setEventsLoading(false);
     } finally {
       setEventsLoading(false);
     }
