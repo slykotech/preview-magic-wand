@@ -682,7 +682,7 @@ export const DatePlanner = () => {
                        <CalendarPlus size={14} className="mr-1" />
                        Schedule
                      </Button>
-                     {event.bookingUrl && (
+                     {event.bookingUrl && event.source !== 'google' && (
                        <Button 
                          variant="outline"
                          size="sm"
