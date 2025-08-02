@@ -293,6 +293,8 @@ export type Database = {
           location: string | null
           notes: string | null
           rating: number | null
+          scheduled_date: string | null
+          scheduled_time: string | null
           title: string
           updated_at: string
         }
@@ -310,6 +312,8 @@ export type Database = {
           location?: string | null
           notes?: string | null
           rating?: number | null
+          scheduled_date?: string | null
+          scheduled_time?: string | null
           title: string
           updated_at?: string
         }
@@ -327,6 +331,8 @@ export type Database = {
           location?: string | null
           notes?: string | null
           rating?: number | null
+          scheduled_date?: string | null
+          scheduled_time?: string | null
           title?: string
           updated_at?: string
         }
