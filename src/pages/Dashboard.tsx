@@ -516,7 +516,7 @@ export const Dashboard = () => {
         <div className="bg-gradient-primary py-12 px-6 -mx-6 -mt-8 mb-8 rounded-b-3xl">
           <div className={`text-center space-y-2 ${isLoaded ? 'animate-fade-in' : 'opacity-0'}`}>
             
-            <p className="text-lg text-white/90">{getTimeBasedMessage()}</p>
+            <p className="text-lg font-bold text-white/90">{getTimeBasedMessage()}</p>
           </div>
         </div>
         
