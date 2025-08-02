@@ -459,21 +459,21 @@ export const Chat: React.FC<ChatProps> = ({
                           ))}
                         </div>
                        )}
+                      
+                      {/* Reaction emojis positioned at bottom right */}
+                      {messageReactions[message.id] && messageReactions[message.id].length > 0 && (
+                        <div className="absolute -bottom-2 -right-2 flex gap-1">
+                          {messageReactions[message.id].map((reaction) => (
+                            <span
+                              key={reaction.emoji}
+                              className="text-sm bg-background rounded-full border shadow-sm px-1"
+                            >
+                              {reaction.emoji}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                   </div>
-                  
-                  {/* Reaction tabs */}
-                  {messageReactions[message.id] && messageReactions[message.id].length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-2 ml-2">
-                      {messageReactions[message.id].map((reaction) => (
-                        <span
-                          key={reaction.emoji}
-                          className="text-sm"
-                        >
-                          {reaction.emoji}
-                        </span>
-                      ))}
-                    </div>
-                  )}
                 </div>;
         })}
           <div ref={messagesEndRef} />
