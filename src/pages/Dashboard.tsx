@@ -410,7 +410,7 @@ export const Dashboard = () => {
     }
   };
   const handlePlanDateClick = () => {
-    navigate('/planner?filter=upcoming');
+    navigate('/planner?tab=upcoming');
     toast({
       title: "Time to plan something special! ✨",
       description: "Let's find the perfect date idea for you two"
