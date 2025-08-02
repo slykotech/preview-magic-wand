@@ -358,7 +358,7 @@ export const Chat: React.FC<ChatProps> = ({
               <Button variant="ghost" size="sm" onClick={() => {
               if (fileInputRef.current) {
                 fileInputRef.current.accept = 'image/*';
-                fileInputRef.current.capture = 'environment';
+                fileInputRef.current.setAttribute('capture', 'environment');
                 fileInputRef.current.click();
               }
             }} className="absolute left-1 top-1/2 -translate-y-1/2 rounded-full h-6 w-6 p-0">
