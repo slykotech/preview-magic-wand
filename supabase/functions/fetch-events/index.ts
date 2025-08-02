@@ -108,7 +108,7 @@ interface UnifiedEvent {
   bookingUrl?: string;
   date?: string;
   time?: string;
-  source: 'ticketmaster' | 'eventbrite' | 'google' | 'local';
+  source: 'ticketmaster' | 'eventbrite' | 'google' | 'local' | 'seatgeek' | 'predicthq' | 'explara';
 }
 
 interface TicketmasterResponse {
@@ -240,6 +240,24 @@ serve(async (req) => {
       }
     }
 
+    // Fetch from SeatGeek
+    try {
+      const seatgeekEvents = await fetchSeatGeekEvents(finalLatitude, finalLongitude, radius, size, keyword);
+      allEvents.push(...seatgeekEvents);
+      console.log(`Fetched ${seatgeekEvents.length} events from SeatGeek`);
+    } catch (error) {
+      console.error('SeatGeek API error:', error);
+    }
+
+    // Fetch from PredictHQ
+    try {
+      const predicthqEvents = await fetchPredictHQEvents(finalLatitude, finalLongitude, radius, size, keyword);
+      allEvents.push(...predicthqEvents);
+      console.log(`Fetched ${predicthqEvents.length} events from PredictHQ`);
+    } catch (error) {
+      console.error('PredictHQ API error:', error);
+    }
+
     // If we have very few events (indicating limited API coverage for this region), 
     // add some generic date-friendly venue suggestions
     if (allEvents.length < 5) {
@@ -270,6 +288,8 @@ serve(async (req) => {
         ticketmaster: allEvents.filter(e => e.source === 'ticketmaster').length,
         eventbrite: allEvents.filter(e => e.source === 'eventbrite').length,
         google: allEvents.filter(e => e.source === 'google').length,
+        seatgeek: allEvents.filter(e => e.source === 'seatgeek').length,
+        predicthq: allEvents.filter(e => e.source === 'predicthq').length,
         local: allEvents.filter(e => e.source === 'local').length
       }
     }), {
@@ -717,4 +737,193 @@ function generateLocalVenueSuggestions(latitude: number, longitude: number, loca
       source: 'local' as const
     };
   });
+}
+
+// SeatGeek Events API
+async function fetchSeatGeekEvents(latitude: number, longitude: number, radius: number, size: number, keyword: string): Promise<UnifiedEvent[]> {
+  try {
+    const seatgeekClientId = Deno.env.get('SEATGEEK_CLIENT_ID');
+    if (!seatgeekClientId) {
+      console.log('SeatGeek API key not configured, skipping...');
+      return [];
+    }
+
+    const lat = latitude;
+    const lon = longitude;
+    const range = Math.min(radius, 50); // SeatGeek max is 50km
+    
+    const params = new URLSearchParams({
+      'client_id': seatgeekClientId,
+      'lat': lat.toString(),
+      'lon': lon.toString(),
+      'range': `${range}km`,
+      'per_page': size.toString(),
+      'datetime_local.gte': new Date().toISOString().split('T')[0]
+    });
+
+    if (keyword) {
+      params.append('q', keyword);
+    }
+
+    const response = await fetch(`https://api.seatgeek.com/2/events?${params}`);
+    if (!response.ok) {
+      console.error(`SeatGeek API error: ${response.status}`);
+      return [];
+    }
+
+    const data = await response.json();
+    if (!data.events || !Array.isArray(data.events)) {
+      return [];
+    }
+
+    return data.events.map((event: any) => {
+      const eventDate = new Date(event.datetime_local);
+      const venue = event.venue || {};
+      
+      return {
+        id: `seatgeek_${event.id}`,
+        title: event.title || event.short_title || 'Event',
+        distance: venue.location ? 
+          `${Math.round(calculateDistance(latitude, longitude, venue.location.lat, venue.location.lon))} km away` : 
+          'Distance unknown',
+        timing: eventDate.toLocaleDateString('en-US', {
+          weekday: 'long',
+          month: 'short',
+          day: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit'
+        }),
+        description: `${event.type || 'Event'} - ${event.title}`,
+        category: mapSeatGeekCategory(event.type),
+        venue: venue.name || 'Venue TBA',
+        city: venue.city || venue.display_location || '',
+        price: event.stats?.lowest_price ? `From $${event.stats.lowest_price}` : 'Check website',
+        image: event.performers?.[0]?.image || '',
+        bookingUrl: event.url || `https://seatgeek.com/events/${event.id}`,
+        date: eventDate.toISOString().split('T')[0],
+        time: eventDate.toTimeString().split(' ')[0].substring(0, 5),
+        source: 'seatgeek' as const
+      };
+    });
+  } catch (error) {
+    console.error('Error fetching SeatGeek events:', error);
+    return [];
+  }
+}
+
+// PredictHQ Events API
+async function fetchPredictHQEvents(latitude: number, longitude: number, radius: number, size: number, keyword: string): Promise<UnifiedEvent[]> {
+  try {
+    const predicthqToken = Deno.env.get('PREDICTHQ_ACCESS_TOKEN');
+    if (!predicthqToken) {
+      console.log('PredictHQ API key not configured, skipping...');
+      return [];
+    }
+
+    const radiusInMiles = Math.round(radius * 0.621371); // Convert km to miles
+    const today = new Date().toISOString().split('T')[0];
+    const nextMonth = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    const params = new URLSearchParams({
+      'within': `${radiusInMiles}mi@${latitude},${longitude}`,
+      'active.gte': today,
+      'active.lte': nextMonth,
+      'limit': size.toString(),
+      'category': 'concerts,festivals,performing-arts,sports'
+    });
+
+    if (keyword) {
+      params.append('q', keyword);
+    }
+
+    const response = await fetch(`https://api.predicthq.com/v1/events/?${params}`, {
+      headers: {
+        'Authorization': `Bearer ${predicthqToken}`,
+        'Accept': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      console.error(`PredictHQ API error: ${response.status}`);
+      return [];
+    }
+
+    const data = await response.json();
+    if (!data.results || !Array.isArray(data.results)) {
+      return [];
+    }
+
+    return data.results.map((event: any) => {
+      const eventDate = new Date(event.start);
+      
+      return {
+        id: `predicthq_${event.id}`,
+        title: event.title,
+        distance: event.location && event.location[1] && event.location[0] ? 
+          `${Math.round(calculateDistance(latitude, longitude, event.location[1], event.location[0]))} km away` : 
+          'Distance unknown',
+        timing: eventDate.toLocaleDateString('en-US', {
+          weekday: 'long',
+          month: 'short',
+          day: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit'
+        }),
+        description: event.description || `${event.category} event in ${event.location?.address || 'the area'}`,
+        category: mapPredictHQCategory(event.category),
+        venue: event.entities?.find((e: any) => e.type === 'venue')?.name || 'Venue TBA',
+        city: event.location?.address || '',
+        price: 'Check website for pricing',
+        image: '',
+        bookingUrl: event.entities?.find((e: any) => e.formatted_address)?.formatted_address ? 
+          `https://www.google.com/maps/search/${encodeURIComponent(event.title + ' ' + event.location?.address)}` : 
+          `https://www.google.com/search?q=${encodeURIComponent(event.title)}`,
+        date: eventDate.toISOString().split('T')[0],
+        time: eventDate.toTimeString().split(' ')[0].substring(0, 5),
+        source: 'predicthq' as const
+      };
+    });
+  } catch (error) {
+    console.error('Error fetching PredictHQ events:', error);
+    return [];
+  }
+}
+
+function mapSeatGeekCategory(type: string): string {
+  const typeMap: { [key: string]: string } = {
+    'concert': 'Music',
+    'sports': 'Sports',
+    'theater': 'Culture',
+    'comedy': 'Entertainment',
+    'festival': 'Festival',
+    'family': 'Family'
+  };
+  
+  return typeMap[type?.toLowerCase()] || 'Entertainment';
+}
+
+function mapPredictHQCategory(category: string): string {
+  const categoryMap: { [key: string]: string } = {
+    'concerts': 'Music',
+    'sports': 'Sports',
+    'festivals': 'Festival',
+    'performing-arts': 'Culture',
+    'conferences': 'Business',
+    'community': 'Community'
+  };
+  
+  return categoryMap[category?.toLowerCase()] || 'Entertainment';
+}
+
+// Calculate distance between two coordinates (Haversine formula)
+function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371; // Radius of the Earth in kilometers
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c; // Distance in kilometers
 }
