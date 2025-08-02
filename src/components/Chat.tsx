@@ -354,17 +354,27 @@ export const Chat: React.FC<ChatProps> = ({
       <div className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-lg border-t border-border z-50">
         <div className="max-w-md mx-auto px-3 py-2">
           <div className="flex gap-1 items-center">
-            {/* Attachment Button */}
+            {/* Gallery Button */}
             <Button variant="ghost" size="sm" onClick={() => {
-            setShowAttachments(!showAttachments);
-            setShowEmojiPicker(false);
-            setShowStickers(false);
-          }} className={`rounded-full h-8 w-8 p-0 ${showAttachments ? 'bg-muted' : ''}`}>
+            if (fileInputRef.current) {
+              fileInputRef.current.accept = 'image/*,video/*';
+              fileInputRef.current.click();
+            }
+          }} className="rounded-full h-8 w-8 p-0">
               <Image className="h-4 w-4" />
             </Button>
             
             <div className="flex-1 relative">
-              <Input ref={inputRef} placeholder="Type a message..." value={newMessage} onChange={e => setNewMessage(e.target.value)} onKeyPress={handleKeyPress} className="h-8 rounded-full border focus:border-primary text-sm" disabled={loading} />
+              <Input ref={inputRef} placeholder="Type a message..." value={newMessage} onChange={e => setNewMessage(e.target.value)} onKeyPress={handleKeyPress} className="h-8 rounded-full border focus:border-primary text-sm pl-10" disabled={loading} />
+              <Button variant="ghost" size="sm" onClick={() => {
+                if (fileInputRef.current) {
+                  fileInputRef.current.accept = 'image/*';
+                  fileInputRef.current.setAttribute('capture', 'environment');
+                  fileInputRef.current.click();
+                }
+              }} className="absolute left-1 top-1/2 -translate-y-1/2 rounded-full h-6 w-6 p-0">
+                <Camera className="h-3 w-3" />
+              </Button>
             </div>
             
             {/* Love Stickers Button */}
