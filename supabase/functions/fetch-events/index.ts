@@ -406,14 +406,28 @@ serve(async (req) => {
       allEvents.push(...meetupEvents);
       console.log(`Fetched ${meetupEvents.length} events from Meetup (mock)`);
 
-    // Only fetch from paid APIs if we don't have enough events or if explicitly needed
-    const freeEventsCount = allEvents.length;
-    console.log(`Free sources provided ${freeEventsCount} events`);
+    // Always try to get some location-specific events from Google Places if available
+    if (googleKey && !isRateLimited('google', 20, 3600000)) {
+      try {
+        updateUsageStats('google');
+        const googleEvents = await fetchGoogleEvents(googleKey, finalLatitude, finalLongitude, radius);
+        allEvents.push(...googleEvents);
+        console.log(`Fetched ${googleEvents.length} events from Google Places`);
+      } catch (error) {
+        console.error('Google Places API error:', error);
+      }
+    } else if (isRateLimited('google', 20, 3600000)) {
+      console.log('Skipping Google Places due to rate limit');
+    }
 
-    if (freeEventsCount < size * 0.7) {
+    // Only fetch from other paid APIs if we don't have enough events
+    const currentEventsCount = allEvents.length;
+    console.log(`Current events count: ${currentEventsCount}`);
+
+    if (currentEventsCount < size * 0.7) {
       console.log('Supplementing with paid API sources...');
 
-      // 4. Fetch from Ticketmaster (Rate limited)
+      // 5. Fetch from Ticketmaster (Rate limited)
       if (ticketmasterKey && !isRateLimited('ticketmaster', 100, 3600000)) { // 100 requests per hour
         try {
           updateUsageStats('ticketmaster');
@@ -425,34 +439,6 @@ serve(async (req) => {
         }
       } else if (isRateLimited('ticketmaster', 100, 3600000)) {
         console.log('Skipping Ticketmaster due to rate limit');
-      }
-
-      // 5. Fetch from Eventbrite (Rate limited)
-      if (eventbriteKey && !isRateLimited('eventbrite', 50, 3600000)) { // 50 requests per hour
-        try {
-          updateUsageStats('eventbrite');
-          const ebEvents = await fetchEventbriteEvents(eventbriteKey, finalLatitude, finalLongitude, radius, Math.floor(size * 0.3), keyword);
-          allEvents.push(...ebEvents);
-          console.log(`Fetched ${ebEvents.length} events from Eventbrite`);
-        } catch (error) {
-          console.error('Eventbrite API error:', error);
-        }
-      } else if (isRateLimited('eventbrite', 50, 3600000)) {
-        console.log('Skipping Eventbrite due to rate limit');
-      }
-
-      // 6. Fetch from Google Events (Most expensive - use sparingly)
-      if (googleKey && allEvents.length < size * 0.5 && !isRateLimited('google', 20, 3600000)) { // 20 requests per hour
-        try {
-          updateUsageStats('google');
-          const googleEvents = await fetchGoogleEvents(googleKey, finalLatitude, finalLongitude, radius);
-          allEvents.push(...googleEvents);
-          console.log(`Fetched ${googleEvents.length} events from Google Places`);
-        } catch (error) {
-          console.error('Google Events API error:', error);
-        }
-      } else if (isRateLimited('google', 20, 3600000)) {
-        console.log('Skipping Google Places due to rate limit');
       }
 
       // 7. Fetch from SeatGeek (Rate limited)
@@ -483,7 +469,7 @@ serve(async (req) => {
         console.log('Skipping PredictHQ due to rate limit');
       }
     } else {
-      console.log(`Sufficient events from free sources (${freeEventsCount}), skipping paid APIs`);
+      console.log(`Sufficient events from current sources (${currentEventsCount}), skipping additional paid APIs`);
     }
 
     // If we have very few events (indicating limited API coverage for this region), 
