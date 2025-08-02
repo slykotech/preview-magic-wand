@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { BottomNavigation } from "@/components/BottomNavigation";
+import { GradientHeader } from "@/components/GradientHeader";
 import { Send, Sparkles, Mic, MicOff, Volume2, VolumeX, Lightbulb } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -199,23 +200,26 @@ export const AICoach = () => {
     }
   };
   return <div className="min-h-screen bg-background flex flex-col pb-20">
-      {/* Header */}
-      <div className="bg-gradient-romance text-white p-6 shadow-romantic">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center animate-pulse">
-              <Sparkles size={24} />
-            </div>
-            <div>
-              <h1 className="text-xl font-extrabold font-poppins">Soul Syncing</h1>
-              <p className="text-white/80 text-sm font-inter font-bold">Always here to help your love grow</p>
-            </div>
-          </div>
-          <Button variant="ghost" size="sm" onClick={toggleVoiceMode} className="text-white hover:bg-white/20">
-            {isVoiceMode ? <Volume2 size={20} /> : <VolumeX size={20} />}
+      {/* Gradient Header */}
+      <GradientHeader
+        title="AI Relationship Coach"
+        subtitle="Always here to help your love grow"
+        icon={<Sparkles size={24} />}
+        showBackButton={false}
+      >
+        {/* Voice Mode Toggle */}
+        <div className="flex justify-center mt-4">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={toggleVoiceMode} 
+            className="text-white hover:bg-white/20 bg-white/10 backdrop-blur-sm border border-white/20"
+          >
+            {isVoiceMode ? <Volume2 size={16} className="mr-2" /> : <VolumeX size={16} className="mr-2" />}
+            {isVoiceMode ? 'Voice Mode On' : 'Voice Mode Off'}
           </Button>
         </div>
-      </div>
+      </GradientHeader>
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">

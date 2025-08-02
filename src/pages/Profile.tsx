@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { SyncScoreBreakdown } from "@/components/SyncScoreBreakdown";
 import { BottomNavigation } from "@/components/BottomNavigation";
+import { GradientHeader } from "@/components/GradientHeader";
 import { User, Heart, Settings, Award, Calendar, LogOut, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -211,9 +212,23 @@ export const Profile = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      {/* Header with Couple Info */}
-      <div className="bg-gradient-romance text-white p-6 shadow-romantic">
-        <div className="flex items-center gap-4 mb-6">
+      {/* Gradient Header with Couple Info */}
+      <GradientHeader
+        title={coupleLoading ? 'Loading...' : 
+          coupleData && coupleData.user1_id !== coupleData.user2_id ? 
+            `${getUserDisplayName()} & ${getPartnerDisplayName()}` :
+            getUserDisplayName() || 'Setup Your Profile'
+        }
+        subtitle={coupleData?.anniversary_date && coupleData.user1_id !== coupleData.user2_id ? 
+          `Together since ${new Date(coupleData.anniversary_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })} 💕` :
+          coupleData && coupleData.user1_id !== coupleData.user2_id ? 'Together since joining LoveSync 💕' : 
+          'Ready to start your journey? 💕'
+        }
+        icon={<User size={24} />}
+        showBackButton={false}
+      >
+        {/* Couple Avatars */}
+        <div className="flex items-center justify-center mt-4">
           <div className="flex -space-x-4">
             <div className="w-16 h-16 rounded-full border-4 border-white overflow-hidden shadow-lg">
               <img 
@@ -230,38 +245,10 @@ export const Profile = () => {
               />
             </div>
           </div>
-          <div className="flex-1">
-            <h1 className="text-xl font-extrabold font-poppins">
-              {coupleLoading ? 'Loading...' : 
-               coupleData && coupleData.user1_id !== coupleData.user2_id ? 
-                 `${getUserDisplayName()} & ${getPartnerDisplayName()}` :
-                 getUserDisplayName() || 'Setup Your Profile'
-              }
-            </h1>
-            <p className="text-white/80 font-inter text-sm font-bold">
-              {coupleData?.anniversary_date && coupleData.user1_id !== coupleData.user2_id ? 
-                `Together since ${new Date(coupleData.anniversary_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })} 💕` :
-                coupleData && coupleData.user1_id !== coupleData.user2_id ? 'Together since joining LoveSync 💕' : 
-                'Ready to start your journey? 💕'
-              }
-            </p>
-          </div>
         </div>
+      </GradientHeader>
 
-        {/* Relationship Stats */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="bg-white/10 rounded-xl p-3 text-center">
-            <p className="text-2xl font-extrabold font-poppins">{relationshipStats.daysConnected}</p>
-            <p className="text-white/80 text-xs font-inter font-bold">Days Connected</p>
-          </div>
-          <div className="bg-white/10 rounded-xl p-3 text-center">
-            <p className="text-2xl font-extrabold font-poppins">{relationshipStats.memoryCount}</p>
-            <p className="text-white/80 text-xs font-inter font-bold">Memories Saved</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Menu Sections */}
+      {/* Content */}
       <div className="p-6 space-y-6">
         {/* Personal Section */}
         <div className="space-y-2">
