@@ -88,6 +88,7 @@ Deno.serve(async (req) => {
     console.log('Checking if user already exists...');
 
     // Check if user already exists using listUsers with email filter
+    console.log('Checking if user already exists...');
     const { data: existingUsers, error: userCheckError } = await supabase.auth.admin.listUsers({
       filter: `email.eq.${email}`
     });
@@ -96,6 +97,11 @@ Deno.serve(async (req) => {
       console.error('Error checking existing user:', userCheckError);
       throw new Error('Failed to validate user information');
     }
+    
+    console.log('Existing users check result:', { 
+      userCount: existingUsers?.users?.length || 0,
+      users: existingUsers?.users?.map(u => ({ id: u.id, email: u.email })) || []
+    });
     
     if (existingUsers && existingUsers.users && existingUsers.users.length > 0) {
       // User exists
@@ -165,6 +171,8 @@ Deno.serve(async (req) => {
 
     // Send email
     console.log('Sending signup verification email...');
+    console.log('Email service initialized with API key present:', !!resendApiKey);
+    
     const emailResult = await emailService.sendEmail({
       to: [email],
       template,
@@ -172,6 +180,10 @@ Deno.serve(async (req) => {
     });
 
     console.log('Email send result:', emailResult);
+    console.log('Email send success:', emailResult.success);
+    if (!emailResult.success) {
+      console.error('Email send error details:', emailResult.error);
+    }
 
     if (!emailResult.success) {
       console.error('Email sending failed:', emailResult.error);
