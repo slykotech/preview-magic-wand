@@ -12,6 +12,7 @@ interface SyncScoreBreakdownProps {
     communicationPoints: number;
     milestonePoints: number;
     streakBonus: number;
+    streakPenalty?: number;
   };
   onClose?: () => void;
   className?: string;
@@ -50,38 +51,49 @@ export const SyncScoreBreakdown: React.FC<SyncScoreBreakdownProps> = ({
       icon: <Calendar className="w-5 h-5" />,
       label: 'Daily Check-ins',
       points: breakdown.checkinPoints,
-      maxPoints: 14,
-      description: 'Both check-in: +2pts, One: -1pt, None: -2pts per day'
+      maxPoints: 21,
+      description: 'Both check-in: +3pts, One: -2pts, None: -3pts per day'
     },
     {
       icon: <Camera className="w-5 h-5" />,
       label: 'Story Sharing',
       points: breakdown.storyPoints,
-      maxPoints: 19, // 14 base + 5 interaction bonus
-      description: 'Both share: +2pts, One: -1pt, None: -2pts per day'
+      maxPoints: 29, // 21 base + 8 interaction bonus
+      description: 'Both share: +3pts, One: -2pts, None: -3pts per day + interaction bonus'
     },
     {
       icon: <MessageSquare className="w-5 h-5" />,
       label: 'Communication',
       points: breakdown.communicationPoints,
-      maxPoints: 20,
-      description: '1pt per 2 messages sent in past 7 days'
+      maxPoints: 30,
+      description: '1pt per message sent in past 7 days (max 30)'
     },
     {
       icon: <Heart className="w-5 h-5" />,
       label: 'Milestones',
       points: breakdown.milestonePoints,
-      maxPoints: 15,
-      description: 'Memories: +5pts each, Completed dates: +10pts each'
+      maxPoints: 25,
+      description: 'Memories: +8pts each, Completed dates: +15pts each'
     },
     {
       icon: <Zap className="w-5 h-5" />,
       label: 'Streak Bonus',
       points: breakdown.streakBonus,
-      maxPoints: 10,
-      description: '1pt per day of active streaks (check-ins + stories)'
+      maxPoints: 20,
+      description: '2pts per day of active streaks (check-ins + stories)'
     },
   ];
+
+  // Add streak penalty if it exists
+  if (breakdown.streakPenalty && breakdown.streakPenalty > 0) {
+    components.push({
+      icon: <Zap className="w-5 h-5" />,
+      label: 'Streak Penalty',
+      points: -breakdown.streakPenalty,
+      maxPoints: 20,
+      description: 'Lost points when streaks break (based on streak length)'
+    });
+  }
 
   return (
     <Card className={`w-full max-w-md mx-auto bg-background border shadow-lg ${className}`}>
@@ -114,7 +126,7 @@ export const SyncScoreBreakdown: React.FC<SyncScoreBreakdownProps> = ({
             {score >= 80 ? '💚 Healthy' : score >= 50 ? '🧡 Moderate' : '❤️ Needs Work'}
           </p>
           <p className="text-xs text-muted-foreground mt-1">
-            Base: 50% + Activity Modifiers
+            Base: 0% + Activity Modifiers
           </p>
         </div>
 
@@ -163,9 +175,10 @@ export const SyncScoreBreakdown: React.FC<SyncScoreBreakdownProps> = ({
         <div className="p-3 bg-muted/10 rounded-lg">
           <h4 className="text-xs font-semibold text-muted-foreground mb-2">Formula:</h4>
           <p className="text-xs text-muted-foreground leading-relaxed">
-            <strong>50% base</strong> + Check-ins ({formatPoints(breakdown.checkinPoints)}) + 
+            <strong>0% base</strong> + Check-ins ({formatPoints(breakdown.checkinPoints)}) + 
             Stories ({formatPoints(breakdown.storyPoints)}) + Communication (+{breakdown.communicationPoints}) + 
-            Milestones (+{breakdown.milestonePoints}) + Streaks (+{breakdown.streakBonus}) = <strong>{score}%</strong>
+            Milestones (+{breakdown.milestonePoints}) + Streaks (+{breakdown.streakBonus})
+            {breakdown.streakPenalty && breakdown.streakPenalty > 0 ? ` - Penalty (${breakdown.streakPenalty})` : ''} = <strong>{score}%</strong>
           </p>
         </div>
 

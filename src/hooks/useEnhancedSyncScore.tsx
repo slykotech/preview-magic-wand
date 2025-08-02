@@ -8,6 +8,7 @@ export interface SyncScoreBreakdown {
   communicationPoints: number;
   milestonePoints: number;
   streakBonus: number;
+  streakPenalty?: number;
 }
 
 export interface SyncScoreData {
@@ -145,6 +146,7 @@ export const useEnhancedSyncScore = (coupleId: string | null) => {
           communicationPoints: syncScoreDetails?.communication_points || 0,
           milestonePoints: syncScoreDetails?.milestone_points || 0,
           streakBonus: syncScoreDetails?.streak_bonus || 0,
+          streakPenalty: (syncScoreDetails?.factors as any)?.streak_penalty || 0,
         },
         streaks: {
           checkinStreak: coupleData?.checkin_streak || 0,

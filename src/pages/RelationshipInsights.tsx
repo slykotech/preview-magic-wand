@@ -68,7 +68,7 @@ export const RelationshipInsights = () => {
         } else {
           // Calculate new sync score
           const { data: calculatedScore } = await supabase
-            .rpc('calculate_sync_score', { p_couple_id: coupleData.id });
+            .rpc('calculate_enhanced_sync_score', { p_couple_id: coupleData.id });
           
           if (calculatedScore) {
             setSyncScore(calculatedScore);
