@@ -133,6 +133,52 @@ interface EventbriteResponse {
   };
 }
 
+// Simple in-memory cache for API responses
+const cache = new Map<string, { data: any; timestamp: number; ttl: number }>();
+
+// Rate limiting storage
+const rateLimits = new Map<string, { count: number; resetTime: number }>();
+
+// Usage tracking
+const usageStats = {
+  ticketmaster: 0,
+  eventbrite: 0,
+  google: 0,
+  seatgeek: 0,
+  predicthq: 0,
+  total: 0
+};
+
+function getCacheKey(latitude: number, longitude: number, radius: number, size: number, keyword: string): string {
+  return `events_${latitude}_${longitude}_${radius}_${size}_${keyword}`;
+}
+
+function isRateLimited(source: string, maxRequests: number, windowMs: number): boolean {
+  const now = Date.now();
+  const limit = rateLimits.get(source);
+  
+  if (!limit || now > limit.resetTime) {
+    rateLimits.set(source, { count: 1, resetTime: now + windowMs });
+    return false;
+  }
+  
+  if (limit.count >= maxRequests) {
+    console.log(`Rate limit reached for ${source}: ${limit.count}/${maxRequests}`);
+    return true;
+  }
+  
+  limit.count++;
+  return false;
+}
+
+function updateUsageStats(source: string) {
+  if (source in usageStats) {
+    (usageStats as any)[source]++;
+    usageStats.total++;
+  }
+  console.log(`API usage stats:`, usageStats);
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -141,6 +187,17 @@ serve(async (req) => {
 
   try {
     const { latitude, longitude, radius = 25, size = 20, keyword = '', locationName = '' } = await req.json();
+    
+    // Check cache first
+    const cacheKey = getCacheKey(latitude || 0, longitude || 0, radius, size, keyword);
+    const cached = cache.get(cacheKey);
+    
+    if (cached && Date.now() - cached.timestamp < cached.ttl) {
+      console.log('Returning cached events');
+      return new Response(JSON.stringify(cached.data), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
     
     let finalLatitude = latitude;
     let finalLongitude = longitude;
@@ -207,82 +264,114 @@ serve(async (req) => {
 
     const allEvents: UnifiedEvent[] = [];
 
-    // Fetch from Ticketmaster
-    if (ticketmasterKey) {
-      try {
-        const tmEvents = await fetchTicketmasterEvents(ticketmasterKey, finalLatitude, finalLongitude, radius, size, keyword);
-        allEvents.push(...tmEvents);
-        console.log(`Fetched ${tmEvents.length} events from Ticketmaster`);
-      } catch (error) {
-        console.error('Ticketmaster API error:', error);
-      }
-    }
+    // Prioritize free sources first
+    console.log('Starting with free sources to minimize API costs...');
 
-    // Fetch from Eventbrite
-    if (eventbriteKey) {
-      try {
-        const ebEvents = await fetchEventbriteEvents(eventbriteKey, finalLatitude, finalLongitude, radius, size, keyword);
-        allEvents.push(...ebEvents);
-        console.log(`Fetched ${ebEvents.length} events from Eventbrite`);
-      } catch (error) {
-        console.error('Eventbrite API error:', error);
-      }
-    }
-
-    // Fetch from Google Events (Places API)
-    if (googleKey) {
-      try {
-        const googleEvents = await fetchGoogleEvents(googleKey, finalLatitude, finalLongitude, radius);
-        allEvents.push(...googleEvents);
-        console.log(`Fetched ${googleEvents.length} events from Google`);
-      } catch (error) {
-        console.error('Google Events API error:', error);
-      }
-    }
-
-    // Fetch from SeatGeek
+    // 1. Fetch from BookMyShow (Free web scraping)
     try {
-      const seatgeekEvents = await fetchSeatGeekEvents(finalLatitude, finalLongitude, radius, size, keyword);
-      allEvents.push(...seatgeekEvents);
-      console.log(`Fetched ${seatgeekEvents.length} events from SeatGeek`);
-    } catch (error) {
-      console.error('SeatGeek API error:', error);
-    }
-
-    // Fetch from PredictHQ
-    try {
-      const predicthqEvents = await fetchPredictHQEvents(finalLatitude, finalLongitude, radius, size, keyword);
-      allEvents.push(...predicthqEvents);
-      console.log(`Fetched ${predicthqEvents.length} events from PredictHQ`);
-    } catch (error) {
-      console.error('PredictHQ API error:', error);
-    }
-
-    // Fetch from BookMyShow (Web Scraping)
-    try {
-      const bookmyshowEvents = await fetchBookMyShowEvents(finalLatitude, finalLongitude, resolvedLocation || locationName, radius, size);
+      const bookmyshowEvents = await fetchBookMyShowEvents(finalLatitude, finalLongitude, resolvedLocation || locationName, radius, Math.floor(size * 0.3));
       allEvents.push(...bookmyshowEvents);
-      console.log(`Fetched ${bookmyshowEvents.length} events from BookMyShow`);
+      console.log(`Fetched ${bookmyshowEvents.length} events from BookMyShow (free)`);
     } catch (error) {
       console.error('BookMyShow scraping error:', error);
     }
 
-    // Fetch from Facebook Events (Web Scraping)
+    // 2. Fetch from Facebook Events (Free web scraping)
     try {
-      const facebookEvents = await fetchFacebookEvents(finalLatitude, finalLongitude, resolvedLocation || locationName, radius, size);
+      const facebookEvents = await fetchFacebookEvents(finalLatitude, finalLongitude, resolvedLocation || locationName, radius, Math.floor(size * 0.3));
       allEvents.push(...facebookEvents);
-      console.log(`Fetched ${facebookEvents.length} events from Facebook`);
+      console.log(`Fetched ${facebookEvents.length} events from Facebook (free)`);
     } catch (error) {
       console.error('Facebook scraping error:', error);
     }
 
-    // Fetch from Meetup (Web Scraping)
+    // 3. Fetch from Meetup (Free web scraping)
     try {
-      const meetupEvents = await fetchMeetupEvents(finalLatitude, finalLongitude, resolvedLocation || locationName, radius, size);
+      const meetupEvents = await fetchMeetupEvents(finalLatitude, finalLongitude, resolvedLocation || locationName, radius, Math.floor(size * 0.4));
       allEvents.push(...meetupEvents);
-      console.log(`Fetched ${meetupEvents.length} events from Meetup`);
+      console.log(`Fetched ${meetupEvents.length} events from Meetup (free)`);
     } catch (error) {
       console.error('Meetup scraping error:', error);
+    }
+
+    // Only fetch from paid APIs if we don't have enough events or if explicitly needed
+    const freeEventsCount = allEvents.length;
+    console.log(`Free sources provided ${freeEventsCount} events`);
+
+    if (freeEventsCount < size * 0.7) {
+      console.log('Supplementing with paid API sources...');
+
+      // 4. Fetch from Ticketmaster (Rate limited)
+      if (ticketmasterKey && !isRateLimited('ticketmaster', 100, 3600000)) { // 100 requests per hour
+        try {
+          updateUsageStats('ticketmaster');
+          const tmEvents = await fetchTicketmasterEvents(ticketmasterKey, finalLatitude, finalLongitude, radius, Math.floor(size * 0.3), keyword);
+          allEvents.push(...tmEvents);
+          console.log(`Fetched ${tmEvents.length} events from Ticketmaster`);
+        } catch (error) {
+          console.error('Ticketmaster API error:', error);
+        }
+      } else if (isRateLimited('ticketmaster', 100, 3600000)) {
+        console.log('Skipping Ticketmaster due to rate limit');
+      }
+
+      // 5. Fetch from Eventbrite (Rate limited)
+      if (eventbriteKey && !isRateLimited('eventbrite', 50, 3600000)) { // 50 requests per hour
+        try {
+          updateUsageStats('eventbrite');
+          const ebEvents = await fetchEventbriteEvents(eventbriteKey, finalLatitude, finalLongitude, radius, Math.floor(size * 0.3), keyword);
+          allEvents.push(...ebEvents);
+          console.log(`Fetched ${ebEvents.length} events from Eventbrite`);
+        } catch (error) {
+          console.error('Eventbrite API error:', error);
+        }
+      } else if (isRateLimited('eventbrite', 50, 3600000)) {
+        console.log('Skipping Eventbrite due to rate limit');
+      }
+
+      // 6. Fetch from Google Events (Most expensive - use sparingly)
+      if (googleKey && allEvents.length < size * 0.5 && !isRateLimited('google', 20, 3600000)) { // 20 requests per hour
+        try {
+          updateUsageStats('google');
+          const googleEvents = await fetchGoogleEvents(googleKey, finalLatitude, finalLongitude, radius);
+          allEvents.push(...googleEvents);
+          console.log(`Fetched ${googleEvents.length} events from Google Places`);
+        } catch (error) {
+          console.error('Google Events API error:', error);
+        }
+      } else if (isRateLimited('google', 20, 3600000)) {
+        console.log('Skipping Google Places due to rate limit');
+      }
+
+      // 7. Fetch from SeatGeek (Rate limited)
+      if (!isRateLimited('seatgeek', 30, 3600000)) { // 30 requests per hour
+        try {
+          updateUsageStats('seatgeek');
+          const seatgeekEvents = await fetchSeatGeekEvents(finalLatitude, finalLongitude, radius, Math.floor(size * 0.2), keyword);
+          allEvents.push(...seatgeekEvents);
+          console.log(`Fetched ${seatgeekEvents.length} events from SeatGeek`);
+        } catch (error) {
+          console.error('SeatGeek API error:', error);
+        }
+      } else {
+        console.log('Skipping SeatGeek due to rate limit');
+      }
+
+      // 8. Fetch from PredictHQ (Rate limited)
+      if (!isRateLimited('predicthq', 25, 3600000)) { // 25 requests per hour
+        try {
+          updateUsageStats('predicthq');
+          const predicthqEvents = await fetchPredictHQEvents(finalLatitude, finalLongitude, radius, Math.floor(size * 0.2), keyword);
+          allEvents.push(...predicthqEvents);
+          console.log(`Fetched ${predicthqEvents.length} events from PredictHQ`);
+        } catch (error) {
+          console.error('PredictHQ API error:', error);
+        }
+      } else {
+        console.log('Skipping PredictHQ due to rate limit');
+      }
+    } else {
+      console.log(`Sufficient events from free sources (${freeEventsCount}), skipping paid APIs`);
     }
 
     // If we have very few events (indicating limited API coverage for this region), 
@@ -303,7 +392,7 @@ serve(async (req) => {
 
     console.log(`Processed ${sortedEvents.length} unique couple-friendly events from ${allEvents.length} total events`);
 
-    return new Response(JSON.stringify({
+    const responseData = {
       events: sortedEvents.slice(0, size), // Limit to requested size
       totalEvents: sortedEvents.length,
       location: { 
@@ -321,8 +410,29 @@ serve(async (req) => {
         facebook: allEvents.filter(e => e.source === 'facebook').length,
         meetup: allEvents.filter(e => e.source === 'meetup').length,
         local: allEvents.filter(e => e.source === 'local').length
+      },
+      metadata: {
+        cached: false,
+        usageStats: usageStats,
+        rateLimitStatus: Object.fromEntries(
+          Array.from(rateLimits.entries()).map(([key, value]) => [
+            key, 
+            { count: value.count, resetTime: new Date(value.resetTime).toISOString() }
+          ])
+        )
       }
-    }), {
+    };
+
+    // Cache the response for 15 minutes (900000ms)
+    cache.set(cacheKey, { 
+      data: { ...responseData, metadata: { ...responseData.metadata, cached: true } }, 
+      timestamp: Date.now(), 
+      ttl: 900000 
+    });
+
+    console.log(`Cached events for key: ${cacheKey}`);
+
+    return new Response(JSON.stringify(responseData), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 

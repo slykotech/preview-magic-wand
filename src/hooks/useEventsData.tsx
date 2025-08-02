@@ -26,6 +26,8 @@ export const useEventsData = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastFetchLocation, setLastFetchLocation] = useState<string | null>(null);
+  const [lastFetchTime, setLastFetchTime] = useState<number>(0);
+  const [cacheExpiry] = useState<number>(15 * 60 * 1000); // 15 minutes cache
 
   const getMockEvents = useCallback((): EventData[] => [
     {
@@ -69,19 +71,27 @@ export const useEventsData = () => {
       return;
     }
 
-    // Avoid duplicate requests for the same location
+    // Avoid duplicate requests for the same location and check cache expiry
     const locationKey = location.latitude !== 0 ? 
       `${location.latitude},${location.longitude}` : 
       location.city;
     
-    if (lastFetchLocation === locationKey && events.length > 0) {
-      console.log('Skipping fetch, same location already loaded');
+    const now = Date.now();
+    const isCacheValid = now - lastFetchTime < cacheExpiry;
+    
+    if (lastFetchLocation === locationKey && events.length > 0 && isCacheValid) {
+      console.log('Skipping fetch, same location already loaded and cache still valid');
       return;
+    }
+
+    if (lastFetchLocation === locationKey && !isCacheValid) {
+      console.log('Cache expired, refetching events for same location');
     }
 
     setIsLoading(true);
     setError(null);
     setLastFetchLocation(locationKey);
+    setLastFetchTime(now);
 
     try {
       // Prepare request body based on location type
@@ -128,9 +138,13 @@ export const useEventsData = () => {
           }
         }
 
+        const cacheStatus = data.metadata?.cached ? ' (cached)' : '';
+        const freeSourcesCount = (data.sources?.bookmyshow || 0) + (data.sources?.facebook || 0) + (data.sources?.meetup || 0);
+        const paidSourcesCount = data.events.length - freeSourcesCount;
+        
         toast({
-          title: "Events loaded! 🎉",
-          description: `Found ${data.events.length} events near ${location.displayName}`,
+          title: `Events loaded! 🎉${cacheStatus}`,
+          description: `Found ${data.events.length} events near ${location.displayName} (${freeSourcesCount} free, ${paidSourcesCount} paid sources)`,
         });
       } else {
         // No events found, but API call was successful
@@ -169,6 +183,7 @@ export const useEventsData = () => {
 
   const refreshEvents = useCallback((location: LocationData, updateLocationCallback?: (lat: number, lng: number, resolvedName?: string) => void) => {
     setLastFetchLocation(null); // Force refetch
+    setLastFetchTime(0); // Reset cache timestamp
     fetchEvents(location, updateLocationCallback);
   }, [fetchEvents]);
 
