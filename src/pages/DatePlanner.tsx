@@ -105,9 +105,14 @@ export const DatePlanner = () => {
       const {
         data,
         error
-      } = await supabase.from('date_ideas').select('*').eq('couple_id', coupleData.id).not('scheduled_date', 'is', null).order('scheduled_date', {
-        ascending: true
-      });
+      } = await supabase
+        .from('date_ideas')
+        .select('*')
+        .eq('couple_id', coupleData.id)
+        .not('scheduled_date', 'is', null)
+        .eq('is_completed', false)
+        .order('scheduled_date', { ascending: true });
+      
       if (error) throw error;
       setPlannedDates(data || []);
     } catch (error) {
