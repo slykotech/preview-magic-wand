@@ -40,13 +40,16 @@ export const VerifyEmail = () => {
         if (error) throw error;
 
         if (data.success) {
-          setStatus('success');
-          setMessage(data.message || 'Email verified and account created successfully!');
-          
-          toast({
-            title: "Account created! 🎉",
-            description: "Your email has been verified and your account is ready. You can now sign in."
+          // Redirect to verification success page with the response data
+          const params = new URLSearchParams({
+            success: 'true',
+            auto_connected: data.auto_connected ? 'true' : 'false',
+            partner_name: data.partner_name || '',
+            message: encodeURIComponent(data.message || 'Account created successfully!')
           });
+          
+          navigate(`/verification-success?${params.toString()}`);
+          return;
         } else {
           if (data.error.includes('expired')) {
             setStatus('expired');

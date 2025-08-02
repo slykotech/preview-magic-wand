@@ -29,6 +29,7 @@ import AcceptInvitation from "./pages/AcceptInvitation";
 import InviteResolver from "./pages/InviteResolver";
 import NewUserInvite from "./pages/NewUserInvite";
 import ExistingUserConnect from "./pages/ExistingUserConnect";
+import VerificationSuccess from "./pages/VerificationSuccess";
 import { Signup } from "./pages/Signup";
 import { VerifyEmail } from "./pages/VerifyEmail";
 
@@ -79,6 +80,7 @@ const App = () => {
         <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/accept-invitation" element={<AcceptInvitation />} />
                 <Route path="/invite-resolver" element={<InviteResolver />} />
+                <Route path="/verification-success" element={<VerificationSuccess />} />
                 <Route path="/new-user-invite" element={<NewUserInvite />} />
                 <Route path="/existing-user-connect" element={<ExistingUserConnect />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

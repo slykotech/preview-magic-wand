@@ -645,6 +645,7 @@ export type Database = {
           expires_at: string
           first_name: string
           id: string
+          invitation_context: string | null
           last_name: string
           password_hash: string
           status: string
@@ -658,6 +659,7 @@ export type Database = {
           expires_at: string
           first_name: string
           id?: string
+          invitation_context?: string | null
           last_name: string
           password_hash: string
           status?: string
@@ -671,6 +673,7 @@ export type Database = {
           expires_at?: string
           first_name?: string
           id?: string
+          invitation_context?: string | null
           last_name?: string
           password_hash?: string
           status?: string

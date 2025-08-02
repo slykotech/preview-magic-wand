@@ -98,39 +98,61 @@ Deno.serve(async (req) => {
         const invitationContext = JSON.parse(pendingVerification.invitation_context)
         
         if (invitationContext.senderId && invitationContext.type === 'invite') {
-          // Call accept-invitation to auto-pair
           console.log('Auto-connecting with sender:', invitationContext.senderId)
           
-          // Create a user session to call accept-invitation
-          const { data: sessionData, error: sessionError } = await supabase.auth.admin.generateLink({
-            type: 'signup',
-            email: authData.user.email!,
-          })
+          // Get sender's profile
+          const { data: senderProfile } = await supabase
+            .from('profiles')
+            .select('display_name')
+            .eq('user_id', invitationContext.senderId)
+            .single()
 
-          if (!sessionError && sessionData.user) {
-            // Call accept-invitation function to create the couple connection
-            const connectionResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/accept-invitation`, {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${sessionData.session?.access_token}`,
-                'apikey': Deno.env.get('SUPABASE_ANON_KEY') || '',
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                senderUserId: invitationContext.senderId,
-                recipientEmail: pendingVerification.email,
-                type: 'invite'
-              })
-            });
+          // Check if users are already connected or have demo couples to clean up
+          const { data: senderDemoCouple } = await supabase
+            .from('couples')
+            .select('id')
+            .eq('user1_id', invitationContext.senderId)
+            .eq('user2_id', invitationContext.senderId)
+            .maybeSingle()
 
-            const connectionData = await connectionResponse.json();
-            
-            if (connectionResponse.ok && connectionData.success) {
-              console.log('Auto-connection successful:', connectionData)
-              connectionResult = connectionData;
-            } else {
-              console.error('Auto-connection failed:', connectionData.error)
-            }
+          const { data: recipientDemoCouple } = await supabase
+            .from('couples')
+            .select('id')
+            .eq('user1_id', authData.user.id)
+            .eq('user2_id', authData.user.id)
+            .maybeSingle()
+
+          // Clean up demo couples
+          if (senderDemoCouple) {
+            await supabase.from('couples').delete().eq('id', senderDemoCouple.id)
+            console.log('Deleted sender demo couple:', senderDemoCouple.id)
+          }
+          if (recipientDemoCouple && recipientDemoCouple.id !== senderDemoCouple?.id) {
+            await supabase.from('couples').delete().eq('id', recipientDemoCouple.id)
+            console.log('Deleted recipient demo couple:', recipientDemoCouple.id)
+          }
+
+          // Create the real couple connection
+          const { data: newCouple, error: createCoupleError } = await supabase
+            .from('couples')
+            .insert({
+              user1_id: invitationContext.senderId,
+              user2_id: authData.user.id,
+              relationship_status: 'dating',
+              created_at: new Date().toISOString()
+            })
+            .select()
+            .single()
+
+          if (!createCoupleError && newCouple) {
+            console.log('Auto-connection successful:', newCouple.id)
+            connectionResult = {
+              success: true,
+              coupleId: newCouple.id,
+              partnerName: senderProfile?.display_name || 'Your Partner'
+            };
+          } else {
+            console.error('Auto-connection failed:', createCoupleError)
           }
         }
       } catch (autoConnectError) {
