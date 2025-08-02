@@ -1229,7 +1229,14 @@ async function fetchBookMyShowEvents(location: string): Promise<UnifiedEvent[]> 
       return generateMockBookMyShowEvents(location);
     }
     
-    const events = parseBookMyShowEvents(scrapeResult.data.markdown, location);
+    // Handle different response structures from Firecrawl API
+    const markdown = scrapeResult.data?.markdown || scrapeResult.markdown || '';
+    if (!markdown) {
+      console.error('No markdown content received from BookMyShow scraping');
+      return generateMockBookMyShowEvents(location);
+    }
+    
+    const events = parseBookMyShowEvents(markdown, location);
     console.log(`Scraped ${events.length} events from BookMyShow`);
     
     return events;
@@ -1269,7 +1276,14 @@ async function fetchPaytmInsiderEvents(location: string): Promise<UnifiedEvent[]
       return generateMockPaytmEvents(location);
     }
     
-    const events = parsePaytmInsiderEvents(scrapeResult.data.markdown, location);
+    // Handle different response structures from Firecrawl API
+    const markdown = scrapeResult.data?.markdown || scrapeResult.markdown || '';
+    if (!markdown) {
+      console.error('No markdown content received from Paytm Insider scraping');
+      return generateMockPaytmEvents(location);
+    }
+    
+    const events = parsePaytmInsiderEvents(markdown, location);
     console.log(`Scraped ${events.length} events from Paytm Insider`);
     
     return events;
@@ -1308,7 +1322,14 @@ async function fetchDistrictEvents(location: string): Promise<UnifiedEvent[]> {
       return generateMockDistrictEvents(location);
     }
     
-    const events = parseDistrictEvents(scrapeResult.data.markdown, location);
+    // Handle different response structures from Firecrawl API
+    const markdown = scrapeResult.data?.markdown || scrapeResult.markdown || '';
+    if (!markdown) {
+      console.error('No markdown content received from District scraping');
+      return generateMockDistrictEvents(location);
+    }
+    
+    const events = parseDistrictEvents(markdown, location);
     console.log(`Scraped ${events.length} events from District`);
     
     return events;
