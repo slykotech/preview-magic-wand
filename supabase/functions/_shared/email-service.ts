@@ -12,7 +12,7 @@ export class EmailService {
     }
     
     this.resend = new Resend(resendApiKey);
-    this.defaultSender = 'Love Sync <onboarding@resend.dev>'; // Using verified Resend domain
+    this.defaultSender = 'Love Sync <noreply@slyko.tech>'; // Using verified domain
   }
 
   async sendEmail(options: EmailSendOptions): Promise<ResendEmailResponse> {
