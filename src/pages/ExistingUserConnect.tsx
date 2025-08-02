@@ -31,13 +31,6 @@ const ExistingUserConnect = () => {
   }, [authLoading, email, senderId, token, user]);
 
   const handleAcceptConnection = async () => {
-    if (!user) {
-      // Redirect to auth with proper redirect URL that includes all search params
-      const redirectUrl = `/invite-resolver?${searchParams.toString()}`;
-      navigate(`/auth?redirect=${encodeURIComponent(redirectUrl)}`);
-      return;
-    }
-
     if (!email || !senderId) {
       setStatus('error');
       setMessage('Invalid invitation parameters');
@@ -115,9 +108,8 @@ const ExistingUserConnect = () => {
              status === 'error' ? 'Connection Failed' :
              'Love Sync Connection Request'}
           </CardTitle>
-          <CardDescription>
-            {status === 'pending' && !user && 'Please sign in to accept this connection request'}
-            {status === 'pending' && user && 'Ready to connect with your partner'}
+            <CardDescription>
+            {status === 'pending' && 'Ready to connect with your partner'}
             {status === 'success' && 'You are now connected!'}
             {status === 'error' && 'There was an issue with your connection'}
           </CardDescription>
@@ -134,32 +126,11 @@ const ExistingUserConnect = () => {
             </div>
           )}
 
-          {status === 'pending' && !user && (
-            <div className="space-y-4">
-              <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
-                <p className="text-sm text-blue-800 text-center">
-                  You have a connection request waiting! Please sign in to your Love Sync account to accept it.
-                </p>
-              </div>
-              
-              <Button 
-                onClick={() => {
-                  const redirectUrl = `/invite-resolver?${searchParams.toString()}`;
-                  navigate(`/auth?redirect=${encodeURIComponent(redirectUrl)}`);
-                }}
-                className="w-full"
-                size="lg"
-              >
-                Sign In to Accept Connection
-              </Button>
-            </div>
-          )}
-
-          {status === 'pending' && user && (
+          {status === 'pending' && (
             <div className="space-y-4">
               <div className="bg-gradient-to-r from-pink-50 to-purple-50 border border-pink-200 p-4 rounded-lg">
                 <p className="text-sm text-pink-800 text-center">
-                  Someone wants to connect with you on Love Sync! Click below to accept the connection and start your journey together.
+                  Someone wants to connect with you on Love Sync! {!user ? 'You will be signed in automatically when you accept.' : 'Click below to accept the connection and start your journey together.'}
                 </p>
               </div>
               
