@@ -19,6 +19,12 @@ interface Message {
   created_at: string;
   updated_at: string;
 }
+
+interface MessageReaction {
+  emoji: string;
+  count: number;
+  users: string[];
+}
 interface Conversation {
   id: string;
   couple_id: string;
@@ -52,6 +58,7 @@ export const Chat: React.FC<ChatProps> = ({
   const [showAttachments, setShowAttachments] = useState(false);
   const [showReactions, setShowReactions] = useState<string | null>(null);
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
+  const [messageReactions, setMessageReactions] = useState<Record<string, MessageReaction[]>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -302,16 +309,46 @@ export const Chat: React.FC<ChatProps> = ({
   };
 
   const handleReaction = async (messageId: string, emoji: string) => {
-    // For now, we'll send a reaction as a message
-    // In a real app, you'd want a separate reactions table
-    try {
-      await sendMessage(`Reacted ${emoji} to message`, 'emoji');
-      setShowReactions(null);
-      toast.success('Reaction sent!');
-    } catch (error) {
-      console.error('Error sending reaction:', error);
-      toast.error('Failed to send reaction');
-    }
+    if (!user?.id) return;
+    
+    setMessageReactions(prev => {
+      const currentReactions = prev[messageId] || [];
+      const existingReaction = currentReactions.find(r => r.emoji === emoji);
+      
+      if (existingReaction) {
+        // Toggle reaction if user already reacted with this emoji
+        const userIndex = existingReaction.users.indexOf(user.id);
+        if (userIndex > -1) {
+          // Remove user's reaction
+          existingReaction.users.splice(userIndex, 1);
+          existingReaction.count--;
+          if (existingReaction.count === 0) {
+            return {
+              ...prev,
+              [messageId]: currentReactions.filter(r => r.emoji !== emoji)
+            };
+          }
+        } else {
+          // Add user's reaction
+          existingReaction.users.push(user.id);
+          existingReaction.count++;
+        }
+      } else {
+        // Add new reaction
+        currentReactions.push({
+          emoji,
+          count: 1,
+          users: [user.id]
+        });
+      }
+      
+      return {
+        ...prev,
+        [messageId]: [...currentReactions]
+      };
+    });
+    
+    setShowReactions(null);
   };
 
   if (!isOpen) return null;
@@ -421,8 +458,28 @@ export const Chat: React.FC<ChatProps> = ({
                             </button>
                           ))}
                         </div>
-                      )}
+                       )}
                   </div>
+                  
+                  {/* Reaction tabs */}
+                  {messageReactions[message.id] && messageReactions[message.id].length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2 ml-2">
+                      {messageReactions[message.id].map((reaction) => (
+                        <button
+                          key={reaction.emoji}
+                          onClick={() => handleReaction(message.id, reaction.emoji)}
+                          className={`flex items-center gap-1 px-2 py-1 text-xs rounded-full border transition-colors ${
+                            reaction.users.includes(user?.id || '') 
+                              ? 'bg-primary/20 border-primary text-primary' 
+                              : 'bg-muted/50 border-muted hover:bg-muted'
+                          }`}
+                        >
+                          <span className="text-sm">{reaction.emoji}</span>
+                          <span className="text-xs">{reaction.count}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>;
         })}
           <div ref={messagesEndRef} />
