@@ -67,7 +67,7 @@ const Index = () => {
             <div className="flex-1">
               <h3 className="font-poppins font-bold text-white">Soul Syncing</h3>
             </div>
-            <div className="w-10 h-10">
+            <div className="w-16 h-16">
               <img 
                 src="/lovable-uploads/ea943bb4-0f80-4b60-8dab-9824039f4bc1.png" 
                 alt="Soul Syncing Avatar" 
