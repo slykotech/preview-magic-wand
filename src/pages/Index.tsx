@@ -76,10 +76,12 @@ const Index = () => {
             </div>
           </div>
           <div className="flex items-center gap-4 p-4 bg-white/20 rounded-2xl backdrop-blur-sm">
-            <div className="w-10 h-10 bg-white/30 rounded-xl flex items-center justify-center">
-              <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center">
-                <div className="w-2 h-2 bg-purple-600 rounded-full"></div>
-              </div>
+            <div className="w-10 h-10">
+              <img 
+                src="/lovable-uploads/d445b99d-8fa2-4613-9412-94521632578d.png" 
+                alt="Connection Check-In Avatar" 
+                className="w-full h-full object-contain"
+              />
             </div>
             <div className="flex-1">
               <h3 className="font-poppins font-bold text-white">Connection Check-In</h3>
