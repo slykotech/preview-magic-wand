@@ -20,9 +20,11 @@ interface Message {
   updated_at: string;
 }
 interface MessageReaction {
+  id: string;
+  message_id: string;
+  user_id: string;
   emoji: string;
-  count: number;
-  users: string[];
+  created_at: string;
 }
 interface Conversation {
   id: string;
@@ -80,28 +82,58 @@ export const Chat: React.FC<ChatProps> = ({
     if (!conversation?.id) return;
 
     // Set up real-time subscription for new messages and updates
-    const channel = supabase.channel(`messages:${conversation.id}`).on('postgres_changes', {
-      event: 'INSERT',
-      schema: 'public',
-      table: 'messages',
-      filter: `conversation_id=eq.${conversation.id}`
-    }, payload => {
-      const newMessage = payload.new as Message;
-      setMessages(prev => [...prev, newMessage]);
+    const channel = supabase.channel(`messages:${conversation.id}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'messages',
+        filter: `conversation_id=eq.${conversation.id}`
+      }, payload => {
+        const newMessage = payload.new as Message;
+        setMessages(prev => [...prev, newMessage]);
 
-      // Mark message as read if it's from partner
-      if (newMessage.sender_id !== user?.id) {
-        markMessageAsRead(newMessage.id);
-      }
-    }).on('postgres_changes', {
-      event: 'UPDATE',
-      schema: 'public',
-      table: 'messages',
-      filter: `conversation_id=eq.${conversation.id}`
-    }, payload => {
-      const updatedMessage = payload.new as Message;
-      setMessages(prev => prev.map(msg => msg.id === updatedMessage.id ? updatedMessage : msg));
-    }).subscribe();
+        // Mark message as read if it's from partner
+        if (newMessage.sender_id !== user?.id) {
+          markMessageAsRead(newMessage.id);
+        }
+      })
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'messages',
+        filter: `conversation_id=eq.${conversation.id}`
+      }, payload => {
+        const updatedMessage = payload.new as Message;
+        setMessages(prev => prev.map(msg => msg.id === updatedMessage.id ? updatedMessage : msg));
+      })
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'message_reactions'
+      }, payload => {
+        const newReaction = payload.new as MessageReaction;
+        setMessageReactions(prev => ({
+          ...prev,
+          [newReaction.message_id]: [
+            ...(prev[newReaction.message_id] || []),
+            newReaction
+          ]
+        }));
+      })
+      .on('postgres_changes', {
+        event: 'DELETE',
+        schema: 'public',
+        table: 'message_reactions'
+      }, payload => {
+        const deletedReaction = payload.old as MessageReaction;
+        setMessageReactions(prev => ({
+          ...prev,
+          [deletedReaction.message_id]: (prev[deletedReaction.message_id] || [])
+            .filter(r => r.id !== deletedReaction.id)
+        }));
+      })
+      .subscribe();
+    
     return () => {
       supabase.removeChannel(channel);
     };
@@ -111,6 +143,36 @@ export const Chat: React.FC<ChatProps> = ({
       behavior: 'smooth'
     });
   };
+  const loadReactions = async (conversationId: string) => {
+    try {
+      const { data: reactions, error } = await supabase
+        .from('message_reactions')
+        .select(`
+          id,
+          message_id,
+          user_id,
+          emoji,
+          created_at
+        `)
+        .in('message_id', messages.map(m => m.id));
+      
+      if (error) throw error;
+      
+      // Group reactions by message_id
+      const reactionsByMessage: Record<string, MessageReaction[]> = {};
+      reactions?.forEach(reaction => {
+        if (!reactionsByMessage[reaction.message_id]) {
+          reactionsByMessage[reaction.message_id] = [];
+        }
+        reactionsByMessage[reaction.message_id].push(reaction);
+      });
+      
+      setMessageReactions(reactionsByMessage);
+    } catch (error) {
+      console.error('Error loading reactions:', error);
+    }
+  };
+
   const initializeChat = async () => {
     if (!coupleData?.id || !user?.id) {
       console.log('Missing data for chat initialization:', {
@@ -147,7 +209,27 @@ export const Chat: React.FC<ChatProps> = ({
         ascending: true
       });
       if (messagesError) throw messagesError;
-      setMessages((messagesData || []) as Message[]);
+      const fetchedMessages = (messagesData || []) as Message[];
+      setMessages(fetchedMessages);
+
+      // Load reactions for messages
+      if (fetchedMessages.length > 0) {
+        const { data: reactions, error: reactionsError } = await supabase
+          .from('message_reactions')
+          .select('*')
+          .in('message_id', fetchedMessages.map(m => m.id));
+        
+        if (!reactionsError && reactions) {
+          const reactionsByMessage: Record<string, MessageReaction[]> = {};
+          reactions.forEach(reaction => {
+            if (!reactionsByMessage[reaction.message_id]) {
+              reactionsByMessage[reaction.message_id] = [];
+            }
+            reactionsByMessage[reaction.message_id].push(reaction);
+          });
+          setMessageReactions(reactionsByMessage);
+        }
+      }
 
       // Mark unread messages as read
       const unreadMessages = messagesData?.filter(msg => !msg.is_read && msg.sender_id !== user.id);
@@ -299,40 +381,32 @@ export const Chat: React.FC<ChatProps> = ({
   };
   const handleReaction = async (messageId: string, emoji: string) => {
     if (!user?.id) return;
-    setMessageReactions(prev => {
-      const currentReactions = prev[messageId] || [];
-      const existingReaction = currentReactions.find(r => r.emoji === emoji);
+    
+    try {
+      const currentReactions = messageReactions[messageId] || [];
+      const existingReaction = currentReactions.find(r => r.emoji === emoji && r.user_id === user.id);
+      
       if (existingReaction) {
-        // Toggle reaction if user already reacted with this emoji
-        const userIndex = existingReaction.users.indexOf(user.id);
-        if (userIndex > -1) {
-          // Remove user's reaction
-          existingReaction.users.splice(userIndex, 1);
-          existingReaction.count--;
-          if (existingReaction.count === 0) {
-            return {
-              ...prev,
-              [messageId]: currentReactions.filter(r => r.emoji !== emoji)
-            };
-          }
-        } else {
-          // Add user's reaction
-          existingReaction.users.push(user.id);
-          existingReaction.count++;
-        }
+        // Remove reaction
+        await supabase
+          .from('message_reactions')
+          .delete()
+          .eq('id', existingReaction.id);
       } else {
-        // Add new reaction
-        currentReactions.push({
-          emoji,
-          count: 1,
-          users: [user.id]
-        });
+        // Add reaction
+        await supabase
+          .from('message_reactions')
+          .insert({
+            message_id: messageId,
+            user_id: user.id,
+            emoji: emoji
+          });
       }
-      return {
-        ...prev,
-        [messageId]: [...currentReactions]
-      };
-    });
+    } catch (error) {
+      console.error('Error handling reaction:', error);
+      toast.error('Failed to update reaction');
+    }
+    
     setShowReactions(null);
   };
   if (!isOpen) return null;
@@ -430,9 +504,19 @@ export const Chat: React.FC<ChatProps> = ({
                       
                       {/* Reaction emojis positioned at bottom right */}
                       {messageReactions[message.id] && messageReactions[message.id].length > 0 && <div className="absolute -bottom-2 -right-2 flex gap-1">
-                          {messageReactions[message.id].map(reaction => <span key={reaction.emoji} className="text-sm bg-background rounded-full border shadow-sm px-1">
-                              {reaction.emoji}
-                            </span>)}
+                          {Object.entries(
+                            messageReactions[message.id].reduce((acc, reaction) => {
+                              if (!acc[reaction.emoji]) {
+                                acc[reaction.emoji] = 0;
+                              }
+                              acc[reaction.emoji]++;
+                              return acc;
+                            }, {} as Record<string, number>)
+                          ).map(([emoji, count]) => (
+                            <span key={emoji} className="text-sm bg-background rounded-full border shadow-sm px-1">
+                              {emoji}
+                            </span>
+                          ))}
                         </div>}
                   </div>
                 </div>;
