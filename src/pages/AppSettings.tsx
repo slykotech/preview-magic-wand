@@ -157,9 +157,15 @@ export const AppSettings = () => {
           }
           break;
         case 'mediaLibrary':
+          // For web browsers, we can't request permanent media library access
+          // Instead, we'll simulate the permission for file uploads
+          if ('showOpenFilePicker' in window || 'File' in window) {
+            granted = true; // Media library access is available through file inputs
+          }
+          break;
         case 'camera':
           if ('mediaDevices' in navigator) {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: type === 'camera', audio: false });
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
             granted = true;
             stream.getTracks().forEach(track => track.stop()); // Clean up
           }
