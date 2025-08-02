@@ -42,7 +42,7 @@ export const StreakDisplay: React.FC<StreakDisplayProps> = ({
             <p className="text-2xl font-bold text-white">{checkinStreak}</p>
             <p className="text-sm text-white/80 font-medium">Daily Check-ins</p>
             {checkinStreak > 0 && (
-              <p className="text-xs text-white/60 mt-1">+{Math.min(checkinStreak, 10)} bonus pts</p>
+              <p className="text-xs text-white/60 mt-1">+{Math.min(checkinStreak * 2, 20)} bonus pts</p>
             )}
           </div>
           
@@ -54,7 +54,7 @@ export const StreakDisplay: React.FC<StreakDisplayProps> = ({
             <p className="text-2xl font-bold text-white">{storyStreak}</p>
             <p className="text-sm text-white/80 font-medium">Story Streak</p>
             {storyStreak > 0 && (
-              <p className="text-xs text-white/60 mt-1">+{Math.min(storyStreak, 10)} bonus pts</p>
+              <p className="text-xs text-white/60 mt-1">+{Math.min(storyStreak * 2, 20)} bonus pts</p>
             )}
           </div>
         </div>
