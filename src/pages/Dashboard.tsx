@@ -33,7 +33,6 @@ const getTimeBasedMessage = () => {
 };
 
 export const Dashboard = () => {
-  const [syncScore, setSyncScore] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoaded, setIsLoaded] = useState(false);
   const [showSplash, setShowSplash] = useState(() => {
@@ -154,7 +153,6 @@ export const Dashboard = () => {
 
       // If no couple relationship exists, show setup message
       if (!currentCoupleId) {
-        setSyncScore(0); // Start from 0% instead of 75%
         setUpcomingDate(null);
         setRecentMemory(null);
         setLastCheckin(null);
@@ -171,32 +169,7 @@ export const Dashboard = () => {
       // Handle case where user is paired with themselves (testing scenario)
       const isTestingWithSelf = currentPartnerId === user?.id;
 
-      // Fetch or calculate sync score
-      let syncScore = 0; // Start from 0% instead of 75%
-      const {
-        data: syncData
-      } = await supabase.from('sync_scores').select('score').eq('couple_id', currentCoupleId).order('calculated_date', {
-        ascending: false
-      }).limit(1).maybeSingle();
-      if (syncData) {
-        syncScore = syncData.score;
-      } else if (currentCoupleId) {
-        // Calculate and store new sync score
-        const {
-          data: calculatedScore
-        } = await supabase.rpc('calculate_sync_score', {
-          p_couple_id: currentCoupleId
-        });
-        if (calculatedScore) {
-          syncScore = calculatedScore;
-          // Store the calculated score
-          await supabase.from('sync_scores').upsert({
-            couple_id: currentCoupleId,
-            score: syncScore,
-            calculated_date: new Date().toISOString().split('T')[0]
-          });
-        }
-      }
+      // Note: Sync score calculation is now handled by useEnhancedSyncScore hook
 
       // Fetch upcoming scheduled date (only dates that have been scheduled but haven't passed yet)
       const today = new Date().toISOString().split('T')[0];
@@ -287,7 +260,6 @@ export const Dashboard = () => {
         mood: partnerMoodData?.mood
       });
       console.log('Is testing with self:', isTestingWithSelf);
-      setSyncScore(syncScore);
 
       // Generate insights based on activity
       if (currentCoupleId) {
@@ -503,7 +475,7 @@ export const Dashboard = () => {
           animation: 'zoom-to-position 1.2s ease-out 0.8s forwards',
           transform: 'scale(2.5)'
         }}>
-              <SyncScoreCircle score={syncScore} animated={true} />
+              <SyncScoreCircle score={syncScoreData?.score || 0} animated={true} />
             </div>
           </div>
           
@@ -552,7 +524,7 @@ export const Dashboard = () => {
           animationDelay: '100ms'
         }}>
             {isLoaded ? <div className="space-y-4">
-                <SyncScoreCircle score={syncScoreData?.score || syncScore} animated={true} />
+                <SyncScoreCircle score={syncScoreData?.score || 0} animated={true} />
               </div> : <SyncScoreSkeleton />}
           </div>
 
@@ -560,7 +532,7 @@ export const Dashboard = () => {
         <div className={`${isLoaded ? 'animate-fade-in' : 'opacity-0'}`} style={{
           animationDelay: '200ms'
         }}>
-          {isLoaded ? <CoupleAvatars syncScore={syncScore} animated={true} onUserAvatarClick={handleUserAvatarClick} onPartnerAvatarClick={handlePartnerAvatarClick} onCameraClick={handleCameraClick} hasUserStory={hasUserStory} hasPartnerStory={hasPartnerStory} isUserOnline={isUserOnline} isPartnerOnline={isPartnerOnline} /> : <div className="flex justify-center">
+          {isLoaded ? <CoupleAvatars syncScore={syncScoreData?.score || 0} animated={true} onUserAvatarClick={handleUserAvatarClick} onPartnerAvatarClick={handlePartnerAvatarClick} onCameraClick={handleCameraClick} hasUserStory={hasUserStory} hasPartnerStory={hasPartnerStory} isUserOnline={isUserOnline} isPartnerOnline={isPartnerOnline} /> : <div className="flex justify-center">
               <div className="flex items-center gap-4">
                 <div className="w-16 h-16 bg-muted animate-pulse rounded-full"></div>
                 <div className="w-8 h-8 bg-accent animate-pulse rounded-full"></div>
@@ -616,7 +588,7 @@ export const Dashboard = () => {
                   <div className="flex-1">
                     <p className="text-xs text-muted-foreground">Relationship Health</p>
                     <div className="flex items-center gap-1">
-                      <p className="text-lg font-bold text-secondary">{syncScore}%</p>
+                      <p className="text-lg font-bold text-secondary">{syncScoreData?.score || 0}%</p>
                       <span className={`text-xs ${syncScoreData?.trend === 'up' ? 'text-accent' : syncScoreData?.trend === 'down' ? 'text-destructive' : 'text-muted-foreground'}`}>
                         {syncScoreData?.trend === 'up' ? '↗' : syncScoreData?.trend === 'down' ? '↘' : '→'}
                       </span>
@@ -624,7 +596,7 @@ export const Dashboard = () => {
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {syncScore >= 80 ? 'Thriving together' : syncScore >= 60 ? 'Growing stronger' : syncScore >= 40 ? 'Building connection' : 'Starting your journey'}
+                  {(syncScoreData?.score || 0) >= 80 ? 'Thriving together' : (syncScoreData?.score || 0) >= 60 ? 'Growing stronger' : (syncScoreData?.score || 0) >= 40 ? 'Building connection' : 'Starting your journey'}
                 </p>
               </div>
             </> : <>
@@ -749,14 +721,14 @@ export const Dashboard = () => {
           </DialogHeader>
           <div className="space-y-4">
             <div className="text-center p-4 bg-gradient-to-r from-primary/10 to-secondary/10 rounded-lg">
-              <div className="text-2xl font-bold text-primary mb-1">{syncScore}%</div>
+              <div className="text-2xl font-bold text-primary mb-1">{syncScoreData?.score || 0}%</div>
               <div className="text-sm text-muted-foreground">
-                {syncScore >= 80 ? 'Your relationship is thriving! 🌟' : syncScore >= 60 ? 'You\'re growing stronger together! 💪' : syncScore >= 40 ? 'Building a solid foundation! 🏗️' : 'Every journey starts with a single step! 🌱'}
+                {(syncScoreData?.score || 0) >= 80 ? 'Your relationship is thriving! 🌟' : (syncScoreData?.score || 0) >= 60 ? 'You\'re growing stronger together! 💪' : (syncScoreData?.score || 0) >= 40 ? 'Building a solid foundation! 🏗️' : 'Every journey starts with a single step! 🌱'}
               </div>
             </div>
             
             <div className="space-y-3">
-              {syncScore < 40 && <>
+              {(syncScoreData?.score || 0) < 40 && <>
                   <div className="p-3 bg-card border rounded-lg">
                     <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
                       <Heart className="h-4 w-4 text-red-500" />
@@ -777,7 +749,7 @@ export const Dashboard = () => {
                   </div>
                 </>}
               
-              {syncScore >= 40 && syncScore < 60 && <>
+              {(syncScoreData?.score || 0) >= 40 && (syncScoreData?.score || 0) < 60 && <>
                   <div className="p-3 bg-card border rounded-lg">
                     <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
                       <Calendar className="h-4 w-4 text-green-500" />
@@ -798,7 +770,7 @@ export const Dashboard = () => {
                   </div>
                 </>}
               
-              {syncScore >= 60 && syncScore < 80 && <>
+              {(syncScoreData?.score || 0) >= 60 && (syncScoreData?.score || 0) < 80 && <>
                   <div className="p-3 bg-card border rounded-lg">
                     <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
                       <Heart className="h-4 w-4 text-pink-500" />
@@ -819,7 +791,7 @@ export const Dashboard = () => {
                   </div>
                 </>}
               
-              {syncScore >= 80 && <>
+              {(syncScoreData?.score || 0) >= 80 && <>
                   <div className="p-3 bg-card border rounded-lg">
                     <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
                       <Sparkles className="h-4 w-4 text-gold-500" />

@@ -68,8 +68,24 @@ export const useEnhancedSyncScore = (coupleId: string | null) => {
           .gte('checkin_date', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
         
         if (recentCheckins) {
-          const checkinCount = recentCheckins.length;
-          calculatedScore = Math.min(checkinCount * 5, 100); // Start from 0%, add 5 points per checkin
+          // Count days where both partners checked in
+          const checkinDays = new Set(recentCheckins.map(c => c.checkin_date));
+          const usersPerDay: { [key: string]: Set<string> } = {};
+          
+          recentCheckins.forEach(checkin => {
+            if (!usersPerDay[checkin.checkin_date]) {
+              usersPerDay[checkin.checkin_date] = new Set();
+            }
+            usersPerDay[checkin.checkin_date].add(checkin.user_id);
+          });
+          
+          // Count days where both partners checked in (2 users per day)
+          const bothCheckinDays = Object.values(usersPerDay).filter(users => users.size >= 2).length;
+          
+          // Base 50% + bonus for activity
+          calculatedScore = Math.min(50 + (bothCheckinDays * 10), 100);
+        } else {
+          calculatedScore = 50; // Base score when no data
         }
       }
 
