@@ -105,28 +105,20 @@ export const PartnerConnectionSection = () => {
     if (!partnerEmail.trim() || !emailValidation.isValid) return;
 
     try {
-      const { data, error } = await supabase.functions.invoke('send-signup-invitation', {
+      // Use unified manage-partner-connection function according to documented logic
+      const { data, error } = await supabase.functions.invoke('manage-partner-connection', {
         body: {
-          email: partnerEmail,
-          inviterName: user?.user_metadata?.display_name || user?.email?.split('@')[0]
+          action: 'send_request',
+          partnerEmail: partnerEmail.trim()
         }
       });
 
       if (error) {
         console.error('Error sending invitation:', error);
-        
-        // Check if it's a user exists error  
-        if (data && data.action === 'use_connect_instead') {
-          setEmailValidation(prev => ({ 
-            ...prev, 
-            message: data.message + " Try using the 'Connect with Partner' option instead." 
-          }));
-        } else {
-          setEmailValidation(prev => ({ 
-            ...prev, 
-            message: "Failed to send invitation. Please try again." 
-          }));
-        }
+        setEmailValidation(prev => ({ 
+          ...prev, 
+          message: "Failed to send invitation. Please try again." 
+        }));
         return;
       }
 
@@ -135,18 +127,25 @@ export const PartnerConnectionSection = () => {
       if (data && data.success) {
         setEmailValidation(prev => ({ 
           ...prev, 
-          message: `Signup invitation sent successfully! ${partnerEmail} will receive an email with instructions to join Love Sync.` 
+          message: data.message || `Invitation sent successfully! ${partnerEmail} will receive an email with instructions.`
         }));
         
         // Clear the form after successful invite
         setTimeout(() => {
           setPartnerEmail("");
-          setEmailValidation({ isValid: false, exists: false, available: false, message: "", isChecking: false, showInviteToJoin: false });
+          setEmailValidation({ 
+            isValid: false, 
+            exists: false, 
+            available: false, 
+            message: "", 
+            isChecking: false, 
+            showInviteToJoin: false 
+          });
         }, 3000);
       } else {
         setEmailValidation(prev => ({ 
           ...prev, 
-          message: "Failed to send invitation. Please try again." 
+          message: data?.error || "Failed to send invitation. Please try again." 
         }));
       }
     } catch (error) {
