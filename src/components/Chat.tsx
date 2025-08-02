@@ -845,7 +845,7 @@ export const Chat: React.FC<ChatProps> = ({
                 onClick={capturePhoto}
                 className="rounded-full w-16 h-16 bg-white hover:bg-gray-200 border-4 border-white"
               >
-                <div className="w-12 h-12 rounded-full bg-white border-2 border-gray-300" />
+                <span className="text-2xl">💕</span>
               </Button>
             </div>
           </div>
