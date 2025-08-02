@@ -90,17 +90,15 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Check if email exists in auth system - use filtered approach for reliability
-    const { data: existingUser, error: authUsersError } = await supabase.auth.admin.listUsers({
-      filter: `email.eq.${email}`
-    })
+    // Check if email exists in auth system - get all users and filter manually for reliability
+    const { data: allUsers, error: authUsersError } = await supabase.auth.admin.listUsers()
     
     if (authUsersError) {
       console.error('Error fetching users:', authUsersError)
       throw new Error('Failed to search for user')
     }
 
-    const userExists = existingUser.users && existingUser.users.length > 0 ? existingUser.users[0] : null
+    const userExists = allUsers.users.find((user: any) => user.email === email)
     
     if (!userExists) {
       return new Response(
