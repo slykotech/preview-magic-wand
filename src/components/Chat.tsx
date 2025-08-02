@@ -337,15 +337,7 @@ export const Chat: React.FC<ChatProps> = ({
               <Camera className="h-6 w-6 text-primary" />
               <span className="text-xs font-medium">Photo</span>
             </button>
-            <button onClick={() => {
-          if (fileInputRef.current) {
-            fileInputRef.current.accept = 'video/*';
-            fileInputRef.current.click();
-          }
-        }} className="flex flex-col items-center gap-2 p-4 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-primary transition-colors">
-              
-              <span className="text-xs font-medium">Video</span>
-            </button>
+            
             <button onClick={() => {
           if (fileInputRef.current) {
             fileInputRef.current.accept = 'image/*,video/*';
