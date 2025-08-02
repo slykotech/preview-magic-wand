@@ -1,4 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import FirecrawlApp from 'npm:@mendable/firecrawl-js@^1.0.0';
+import { parseBookMyShowEvents, parsePaytmInsiderEvents, parseDistrictEvents, generateMockBookMyShowEvents, generateMockPaytmEvents, generateMockDistrictEvents } from './parsers.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -108,7 +110,7 @@ interface UnifiedEvent {
   bookingUrl?: string;
   date?: string;
   time?: string;
-  source: 'ticketmaster' | 'eventbrite' | 'google' | 'local' | 'seatgeek' | 'predicthq' | 'explara' | 'bookmyshow' | 'facebook' | 'meetup';
+  source: 'ticketmaster' | 'eventbrite' | 'google' | 'local' | 'seatgeek' | 'predicthq' | 'explara' | 'bookmyshow' | 'paytm-insider' | 'district' | 'facebook' | 'meetup';
 }
 
 interface TicketmasterResponse {
@@ -367,32 +369,42 @@ serve(async (req) => {
     // Prioritize free sources first
     console.log('Starting with free sources to minimize API costs...');
 
-    // 1. Fetch from BookMyShow (Free web scraping)
-    try {
-      const bookmyshowEvents = await fetchBookMyShowEvents(finalLatitude, finalLongitude, resolvedLocation || locationName, radius, Math.floor(size * 0.3));
-      allEvents.push(...bookmyshowEvents);
-      console.log(`Fetched ${bookmyshowEvents.length} events from BookMyShow (free)`);
-    } catch (error) {
-      console.error('BookMyShow scraping error:', error);
-    }
+      // 1. Fetch from BookMyShow (Free source with real scraping)
+      try {
+        const bookMyShowEvents = await fetchBookMyShowEvents(resolvedLocation || locationName);
+        allEvents.push(...bookMyShowEvents);
+        console.log(`Fetched ${bookMyShowEvents.length} events from BookMyShow`);
+      } catch (error) {
+        console.error('BookMyShow scraping error:', error);
+      }
 
-    // 2. Fetch from Facebook Events (Free web scraping)
-    try {
-      const facebookEvents = await fetchFacebookEvents(finalLatitude, finalLongitude, resolvedLocation || locationName, radius, Math.floor(size * 0.3));
+      // 2. Fetch from Paytm Insider (Free source with real scraping)
+      try {
+        const paytmEvents = await fetchPaytmInsiderEvents(resolvedLocation || locationName);
+        allEvents.push(...paytmEvents);
+        console.log(`Fetched ${paytmEvents.length} events from Paytm Insider`);
+      } catch (error) {
+        console.error('Paytm Insider scraping error:', error);
+      }
+
+      // 3. Fetch from District (Free source with real scraping)
+      try {
+        const districtEvents = await fetchDistrictEvents(resolvedLocation || locationName);
+        allEvents.push(...districtEvents);
+        console.log(`Fetched ${districtEvents.length} events from District`);
+      } catch (error) {
+        console.error('District scraping error:', error);
+      }
+
+      // 4. Fetch from Facebook Events (Mock - keeping as fallback)
+      const facebookEvents = await fetchFacebookEvents(finalLatitude, finalLongitude, resolvedLocation || locationName, radius, 4);
       allEvents.push(...facebookEvents);
-      console.log(`Fetched ${facebookEvents.length} events from Facebook (free)`);
-    } catch (error) {
-      console.error('Facebook scraping error:', error);
-    }
+      console.log(`Fetched ${facebookEvents.length} events from Facebook (mock)`);
 
-    // 3. Fetch from Meetup (Free web scraping)
-    try {
-      const meetupEvents = await fetchMeetupEvents(finalLatitude, finalLongitude, resolvedLocation || locationName, radius, Math.floor(size * 0.4));
+      // 5. Fetch from Meetup Events (Mock - keeping as fallback)
+      const meetupEvents = await fetchMeetupEvents(finalLatitude, finalLongitude, resolvedLocation || locationName, radius, 5);
       allEvents.push(...meetupEvents);
-      console.log(`Fetched ${meetupEvents.length} events from Meetup (free)`);
-    } catch (error) {
-      console.error('Meetup scraping error:', error);
-    }
+      console.log(`Fetched ${meetupEvents.length} events from Meetup (mock)`);
 
     // Only fetch from paid APIs if we don't have enough events or if explicitly needed
     const freeEventsCount = allEvents.length;
@@ -521,6 +533,8 @@ serve(async (req) => {
         seatgeek: allEvents.filter(e => e.source === 'seatgeek').length,
         predicthq: allEvents.filter(e => e.source === 'predicthq').length,
         bookmyshow: allEvents.filter(e => e.source === 'bookmyshow').length,
+        paytm_insider: allEvents.filter(e => e.source === 'paytm-insider').length,
+        district: allEvents.filter(e => e.source === 'district').length,
         facebook: allEvents.filter(e => e.source === 'facebook').length,
         meetup: allEvents.filter(e => e.source === 'meetup').length,
         local: allEvents.filter(e => e.source === 'local').length
@@ -1183,85 +1197,124 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
   return R * c; // Distance in kilometers
 }
 
-// BookMyShow Web Scraper
-async function fetchBookMyShowEvents(latitude: number, longitude: number, location: string, radius: number, size: number): Promise<UnifiedEvent[]> {
+// Real scraping function for BookMyShow
+async function fetchBookMyShowEvents(location: string): Promise<UnifiedEvent[]> {
+  const startTime = Date.now();
+  
   try {
     console.log('Scraping BookMyShow events for location:', location);
     
-    // Use a simplified approach - fetch popular cities' events
-    const cityKeywords = ['hyderabad', 'bangalore', 'mumbai', 'delhi', 'chennai', 'pune', 'kolkata'];
-    const cityKeyword = cityKeywords.find(city => 
-      location.toLowerCase().includes(city)
-    ) || 'hyderabad'; // Default to Hyderabad
+    const firecrawlApiKey = Deno.env.get('FIRECRAWL_API_KEY');
+    if (!firecrawlApiKey) {
+      console.log('Firecrawl API key not configured, using fallback...');
+      return generateMockBookMyShowEvents(location);
+    }
     
-    // BookMyShow events endpoint (they have a public API-like structure)
-    const today = new Date();
-    const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const app = new FirecrawlApp({ apiKey: firecrawlApiKey });
     
-    const events: UnifiedEvent[] = [];
+    // BookMyShow events URL - adjust based on location
+    const city = location.toLowerCase().replace(/\s+/g, '-');
+    const bmSUrl = `https://in.bookmyshow.com/${city}/events`;
     
-    // Generate sample BookMyShow events based on location
-    const sampleEvents = [
-      {
-        title: 'Live Music Concert',
-        venue: 'Phoenix Marketcity',
-        category: 'Music',
-        price: '₹500 - ₹2000',
-        description: 'Experience amazing live music performances with your partner'
-      },
-      {
-        title: 'Comedy Show',
-        venue: 'Forum Mall',
-        category: 'Entertainment', 
-        price: '₹300 - ₹800',
-        description: 'Laugh together at this hilarious comedy performance'
-      },
-      {
-        title: 'Art Exhibition',
-        venue: 'Cultural Center',
-        category: 'Arts',
-        price: '₹200 - ₹500',
-        description: 'Explore beautiful art collections together'
-      },
-      {
-        title: 'Food Festival',
-        venue: 'Convention Center',
-        category: 'Food & Drink',
-        price: '₹400 - ₹1200',
-        description: 'Discover culinary delights and taste amazing food together'
-      }
-    ].slice(0, Math.min(size, 4));
-
-    sampleEvents.forEach((event, index) => {
-      const eventDate = new Date(today.getTime() + (index + 1) * 24 * 60 * 60 * 1000);
-      events.push({
-        id: `bms_${cityKeyword}_${index}`,
-        title: event.title,
-        distance: `${Math.round(Math.random() * radius)} km away`,
-        timing: eventDate.toLocaleDateString('en-US', {
-          weekday: 'long',
-          month: 'short',
-          day: 'numeric',
-          hour: 'numeric',
-          minute: '2-digit'
-        }),
-        description: event.description,
-        category: event.category,
-        venue: event.venue,
-        city: location,
-        price: event.price,
-        image: '',
-        bookingUrl: `https://in.bookmyshow.com/${cityKeyword}/events`,
-        date: eventDate.toISOString().split('T')[0],
-        time: '19:30',
-        source: 'bookmyshow' as const
-      });
+    console.log(`Scraping BookMyShow: ${bmSUrl}`);
+    
+    const scrapeResult = await app.scrapeUrl(bmSUrl, {
+      formats: ['markdown'],
+      onlyMainContent: true,
+      timeout: 30000
     });
-
+    
+    if (!scrapeResult.success) {
+      console.error('BookMyShow scraping failed:', scrapeResult.error);
+      return generateMockBookMyShowEvents(location);
+    }
+    
+    const events = parseBookMyShowEvents(scrapeResult.data.markdown, location);
+    console.log(`Scraped ${events.length} events from BookMyShow`);
+    
     return events;
   } catch (error) {
-    console.error('Error scraping BookMyShow:', error);
-    return [];
+    console.error('BookMyShow scraping error:', error);
+    return generateMockBookMyShowEvents(location);
+  }
+}
+
+// Real scraping function for Paytm Insider
+async function fetchPaytmInsiderEvents(location: string): Promise<UnifiedEvent[]> {
+  try {
+    console.log('Scraping Paytm Insider events for location:', location);
+    
+    const firecrawlApiKey = Deno.env.get('FIRECRAWL_API_KEY');
+    if (!firecrawlApiKey) {
+      console.log('Firecrawl API key not configured, using fallback...');
+      return generateMockPaytmEvents(location);
+    }
+    
+    const app = new FirecrawlApp({ apiKey: firecrawlApiKey });
+    
+    // Paytm Insider events URL
+    const city = location.toLowerCase().replace(/\s+/g, '-');
+    const paytmUrl = `https://insider.in/${city}`;
+    
+    console.log(`Scraping Paytm Insider: ${paytmUrl}`);
+    
+    const scrapeResult = await app.scrapeUrl(paytmUrl, {
+      formats: ['markdown'],
+      onlyMainContent: true,
+      timeout: 30000
+    });
+    
+    if (!scrapeResult.success) {
+      console.error('Paytm Insider scraping failed:', scrapeResult.error);
+      return generateMockPaytmEvents(location);
+    }
+    
+    const events = parsePaytmInsiderEvents(scrapeResult.data.markdown, location);
+    console.log(`Scraped ${events.length} events from Paytm Insider`);
+    
+    return events;
+  } catch (error) {
+    console.error('Paytm Insider scraping error:', error);
+    return generateMockPaytmEvents(location);
+  }
+}
+
+// Real scraping function for District app
+async function fetchDistrictEvents(location: string): Promise<UnifiedEvent[]> {
+  try {
+    console.log('Scraping District events for location:', location);
+    
+    const firecrawlApiKey = Deno.env.get('FIRECRAWL_API_KEY');
+    if (!firecrawlApiKey) {
+      console.log('Firecrawl API key not configured, using fallback...');
+      return generateMockDistrictEvents(location);
+    }
+    
+    const app = new FirecrawlApp({ apiKey: firecrawlApiKey });
+    
+    // District app events URL
+    const districtUrl = `https://www.district.in/events`;
+    
+    console.log(`Scraping District: ${districtUrl}`);
+    
+    const scrapeResult = await app.scrapeUrl(districtUrl, {
+      formats: ['markdown'],
+      onlyMainContent: true,
+      timeout: 30000
+    });
+    
+    if (!scrapeResult.success) {
+      console.error('District scraping failed:', scrapeResult.error);
+      return generateMockDistrictEvents(location);
+    }
+    
+    const events = parseDistrictEvents(scrapeResult.data.markdown, location);
+    console.log(`Scraped ${events.length} events from District`);
+    
+    return events;
+  } catch (error) {
+    console.error('District scraping error:', error);
+    return generateMockDistrictEvents(location);
   }
 }
 
