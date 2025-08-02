@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { RelationshipInfoSection } from "@/components/RelationshipInfoSection";
+import { GradientHeader } from "@/components/GradientHeader";
 import { Heart, ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -9,28 +10,13 @@ export const RelationshipPreferences = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      {/* Header */}
-      <div className="bg-gradient-romance text-white p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate('/profile')}
-            className="text-white hover:bg-white/20 p-2"
-          >
-            <ArrowLeft size={20} />
-          </Button>
-          <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
-            <Heart size={24} />
-          </div>
-          <div>
-            <h1 className="text-xl font-extrabold font-poppins">Relationship Info</h1>
-            <p className="text-white/80 text-sm font-inter font-bold">
-              Manage your relationship details
-            </p>
-          </div>
-        </div>
-      </div>
+      {/* Gradient Header */}
+      <GradientHeader
+        title="Relationship Info"
+        subtitle="Manage your relationship details"
+        icon={<Heart size={24} />}
+        backRoute="/profile"
+      />
 
       <div className="p-6 space-y-6">
         {/* Relationship Info Section */}

@@ -6,9 +6,11 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { format } from "date-fns";
 import { TimePicker } from "@/components/ui/time-picker";
 import { BottomNavigation } from "@/components/BottomNavigation";
+import { GradientHeader } from "@/components/GradientHeader";
 import { CalendarIcon, MapPin, Clock, Heart, Star, CalendarPlus, Edit, Calendar as CalendarClock, Plus, Sparkles, Music, Save, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -196,33 +198,32 @@ export const DatePlanner = () => {
     }
   };
   return <div className="min-h-screen bg-background pb-20">
-      {/* Header */}
-      <div className="bg-gradient-romance text-white p-6 shadow-romantic">
-        <h1 className="text-2xl font-extrabold font-poppins mb-2">Date Planner</h1>
-        <p className="text-white/80 font-inter font-bold">Because love deserves beautiful plans</p>
-      </div>
+      {/* Gradient Header */}
+      <GradientHeader
+        title="Date Planner"
+        subtitle="Because love deserves beautiful plans"
+        icon={<Heart size={24} />}
+        showBackButton={false}
+      >
+        {/* Enhanced Tab Navigation */}
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'planned' | 'upcoming')} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="planned" className="flex-col gap-1">
+              <span className="font-bold">Planned</span>
+              <span className="text-xs opacity-80">Your scheduled love moments</span>
+            </TabsTrigger>
+            <TabsTrigger value="upcoming" className="flex-col gap-1">
+              <span className="font-bold">Upcoming</span>
+              <span className="text-xs opacity-80">Sweet surprises nearby</span>
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </GradientHeader>
 
-      {/* Toggle Tabs */}
-      <div className="p-6 pb-0">
-        <div className="flex bg-muted rounded-xl p-1">
-          <button onClick={() => setActiveTab('planned')} className={`flex-1 py-3 px-4 rounded-lg transition-all duration-200 ${activeTab === 'planned' ? 'bg-white text-foreground shadow-soft' : 'text-muted-foreground hover:text-foreground'}`}>
-            <div className="text-center">
-              <div className="font-bold font-poppins">Planned</div>
-              <div className="text-xs mt-1 font-inter">Your scheduled love moments</div>
-            </div>
-          </button>
-          <button onClick={() => setActiveTab('upcoming')} className={`flex-1 py-3 px-4 rounded-lg transition-all duration-200 ${activeTab === 'upcoming' ? 'bg-white text-foreground shadow-soft' : 'text-muted-foreground hover:text-foreground'}`}>
-            <div className="text-center">
-              <div className="font-bold font-poppins">Upcoming</div>
-              <div className="text-xs mt-1 font-inter">Sweet surprises waiting nearby</div>
-            </div>
-          </button>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="px-6 mt-6">
-        {activeTab === 'planned' ? <div className="space-y-4">
+      {/* Content with Tab System */}
+      <div className="px-6">
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'planned' | 'upcoming')} className="w-full">
+          <TabsContent value="planned" className="space-y-4">
             {/* Add Event Button */}
             <Button onClick={() => setShowAddForm(true)} className="w-full bg-gradient-secondary hover:opacity-90 text-white py-3" size="lg">
               <Plus size={20} className="mr-2" />
@@ -283,7 +284,9 @@ export const DatePlanner = () => {
                     </Button>
                   </div>
                 </div>)}
-          </div> : <div className="space-y-4">
+          </TabsContent>
+          
+          <TabsContent value="upcoming" className="space-y-4">
             {/* Upcoming Events */}
             {upcomingEvents.length === 0 ? <div className="text-center py-12">
                 <Sparkles className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
@@ -329,7 +332,8 @@ export const DatePlanner = () => {
                     </Button>
                   </div>
                 </div>)}
-          </div>}
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Add Event Form Modal */}
