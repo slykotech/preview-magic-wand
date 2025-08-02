@@ -66,40 +66,59 @@ const NewUserInvite = () => {
 
     setProcessing(true);
     try {
-      console.log('Starting new user signup with email verification...');
+      console.log('Starting new user signup with auto-connection...');
       
-      // Include sender information for auto-connection after verification
-      const { data, error } = await supabase.functions.invoke('send-verification-email', {
-        body: {
-          email,
-          firstName,
-          lastName,
-          password,
-          // Include invitation context for auto-connection
-          invitationContext: {
-            senderId,
-            type: 'invite'
+      // Use direct signup with auto-connection as per documented logic
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            first_name: firstName,
+            last_name: lastName,
+            display_name: `${firstName} ${lastName}`.trim()
           }
         }
       });
 
       if (error) throw error;
 
-      if (data.success) {
-        setStatus('success');
-        setMessage('Verification email sent! Check your email and click the verification link to complete your signup and automatically connect with your partner.');
+      if (data.user) {
+        // Auto-connect with sender using accept-invitation function
+        console.log('User created, now auto-connecting with sender...');
         
-        toast({
-          title: "Verification email sent! 📧",
-          description: "Check your email and click the verification link to complete your account setup and auto-connect with your partner."
+        const { data: connectionData, error: connectionError } = await supabase.functions.invoke('accept-invitation', {
+          body: {
+            senderUserId: senderId,
+            recipientEmail: email,
+            type: 'invite'
+          }
         });
+
+        if (connectionError) {
+          console.error('Auto-connection failed:', connectionError);
+          setStatus('error');
+          setMessage('Account created successfully, but failed to connect with your partner. Please try connecting manually from your dashboard.');
+        } else if (connectionData.success) {
+          setStatus('success');
+          setMessage(`Account created and connected successfully! Welcome to Love Sync. You're now connected with ${connectionData.partnerName}! 💕`);
+          
+          // Redirect to dashboard after success
+          setTimeout(() => {
+            window.location.href = '/dashboard';
+          }, 3000);
+        } else {
+          setStatus('error');
+          setMessage(connectionData.error || 'Failed to connect with your partner. Please try connecting manually from your dashboard.');
+        }
       } else {
-        throw new Error(data.error || 'Failed to send verification email');
+        setStatus('error');
+        setMessage('Failed to create account. Please try again.');
       }
     } catch (error: any) {
       console.error('Error during signup process:', error);
       setStatus('error');
-      setMessage(error.message || 'Failed to initiate account creation');
+      setMessage(error.message || 'Failed to create account');
       
       toast({
         title: "Signup Failed",
