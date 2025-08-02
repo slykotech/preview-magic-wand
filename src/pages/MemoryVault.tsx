@@ -342,13 +342,19 @@ const MemoryVault = () => {
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <Badge variant={item.type === 'memory' ? 'default' : 'secondary'}>
-                      {item.type === 'memory' ? (
-                        <><ImageIcon className="h-3 w-3 mr-1" />Memory</>
-                      ) : (
-                        <><FileText className="h-3 w-3 mr-1" />Note</>
-                      )}
-                    </Badge>
+                     <Badge variant={item.type === 'memory' ? 'default' : 'secondary'}>
+                       {item.type === 'memory' ? (
+                         <>
+                           <ImageIcon className="h-3 w-3 mr-1" />
+                           Memory
+                         </>
+                       ) : (
+                         <>
+                           <FileText className="h-3 w-3 mr-1" />
+                           Note
+                         </>
+                       )}
+                     </Badge>
                   </div>
                 </div>
               </Card>
