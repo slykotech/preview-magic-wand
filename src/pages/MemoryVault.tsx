@@ -309,15 +309,13 @@ export const MemoryVault = () => {
         </div>
 
         {/* View Mode Toggle */}
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-end items-center mb-6">
           <div className="flex gap-2">
             <Button variant={viewMode === 'grid' ? 'default' : 'outline'} size="sm" onClick={() => setViewMode('grid')}>
-              <Grid3X3 size={16} className="mr-1" />
-              Grid
+              <Grid3X3 size={16} />
             </Button>
             <Button variant={viewMode === 'timeline' ? 'default' : 'outline'} size="sm" onClick={() => setViewMode('timeline')}>
-              <List size={16} className="mr-1" />
-              Timeline
+              <List size={16} />
             </Button>
           </div>
         </div>
