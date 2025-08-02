@@ -71,18 +71,35 @@ export const Signup = () => {
         }
       });
 
+      console.log('Function response:', { data, error });
+
       // For edge functions, 400 status codes still return data with the response body
       // Only handle true invocation failures (network issues, function not found, etc.)
       if (error && !data) {
         console.error('Function invocation error:', error);
-        throw new Error('Failed to send verification email. Please try again.');
+        throw new Error('Failed to connect to email service. Please check your internet connection and try again.');
       }
 
       // Handle application logic errors (like user already exists)
       // Check data.success whether or not there was an "error" (400 status)
       const responseData = data || {};
       if (!responseData.success) {
-        throw new Error(responseData.error || 'Failed to send verification email');
+        // Provide more specific error messages based on the error type
+        const errorMessage = responseData.error || 'Failed to send verification email';
+        
+        if (errorMessage.includes('domain')) {
+          throw new Error('Email service configuration issue. Please contact support.');
+        }
+        
+        if (errorMessage.includes('rate limit')) {
+          throw new Error('Too many requests. Please wait a moment and try again.');
+        }
+        
+        if (errorMessage.includes('api_key')) {
+          throw new Error('Email service unavailable. Please contact support.');
+        }
+        
+        throw new Error(errorMessage);
       }
 
       // Success case
