@@ -50,6 +50,8 @@ export const DatePlanner = () => {
   const [upcomingEvents, setUpcomingEvents] = useState<UpcomingEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showScheduleForm, setShowScheduleForm] = useState(false);
+  const [selectedUpcomingEvent, setSelectedUpcomingEvent] = useState<UpcomingEvent | null>(null);
   const [newEvent, setNewEvent] = useState({
     title: '',
     description: '',
@@ -57,6 +59,10 @@ export const DatePlanner = () => {
     date: undefined as Date | undefined,
     time: '',
     category: 'romantic'
+  });
+  const [scheduleData, setScheduleData] = useState({
+    date: undefined as Date | undefined,
+    time: ''
   });
   const {
     toast
@@ -169,12 +175,60 @@ export const DatePlanner = () => {
       });
     }
   };
+  const handleScheduleUpcomingEvent = (event: UpcomingEvent) => {
+    setSelectedUpcomingEvent(event);
+    setScheduleData({ date: undefined, time: '' });
+    setShowScheduleForm(true);
+  };
+
+  const handleConfirmSchedule = async () => {
+    if (!selectedUpcomingEvent || !scheduleData.date || !scheduleData.time || !coupleData?.id) {
+      toast({
+        title: "Missing details! ⏰",
+        description: "Please select both date and time",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase.from('date_ideas').insert({
+        title: selectedUpcomingEvent.title,
+        description: selectedUpcomingEvent.description,
+        category: selectedUpcomingEvent.category,
+        couple_id: coupleData.id,
+        created_by: user?.id,
+        location: 'TBD',
+        scheduled_date: scheduleData.date.toISOString().split('T')[0],
+        scheduled_time: scheduleData.time,
+        is_completed: false
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Date scheduled! 💕",
+        description: `${selectedUpcomingEvent.title} has been added to your planned dates`
+      });
+
+      setShowScheduleForm(false);
+      setSelectedUpcomingEvent(null);
+      fetchPlannedDates();
+      setActiveTab('planned'); // Switch to planned tab to show the new event
+    } catch (error) {
+      console.error('Error scheduling event:', error);
+      toast({
+        title: "Error scheduling event",
+        description: "Please try again",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleSaveUpcomingEvent = async (event: UpcomingEvent) => {
     if (!coupleData?.id) return;
     try {
-      const {
-        error
-      } = await supabase.from('date_ideas').insert({
+      const { error } = await supabase.from('date_ideas').insert({
         title: event.title,
         description: event.description,
         category: event.category,
@@ -324,10 +378,10 @@ export const DatePlanner = () => {
                   </p>
                   
                   <div className="flex gap-2">
-                    <Button variant="romantic" size="sm" className="flex-1" onClick={() => handleSaveUpcomingEvent(event)}>
-                      <CalendarPlus size={14} className="mr-1" />
-                      Add to Planner
-                    </Button>
+                     <Button variant="romantic" size="sm" className="flex-1" onClick={() => handleScheduleUpcomingEvent(event)}>
+                       <CalendarPlus size={14} className="mr-1" />
+                       Add to Planner
+                     </Button>
                     <Button variant="outline" size="sm" className="flex-1">
                       <Heart size={14} className="mr-1" />
                       Save for Later
@@ -408,6 +462,63 @@ export const DatePlanner = () => {
                 <Button onClick={handleAddEvent} className="flex-1 bg-gradient-secondary hover:opacity-90 text-white">
                   <Save size={16} className="mr-2" />
                   Add Date
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>}
+
+      {/* Schedule Event Modal */}
+      {showScheduleForm && selectedUpcomingEvent && <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-card rounded-xl p-6 w-full max-w-md shadow-romantic animate-slide-up">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-extrabold font-poppins">Schedule Date</h3>
+              <Button variant="ghost" size="sm" onClick={() => setShowScheduleForm(false)}>
+                <X size={20} />
+              </Button>
+            </div>
+
+            <div className="mb-6 p-4 bg-muted/20 rounded-lg">
+              <h4 className="font-bold text-lg mb-2">{selectedUpcomingEvent.title}</h4>
+              <p className="text-muted-foreground text-sm">{selectedUpcomingEvent.description}</p>
+            </div>
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Date*</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="w-full justify-start text-left font-normal mt-1">
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {scheduleData.date ? format(scheduleData.date, "MMM d, yyyy") : <span>Pick a date</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <CalendarComponent mode="single" selected={scheduleData.date} onSelect={date => setScheduleData({
+                    ...scheduleData,
+                    date
+                  })} initialFocus className="p-3 pointer-events-auto" />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                <div>
+                  <Label htmlFor="schedule-time">Time*</Label>
+                  <Input id="schedule-time" type="time" value={scheduleData.time} onChange={e => setScheduleData({
+                ...scheduleData,
+                time: e.target.value
+              })} className="mt-1" />
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-4">
+                <Button variant="outline" onClick={() => setShowScheduleForm(false)} className="flex-1">
+                  Cancel
+                </Button>
+                <Button onClick={handleConfirmSchedule} className="flex-1 bg-gradient-secondary hover:opacity-90 text-white">
+                  <CalendarPlus size={16} className="mr-2" />
+                  Schedule Date
                 </Button>
               </div>
             </div>
