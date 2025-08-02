@@ -72,10 +72,19 @@ export const DailyCheckinFlow: React.FC<DailyCheckinFlowProps> = ({
         return;
       }
       const today = new Date().toISOString().split('T')[0];
-      const {
-        data: existingCheckin
-      } = await supabase.from('daily_checkins').select('id').eq('user_id', userId).eq('couple_id', coupleId).eq('checkin_date', today).maybeSingle();
-      if (existingCheckin) {
+      
+      // Check if a COMPLETE daily checkin exists (not just mood)
+      // A complete checkin should have relationship_feeling and gratitude fields filled
+      const { data: existingCheckin } = await supabase
+        .from('daily_checkins')
+        .select('id, relationship_feeling, gratitude')
+        .eq('user_id', userId)
+        .eq('couple_id', coupleId)
+        .eq('checkin_date', today)
+        .maybeSingle();
+      
+      // Only consider it "already checked in" if it has the daily checkin fields completed
+      if (existingCheckin && existingCheckin.relationship_feeling && existingCheckin.gratitude) {
         setHasAlreadyCheckedIn(true);
       }
       setIsLoading(false);
