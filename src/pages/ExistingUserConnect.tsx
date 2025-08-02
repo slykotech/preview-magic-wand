@@ -32,7 +32,9 @@ const ExistingUserConnect = () => {
 
   const handleAcceptConnection = async () => {
     if (!user) {
-      navigate(`/auth?redirect=/existing-user-connect?${searchParams.toString()}`);
+      // Redirect to auth with proper redirect URL that includes all search params
+      const redirectUrl = `/invite-resolver?${searchParams.toString()}`;
+      navigate(`/auth?redirect=${encodeURIComponent(redirectUrl)}`);
       return;
     }
 
@@ -141,7 +143,10 @@ const ExistingUserConnect = () => {
               </div>
               
               <Button 
-                onClick={() => navigate(`/auth?redirect=/existing-user-connect?${searchParams.toString()}`)}
+                onClick={() => {
+                  const redirectUrl = `/invite-resolver?${searchParams.toString()}`;
+                  navigate(`/auth?redirect=${encodeURIComponent(redirectUrl)}`);
+                }}
                 className="w-full"
                 size="lg"
               >

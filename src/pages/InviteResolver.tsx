@@ -44,18 +44,20 @@ const InviteResolver = () => {
           return;
         }
 
-        // Fallback: Check if user exists in the system
+        // Fallback: Check if user exists by calling a Supabase function
         console.log('No explicit type, checking if user exists...');
-        const { data: { users }, error: userError } = await supabase.auth.admin.listUsers();
+        const { data, error: checkError } = await supabase.functions.invoke('check-email-exists', {
+          body: { email }
+        });
         
-        if (userError) {
-          console.error('Error checking user existence:', userError);
+        if (checkError) {
+          console.error('Error checking user existence:', checkError);
           // Default to connect flow if we can't check
           setFlow('connect');
           return;
         }
 
-        const userExists = users.some((u: any) => u.email === email);
+        const userExists = data?.exists || false;
         console.log('User existence check result:', userExists);
         
         setFlow(userExists ? 'connect' : 'signup');
