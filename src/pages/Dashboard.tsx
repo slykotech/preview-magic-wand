@@ -9,7 +9,6 @@ import { CoupleMoodDisplay } from "@/components/CoupleMoodDisplay";
 import { MoodCheckin } from "@/components/MoodCheckin";
 import { DailyCheckinFlow } from "@/components/DailyCheckinFlow";
 import { StoryViewer } from "@/components/StoryViewer";
-
 import { useEnhancedSyncScore } from "@/hooks/useEnhancedSyncScore";
 import { usePresence } from "@/hooks/usePresence";
 import { SyncScoreSkeleton, DashboardCardSkeleton, CompactCardSkeleton, MoodDisplaySkeleton } from "@/components/ui/skeleton";
@@ -46,7 +45,6 @@ export const Dashboard = () => {
   const [hasUserStory, setHasUserStory] = useState(false);
   const [hasPartnerStory, setHasPartnerStory] = useState(false);
   const [partnerId, setPartnerId] = useState<string>();
-  
   const [unreadCount, setUnreadCount] = useState(0);
   const [showHealthTips, setShowHealthTips] = useState(false);
   const [showCheckinInsights, setShowCheckinInsights] = useState(false);
@@ -539,9 +537,9 @@ export const Dashboard = () => {
               return "Good Evening";
             })()}
             </h1>
-            <p className="text-lg text-white/90">
-              Hey lovebirds! Track your relationship harmony and connection
-            </p>
+            <p className="text-lg text-white/90">Hey sweethearts! 💖
+Let’s sync your hearts and track the rhythm of your relationship 
+one moment, one feeling, one connection at a time.</p>
           </div>
         </div>
         
