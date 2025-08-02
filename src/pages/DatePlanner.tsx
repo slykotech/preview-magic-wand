@@ -11,7 +11,8 @@ import { format } from "date-fns";
 import { TimePicker } from "@/components/ui/time-picker";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { GradientHeader } from "@/components/GradientHeader";
-import { CalendarIcon, MapPin, Clock, Heart, Star, CalendarPlus, Edit, Calendar as CalendarClock, Plus, Sparkles, Music, Save, X } from "lucide-react";
+import { ConfirmDialog } from "@/components/ui/alert-dialog-confirm";
+import { CalendarIcon, MapPin, Clock, Heart, Star, CalendarPlus, Edit, Calendar as CalendarClock, Plus, Sparkles, Music, Save, X, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
@@ -54,6 +55,9 @@ export const DatePlanner = () => {
   const [showEditForm, setShowEditForm] = useState(false);
   const [selectedUpcomingEvent, setSelectedUpcomingEvent] = useState<UpcomingEvent | null>(null);
   const [editingDate, setEditingDate] = useState<DateIdea | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [dateToDelete, setDateToDelete] = useState<DateIdea | null>(null);
+  const [showUnsuccessfulOptions, setShowUnsuccessfulOptions] = useState<string | null>(null);
   const [newEvent, setNewEvent] = useState({
     title: '',
     description: '',
@@ -312,30 +316,81 @@ export const DatePlanner = () => {
     }
   };
   const handleDateFeedback = async (dateId: string, wasSuccessful: boolean) => {
+    if (wasSuccessful) {
+      try {
+        const today = new Date().toISOString().split('T')[0];
+        const {
+          error
+        } = await supabase.from('date_ideas').update({
+          is_completed: true,
+          completed_date: today,
+          rating: 5,
+          notes: 'Date was successful!',
+          updated_at: new Date().toISOString()
+        }).eq('id', dateId);
+        if (error) throw error;
+        toast({
+          title: "Great! Date added to history 💕",
+          description: "Your successful date has been added to your date history in the profile tab."
+        });
+        fetchPlannedDates();
+      } catch (error) {
+        console.error('Error updating date feedback:', error);
+        toast({
+          title: "Error saving feedback",
+          description: "There was an error saving your feedback. Please try again.",
+          variant: "destructive"
+        });
+      }
+    } else {
+      // Show options for unsuccessful dates
+      setShowUnsuccessfulOptions(dateId);
+    }
+  };
+
+  const handleUnsuccessfulAction = async (dateId: string, action: 'reschedule' | 'delete') => {
+    if (action === 'reschedule') {
+      const dateToReschedule = plannedDates.find(d => d.id === dateId);
+      if (dateToReschedule) {
+        handleEditDate(dateToReschedule);
+      }
+    } else if (action === 'delete') {
+      const dateToDeleteObj = plannedDates.find(d => d.id === dateId);
+      if (dateToDeleteObj) {
+        setDateToDelete(dateToDeleteObj);
+        setShowDeleteConfirm(true);
+      }
+    }
+    setShowUnsuccessfulOptions(null);
+  };
+
+  const handleDeleteDate = async () => {
+    if (!dateToDelete) return;
+    
     try {
-      const today = new Date().toISOString().split('T')[0];
-      const {
-        error
-      } = await supabase.from('date_ideas').update({
-        is_completed: true,
-        completed_date: today,
-        rating: wasSuccessful ? 5 : 2,
-        notes: wasSuccessful ? 'Date was successful!' : 'Date did not go as planned',
-        updated_at: new Date().toISOString()
-      }).eq('id', dateId);
+      const { error } = await supabase
+        .from('date_ideas')
+        .delete()
+        .eq('id', dateToDelete.id);
+        
       if (error) throw error;
+      
       toast({
-        title: wasSuccessful ? "Great! Date added to history" : "Thanks for the feedback",
-        description: wasSuccessful ? "Your successful date has been added to your date history in the profile tab." : "Better luck next time! You can plan another date anytime."
+        title: "Date deleted",
+        description: `${dateToDelete.title} has been removed from your planner.`
       });
+      
       fetchPlannedDates();
     } catch (error) {
-      console.error('Error updating date feedback:', error);
+      console.error('Error deleting date:', error);
       toast({
-        title: "Error saving feedback",
-        description: "There was an error saving your feedback. Please try again.",
+        title: "Error deleting date",
+        description: "Please try again",
         variant: "destructive"
       });
+    } finally {
+      setShowDeleteConfirm(false);
+      setDateToDelete(null);
     }
   };
   const isDateCompleted = (scheduledDate: string) => {
@@ -697,6 +752,58 @@ export const DatePlanner = () => {
             </div>
           </div>
         </div>}
+
+      {/* Unsuccessful Date Options Modal */}
+      {showUnsuccessfulOptions && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-card rounded-xl p-6 w-full max-w-md shadow-romantic animate-slide-up">
+            <div className="text-center mb-6">
+              <h3 className="text-xl font-extrabold font-poppins mb-2">Date didn't go as planned?</h3>
+              <p className="text-muted-foreground">No worries! What would you like to do?</p>
+            </div>
+
+            <div className="space-y-3">
+              <Button 
+                onClick={() => handleUnsuccessfulAction(showUnsuccessfulOptions, 'reschedule')}
+                className="w-full bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100"
+                variant="outline"
+              >
+                <CalendarIcon size={16} className="mr-2" />
+                Reschedule for another time
+              </Button>
+              
+              <Button 
+                onClick={() => handleUnsuccessfulAction(showUnsuccessfulOptions, 'delete')}
+                className="w-full bg-red-50 text-red-600 border border-red-200 hover:bg-red-100"
+                variant="outline"
+              >
+                <Trash2 size={16} className="mr-2" />
+                Remove from planner
+              </Button>
+              
+              <Button 
+                onClick={() => setShowUnsuccessfulOptions(null)}
+                variant="outline"
+                className="w-full"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={showDeleteConfirm}
+        onOpenChange={setShowDeleteConfirm}
+        title="Delete Date"
+        description={`Are you sure you want to delete "${dateToDelete?.title}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        onConfirm={handleDeleteDate}
+        variant="destructive"
+      />
 
       <BottomNavigation />
     </div>;

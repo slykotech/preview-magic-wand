@@ -9,6 +9,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useCoupleData } from '@/hooks/useCoupleData';
 import { useEnhancedSyncScore } from "@/hooks/useEnhancedSyncScore";
+import { DateHistory } from "@/components/DateHistory";
 import { supabase } from "@/integrations/supabase/client";
 import coupleImage from "@/assets/couple-avatars.jpg";
 
@@ -61,6 +62,7 @@ export const Profile = () => {
   });
   const [loading, setLoading] = useState(true);
   const [showSyncBreakdown, setShowSyncBreakdown] = useState(false);
+  const [showDateHistory, setShowDateHistory] = useState(false);
   
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -283,7 +285,7 @@ export const Profile = () => {
               icon={<Calendar size={20} />}
               title="Date History"
               subtitle={`${relationshipStats.dateCount} amazing dates`}
-              onClick={() => handleMenuClick("Date History", "/planner")}
+              onClick={() => setShowDateHistory(true)}
             />
           </div>
         </div>
@@ -334,6 +336,15 @@ export const Profile = () => {
               breakdown={syncScoreData.breakdown}
               onClose={() => setShowSyncBreakdown(false)}
             />
+          </div>
+        </div>
+      )}
+
+      {/* Date History Dialog */}
+      {showDateHistory && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DateHistory onClose={() => setShowDateHistory(false)} />
           </div>
         </div>
       )}
