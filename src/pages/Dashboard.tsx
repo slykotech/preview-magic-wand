@@ -542,8 +542,6 @@ export const Dashboard = () => {
           <div className={`text-center space-y-2 ${isLoaded ? 'animate-fade-in' : 'opacity-0'}`}>
             
             <p className="text-lg text-white/90">{getTimeBasedMessage()}</p>
-Let’s sync your hearts and track the rhythm of your relationship 
-
           </div>
         </div>
         
