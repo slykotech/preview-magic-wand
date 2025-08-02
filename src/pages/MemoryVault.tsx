@@ -70,6 +70,7 @@ export const MemoryVault = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'timeline'>('grid');
   const [filterType, setFilterType] = useState<'all' | 'photos' | 'notes' | 'favorites'>('all');
   const [createMode, setCreateMode] = useState<'photo' | 'note'>('photo');
+  const [showSelection, setShowSelection] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const {
     toast
@@ -407,10 +408,45 @@ export const MemoryVault = () => {
 
       {/* Floating Action Button */}
       <div className="fixed bottom-24 right-6 z-50">
-        <Button onClick={() => setShowCreateForm(true)} size="fab" className="bg-gradient-primary hover:opacity-90 text-white shadow-lg">
+        <Button onClick={() => setShowSelection(true)} size="fab" className="bg-gradient-primary hover:opacity-90 text-white shadow-lg">
           <Plus size={24} />
         </Button>
       </div>
+
+      {/* Selection Modal */}
+      <Dialog open={showSelection} onOpenChange={setShowSelection}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-center">What would you like to create?</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-4 py-4">
+            <Button 
+              onClick={() => {
+                setCreateMode('note');
+                setShowSelection(false);
+                setShowCreateForm(true);
+              }}
+              className="h-24 flex-col gap-2"
+              variant="outline"
+            >
+              <FileText size={32} />
+              <span>Note</span>
+            </Button>
+            <Button 
+              onClick={() => {
+                setCreateMode('photo');
+                setShowSelection(false);
+                setShowCreateForm(true);
+              }}
+              className="h-24 flex-col gap-2"
+              variant="outline"
+            >
+              <Camera size={32} />
+              <span>Photo</span>
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Create Form Modal */}
       <Dialog open={showCreateForm} onOpenChange={setShowCreateForm}>
@@ -423,17 +459,6 @@ export const MemoryVault = () => {
           </DialogHeader>
 
           <div className="space-y-4">
-            {/* Toggle between photo and note */}
-            <div className="flex gap-2">
-              <Button variant={createMode === 'photo' ? 'default' : 'outline'} onClick={() => setCreateMode('photo')} className="flex-1">
-                <Camera size={16} className="mr-1" />
-                Memory
-              </Button>
-              <Button variant={createMode === 'note' ? 'default' : 'outline'} onClick={() => setCreateMode('note')} className="flex-1">
-                <FileText size={16} className="mr-1" />
-                Note
-              </Button>
-            </div>
 
             {createMode === 'photo' ? <>
                 <div>
