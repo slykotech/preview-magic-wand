@@ -24,7 +24,7 @@ const getTimeBasedMessage = () => {
   const hour = new Date().getHours();
   
   if (hour >= 5 && hour < 12) {
-    return "Sunshine's here — time to make your love bloom ☀️🌸";
+    return "Sunshine's here time to make your love bloom ☀️🌸";
   } else if (hour >= 12 && hour < 17) {
     return "Love doesn't take lunch breaks. Let's reconnect 🫶";
   } else {
