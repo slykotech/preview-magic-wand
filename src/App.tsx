@@ -32,6 +32,8 @@ import ExistingUserConnect from "./pages/ExistingUserConnect";
 import VerificationSuccess from "./pages/VerificationSuccess";
 import { Signup } from "./pages/Signup";
 import { VerifyEmail } from "./pages/VerifyEmail";
+import SignupResolver from "./pages/SignupResolver";
+import CompleteSignup from "./pages/CompleteSignup";
 
 const queryClient = new QueryClient();
 
@@ -78,6 +80,8 @@ const App = () => {
                 <Route path="/onboarding" element={<OnboardingFlow />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
+        <Route path="/signup-resolver" element={<SignupResolver />} />
+        <Route path="/complete-signup" element={<CompleteSignup />} />
         <Route path="/accept-invitation" element={<AcceptInvitation />} />
                 <Route path="/invite-resolver" element={<InviteResolver />} />
                 <Route path="/verification-success" element={<VerificationSuccess />} />

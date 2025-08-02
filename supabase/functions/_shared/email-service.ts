@@ -255,6 +255,72 @@ export class EmailService {
     return { subject, html };
   }
 
+  createSignupVerificationTemplate(firstName: string, verificationUrl: string): EmailTemplate {
+    const subject = 'Complete Your Love Sync Account Setup! 💕';
+    
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Complete Your Love Sync Account Setup</title>
+      </head>
+      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%); padding: 30px; text-align: center; border-radius: 10px; margin-bottom: 30px;">
+          <h1 style="color: white; margin: 0; font-size: 28px;">🚀 Love Sync</h1>
+          <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 16px;">Your journey starts here</p>
+        </div>
+        
+        <div style="padding: 0 20px;">
+          <h2 style="color: #333; margin-bottom: 20px;">Almost there, ${firstName}! 🎉</h2>
+          
+          <p style="font-size: 16px; margin-bottom: 25px;">
+            You're just one click away from joining Love Sync! Complete your account setup to start exploring 
+            all the amazing features we have for strengthening relationships.
+          </p>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${verificationUrl}" 
+               style="background: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%); 
+                      color: white; 
+                      padding: 15px 30px; 
+                      text-decoration: none; 
+                      border-radius: 8px; 
+                      font-weight: bold; 
+                      font-size: 16px;
+                      display: inline-block;">
+              🔓 Complete Account Setup
+            </a>
+          </div>
+          
+          <div style="background: #f0f9ff; border-left: 4px solid #0ea5e9; padding: 15px; margin: 20px 0; border-radius: 5px;">
+            <h4 style="color: #333; margin: 0 0 10px; font-size: 16px;">🌟 Start your Love Sync experience:</h4>
+            <ul style="color: #666; margin: 5px 0; padding-left: 20px; font-size: 14px;">
+              <li>Explore the app in demo mode</li>
+              <li>Set up your personalized profile</li>
+              <li>Connect with your partner when ready</li>
+              <li>Begin your relationship journey together</li>
+            </ul>
+          </div>
+          
+          <p style="font-size: 14px; color: #666; margin-top: 30px;">
+            This verification link will expire in 24 hours. If you didn't request this account, 
+            you can safely ignore this email.
+          </p>
+          
+          <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+          
+          <p style="font-size: 12px; color: #999; text-align: center;">
+            Love Sync - Building stronger relationships together ❤️
+          </p>
+        </div>
+      </body>
+      </html>
+    `;
+
+    return { subject, html };
+  }
+
   handleEmailError(error: NonNullable<ResendEmailResponse['error']>): Error {
     if (error.name === 'rate_limit_exceeded' || error.statusCode === 429) {
       return new Error('Rate limit exceeded. Please try again in a few seconds.');

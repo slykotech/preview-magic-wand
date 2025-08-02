@@ -63,8 +63,8 @@ export const Signup = () => {
     try {
       console.log('Sending verification email request...');
       
-      // Call the verification email function
-      const { data, error } = await supabase.functions.invoke('send-verification-email', {
+      // Call the standalone signup invite function
+      const { data, error } = await supabase.functions.invoke('send-signup-invite', {
         body: {
           email,
           firstName,
