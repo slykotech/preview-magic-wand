@@ -108,7 +108,7 @@ interface UnifiedEvent {
   bookingUrl?: string;
   date?: string;
   time?: string;
-  source: 'ticketmaster' | 'eventbrite' | 'google';
+  source: 'ticketmaster' | 'eventbrite' | 'google' | 'local';
 }
 
 interface TicketmasterResponse {
@@ -240,6 +240,15 @@ serve(async (req) => {
       }
     }
 
+    // If we have very few events (indicating limited API coverage for this region), 
+    // add some generic date-friendly venue suggestions
+    if (allEvents.length < 5) {
+      console.log(`Limited events found (${allEvents.length}), adding local venue suggestions...`);
+      const localVenues = generateLocalVenueSuggestions(finalLatitude, finalLongitude, resolvedLocation || locationName);
+      allEvents.push(...localVenues);
+      console.log(`Added ${localVenues.length} local venue suggestions`);
+    }
+
     // Remove duplicates and sort by date
     const uniqueEvents = removeDuplicateEvents(allEvents);
     const sortedEvents = uniqueEvents.sort((a, b) => {
@@ -260,7 +269,8 @@ serve(async (req) => {
       sources: {
         ticketmaster: allEvents.filter(e => e.source === 'ticketmaster').length,
         eventbrite: allEvents.filter(e => e.source === 'eventbrite').length,
-        google: allEvents.filter(e => e.source === 'google').length
+        google: allEvents.filter(e => e.source === 'google').length,
+        local: allEvents.filter(e => e.source === 'local').length
       }
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -629,4 +639,82 @@ function getCategoryFromGoogleTypes(types: string[]): string {
   if (types.includes('museum') || types.includes('art_gallery')) return 'Arts';
   if (types.includes('amusement_park')) return 'Adventure';
   return 'Culture';
+}
+
+function generateLocalVenueSuggestions(latitude: number, longitude: number, locationName: string): UnifiedEvent[] {
+  const venues = [
+    {
+      name: 'Local Restaurants & Cafés',
+      category: 'Food & Drink',
+      descriptions: [
+        'Discover cozy restaurants perfect for intimate dinner dates',
+        'Find charming cafés for romantic coffee dates',
+        'Explore local culinary gems together'
+      ]
+    },
+    {
+      name: 'Parks & Gardens',
+      category: 'Outdoor',
+      descriptions: [
+        'Enjoy peaceful walks in beautiful parks',
+        'Have romantic picnics in scenic gardens',
+        'Watch sunsets together in nature'
+      ]
+    },
+    {
+      name: 'Museums & Cultural Sites',
+      category: 'Culture',
+      descriptions: [
+        'Explore fascinating museums and galleries',
+        'Discover local history and culture together',
+        'Enjoy thought-provoking art exhibitions'
+      ]
+    },
+    {
+      name: 'Shopping Areas',
+      category: 'Shopping',
+      descriptions: [
+        'Browse local markets and shops together',
+        'Find unique souvenirs and gifts',
+        'Enjoy couples shopping experiences'
+      ]
+    },
+    {
+      name: 'Entertainment Venues',
+      category: 'Entertainment',
+      descriptions: [
+        'Catch movies at local cinemas',
+        'Enjoy live music at local venues',
+        'Experience local entertainment together'
+      ]
+    }
+  ];
+
+  return venues.map((venue, index) => {
+    const eventDate = new Date();
+    eventDate.setDate(eventDate.getDate() + Math.floor(Math.random() * 7) + 1);
+    
+    const randomDescription = venue.descriptions[Math.floor(Math.random() * venue.descriptions.length)];
+    
+    return {
+      id: `local_${index}_${latitude}_${longitude}`,
+      title: `${venue.name} in ${locationName}`,
+      distance: `${Math.round(Math.random() * 15 + 1)} km away`,
+      timing: eventDate.toLocaleDateString('en-US', {
+        weekday: 'long',
+        month: 'short',
+        day: 'numeric'
+      }),
+      description: randomDescription,
+      category: venue.category,
+      venue: `${venue.name} in ${locationName}`,
+      city: locationName,
+      price: 'Varies by venue',
+      image: '', // No image for local suggestions
+      bookingUrl: `https://www.google.com/maps/search/${encodeURIComponent(venue.name + ' ' + locationName)}`,
+      date: eventDate.toISOString().split('T')[0],
+      time: '19:00',
+      source: 'local' as const
+    };
+  });
 }
