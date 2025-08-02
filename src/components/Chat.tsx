@@ -50,10 +50,13 @@ export const Chat: React.FC<ChatProps> = ({
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showStickers, setShowStickers] = useState(false);
   const [showAttachments, setShowAttachments] = useState(false);
+  const [showReactions, setShowReactions] = useState<string | null>(null);
+  const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const quickEmojis = ['❤️', '😂', '😍', '🥰', '😘', '🔥', '👏', '💯', '🙌', '✨'];
+  const reactionEmojis = ['❤️', '😂', '😍', '😮', '😢', '👏'];
   const loveStickers = ['💕', '💖', '💗', '💓', '💘', '💝', '💞', '💟', '❣️', '💋', '🌹', '💐'];
   const actionStickers = ['🫶', '👫', '💏', '👪', '🥳', '🎉', '🎊', '🔥', '⭐', '✨', '💫', '🌟'];
   useEffect(() => {
@@ -280,7 +283,50 @@ export const Chat: React.FC<ChatProps> = ({
     URL.revokeObjectURL(url);
     toast.success('Chat exported successfully');
   };
+
+  const handleLongPressStart = (messageId: string) => {
+    const timer = setTimeout(() => {
+      setShowReactions(messageId);
+      setShowEmojiPicker(false);
+      setShowStickers(false);
+      setShowAttachments(false);
+    }, 500); // 500ms for long press
+    setLongPressTimer(timer);
+  };
+
+  const handleLongPressEnd = () => {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      setLongPressTimer(null);
+    }
+  };
+
+  const handleReaction = async (messageId: string, emoji: string) => {
+    // For now, we'll send a reaction as a message
+    // In a real app, you'd want a separate reactions table
+    try {
+      await sendMessage(`Reacted ${emoji} to message`, 'emoji');
+      setShowReactions(null);
+      toast.success('Reaction sent!');
+    } catch (error) {
+      console.error('Error sending reaction:', error);
+      toast.error('Failed to send reaction');
+    }
+  };
+
   if (!isOpen) return null;
+
+  // Close reactions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setShowReactions(null);
+    };
+
+    if (showReactions) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [showReactions]);
   return <div className="fixed inset-0 bg-background z-50 flex flex-col h-screen">
       {/* Debug info */}
       <div className="hidden">Chat component mounted - input should be visible</div>
@@ -336,8 +382,15 @@ export const Chat: React.FC<ChatProps> = ({
             </div> : messages.map(message => {
           const isOwn = message.sender_id === user?.id;
           const senderName = isOwn ? getUserDisplayName() : getPartnerDisplayName();
-          return <div key={message.id} className={`flex ${isOwn ? 'justify-end' : 'justify-start'} animate-fade-in mb-4`}>
-                  <div className={`max-w-[80%] rounded-2xl p-4 shadow-soft ${message.message_type === 'emoji' || message.message_type === 'sticker' ? 'text-3xl bg-transparent' : isOwn ? 'bg-gradient-to-br from-primary to-primary/80 text-primary-foreground' : 'bg-card'}`}>
+          return <div key={message.id} className={`flex ${isOwn ? 'justify-end' : 'justify-start'} animate-fade-in mb-4 relative`}>
+                  <div 
+                    className={`max-w-[80%] rounded-2xl p-4 shadow-soft relative ${message.message_type === 'emoji' || message.message_type === 'sticker' ? 'text-3xl bg-transparent' : isOwn ? 'bg-gradient-to-br from-primary to-primary/80 text-primary-foreground' : 'bg-card'}`}
+                    onTouchStart={() => handleLongPressStart(message.id)}
+                    onTouchEnd={handleLongPressEnd}
+                    onMouseDown={() => handleLongPressStart(message.id)}
+                    onMouseUp={handleLongPressEnd}
+                    onMouseLeave={handleLongPressEnd}
+                  >
                       {message.message_type === 'image' ? <img src={message.message_text} alt="Shared image" className="max-w-full h-auto rounded-lg cursor-pointer" onClick={() => window.open(message.message_text, '_blank')} /> : message.message_type === 'video' ? <video src={message.message_text} controls className="max-w-full h-auto rounded-lg" style={{
                 maxHeight: '300px'
               }} /> : <div className="text-sm leading-relaxed">
@@ -354,6 +407,21 @@ export const Chat: React.FC<ChatProps> = ({
                               {message.is_read ? '✓✓' : '✓'}
                             </span>}
                         </div>}
+                      
+                      {/* Quick Reactions Overlay */}
+                      {showReactions === message.id && (
+                        <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-card rounded-full p-2 shadow-lg border z-50 flex gap-1">
+                          {reactionEmojis.map((emoji, index) => (
+                            <button
+                              key={index}
+                              onClick={() => handleReaction(message.id, emoji)}
+                              className="text-xl p-1 rounded-full hover:bg-muted transition-colors"
+                            >
+                              {emoji}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                   </div>
                 </div>;
         })}
