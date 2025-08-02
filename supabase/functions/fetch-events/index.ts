@@ -151,25 +151,30 @@ serve(async (req) => {
       const googleKey = Deno.env.get('GOOGLE_EVENTS_API_KEY');
       if (googleKey) {
         try {
+          console.log(`Attempting to geocode: "${locationName}"`);
           const geocodeResponse = await fetch(
             `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(locationName)}&key=${googleKey}`
           );
           const geocodeData = await geocodeResponse.json();
           
-          if (geocodeData.results && geocodeData.results.length > 0) {
+          console.log('Geocoding response:', JSON.stringify(geocodeData, null, 2));
+          
+          if (geocodeData.status === 'OK' && geocodeData.results && geocodeData.results.length > 0) {
             const result = geocodeData.results[0];
             finalLatitude = result.geometry.location.lat;
             finalLongitude = result.geometry.location.lng;
             resolvedLocation = result.formatted_address;
-            console.log(`Geocoded "${locationName}" to: ${finalLatitude}, ${finalLongitude} (${resolvedLocation})`);
+            console.log(`Successfully geocoded "${locationName}" to: ${finalLatitude}, ${finalLongitude} (${resolvedLocation})`);
           } else {
-            throw new Error(`Could not geocode location: ${locationName}`);
+            console.error('Geocoding failed:', geocodeData);
+            throw new Error(`Could not geocode location: ${locationName}. Status: ${geocodeData.status}`);
           }
         } catch (geocodeError) {
           console.error('Geocoding error:', geocodeError);
           throw new Error(`Failed to find coordinates for: ${locationName}`);
         }
       } else {
+        console.error('Google API key not available for geocoding');
         throw new Error('Google API key not available for geocoding');
       }
     }
