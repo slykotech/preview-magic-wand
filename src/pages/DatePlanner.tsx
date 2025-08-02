@@ -129,9 +129,8 @@ export const DatePlanner = () => {
         .from('date_ideas')
         .select('*')
         .eq('couple_id', coupleData.id)
-        .not('scheduled_date', 'is', null)
         .eq('is_completed', false)
-        .order('scheduled_date', { ascending: true });
+        .order('created_at', { ascending: false });
       
       if (error) throw error;
       setPlannedDates(data || []);
@@ -328,6 +327,42 @@ export const DatePlanner = () => {
       console.error('Error saving event:', error);
       toast({
         title: "Error saving event",
+        description: "Please try again",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleAddToDate = async (event: EventData) => {
+    if (!coupleData?.id) return;
+    try {
+      const { error } = await supabase.from('date_ideas').insert({
+        title: event.title,
+        description: event.description,
+        category: event.category,
+        couple_id: coupleData.id,
+        created_by: user?.id,
+        location: event.venue || 'TBD',
+        is_completed: false
+      });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Added to your dates! 💕",
+        description: `${event.title} has been added to your planned dates. Switch to the Planned tab to schedule it.`
+      });
+      
+      // Switch to planned tab after a short delay
+      setTimeout(() => {
+        setActiveTab('planned');
+        fetchPlannedDates();
+      }, 1500);
+      
+    } catch (error) {
+      console.error('Error adding event to dates:', error);
+      toast({
+        title: "Error adding event",
         description: "Please try again",
         variant: "destructive"
       });
@@ -675,12 +710,12 @@ export const DatePlanner = () => {
                   
                    <div className="flex gap-2">
                      <Button 
-                       className="bg-gradient-secondary hover:opacity-90 text-white flex-1" 
+                       className="bg-gradient-primary hover:opacity-90 text-white flex-1" 
                        size="sm"
-                       onClick={() => handleScheduleUpcomingEvent(event)}
+                       onClick={() => handleAddToDate(event)}
                      >
-                       <CalendarPlus size={14} className="mr-1" />
-                       Schedule
+                       <Plus size={14} className="mr-1" />
+                       Add to Your Date
                      </Button>
                      
                      {/* Get Directions button for Google Places events */}

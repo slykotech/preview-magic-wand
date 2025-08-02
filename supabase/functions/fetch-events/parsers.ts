@@ -190,27 +190,52 @@ export function parseDistrictEvents(markdown: string, location: string): Unified
   try {
     console.log('District raw markdown:', markdown.substring(0, 300));
     
-    // Clean the content
+    // Clean the content more aggressively to remove navigation elements
     const cleanText = markdown
-      .replace(/\[|\]/g, '') // Remove square brackets
+      .replace(/!\[.*?\]\(.*?\)/g, '') // Remove image markdown
+      .replace(/\[.*?\]\(.*?\)/g, '') // Remove link markdown  
       .replace(/\*\*/g, '') // Remove bold
       .replace(/\\+/g, ' ') // Replace backslashes
       .replace(/https?:\/\/[^\s]+/g, '') // Remove URLs
       .replace(/₹\d+[^\s]*/g, '') // Remove inline prices for now
       .replace(/Delhi\/NCR/g, '') // Remove location suffix
+      .replace(/app-store/gi, '') // Remove app store references
+      .replace(/GurugramHaryana/gi, '') // Remove location navigation
+      .replace(/For you|Dining|Events|Movies|Activities/gi, '') // Remove navigation items
+      .replace(/Search for events/gi, '') // Remove search text
       .replace(/\s+/g, ' ') // Normalize spaces
       .trim();
 
-    // Extract potential event titles
+    // Extract potential event titles - much stricter filtering
     const potentialTitles = cleanText
-      .split(/[\n,\|]/)
+      .split(/[\n,\|!]/)
       .map(line => line.trim())
       .filter(line => {
-        return line.length > 10 && 
-               line.length < 100 &&
-               !line.toLowerCase().includes('district.in') &&
-               !line.match(/^\d+\s*(am|pm)/i) &&
-               !line.match(/^(mon|tue|wed|thu|fri|sat|sun)/i);
+        const lowerLine = line.toLowerCase();
+        return line.length > 15 && // Longer minimum length 
+               line.length < 120 &&
+               !lowerLine.includes('district.in') &&
+               !lowerLine.includes('app-store') &&
+               !lowerLine.includes('for you') &&
+               !lowerLine.includes('dining') &&
+               !lowerLine.includes('movies') &&
+               !lowerLine.includes('activities') &&
+               !lowerLine.includes('search for') &&
+               !lowerLine.includes('gurugram') &&
+               !lowerLine.includes('haryana') &&
+               !lowerLine.match(/^\d+\s*(am|pm)/i) &&
+               !lowerLine.match(/^(mon|tue|wed|thu|fri|sat|sun)/i) &&
+               // Look for actual event indicators
+               (lowerLine.includes('book') || 
+                lowerLine.includes('ticket') || 
+                lowerLine.includes('show') ||
+                lowerLine.includes('event') ||
+                lowerLine.includes('concert') ||
+                lowerLine.includes('comedy') ||
+                lowerLine.includes('festival') ||
+                lowerLine.includes('night') ||
+                lowerLine.includes('live') ||
+                lowerLine.includes('performance'));
       })
       .slice(0, 6);
 
