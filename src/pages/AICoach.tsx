@@ -24,6 +24,12 @@ export const AICoach = () => {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [isVoiceMode, setIsVoiceMode] = useState(false);
+  const [tokenUsage, setTokenUsage] = useState<{
+    tokensUsed: number;
+    tokensRemaining: number;
+    dailyLimit: number;
+    requestTokens?: number;
+  } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const {
     toast
@@ -134,7 +140,20 @@ export const AICoach = () => {
           userContext: "Couple relationship coaching session"
         }
       });
-      if (error) throw error;
+      if (error) {
+        // Handle token limit reached
+        if (error.message?.includes('Daily token limit reached')) {
+          toast({
+            title: "Daily Limit Reached",
+            description: "You've reached your daily AI chat limit. Try again tomorrow!",
+            variant: "destructive"
+          });
+          setIsTyping(false);
+          return;
+        }
+        throw error;
+      }
+      
       const aiResponse: Message = {
         id: (Date.now() + 1).toString(),
         content: data.message,
@@ -143,6 +162,11 @@ export const AICoach = () => {
       };
       setMessages(prev => [...prev, aiResponse]);
       setIsTyping(false);
+
+      // Update token usage if provided
+      if (data.tokenUsage) {
+        setTokenUsage(data.tokenUsage);
+      }
 
       // Save AI response to database
       await supabase.from('ai_coach_messages').insert({
@@ -252,6 +276,45 @@ export const AICoach = () => {
         
         <div ref={messagesEndRef} />
       </div>
+
+      {/* Token Usage Display */}
+      {tokenUsage && (
+        <div className="px-4 pb-2">
+          <div className="bg-card rounded-lg p-3 border border-secondary/20">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full ${
+                  tokenUsage.tokensRemaining > tokenUsage.dailyLimit * 0.2 
+                    ? 'bg-green-500' 
+                    : tokenUsage.tokensRemaining > 0 
+                    ? 'bg-yellow-500' 
+                    : 'bg-red-500'
+                }`} />
+                <span className="text-xs font-medium text-muted-foreground">
+                  Daily Usage: {tokenUsage.tokensUsed} / {tokenUsage.dailyLimit} tokens
+                </span>
+              </div>
+              <span className="text-xs text-muted-foreground">
+                {tokenUsage.tokensRemaining} remaining
+              </span>
+            </div>
+            <div className="mt-2 bg-secondary/20 rounded-full h-1.5 overflow-hidden">
+              <div 
+                className={`h-full transition-all duration-300 ${
+                  tokenUsage.tokensRemaining > tokenUsage.dailyLimit * 0.2 
+                    ? 'bg-green-500' 
+                    : tokenUsage.tokensRemaining > 0 
+                    ? 'bg-yellow-500' 
+                    : 'bg-red-500'
+                }`}
+                style={{ 
+                  width: `${(tokenUsage.tokensUsed / tokenUsage.dailyLimit) * 100}%` 
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Suggestions */}
       {suggestions.length > 0 && <div className="px-4 pb-2">

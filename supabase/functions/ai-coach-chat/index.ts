@@ -1,7 +1,66 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const openAIApiKey = Deno.env.get('Open AI API key');
+const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+// Daily token limit per user
+const DAILY_TOKEN_LIMIT = 10000;
+
+// Simple token estimation function
+function estimateTokens(text: string): number {
+  // Rough estimation: ~4 characters per token for English text
+  return Math.ceil(text.length / 4);
+}
+
+async function checkDailyUsage(userId: string): Promise<{ allowed: boolean; tokensUsed: number; tokensRemaining: number }> {
+  const today = new Date().toISOString().split('T')[0];
+  
+  const { data: usage, error } = await supabase
+    .from('ai_coach_usage')
+    .select('tokens_used')
+    .eq('user_id', userId)
+    .eq('usage_date', today)
+    .single();
+
+  if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
+    console.error('Error checking usage:', error);
+    throw error;
+  }
+
+  const tokensUsed = usage?.tokens_used || 0;
+  const tokensRemaining = DAILY_TOKEN_LIMIT - tokensUsed;
+  
+  return {
+    allowed: tokensUsed < DAILY_TOKEN_LIMIT,
+    tokensUsed,
+    tokensRemaining
+  };
+}
+
+async function updateUsage(userId: string, tokensUsed: number): Promise<void> {
+  const today = new Date().toISOString().split('T')[0];
+  
+  const { error } = await supabase
+    .from('ai_coach_usage')
+    .upsert({
+      user_id: userId,
+      usage_date: today,
+      tokens_used: tokensUsed,
+      requests_count: 1
+    }, {
+      onConflict: 'user_id,usage_date',
+      ignoreDuplicates: false
+    });
+
+  if (error) {
+    console.error('Error updating usage:', error);
+  }
+}
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -14,7 +73,44 @@ serve(async (req) => {
   }
 
   try {
+    // Get user from auth header
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Authorization required' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: 'Invalid authentication' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const { messages, userContext } = await req.json();
+
+    // Check daily usage limits
+    const usageCheck = await checkDailyUsage(user.id);
+    if (!usageCheck.allowed) {
+      return new Response(JSON.stringify({ 
+        error: 'Daily token limit reached', 
+        tokensUsed: usageCheck.tokensUsed,
+        tokensRemaining: usageCheck.tokensRemaining,
+        dailyLimit: DAILY_TOKEN_LIMIT
+      }), {
+        status: 429,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Estimate tokens for the request
+    const conversationText = messages.map((m: any) => m.content).join(' ');
+    const estimatedInputTokens = estimateTokens(conversationText);
 
     const systemPrompt = `You are an empathetic, human Relationship Coach whose sole purpose is to support couples with love-focused therapy and practical relationship guidance.
 
@@ -64,7 +160,25 @@ User Context: ${userContext || "Couple therapy and relationship advice"}`;
 
     const aiMessage = data.choices[0].message.content;
 
-    return new Response(JSON.stringify({ message: aiMessage }), {
+    // Calculate total tokens used and update usage
+    const estimatedOutputTokens = estimateTokens(aiMessage);
+    const totalTokensUsed = estimatedInputTokens + estimatedOutputTokens;
+    
+    // Update usage in the database
+    await updateUsage(user.id, usageCheck.tokensUsed + totalTokensUsed);
+    
+    // Get updated usage for response
+    const updatedUsage = await checkDailyUsage(user.id);
+
+    return new Response(JSON.stringify({ 
+      message: aiMessage,
+      tokenUsage: {
+        tokensUsed: updatedUsage.tokensUsed,
+        tokensRemaining: updatedUsage.tokensRemaining,
+        dailyLimit: DAILY_TOKEN_LIMIT,
+        requestTokens: totalTokensUsed
+      }
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
