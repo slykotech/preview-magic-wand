@@ -46,6 +46,9 @@ verify_jwt = false
 [functions.seed-data]
 verify_jwt = false
 
+[functions.send-signup-invitation]
+verify_jwt = true
+
 [auth]
 enabled = true
 port = 54329

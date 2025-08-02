@@ -697,6 +697,45 @@ export type Database = {
         }
         Relationships: []
       }
+      signup_invitations: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          invitation_token: string
+          invitee_email: string
+          inviter_id: string
+          sent_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          invitation_token: string
+          invitee_email: string
+          inviter_id: string
+          sent_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          invitation_token?: string
+          invitee_email?: string
+          inviter_id?: string
+          sent_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       stories: {
         Row: {
           caption: string | null
@@ -868,6 +907,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_signup_invitation: {
+        Args: { p_invitation_token: string; p_new_user_id: string }
+        Returns: Json
+      }
       calculate_enhanced_sync_score: {
         Args: { p_couple_id: string }
         Returns: number
@@ -876,9 +919,17 @@ export type Database = {
         Args: { p_couple_id: string }
         Returns: number
       }
+      create_signup_invitation: {
+        Args: { p_invitee_email: string; p_inviter_name?: string }
+        Returns: Json
+      }
       expire_old_partner_requests: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      generate_invitation_token: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       generate_relationship_insights: {
         Args: { p_couple_id: string }

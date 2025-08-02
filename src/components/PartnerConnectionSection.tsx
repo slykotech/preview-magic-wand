@@ -18,10 +18,12 @@ import {
   AlertCircle
 } from "lucide-react";
 import { usePartnerConnectionV2 } from "@/hooks/usePartnerConnectionV2";
+import { useAuth } from "@/hooks/useAuth";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 
 export const PartnerConnectionSection = () => {
+  const { user } = useAuth();
   const {
     isProcessing,
     connectionStatus,
@@ -103,33 +105,50 @@ export const PartnerConnectionSection = () => {
     if (!partnerEmail.trim() || !emailValidation.isValid) return;
 
     try {
-      const { data, error } = await supabase.functions.invoke('send-invitation-email', {
+      const { data, error } = await supabase.functions.invoke('send-signup-invitation', {
         body: {
-          type: 'invite',
-          email: partnerEmail
+          email: partnerEmail,
+          inviterName: user?.user_metadata?.display_name || user?.email?.split('@')[0]
         }
       });
 
       if (error) {
         console.error('Error sending invitation:', error);
-        setEmailValidation(prev => ({ 
-          ...prev, 
-          message: "Failed to send invitation. Please try again." 
-        }));
+        
+        // Check if it's a user exists error  
+        if (data && data.action === 'use_connect_instead') {
+          setEmailValidation(prev => ({ 
+            ...prev, 
+            message: data.message + " Try using the 'Connect with Partner' option instead." 
+          }));
+        } else {
+          setEmailValidation(prev => ({ 
+            ...prev, 
+            message: "Failed to send invitation. Please try again." 
+          }));
+        }
         return;
       }
 
       console.log('Invitation sent successfully:', data);
-      setEmailValidation(prev => ({ 
-        ...prev, 
-        message: "Invitation to join Love Sync sent successfully!" 
-      }));
       
-      // Clear the form after successful invite
-      setTimeout(() => {
-        setPartnerEmail("");
-        setEmailValidation({ isValid: false, exists: false, available: false, message: "", isChecking: false, showInviteToJoin: false });
-      }, 2000);
+      if (data && data.success) {
+        setEmailValidation(prev => ({ 
+          ...prev, 
+          message: `Signup invitation sent successfully! ${partnerEmail} will receive an email with instructions to join Love Sync.` 
+        }));
+        
+        // Clear the form after successful invite
+        setTimeout(() => {
+          setPartnerEmail("");
+          setEmailValidation({ isValid: false, exists: false, available: false, message: "", isChecking: false, showInviteToJoin: false });
+        }, 3000);
+      } else {
+        setEmailValidation(prev => ({ 
+          ...prev, 
+          message: "Failed to send invitation. Please try again." 
+        }));
+      }
     } catch (error) {
       console.error('Error sending invitation:', error);
       setEmailValidation(prev => ({ 

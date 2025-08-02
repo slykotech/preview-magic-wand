@@ -23,21 +23,21 @@ const NewUserInvite = () => {
 
   const email = searchParams.get('email');
   const senderId = searchParams.get('sender');
-  const token = searchParams.get('token'); // For future token validation
+  const token = searchParams.get('token'); // Secure invitation token
 
   useEffect(() => {
     console.log('NewUserInvite component loaded with params:', {
       email, senderId, token
     });
 
-    if (!email || !senderId) {
+    if (!email || !senderId || !token) {
       setStatus('error');
       setMessage('Invalid invitation link. Please check the link and try again.');
     }
   }, [email, senderId, token]);
 
   const handleSignup = async () => {
-    if (!email || !senderId || !firstName || !lastName || !password) {
+    if (!email || !senderId || !token || !firstName || !lastName || !password) {
       toast({
         title: "Missing Information",
         description: "Please fill in all required fields.",
@@ -88,23 +88,21 @@ const NewUserInvite = () => {
       }
 
       if (authData.user) {
-        console.log('User created successfully, auto-connecting with inviter...');
+        console.log('User created successfully, processing invitation token...');
         
-        // Auto-connect with the inviter using accept-invitation function
-        const { data, error } = await supabase.functions.invoke('accept-invitation', {
-          body: {
-            senderUserId: senderId,
-            recipientEmail: email,
-            type: 'invite'
-          }
+        // Accept the signup invitation using the secure token
+        const { data, error } = await supabase.rpc('accept_signup_invitation', {
+          p_invitation_token: token,
+          p_new_user_id: authData.user.id
         });
 
         if (error) {
-          console.error('Auto-connect error:', error);
+          console.error('Token processing error:', error);
           throw error;
         }
 
-        if (data.success) {
+        const invitationResult = data as any;
+        if (invitationResult && invitationResult.success) {
           setStatus('success');
           setMessage('Account created and connected successfully! Welcome to Love Sync.');
           
@@ -113,7 +111,7 @@ const NewUserInvite = () => {
             description: "Your account has been created and you're now connected with your partner.",
           });
         } else {
-          throw new Error(data.error || 'Failed to connect with partner');
+          throw new Error(invitationResult?.error || 'Failed to process invitation token');
         }
       } else {
         throw new Error('User creation failed');
@@ -241,7 +239,7 @@ const NewUserInvite = () => {
               
               <Button 
                 onClick={handleSignup}
-                disabled={processing || !firstName || !lastName || !password || !confirmPassword}
+                disabled={processing || !firstName || !lastName || !password || !confirmPassword || !token}
                 className="w-full"
                 size="lg"
               >
