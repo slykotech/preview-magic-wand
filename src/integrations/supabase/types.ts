@@ -991,6 +991,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      purge_user_completely: {
+        Args: { user_email: string }
+        Returns: Json
+      }
       update_couple_streaks: {
         Args: { p_couple_id: string }
         Returns: undefined
