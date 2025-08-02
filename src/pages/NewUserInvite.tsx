@@ -30,14 +30,14 @@ const NewUserInvite = () => {
       email, senderId, token
     });
 
-    if (!email || !senderId || !token) {
+    if (!email || !senderId) {
       setStatus('error');
       setMessage('Invalid invitation link. Please check the link and try again.');
     }
   }, [email, senderId, token]);
 
   const handleSignup = async () => {
-    if (!email || !senderId || !token || !firstName || !lastName || !password) {
+    if (!email || !senderId || !firstName || !lastName || !password) {
       toast({
         title: "Missing Information",
         description: "Please fill in all required fields.",
@@ -66,60 +66,35 @@ const NewUserInvite = () => {
 
     setProcessing(true);
     try {
-      console.log('Starting new user signup process...');
+      console.log('Starting new user signup with email verification...');
       
-      // Sign up the new user
-      const { data: authData, error: signUpError } = await supabase.auth.signUp({
-        email: email,
-        password: password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`,
-          data: {
-            first_name: firstName,
-            last_name: lastName,
-            display_name: `${firstName} ${lastName}`.trim(),
-          }
+      // Use the new verification flow instead of direct signup
+      const { data, error } = await supabase.functions.invoke('send-verification-email', {
+        body: {
+          email,
+          firstName,
+          lastName,
+          password
         }
       });
 
-      if (signUpError) {
-        console.error('Signup error:', signUpError);
-        throw signUpError;
-      }
+      if (error) throw error;
 
-      if (authData.user) {
-        console.log('User created successfully, processing invitation token...');
+      if (data.success) {
+        setStatus('success');
+        setMessage('Verification email sent! Check your email and click the verification link to complete your signup and automatically connect with your partner.');
         
-        // Accept the signup invitation using the secure token
-        const { data, error } = await supabase.rpc('accept_signup_invitation', {
-          p_invitation_token: token,
-          p_new_user_id: authData.user.id
+        toast({
+          title: "Verification email sent! 📧",
+          description: "Check your email and click the verification link to complete your account setup."
         });
-
-        if (error) {
-          console.error('Token processing error:', error);
-          throw error;
-        }
-
-        const invitationResult = data as any;
-        if (invitationResult && invitationResult.success) {
-          setStatus('success');
-          setMessage('Account created and connected successfully! Welcome to Love Sync.');
-          
-          toast({
-            title: "Welcome to Love Sync! 💕",
-            description: "Your account has been created and you're now connected with your partner.",
-          });
-        } else {
-          throw new Error(invitationResult?.error || 'Failed to process invitation token');
-        }
       } else {
-        throw new Error('User creation failed');
+        throw new Error(data.error || 'Failed to send verification email');
       }
     } catch (error: any) {
-      console.error('Error during signup and connect:', error);
+      console.error('Error during signup process:', error);
       setStatus('error');
-      setMessage(error.message || 'Failed to create account and connect');
+      setMessage(error.message || 'Failed to initiate account creation');
       
       toast({
         title: "Signup Failed",
@@ -145,14 +120,14 @@ const NewUserInvite = () => {
             )}
           </div>
           <CardTitle className="text-2xl">
-            {status === 'success' ? 'Welcome to Love Sync!' : 
+            {status === 'success' ? 'Almost There!' : 
              status === 'error' ? 'Signup Failed' :
              'Join Love Sync!'}
           </CardTitle>
           <CardDescription>
             {status === 'pending' && 'Create your account to connect with your partner'}
-            {status === 'success' && 'You are now connected and ready to start your journey!'}
-            {status === 'error' && 'There was an issue creating your account'}
+            {status === 'success' && 'Check your email to complete the verification process'}
+            {status === 'error' && 'There was an issue with your invitation'}
           </CardDescription>
         </CardHeader>
         
@@ -237,19 +212,29 @@ const NewUserInvite = () => {
                 </div>
               </div>
               
+              <div className="bg-amber-50 border border-amber-200 p-3 rounded-lg">
+                <div className="flex items-center gap-2 text-amber-800 mb-1">
+                  <span className="font-semibold text-xs">📧 Email Verification Required</span>
+                </div>
+                <p className="text-xs text-amber-700">
+                  After clicking "Create Account", you'll receive a verification email. Once verified, you'll automatically connect with your partner.
+                </p>
+              </div>
+              
               <Button 
                 onClick={handleSignup}
-                disabled={processing || !firstName || !lastName || !password || !confirmPassword || !token}
+                disabled={processing || !firstName || !lastName || !password || !confirmPassword}
                 className="w-full"
                 size="lg"
+                variant="romantic"
               >
                 {processing ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating Account & Connecting...
+                    Sending Verification Email...
                   </>
                 ) : (
-                  'Create Account & Connect'
+                  'Create Account & Send Verification'
                 )}
               </Button>
               
@@ -262,17 +247,22 @@ const NewUserInvite = () => {
           {status === 'success' && (
             <div className="text-center space-y-3">
               <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
-                <h4 className="font-semibold text-green-800 mb-2">🎉 Welcome to Love Sync!</h4>
-                <p className="text-sm text-green-700">
-                  Your account has been created and you're automatically connected with your partner. You can now start your Love Sync journey together!
+                <h4 className="font-semibold text-green-800 mb-2">📧 Check Your Email!</h4>
+                <p className="text-sm text-green-700 mb-3">
+                  We've sent a verification link to <strong>{email}</strong>
                 </p>
+                <div className="text-xs text-green-600 space-y-1">
+                  <p>• Click the verification link in your email</p>
+                  <p>• Your account will be created automatically</p>
+                  <p>• You'll then be able to sign in and connect</p>
+                </div>
               </div>
               <Button 
-                onClick={() => navigate('/dashboard')}
+                onClick={() => navigate('/auth')}
                 className="w-full"
-                size="lg"
+                variant="outline"
               >
-                Go to Dashboard
+                Go to Sign In Page
               </Button>
             </div>
           )}

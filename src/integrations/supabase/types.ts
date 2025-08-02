@@ -631,6 +631,48 @@ export type Database = {
         }
         Relationships: []
       }
+      pending_verifications: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          first_name: string
+          id: string
+          last_name: string
+          password_hash: string
+          status: string
+          user_id: string | null
+          verification_token: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          email: string
+          expires_at: string
+          first_name: string
+          id?: string
+          last_name: string
+          password_hash: string
+          status?: string
+          user_id?: string | null
+          verification_token: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          first_name?: string
+          id?: string
+          last_name?: string
+          password_hash?: string
+          status?: string
+          user_id?: string | null
+          verification_token?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -918,6 +960,10 @@ export type Database = {
       calculate_sync_score: {
         Args: { p_couple_id: string }
         Returns: number
+      }
+      cleanup_expired_verifications: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       create_signup_invitation: {
         Args: { p_invitee_email: string; p_inviter_name?: string }

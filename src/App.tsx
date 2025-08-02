@@ -29,6 +29,8 @@ import AcceptInvitation from "./pages/AcceptInvitation";
 import InviteResolver from "./pages/InviteResolver";
 import NewUserInvite from "./pages/NewUserInvite";
 import ExistingUserConnect from "./pages/ExistingUserConnect";
+import { Signup } from "./pages/Signup";
+import { VerifyEmail } from "./pages/VerifyEmail";
 
 const queryClient = new QueryClient();
 
@@ -73,7 +75,9 @@ const App = () => {
                 <Route path="/app-settings" element={<AppSettings />} />
                 <Route path="/motto" element={<AppMottoPage onNext={() => {}} onBack={() => {}} />} />
                 <Route path="/onboarding" element={<OnboardingFlow />} />
-                <Route path="/accept-invitation" element={<AcceptInvitation />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
+        <Route path="/accept-invitation" element={<AcceptInvitation />} />
                 <Route path="/invite-resolver" element={<InviteResolver />} />
                 <Route path="/new-user-invite" element={<NewUserInvite />} />
                 <Route path="/existing-user-connect" element={<ExistingUserConnect />} />
