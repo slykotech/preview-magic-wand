@@ -68,13 +68,18 @@ const NewUserInvite = () => {
     try {
       console.log('Starting new user signup with email verification...');
       
-      // Use the new verification flow instead of direct signup
+      // Include sender information for auto-connection after verification
       const { data, error } = await supabase.functions.invoke('send-verification-email', {
         body: {
           email,
           firstName,
           lastName,
-          password
+          password,
+          // Include invitation context for auto-connection
+          invitationContext: {
+            senderId,
+            type: 'invite'
+          }
         }
       });
 
@@ -86,7 +91,7 @@ const NewUserInvite = () => {
         
         toast({
           title: "Verification email sent! 📧",
-          description: "Check your email and click the verification link to complete your account setup."
+          description: "Check your email and click the verification link to complete your account setup and auto-connect with your partner."
         });
       } else {
         throw new Error(data.error || 'Failed to send verification email');

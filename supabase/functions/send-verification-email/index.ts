@@ -2,6 +2,13 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { EmailService } from '../_shared/email-service.ts';
 import type { VerificationRequest } from '../_shared/types.ts';
 
+interface ExtendedVerificationRequest extends VerificationRequest {
+  invitationContext?: {
+    senderId: string;
+    type: 'invite';
+  };
+}
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -17,9 +24,9 @@ const handler = async (req: Request): Promise<Response> => {
     // Initialize email service
     const emailService = new EmailService();
 
-    const { email, firstName, lastName, password }: VerificationRequest = await req.json();
+    const { email, firstName, lastName, password, invitationContext }: ExtendedVerificationRequest = await req.json();
 
-    console.log(`Processing verification request for: ${email}`);
+    console.log(`Processing verification request for: ${email}`, invitationContext ? 'with invitation context' : 'standalone');
 
     if (!email || !firstName || !lastName || !password) {
       throw new Error('All fields are required');
@@ -75,7 +82,8 @@ const handler = async (req: Request): Promise<Response> => {
         last_name: lastName,
         password_hash: password, // Stored as plain text, Supabase Auth handles hashing
         verification_token: verificationToken,
-        expires_at: expiresAt.toISOString()
+        expires_at: expiresAt.toISOString(),
+        invitation_context: invitationContext ? JSON.stringify(invitationContext) : null
       });
 
     if (insertError) {

@@ -89,12 +89,67 @@ Deno.serve(async (req) => {
       .eq('id', pendingVerification.id)
 
     console.log('User account created successfully:', authData.user.id)
+
+    // Auto-connect with partner if this was an invitation signup
+    let connectionResult = null;
+    if (pendingVerification.invitation_context) {
+      try {
+        console.log('Processing auto-connection for invited user...')
+        const invitationContext = JSON.parse(pendingVerification.invitation_context)
+        
+        if (invitationContext.senderId && invitationContext.type === 'invite') {
+          // Call accept-invitation to auto-pair
+          console.log('Auto-connecting with sender:', invitationContext.senderId)
+          
+          // Create a user session to call accept-invitation
+          const { data: sessionData, error: sessionError } = await supabase.auth.admin.generateLink({
+            type: 'signup',
+            email: authData.user.email!,
+          })
+
+          if (!sessionError && sessionData.user) {
+            // Call accept-invitation function to create the couple connection
+            const connectionResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/accept-invitation`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${sessionData.session?.access_token}`,
+                'apikey': Deno.env.get('SUPABASE_ANON_KEY') || '',
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                senderUserId: invitationContext.senderId,
+                recipientEmail: pendingVerification.email,
+                type: 'invite'
+              })
+            });
+
+            const connectionData = await connectionResponse.json();
+            
+            if (connectionResponse.ok && connectionData.success) {
+              console.log('Auto-connection successful:', connectionData)
+              connectionResult = connectionData;
+            } else {
+              console.error('Auto-connection failed:', connectionData.error)
+            }
+          }
+        }
+      } catch (autoConnectError) {
+        console.error('Error during auto-connection:', autoConnectError)
+        // Don't fail the whole signup process if auto-connection fails
+      }
+    }
     
+    const successMessage = connectionResult 
+      ? `Email verified, account created, and automatically connected with ${connectionResult.partnerName}! You can now sign in and start your Love Sync journey together. 💕`
+      : 'Email verified and account created successfully! You can now sign in.';
+
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: 'Email verified and account created successfully! You can now sign in.',
-        user_id: authData.user.id
+        message: successMessage,
+        user_id: authData.user.id,
+        auto_connected: !!connectionResult,
+        partner_name: connectionResult?.partnerName
       }),
       { 
         status: 200, 
