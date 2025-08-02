@@ -25,6 +25,23 @@ Deno.serve(async (req) => {
 
     // Initialize email service
     console.log('Initializing email service...');
+    
+    // Check if RESEND_API_KEY is available
+    const resendApiKey = Deno.env.get('RESEND_API_KEY');
+    if (!resendApiKey) {
+      console.error('RESEND_API_KEY environment variable is not set');
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Email service configuration error' 
+        }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+    
     const emailService = new EmailService();
     console.log('Email service initialized successfully');
 
