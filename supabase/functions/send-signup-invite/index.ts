@@ -87,19 +87,17 @@ Deno.serve(async (req) => {
 
     console.log('Checking if user already exists...');
 
-    // Check if user already exists using getUserByEmail which is more reliable
-    // than listUsers with filters for checking single user existence
-    const { data: existingUser, error: userCheckError } = await supabase.auth.admin.getUserByEmail(email);
+    // Check if user already exists using listUsers with email filter
+    const { data: existingUsers, error: userCheckError } = await supabase.auth.admin.listUsers({
+      filter: `email.eq.${email}`
+    });
     
     if (userCheckError) {
-      // If the error is "User not found", that's actually what we want
-      if (userCheckError.message?.includes('User not found') || userCheckError.status === 404) {
-        console.log(`User does not exist (confirmed): ${email}`);
-      } else {
-        console.error('Error checking existing user:', userCheckError);
-        throw new Error('Failed to validate user information');
-      }
-    } else if (existingUser?.user) {
+      console.error('Error checking existing user:', userCheckError);
+      throw new Error('Failed to validate user information');
+    }
+    
+    if (existingUsers && existingUsers.users && existingUsers.users.length > 0) {
       // User exists
       console.log(`User already exists: ${email}`);
       return new Response(
