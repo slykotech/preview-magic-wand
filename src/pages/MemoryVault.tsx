@@ -441,45 +441,47 @@ const MemoryVault: React.FC = () => {
             </h3>
           </div>
         ) : viewMode === 'grid' ? (
-          /* Masonry Grid View */
-          <div className="columns-1 md:columns-2 lg:columns-3 gap-6">
+          /* Masonry Grid View - Pinterest Style */
+          <div className="columns-1 md:columns-2 lg:columns-3 gap-4">
             {filteredItems.map((item, index) => {
-              // Generate vibrant colors for memory cards
+              // Generate vibrant colors for memory cards to match reference
               const colors = [
-                'from-purple-500 to-pink-500',
-                'from-blue-500 to-cyan-500', 
-                'from-green-500 to-teal-500',
-                'from-orange-500 to-red-500',
-                'from-indigo-500 to-purple-500',
-                'from-pink-500 to-rose-500',
-                'from-cyan-500 to-blue-500',
-                'from-teal-500 to-green-500'
+                'from-orange-400 to-orange-600', // Orange like in reference
+                'from-purple-500 to-purple-700', // Purple
+                'from-blue-500 to-blue-700',     // Blue  
+                'from-green-500 to-green-700',   // Green
+                'from-pink-500 to-pink-700',     // Pink
+                'from-teal-500 to-teal-700',     // Teal
+                'from-indigo-500 to-indigo-700', // Indigo
+                'from-red-500 to-red-700'        // Red
               ];
               const colorClass = colors[index % colors.length];
               
               return (
                 <div 
                   key={`${item.type}-${item.id}`} 
-                  className="break-inside-avoid mb-6 group cursor-pointer"
+                  className="break-inside-avoid mb-4 cursor-pointer"
                 >
                   {item.type === 'memory' && item.images && item.images.length > 0 ? (
-                    /* Photo Memory Card */
-                    <div className={`relative rounded-2xl overflow-hidden bg-gradient-to-br ${colorClass} p-1 hover:scale-105 transition-all duration-300 hover:shadow-xl`}>
-                      <div className="relative rounded-xl overflow-hidden">
+                    /* Photo Memory Card - Colorful like reference */
+                    <div className={`relative rounded-xl overflow-hidden bg-gradient-to-br ${colorClass} shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]`}>
+                      <div className="relative">
                         <img 
                           src={item.images[0].image_url} 
                           alt={item.title} 
-                          className="w-full h-64 object-cover" 
+                          className="w-full object-cover" 
+                          style={{ height: `${Math.floor(Math.random() * 100) + 200}px` }} // Variable heights like reference
                         />
-                        {/* Dark overlay for text */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                        
+                        {/* Dark overlay for text readability */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                         
                         {/* Content overlay */}
                         <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
-                          <div className="flex items-start justify-between mb-2">
+                          <div className="flex items-start justify-between mb-1">
                             <div className="flex-1">
-                              <h3 className="font-bold text-lg leading-tight mb-1">{item.title}</h3>
-                              <p className="text-sm text-white/80">
+                              <h3 className="font-semibold text-base leading-tight mb-1">{item.title}</h3>
+                              <p className="text-xs text-white/80">
                                 {item.memory_date ? format(parseISO(item.memory_date), 'MMM d, yyyy') : format(parseISO(item.created_at), 'MMM d, yyyy')}
                               </p>
                             </div>
@@ -490,14 +492,23 @@ const MemoryVault: React.FC = () => {
                                 e.stopPropagation();
                                 toggleFavorite(item.id, item.type, item.is_favorite);
                               }}
-                              className="p-1 hover:bg-white/20"
+                              className="p-1 hover:bg-white/20 h-auto"
                             >
-                              <Star className={`h-5 w-5 ${item.is_favorite ? 'fill-yellow-400 text-yellow-400' : 'text-white/70'}`} />
+                              <Star className={`h-4 w-4 ${item.is_favorite ? 'fill-yellow-400 text-yellow-400' : 'text-white/70'}`} />
                             </Button>
                           </div>
                           
-                          {item.description && (
-                            <p className="text-sm text-white/90 line-clamp-2">
+                          {item.description && item.description.length > 50 && (
+                            <div>
+                              <p className="text-xs text-white/90 line-clamp-3 mb-1">
+                                {item.description}
+                              </p>
+                              <button className="text-xs text-white/80 underline">Show less</button>
+                            </div>
+                          )}
+                          
+                          {item.description && item.description.length <= 50 && (
+                            <p className="text-xs text-white/90">
                               {item.description}
                             </p>
                           )}
@@ -505,43 +516,48 @@ const MemoryVault: React.FC = () => {
 
                         {/* Multiple photos indicator */}
                         {item.images.length > 1 && (
-                          <div className="absolute top-3 right-3 bg-black/50 text-white px-2 py-1 rounded-full text-xs font-medium">
-                            +{item.images.length - 1}
+                          <div className="absolute top-3 left-3 bg-black/60 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1">
+                            <span>+{item.images.length - 1}</span>
+                          </div>
+                        )}
+                        
+                        {/* Favorite star in top right */}
+                        {item.is_favorite && (
+                          <div className="absolute top-3 right-3">
+                            <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
                           </div>
                         )}
                       </div>
                     </div>
                   ) : (
-                    /* Note Card - White background */
-                    <div className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border border-gray-100">
+                    /* Note Card - Clean white like reference */
+                    <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300">
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
-                            <FileText className="h-4 w-4 text-purple-500" />
-                            <span className="text-xs font-medium text-purple-500 uppercase tracking-wide">Note</span>
+                            <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center">
+                              <FileText className="h-3 w-3 text-purple-600" />
+                            </div>
                           </div>
-                          <h3 className="font-bold text-gray-900 text-lg leading-tight mb-2">{item.title}</h3>
-                          <p className="text-sm text-gray-500">
+                          <h3 className="font-semibold text-gray-900 text-sm leading-tight mb-1">{item.title}</h3>
+                          <p className="text-xs text-gray-500">
                             {format(parseISO(item.created_at), 'MMM d, yyyy')}
                           </p>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleFavorite(item.id, item.type, item.is_favorite);
-                          }}
-                          className="p-1"
-                        >
-                          <Star className={`h-5 w-5 ${item.is_favorite ? 'fill-yellow-400 text-yellow-400' : 'text-gray-400'}`} />
-                        </Button>
+                        {item.is_favorite && (
+                          <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                        )}
                       </div>
 
                       {item.content && (
-                        <p className="text-gray-700 text-sm leading-relaxed line-clamp-4">
-                          {item.content}
-                        </p>
+                        <div>
+                          <p className="text-gray-700 text-sm leading-relaxed line-clamp-4 mb-2">
+                            {item.content}
+                          </p>
+                          {item.content.length > 100 && (
+                            <button className="text-xs text-gray-500 underline">Show less</button>
+                          )}
+                        </div>
                       )}
                     </div>
                   )}
