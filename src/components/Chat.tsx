@@ -70,37 +70,28 @@ export const Chat: React.FC<ChatProps> = ({
     if (!conversation?.id) return;
 
     // Set up real-time subscription for new messages and updates
-    const channel = supabase
-      .channel(`messages:${conversation.id}`)
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'messages',
-        filter: `conversation_id=eq.${conversation.id}`
-      }, payload => {
-        const newMessage = payload.new as Message;
-        setMessages(prev => [...prev, newMessage]);
+    const channel = supabase.channel(`messages:${conversation.id}`).on('postgres_changes', {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'messages',
+      filter: `conversation_id=eq.${conversation.id}`
+    }, payload => {
+      const newMessage = payload.new as Message;
+      setMessages(prev => [...prev, newMessage]);
 
-        // Mark message as read if it's from partner
-        if (newMessage.sender_id !== user?.id) {
-          markMessageAsRead(newMessage.id);
-        }
-      })
-      .on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'messages',
-        filter: `conversation_id=eq.${conversation.id}`
-      }, payload => {
-        const updatedMessage = payload.new as Message;
-        setMessages(prev => 
-          prev.map(msg => 
-            msg.id === updatedMessage.id ? updatedMessage : msg
-          )
-        );
-      })
-      .subscribe();
-      
+      // Mark message as read if it's from partner
+      if (newMessage.sender_id !== user?.id) {
+        markMessageAsRead(newMessage.id);
+      }
+    }).on('postgres_changes', {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'messages',
+      filter: `conversation_id=eq.${conversation.id}`
+    }, payload => {
+      const updatedMessage = payload.new as Message;
+      setMessages(prev => prev.map(msg => msg.id === updatedMessage.id ? updatedMessage : msg));
+    }).subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
@@ -165,11 +156,10 @@ export const Chat: React.FC<ChatProps> = ({
   const markMessageAsRead = async (messageId: string) => {
     try {
       // Update local state immediately for better UX
-      setMessages(prev => 
-        prev.map(msg => 
-          msg.id === messageId ? { ...msg, is_read: true } : msg
-        )
-      );
+      setMessages(prev => prev.map(msg => msg.id === messageId ? {
+        ...msg,
+        is_read: true
+      } : msg));
 
       // Update in database
       await supabase.from('messages').update({
@@ -177,13 +167,12 @@ export const Chat: React.FC<ChatProps> = ({
       }).eq('id', messageId);
     } catch (error) {
       console.error('Error marking message as read:', error);
-      
+
       // Revert local state on error
-      setMessages(prev => 
-        prev.map(msg => 
-          msg.id === messageId ? { ...msg, is_read: false } : msg
-        )
-      );
+      setMessages(prev => prev.map(msg => msg.id === messageId ? {
+        ...msg,
+        is_read: false
+      } : msg));
     }
   };
   const sendMessage = async (text: string, type: 'text' | 'emoji' | 'sticker' | 'image' | 'video' = 'text') => {
@@ -294,25 +283,21 @@ export const Chat: React.FC<ChatProps> = ({
           return <div key={message.id} className={`flex ${isOwn ? 'justify-end' : 'justify-start'} animate-fade-in mb-4`}>
                   <div className={`max-w-[80%] rounded-2xl p-4 shadow-soft ${message.message_type === 'emoji' || message.message_type === 'sticker' ? 'text-3xl bg-transparent' : isOwn ? 'bg-gradient-to-br from-primary to-primary/80 text-primary-foreground' : 'bg-card'}`}>
                       {message.message_type === 'image' ? <img src={message.message_text} alt="Shared image" className="max-w-full h-auto rounded-lg cursor-pointer" onClick={() => window.open(message.message_text, '_blank')} /> : message.message_type === 'video' ? <video src={message.message_text} controls className="max-w-full h-auto rounded-lg" style={{
-                  maxHeight: '300px'
-                }} /> : <div className="text-sm leading-relaxed">
+                maxHeight: '300px'
+              }} /> : <div className="text-sm leading-relaxed">
                           {message.message_text}
                         </div>}
                       
-                      {(message.message_type !== 'emoji' && message.message_type !== 'sticker') && (
-                        <div className="mt-2 text-xs opacity-70 text-right">
+                      {message.message_type !== 'emoji' && message.message_type !== 'sticker' && <div className="mt-2 text-xs opacity-70 text-right">
                           {new Date(message.created_at).toLocaleTimeString('en-US', {
-                            hour: 'numeric',
-                            minute: '2-digit',
-                            hour12: true
-                          })}
-                          {isOwn && (
-                            <span className={`ml-1 ${message.is_read ? 'text-blue-400' : 'text-muted-foreground'}`}>
+                  hour: 'numeric',
+                  minute: '2-digit',
+                  hour12: true
+                })}
+                          {isOwn && <span className={`ml-1 ${message.is_read ? 'text-blue-400' : 'text-muted-foreground'}`}>
                               {message.is_read ? '✓✓' : '✓'}
-                            </span>
-                          )}
-                        </div>
-                      )}
+                            </span>}
+                        </div>}
                   </div>
                 </div>;
         })}
@@ -391,13 +376,7 @@ export const Chat: React.FC<ChatProps> = ({
             </div>
             
             {/* Love Stickers Button */}
-            <Button variant="ghost" size="sm" onClick={() => {
-            setShowStickers(!showStickers);
-            setShowEmojiPicker(false);
-            setShowAttachments(false);
-          }} className={`rounded-full h-8 w-8 p-0 ${showStickers ? 'bg-muted' : ''}`}>
-              <Heart className="h-4 w-4 text-red-500" />
-            </Button>
+            
             
             {/* Emoji Button */}
             <Button variant="ghost" size="sm" onClick={() => {
