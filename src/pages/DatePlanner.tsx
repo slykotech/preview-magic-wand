@@ -58,7 +58,9 @@ export const DatePlanner = () => {
   const [upcomingEvents, setUpcomingEvents] = useState<UpcomingEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [eventsLoading, setEventsLoading] = useState(false);
-  const [userLocation, setUserLocation] = useState<{latitude: number, longitude: number} | null>(null);
+  const [userLocation, setUserLocation] = useState<{latitude: number, longitude: number, city?: string} | null>(null);
+  const [showLocationSelector, setShowLocationSelector] = useState(false);
+  const [locationInput, setLocationInput] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
   const [showScheduleForm, setShowScheduleForm] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
@@ -105,15 +107,15 @@ export const DatePlanner = () => {
     }
     if (user && coupleData?.id) {
       fetchPlannedDates();
-      getUserLocation();
+      // Don't auto-fetch location, let user select it
     }
   }, [user, authLoading, navigate, coupleData?.id]);
 
   useEffect(() => {
-    if (userLocation) {
+    if (userLocation && activeTab === 'upcoming') {
       fetchUpcomingEvents();
     }
-  }, [userLocation]);
+  }, [userLocation, activeTab]);
   const fetchPlannedDates = async () => {
     try {
       if (!coupleData?.id) return;
@@ -136,30 +138,50 @@ export const DatePlanner = () => {
       setLoading(false);
     }
   };
-  const getUserLocation = () => {
+  const handleLocationSelect = async (location: string) => {
+    setLocationInput(location);
+    
+    // Simple location handling - in production you'd want a proper geocoding service
+    // For now, we'll just set a default location and let the backend handle it
+    setUserLocation({
+      latitude: 40.7128, // Default coordinates (you could enhance this with a geocoding service)
+      longitude: -74.0060,
+      city: location
+    });
+    setShowLocationSelector(false);
+    
+    toast({
+      title: "Location set! 📍",
+      description: `Looking for events near ${location}`,
+    });
+  };
+
+  const handleUseCurrentLocation = () => {
     if (navigator.geolocation) {
+      setEventsLoading(true);
       navigator.geolocation.getCurrentPosition(
-        (position) => {
+        async (position) => {
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+          
           setUserLocation({
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude
+            latitude: lat,
+            longitude: lng,
+            city: 'Current Location'
           });
+          setShowLocationSelector(false);
+          setEventsLoading(false);
         },
         (error) => {
           console.error('Error getting location:', error);
-          // Fallback to a default location (e.g., city center)
-          setUserLocation({
-            latitude: 40.7128, // Default to NYC
-            longitude: -74.0060
+          setEventsLoading(false);
+          toast({
+            title: "Location access denied",
+            description: "Please enter your location manually",
+            variant: "destructive"
           });
         }
       );
-    } else {
-      // Fallback for browsers without geolocation
-      setUserLocation({
-        latitude: 40.7128,
-        longitude: -74.0060
-      });
     }
   };
 
@@ -577,6 +599,89 @@ export const DatePlanner = () => {
           </TabsContent>
           
           <TabsContent value="upcoming" className="space-y-4">
+            {/* Location Selector */}
+            {!userLocation ? (
+              <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 rounded-2xl p-6 text-center">
+                <MapPin className="mx-auto h-16 w-16 text-purple-500 mb-4" />
+                <h3 className="text-xl font-bold text-foreground mb-2">
+                  Where are you looking for events?
+                </h3>
+                <p className="text-muted-foreground mb-6">
+                  Select your location to discover amazing events nearby
+                </p>
+                
+                <div className="space-y-4 max-w-md mx-auto">
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Enter city, address, or landmark..."
+                      value={locationInput}
+                      onChange={(e) => setLocationInput(e.target.value)}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter' && locationInput.trim()) {
+                          handleLocationSelect(locationInput.trim());
+                        }
+                      }}
+                      className="flex-1"
+                    />
+                    <Button 
+                      onClick={() => locationInput.trim() && handleLocationSelect(locationInput.trim())}
+                      disabled={!locationInput.trim()}
+                      className="bg-gradient-secondary hover:opacity-90 text-white"
+                    >
+                      Search
+                    </Button>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 h-px bg-border"></div>
+                    <span className="text-sm text-muted-foreground">or</span>
+                    <div className="flex-1 h-px bg-border"></div>
+                  </div>
+                  
+                  <Button 
+                    variant="outline" 
+                    onClick={handleUseCurrentLocation}
+                    className="w-full"
+                    disabled={eventsLoading}
+                  >
+                    {eventsLoading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2"></div>
+                        Getting location...
+                      </>
+                    ) : (
+                      <>
+                        <MapPin size={16} className="mr-2" />
+                        Use Current Location
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Location Display with Change Option */}
+                <div className="bg-card rounded-lg p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <MapPin size={16} className="text-primary" />
+                    <span className="font-medium">
+                      Events near: {userLocation.city || `${userLocation.latitude.toFixed(2)}, ${userLocation.longitude.toFixed(2)}`}
+                    </span>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      setUserLocation(null);
+                      setLocationInput('');
+                      setUpcomingEvents([]);
+                    }}
+                  >
+                    Change Location
+                  </Button>
+                </div>
+
+                {/* Events Loading and Display */}
             {/* Upcoming Events */}
             {eventsLoading ? (
               <div className="text-center py-8">
@@ -663,6 +768,8 @@ export const DatePlanner = () => {
                   </div>
                 </div>
               ))
+            )}
+              </>
             )}
           </TabsContent>
         </Tabs>
