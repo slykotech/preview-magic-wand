@@ -513,7 +513,7 @@ export const Dashboard = () => {
       {/* Main Content - with loading states */}
       <div className={showSplash ? 'opacity-0' : 'opacity-100 transition-opacity duration-300'}>
         {/* Header with gradient background */}
-        <div className="bg-gradient-primary py-12 px-6 -mx-6 -mt-8 mb-8 rounded-b-[3rem] relative before:absolute before:bottom-0 before:left-0 before:right-0 before:h-8 before:bg-gradient-primary before:rounded-b-[4rem] before:-z-10">
+        <div className="bg-gradient-primary py-12 px-6 -mx-6 -mt-8 mb-8 rounded-b-[4rem] relative overflow-hidden before:absolute before:bottom-0 before:left-0 before:right-0 before:h-12 before:bg-gradient-primary before:rounded-b-[5rem] before:-z-10 after:absolute after:bottom-0 after:left-0 after:right-0 after:h-6 after:bg-gradient-primary after:rounded-b-[6rem] after:-z-20">
           <div className={`text-center space-y-2 ${isLoaded ? 'animate-fade-in' : 'opacity-0'}`}>
             
             <p className="text-lg font-bold text-white/90">{getTimeBasedMessage()}</p>
