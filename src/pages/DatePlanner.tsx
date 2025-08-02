@@ -481,9 +481,8 @@ export const DatePlanner = () => {
                        <Edit size={14} className="mr-1" />
                        Edit
                      </Button>
-                    {date.scheduled_date && isDateCompleted(date.scheduled_date) ?
-              // Show feedback options for completed dates
-              <div className="flex gap-1 flex-1">
+                    {date.scheduled_date && isDateCompleted(date.scheduled_date) && (
+                      <div className="flex gap-1 flex-1">
                         <Button variant="outline" size="sm" className="flex-1 bg-green-50 text-green-600 border-green-200 hover:bg-green-100" onClick={() => handleDateFeedback(date.id, true)}>
                           <Heart size={14} className="mr-1" />
                           Successful
@@ -492,12 +491,8 @@ export const DatePlanner = () => {
                           <X size={14} className="mr-1" />
                           Not Great
                         </Button>
-                      </div> :
-              // Show reschedule for future dates
-              <Button variant="outline" size="sm" className="flex-1" onClick={() => handleEditDate(date)}>
-                        <CalendarIcon size={14} className="mr-1" />
-                        Reschedule
-                      </Button>}
+                      </div>
+                    )}
                   </div>
                 </div>)}
           </TabsContent>
