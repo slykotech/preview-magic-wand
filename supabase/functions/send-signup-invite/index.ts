@@ -87,24 +87,60 @@ Deno.serve(async (req) => {
 
     console.log('Checking if user already exists...');
 
-    // Check if user already exists using listUsers with email filter
-    console.log('Checking if user already exists...');
-    const { data: existingUsers, error: userCheckError } = await supabase.auth.admin.listUsers({
-      filter: `email.eq.${email}`
-    });
+    // More reliable user existence check - try multiple methods
+    let userExists = false;
+    let userCheckError = null;
     
-    if (userCheckError) {
-      console.error('Error checking existing user:', userCheckError);
+    try {
+      // Method 1: Check auth users
+      console.log('Method 1: Checking auth users with listUsers...');
+      const { data: existingUsers, error: listUsersError } = await supabase.auth.admin.listUsers();
+      
+      if (listUsersError) {
+        console.error('Error with listUsers:', listUsersError);
+        userCheckError = listUsersError;
+      } else {
+        console.log('Total users found:', existingUsers?.users?.length || 0);
+        const userWithEmail = existingUsers?.users?.find(user => user.email === email);
+        if (userWithEmail) {
+          console.log('User found via listUsers:', { id: userWithEmail.id, email: userWithEmail.email });
+          userExists = true;
+        }
+      }
+      
+      // Method 2: Try getUserByEmail as a fallback
+      if (!userExists && !userCheckError) {
+        console.log('Method 2: Checking with getUserByEmail...');
+        const { data: userByEmail, error: getUserError } = await supabase.auth.admin.getUserByEmail(email);
+        
+        if (getUserError) {
+          // If error is "User not found", that's expected for new users
+          if (getUserError.message.includes('User not found') || getUserError.message.includes('not found')) {
+            console.log('User not found via getUserByEmail - this is expected for new users');
+          } else {
+            console.error('Unexpected error with getUserByEmail:', getUserError);
+            userCheckError = getUserError;
+          }
+        } else if (userByEmail?.user) {
+          console.log('User found via getUserByEmail:', { id: userByEmail.user.id, email: userByEmail.user.email });
+          userExists = true;
+        }
+      }
+      
+    } catch (error) {
+      console.error('Unexpected error during user existence check:', error);
+      userCheckError = error;
+    }
+    
+    // If we had errors checking user existence, only fail if it's a critical error
+    if (userCheckError && !userCheckError.message.includes('User not found')) {
+      console.error('Critical error checking existing user:', userCheckError);
       throw new Error('Failed to validate user information');
     }
     
-    console.log('Existing users check result:', { 
-      userCount: existingUsers?.users?.length || 0,
-      users: existingUsers?.users?.map(u => ({ id: u.id, email: u.email })) || []
-    });
+    console.log('User existence check result:', { userExists, hadError: !!userCheckError });
     
-    if (existingUsers && existingUsers.users && existingUsers.users.length > 0) {
-      // User exists
+    if (userExists) {
       console.log(`User already exists: ${email}`);
       return new Response(
         JSON.stringify({ 
