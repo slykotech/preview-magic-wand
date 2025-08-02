@@ -187,10 +187,12 @@ export const DatePlanner = () => {
   };
   const handleScheduleUpcomingEvent = (event: UpcomingEvent) => {
     setSelectedUpcomingEvent(event);
-    setScheduleData({ date: undefined, time: '' });
+    setScheduleData({
+      date: undefined,
+      time: ''
+    });
     setShowScheduleForm(true);
   };
-
   const handleConfirmSchedule = async () => {
     if (!selectedUpcomingEvent || !scheduleData.date || !scheduleData.time || !coupleData?.id) {
       toast({
@@ -200,9 +202,10 @@ export const DatePlanner = () => {
       });
       return;
     }
-
     try {
-      const { error } = await supabase.from('date_ideas').insert({
+      const {
+        error
+      } = await supabase.from('date_ideas').insert({
         title: selectedUpcomingEvent.title,
         description: selectedUpcomingEvent.description,
         category: selectedUpcomingEvent.category,
@@ -213,14 +216,11 @@ export const DatePlanner = () => {
         scheduled_time: scheduleData.time,
         is_completed: false
       });
-
       if (error) throw error;
-
       toast({
         title: "Date scheduled! 💕",
         description: `${selectedUpcomingEvent.title} has been added to your planned dates`
       });
-
       setShowScheduleForm(false);
       setSelectedUpcomingEvent(null);
       fetchPlannedDates();
@@ -234,7 +234,6 @@ export const DatePlanner = () => {
       });
     }
   };
-
   const handleEditDate = (date: DateIdea) => {
     setEditingDate(date);
     setEditEvent({
@@ -247,7 +246,6 @@ export const DatePlanner = () => {
     });
     setShowEditForm(true);
   };
-
   const handleUpdateEvent = async () => {
     if (!editingDate || !editEvent.title || !editEvent.date || !editEvent.time) {
       toast({
@@ -257,27 +255,22 @@ export const DatePlanner = () => {
       });
       return;
     }
-
     try {
-      const { error } = await supabase
-        .from('date_ideas')
-        .update({
-          title: editEvent.title,
-          description: editEvent.description,
-          location: editEvent.location,
-          category: editEvent.category,
-          scheduled_date: editEvent.date.toISOString().split('T')[0],
-          scheduled_time: editEvent.time,
-        })
-        .eq('id', editingDate.id);
-
+      const {
+        error
+      } = await supabase.from('date_ideas').update({
+        title: editEvent.title,
+        description: editEvent.description,
+        location: editEvent.location,
+        category: editEvent.category,
+        scheduled_date: editEvent.date.toISOString().split('T')[0],
+        scheduled_time: editEvent.time
+      }).eq('id', editingDate.id);
       if (error) throw error;
-
       toast({
         title: "Date updated! 💕",
         description: `${editEvent.title} has been updated successfully`
       });
-
       setShowEditForm(false);
       setEditingDate(null);
       fetchPlannedDates();
@@ -290,11 +283,12 @@ export const DatePlanner = () => {
       });
     }
   };
-
   const handleSaveUpcomingEvent = async (event: UpcomingEvent) => {
     if (!coupleData?.id) return;
     try {
-      const { error } = await supabase.from('date_ideas').insert({
+      const {
+        error
+      } = await supabase.from('date_ideas').insert({
         title: event.title,
         description: event.description,
         category: event.category,
@@ -317,42 +311,33 @@ export const DatePlanner = () => {
       });
     }
   };
-
   const handleDateFeedback = async (dateId: string, wasSuccessful: boolean) => {
     try {
       const today = new Date().toISOString().split('T')[0];
-      
-      const { error } = await supabase
-        .from('date_ideas')
-        .update({
-          is_completed: true,
-          completed_date: today,
-          rating: wasSuccessful ? 5 : 2,
-          notes: wasSuccessful ? 'Date was successful!' : 'Date did not go as planned',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', dateId);
-
+      const {
+        error
+      } = await supabase.from('date_ideas').update({
+        is_completed: true,
+        completed_date: today,
+        rating: wasSuccessful ? 5 : 2,
+        notes: wasSuccessful ? 'Date was successful!' : 'Date did not go as planned',
+        updated_at: new Date().toISOString()
+      }).eq('id', dateId);
       if (error) throw error;
-
       toast({
         title: wasSuccessful ? "Great! Date added to history" : "Thanks for the feedback",
-        description: wasSuccessful 
-          ? "Your successful date has been added to your date history in the profile tab." 
-          : "Better luck next time! You can plan another date anytime.",
+        description: wasSuccessful ? "Your successful date has been added to your date history in the profile tab." : "Better luck next time! You can plan another date anytime."
       });
-
       fetchPlannedDates();
     } catch (error) {
       console.error('Error updating date feedback:', error);
       toast({
         title: "Error saving feedback",
         description: "There was an error saving your feedback. Please try again.",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
-
   const isDateCompleted = (scheduledDate: string) => {
     const today = new Date();
     const dateToCheck = new Date(scheduledDate);
@@ -360,14 +345,9 @@ export const DatePlanner = () => {
   };
   return <div className="min-h-screen bg-background pb-20">
       {/* Gradient Header */}
-      <GradientHeader
-        title="Date Planner"
-        subtitle="Because love deserves beautiful plans"
-        icon={<Heart size={24} />}
-        showBackButton={false}
-      >
+      <GradientHeader title="Date Planner" subtitle="Because love deserves beautiful plans" icon={<Heart size={24} />} showBackButton={false}>
         {/* Enhanced Tab Navigation */}
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'planned' | 'upcoming')} className="w-full">
+        <Tabs value={activeTab} onValueChange={value => setActiveTab(value as 'planned' | 'upcoming')} className="w-full">
           <TabsList className="grid w-auto grid-cols-2 gap-2 max-w-sm mx-auto">
             <TabsTrigger value="planned" className="flex-col gap-1">
               <span className="font-bold">Planned</span>
@@ -383,7 +363,7 @@ export const DatePlanner = () => {
 
       {/* Content with Tab System */}
       <div className="px-4">
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'planned' | 'upcoming')} className="w-full">
+        <Tabs value={activeTab} onValueChange={value => setActiveTab(value as 'planned' | 'upcoming')} className="w-full">
           <TabsContent value="planned" className="space-y-4">
             {/* Add Event Button */}
             <div className="flex justify-center">
@@ -403,8 +383,8 @@ export const DatePlanner = () => {
                   Nothing on the calendar yet. Go make some magic!
                 </p>
               </div> : plannedDates.map((date, index) => <div key={date.id} className="bg-card rounded-2xl p-6 shadow-soft hover:shadow-romantic transition-all duration-200 transform hover:scale-102 animate-fade-in" style={{
-          animationDelay: `${index * 100}ms`
-        }}>
+            animationDelay: `${index * 100}ms`
+          }}>
                   <div className="flex items-start justify-between mb-4">
                     <div>
                       <h3 className="text-xl font-extrabold font-poppins text-foreground mb-2">
@@ -441,35 +421,23 @@ export const DatePlanner = () => {
                        <Edit size={14} className="mr-1" />
                        Edit
                      </Button>
-                    {date.scheduled_date && isDateCompleted(date.scheduled_date) ? (
-                      // Show feedback options for completed dates
-                      <div className="flex gap-1 flex-1">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="flex-1 bg-green-50 text-green-600 border-green-200 hover:bg-green-100" 
-                          onClick={() => handleDateFeedback(date.id, true)}
-                        >
+                    {date.scheduled_date && isDateCompleted(date.scheduled_date) ?
+              // Show feedback options for completed dates
+              <div className="flex gap-1 flex-1">
+                        <Button variant="outline" size="sm" className="flex-1 bg-green-50 text-green-600 border-green-200 hover:bg-green-100" onClick={() => handleDateFeedback(date.id, true)}>
                           <Heart size={14} className="mr-1" />
                           Successful
                         </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="flex-1 bg-red-50 text-red-600 border-red-200 hover:bg-red-100" 
-                          onClick={() => handleDateFeedback(date.id, false)}
-                        >
+                        <Button variant="outline" size="sm" className="flex-1 bg-red-50 text-red-600 border-red-200 hover:bg-red-100" onClick={() => handleDateFeedback(date.id, false)}>
                           <X size={14} className="mr-1" />
                           Not Great
                         </Button>
-                      </div>
-                    ) : (
-                      // Show reschedule for future dates
-                      <Button variant="outline" size="sm" className="flex-1" onClick={() => handleEditDate(date)}>
+                      </div> :
+              // Show reschedule for future dates
+              <Button variant="outline" size="sm" className="flex-1" onClick={() => handleEditDate(date)}>
                         <CalendarIcon size={14} className="mr-1" />
                         Reschedule
-                      </Button>
-                    )}
+                      </Button>}
                   </div>
                 </div>)}
           </TabsContent>
@@ -482,8 +450,8 @@ export const DatePlanner = () => {
                   We're searching the city for your next romantic moment...
                 </p>
               </div> : upcomingEvents.map((event, index) => <div key={event.id} className="bg-card rounded-2xl p-6 shadow-soft hover:shadow-romantic transition-all duration-200 transform hover:scale-102 animate-fade-in" style={{
-          animationDelay: `${index * 100}ms`
-        }}>
+            animationDelay: `${index * 100}ms`
+          }}>
                   <div className="flex items-start justify-between mb-4">
                     <div>
                       <h3 className="text-xl font-extrabold font-poppins text-foreground mb-2">
@@ -514,10 +482,7 @@ export const DatePlanner = () => {
                        <CalendarPlus size={14} className="mr-1" />
                        Add to Planner
                      </Button>
-                    <Button variant="outline" size="sm" className="flex-1">
-                      <Heart size={14} className="mr-1" />
-                      Save for Later
-                    </Button>
+                    
                   </div>
                 </div>)}
           </TabsContent>
