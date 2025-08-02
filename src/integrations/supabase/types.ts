@@ -100,6 +100,78 @@ export type Database = {
         }
         Relationships: []
       }
+      api_cost_config: {
+        Row: {
+          api_source: string
+          cost_per_request: number
+          free_tier_limit: number | null
+          id: string
+          is_active: boolean | null
+          rate_limit_per_hour: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          api_source: string
+          cost_per_request: number
+          free_tier_limit?: number | null
+          id?: string
+          is_active?: boolean | null
+          rate_limit_per_hour?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          api_source?: string
+          cost_per_request?: number
+          free_tier_limit?: number | null
+          id?: string
+          is_active?: boolean | null
+          rate_limit_per_hour?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      api_usage_logs: {
+        Row: {
+          api_source: string
+          cost_estimate: number | null
+          created_at: string | null
+          endpoint: string
+          error_message: string | null
+          execution_time_ms: number | null
+          id: string
+          request_params: Json | null
+          response_size: number | null
+          success: boolean | null
+          user_id: string | null
+        }
+        Insert: {
+          api_source: string
+          cost_estimate?: number | null
+          created_at?: string | null
+          endpoint: string
+          error_message?: string | null
+          execution_time_ms?: number | null
+          id?: string
+          request_params?: Json | null
+          response_size?: number | null
+          success?: boolean | null
+          user_id?: string | null
+        }
+        Update: {
+          api_source?: string
+          cost_estimate?: number | null
+          created_at?: string | null
+          endpoint?: string
+          error_message?: string | null
+          execution_time_ms?: number | null
+          id?: string
+          request_params?: Json | null
+          response_size?: number | null
+          success?: boolean | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       conversations: {
         Row: {
           couple_id: string
@@ -959,6 +1031,45 @@ export type Database = {
         }
         Relationships: []
       }
+      user_api_quotas: {
+        Row: {
+          created_at: string | null
+          daily_requests_limit: number | null
+          daily_requests_used: number | null
+          id: string
+          monthly_cost_limit: number | null
+          monthly_cost_used: number | null
+          monthly_reset_date: string | null
+          quota_reset_date: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          daily_requests_limit?: number | null
+          daily_requests_used?: number | null
+          id?: string
+          monthly_cost_limit?: number | null
+          monthly_cost_used?: number | null
+          monthly_reset_date?: string | null
+          quota_reset_date?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          daily_requests_limit?: number | null
+          daily_requests_used?: number | null
+          id?: string
+          monthly_cost_limit?: number | null
+          monthly_cost_used?: number | null
+          monthly_reset_date?: string | null
+          quota_reset_date?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       user_conversation_clears: {
         Row: {
           cleared_at: string
@@ -1000,6 +1111,10 @@ export type Database = {
         Args: { p_couple_id: string }
         Returns: number
       }
+      check_user_quota: {
+        Args: { p_user_id: string; p_estimated_cost?: number }
+        Returns: Json
+      }
       cleanup_expired_verifications: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -1033,6 +1148,14 @@ export type Database = {
       purge_user_completely: {
         Args: { user_email: string }
         Returns: Json
+      }
+      reset_daily_quotas: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      reset_monthly_quotas: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       update_couple_streaks: {
         Args: { p_couple_id: string }
