@@ -88,13 +88,29 @@ export const Chat: React.FC<ChatProps> = ({
         schema: 'public',
         table: 'messages',
         filter: `conversation_id=eq.${conversation.id}`
-      }, payload => {
+      }, async (payload) => {
         const newMessage = payload.new as Message;
-        setMessages(prev => [...prev, newMessage]);
+        
+        // Check if user has cleared chat - if so, only show new messages
+        const { data: clearData } = await supabase
+          .from('user_conversation_clears')
+          .select('cleared_at')
+          .eq('user_id', user?.id)
+          .eq('conversation_id', conversation.id)
+          .single();
 
-        // Mark message as read if it's from partner
-        if (newMessage.sender_id !== user?.id) {
-          markMessageAsRead(newMessage.id);
+        const clearTimestamp = clearData?.cleared_at;
+        const messageTime = new Date(newMessage.created_at);
+        const clearTime = clearTimestamp ? new Date(clearTimestamp) : null;
+        
+        // Only add message if it's after clear time or no clear time exists
+        if (!clearTime || messageTime > clearTime) {
+          setMessages(prev => [...prev, newMessage]);
+
+          // Mark message as read if it's from partner
+          if (newMessage.sender_id !== user?.id) {
+            markMessageAsRead(newMessage.id);
+          }
         }
       })
       .on('postgres_changes', {
@@ -218,18 +234,34 @@ export const Chat: React.FC<ChatProps> = ({
       }
       setConversation(existingConversation);
 
-      // Fetch messages
-      const {
-        data: messagesData,
-        error: messagesError
-      } = await supabase.from('messages').select('*').eq('conversation_id', existingConversation.id).order('created_at', {
-        ascending: true
-      });
+      // Get user's last clear timestamp
+      const { data: clearData } = await supabase
+        .from('user_conversation_clears')
+        .select('cleared_at')
+        .eq('user_id', user.id)
+        .eq('conversation_id', existingConversation.id)
+        .single();
+
+      const clearTimestamp = clearData?.cleared_at;
+
+      // Fetch messages after clear timestamp
+      let messagesQuery = supabase
+        .from('messages')
+        .select('*')
+        .eq('conversation_id', existingConversation.id)
+        .order('created_at', { ascending: true });
+
+      if (clearTimestamp) {
+        messagesQuery = messagesQuery.gt('created_at', clearTimestamp);
+      }
+
+      const { data: messagesData, error: messagesError } = await messagesQuery;
       if (messagesError) throw messagesError;
+      
       const fetchedMessages = (messagesData || []) as Message[];
       setMessages(fetchedMessages);
 
-      // Load reactions for messages
+      // Load reactions for visible messages
       if (fetchedMessages.length > 0) {
         const { data: reactions, error: reactionsError } = await supabase
           .from('message_reactions')
@@ -248,7 +280,7 @@ export const Chat: React.FC<ChatProps> = ({
         }
       }
 
-      // Mark unread messages as read
+      // Mark unread messages as read (only visible messages)
       const unreadMessages = messagesData?.filter(msg => !msg.is_read && msg.sender_id !== user.id);
       if (unreadMessages && unreadMessages.length > 0) {
         await supabase.from('messages').update({
@@ -349,14 +381,24 @@ export const Chat: React.FC<ChatProps> = ({
     }
   };
   const handleClearChat = async () => {
-    if (!conversation?.id) return;
+    if (!conversation?.id || !user?.id) return;
     try {
-      const {
-        error
-      } = await supabase.from('messages').delete().eq('conversation_id', conversation.id);
-      if (error) throw error;
+      // Record clear timestamp for this user only
+      await supabase
+        .from('user_conversation_clears')
+        .upsert({
+          user_id: user.id,
+          conversation_id: conversation.id,
+          cleared_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_id,conversation_id'
+        });
+      
+      // Clear messages from local state immediately
       setMessages([]);
-      toast.success('Chat cleared successfully');
+      setMessageReactions({});
+      
+      toast.success('Chat cleared for you only');
     } catch (error) {
       console.error('Error clearing chat:', error);
       toast.error('Failed to clear chat');

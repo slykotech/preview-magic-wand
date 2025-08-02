@@ -839,6 +839,30 @@ export type Database = {
         }
         Relationships: []
       }
+      user_conversation_clears: {
+        Row: {
+          cleared_at: string
+          conversation_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          cleared_at?: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          cleared_at?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
