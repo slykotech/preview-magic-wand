@@ -51,7 +51,7 @@ const Index = () => {
           <div className="flex items-center gap-4 p-4 bg-white/20 rounded-2xl backdrop-blur-sm relative">
             <div className="relative z-10 w-16 h-16 -mt-2 -mb-2">
               <img 
-                src="/lovable-uploads/e96cb636-6076-4256-8622-93e09fe2fd42.png" 
+                src="/lovable-uploads/81588f46-81ce-4298-9080-6e436870d6ad.png" 
                 alt="Quality Time" 
                 className="w-full h-full object-contain drop-shadow-lg"
               />
