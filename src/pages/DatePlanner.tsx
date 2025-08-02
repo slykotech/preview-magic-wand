@@ -207,7 +207,7 @@ export const DatePlanner = () => {
       >
         {/* Enhanced Tab Navigation */}
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'planned' | 'upcoming')} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-auto grid-cols-2 max-w-sm mx-auto">
             <TabsTrigger value="planned" className="flex-col gap-1">
               <span className="font-bold">Planned</span>
               <span className="text-xs opacity-80">scheduled love moments</span>
