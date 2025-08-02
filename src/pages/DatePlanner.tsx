@@ -94,11 +94,11 @@ export const DatePlanner = () => {
       navigate('/auth');
       return;
     }
-    if (user) {
+    if (user && coupleData?.id) {
       fetchPlannedDates();
       fetchUpcomingEvents();
     }
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading, navigate, coupleData?.id]);
   const fetchPlannedDates = async () => {
     try {
       if (!coupleData?.id) return;
