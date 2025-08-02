@@ -51,7 +51,9 @@ export const DatePlanner = () => {
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [showScheduleForm, setShowScheduleForm] = useState(false);
+  const [showEditForm, setShowEditForm] = useState(false);
   const [selectedUpcomingEvent, setSelectedUpcomingEvent] = useState<UpcomingEvent | null>(null);
+  const [editingDate, setEditingDate] = useState<DateIdea | null>(null);
   const [newEvent, setNewEvent] = useState({
     title: '',
     description: '',
@@ -63,6 +65,14 @@ export const DatePlanner = () => {
   const [scheduleData, setScheduleData] = useState({
     date: undefined as Date | undefined,
     time: ''
+  });
+  const [editEvent, setEditEvent] = useState({
+    title: '',
+    description: '',
+    location: '',
+    date: undefined as Date | undefined,
+    time: '',
+    category: 'romantic'
   });
   const {
     toast
@@ -225,6 +235,62 @@ export const DatePlanner = () => {
     }
   };
 
+  const handleEditDate = (date: DateIdea) => {
+    setEditingDate(date);
+    setEditEvent({
+      title: date.title,
+      description: date.description || '',
+      location: date.location || '',
+      date: date.scheduled_date ? new Date(date.scheduled_date) : undefined,
+      time: date.scheduled_time || '',
+      category: date.category || 'romantic'
+    });
+    setShowEditForm(true);
+  };
+
+  const handleUpdateEvent = async () => {
+    if (!editingDate || !editEvent.title || !editEvent.date || !editEvent.time) {
+      toast({
+        title: "Missing details! ⏰",
+        description: "Please fill in all required fields",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('date_ideas')
+        .update({
+          title: editEvent.title,
+          description: editEvent.description,
+          location: editEvent.location,
+          category: editEvent.category,
+          scheduled_date: editEvent.date.toISOString().split('T')[0],
+          scheduled_time: editEvent.time,
+        })
+        .eq('id', editingDate.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Date updated! 💕",
+        description: `${editEvent.title} has been updated successfully`
+      });
+
+      setShowEditForm(false);
+      setEditingDate(null);
+      fetchPlannedDates();
+    } catch (error) {
+      console.error('Error updating event:', error);
+      toast({
+        title: "Error updating event",
+        description: "Please try again",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleSaveUpcomingEvent = async (event: UpcomingEvent) => {
     if (!coupleData?.id) return;
     try {
@@ -330,10 +396,10 @@ export const DatePlanner = () => {
                     </p>}
                   
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm" className="flex-1">
-                      <Edit size={14} className="mr-1" />
-                      Edit
-                    </Button>
+                     <Button variant="outline" size="sm" className="flex-1" onClick={() => handleEditDate(date)}>
+                       <Edit size={14} className="mr-1" />
+                       Edit
+                     </Button>
                     <Button variant="outline" size="sm" className="flex-1">
                       <CalendarIcon size={14} className="mr-1" />
                       Reschedule
@@ -519,6 +585,82 @@ export const DatePlanner = () => {
                 <Button onClick={handleConfirmSchedule} className="flex-1 bg-gradient-secondary hover:opacity-90 text-white">
                   <CalendarPlus size={16} className="mr-2" />
                   Schedule Date
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>}
+
+      {/* Edit Event Modal */}
+      {showEditForm && editingDate && <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-card rounded-xl p-6 w-full max-w-md shadow-romantic animate-slide-up max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-extrabold font-poppins">Edit Date</h3>
+              <Button variant="ghost" size="sm" onClick={() => setShowEditForm(false)}>
+                <X size={20} />
+              </Button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="edit-title">Event Title*</Label>
+                <Input id="edit-title" value={editEvent.title} onChange={e => setEditEvent({
+              ...editEvent,
+              title: e.target.value
+            })} placeholder="e.g., Candlelight Dinner" className="mt-1" />
+              </div>
+
+              <div>
+                <Label htmlFor="edit-description">Description</Label>
+                <Textarea id="edit-description" value={editEvent.description} onChange={e => setEditEvent({
+              ...editEvent,
+              description: e.target.value
+            })} placeholder="What makes this date special?" className="mt-1" rows={3} />
+              </div>
+
+              <div>
+                <Label htmlFor="edit-location">Location</Label>
+                <Input id="edit-location" value={editEvent.location} onChange={e => setEditEvent({
+              ...editEvent,
+              location: e.target.value
+            })} placeholder="Where will this happen?" className="mt-1" />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Date*</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="w-full justify-start text-left font-normal mt-1">
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {editEvent.date ? format(editEvent.date, "MMM d, yyyy") : <span>Pick a date</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <CalendarComponent mode="single" selected={editEvent.date} onSelect={date => setEditEvent({
+                    ...editEvent,
+                    date
+                  })} initialFocus className="p-3 pointer-events-auto" />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                <div>
+                  <Label htmlFor="edit-time">Time*</Label>
+                  <Input id="edit-time" type="time" value={editEvent.time} onChange={e => setEditEvent({
+                ...editEvent,
+                time: e.target.value
+              })} className="mt-1" />
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-4">
+                <Button variant="outline" onClick={() => setShowEditForm(false)} className="flex-1">
+                  Cancel
+                </Button>
+                <Button onClick={handleUpdateEvent} className="flex-1 bg-gradient-secondary hover:opacity-90 text-white">
+                  <Save size={16} className="mr-2" />
+                  Update Date
                 </Button>
               </div>
             </div>
