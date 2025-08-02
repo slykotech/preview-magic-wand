@@ -442,75 +442,112 @@ const MemoryVault: React.FC = () => {
           </div>
         ) : viewMode === 'grid' ? (
           /* Masonry Grid View */
-          <div className="columns-1 md:columns-2 lg:columns-3 gap-4 space-y-4">
-            {filteredItems.map((item) => (
-              <Card 
-                key={`${item.type}-${item.id}`} 
-                className="break-inside-avoid overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
-              >
-                {item.type === 'memory' && item.images && item.images.length > 0 && (
-                  <div className="relative">
-                    <img 
-                      src={item.images[0].image_url} 
-                      alt={item.title} 
-                      className="w-full h-48 object-cover" 
-                    />
-                    {item.images.length > 1 && (
-                      <div className="absolute top-2 right-2 bg-black/50 text-white px-2 py-1 rounded-full text-xs">
-                        +{item.images.length - 1} more
+          <div className="columns-1 md:columns-2 lg:columns-3 gap-6">
+            {filteredItems.map((item, index) => {
+              // Generate vibrant colors for memory cards
+              const colors = [
+                'from-purple-500 to-pink-500',
+                'from-blue-500 to-cyan-500', 
+                'from-green-500 to-teal-500',
+                'from-orange-500 to-red-500',
+                'from-indigo-500 to-purple-500',
+                'from-pink-500 to-rose-500',
+                'from-cyan-500 to-blue-500',
+                'from-teal-500 to-green-500'
+              ];
+              const colorClass = colors[index % colors.length];
+              
+              return (
+                <div 
+                  key={`${item.type}-${item.id}`} 
+                  className="break-inside-avoid mb-6 group cursor-pointer"
+                >
+                  {item.type === 'memory' && item.images && item.images.length > 0 ? (
+                    /* Photo Memory Card */
+                    <div className={`relative rounded-2xl overflow-hidden bg-gradient-to-br ${colorClass} p-1 hover:scale-105 transition-all duration-300 hover:shadow-xl`}>
+                      <div className="relative rounded-xl overflow-hidden">
+                        <img 
+                          src={item.images[0].image_url} 
+                          alt={item.title} 
+                          className="w-full h-64 object-cover" 
+                        />
+                        {/* Dark overlay for text */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                        
+                        {/* Content overlay */}
+                        <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex-1">
+                              <h3 className="font-bold text-lg leading-tight mb-1">{item.title}</h3>
+                              <p className="text-sm text-white/80">
+                                {item.memory_date ? format(parseISO(item.memory_date), 'MMM d, yyyy') : format(parseISO(item.created_at), 'MMM d, yyyy')}
+                              </p>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleFavorite(item.id, item.type, item.is_favorite);
+                              }}
+                              className="p-1 hover:bg-white/20"
+                            >
+                              <Star className={`h-5 w-5 ${item.is_favorite ? 'fill-yellow-400 text-yellow-400' : 'text-white/70'}`} />
+                            </Button>
+                          </div>
+                          
+                          {item.description && (
+                            <p className="text-sm text-white/90 line-clamp-2">
+                              {item.description}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Multiple photos indicator */}
+                        {item.images.length > 1 && (
+                          <div className="absolute top-3 right-3 bg-black/50 text-white px-2 py-1 rounded-full text-xs font-medium">
+                            +{item.images.length - 1}
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                )}
-
-                <div className="p-4">
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex-1 pr-2">
-                      <h3 className="font-bold text-[#2C3E50] line-clamp-2 mb-1">{item.title}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {format(parseISO(item.created_at), 'MMM d, yyyy')}
-                      </p>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => toggleFavorite(item.id, item.type, item.is_favorite)}
-                      className="p-1"
-                    >
-                      <Star className={`h-5 w-5 ${item.is_favorite ? 'fill-[#F1C40F] text-[#F1C40F]' : 'text-muted-foreground'}`} />
-                    </Button>
-                  </div>
+                  ) : (
+                    /* Note Card - White background */
+                    <div className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border border-gray-100">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <FileText className="h-4 w-4 text-purple-500" />
+                            <span className="text-xs font-medium text-purple-500 uppercase tracking-wide">Note</span>
+                          </div>
+                          <h3 className="font-bold text-gray-900 text-lg leading-tight mb-2">{item.title}</h3>
+                          <p className="text-sm text-gray-500">
+                            {format(parseISO(item.created_at), 'MMM d, yyyy')}
+                          </p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleFavorite(item.id, item.type, item.is_favorite);
+                          }}
+                          className="p-1"
+                        >
+                          <Star className={`h-5 w-5 ${item.is_favorite ? 'fill-yellow-400 text-yellow-400' : 'text-gray-400'}`} />
+                        </Button>
+                      </div>
 
-                  {item.type === 'note' && item.content && (
-                    <p className="text-sm text-muted-foreground mb-2 line-clamp-3">
-                      {item.content}
-                    </p>
-                  )}
-
-                  {item.description && (
-                    <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
-                      {item.description}
-                    </p>
-                  )}
-
-                  <div className="flex items-center justify-between">
-                    <Badge variant={item.type === 'memory' ? 'default' : 'secondary'} className="text-xs">
-                      {item.type === 'memory' ? (
-                        <>
-                          <ImageIcon className="h-3 w-3 mr-1" />
-                          Memory
-                        </>
-                      ) : (
-                        <>
-                          <FileText className="h-3 w-3 mr-1" />
-                          Note
-                        </>
+                      {item.content && (
+                        <p className="text-gray-700 text-sm leading-relaxed line-clamp-4">
+                          {item.content}
+                        </p>
                       )}
-                    </Badge>
-                  </div>
+                    </div>
+                  )}
                 </div>
-              </Card>
-            ))}
+              );
+            })}
           </div>
         ) : (
           /* Timeline View */
