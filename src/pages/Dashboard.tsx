@@ -19,6 +19,19 @@ import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+
+const getTimeBasedMessage = () => {
+  const hour = new Date().getHours();
+  
+  if (hour >= 5 && hour < 12) {
+    return "Sunshine's here — time to make your love bloom ☀️🌸";
+  } else if (hour >= 12 && hour < 17) {
+    return "Love doesn't take lunch breaks. Let's reconnect 🫶";
+  } else {
+    return "Evenings are made for cuddles, calm, and connection 🌙💖";
+  }
+};
+
 export const Dashboard = () => {
   const [syncScore, setSyncScore] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -528,9 +541,9 @@ export const Dashboard = () => {
         <div className="bg-gradient-primary py-12 px-6 -mx-6 -mt-8 mb-8">
           <div className={`text-center space-y-2 ${isLoaded ? 'animate-fade-in' : 'opacity-0'}`}>
             
-            <p className="text-lg text-white/90">Hey sweethearts! 💖
+            <p className="text-lg text-white/90">{getTimeBasedMessage()}</p>
 Let’s sync your hearts and track the rhythm of your relationship 
-one moment, one feeling, one connection at a time.</p>
+
           </div>
         </div>
         
