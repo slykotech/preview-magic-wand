@@ -343,7 +343,7 @@ export const Chat: React.FC<ChatProps> = ({
             fileInputRef.current.click();
           }
         }} className="flex flex-col items-center gap-2 p-4 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-primary transition-colors">
-              <Video className="h-6 w-6 text-primary" />
+              
               <span className="text-xs font-medium">Video</span>
             </button>
             <button onClick={() => {
