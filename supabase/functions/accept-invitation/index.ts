@@ -110,6 +110,8 @@ Deno.serve(async (req) => {
       .not('user2_id', 'eq', senderUserId)
       .maybeSingle()
 
+    console.log('Sender couple check result:', senderCouple)
+
     if (senderCouple) {
       throw new Error('The sender is already connected with someone else')
     }
@@ -123,11 +125,56 @@ Deno.serve(async (req) => {
       .not('user2_id', 'eq', recipientUser.id)
       .maybeSingle()
 
+    console.log('Recipient couple check result:', recipientCouple)
+
     if (recipientCouple) {
       throw new Error('You are already connected with someone else')
     }
 
+    // Check if either user has a demo mode couple that needs to be replaced
+    const { data: senderDemoCouple } = await supabase
+      .from('couples')
+      .select('id')
+      .eq('user1_id', senderUserId)
+      .eq('user2_id', senderUserId)
+      .maybeSingle()
+
+    const { data: recipientDemoCouple } = await supabase
+      .from('couples')
+      .select('id')
+      .eq('user1_id', recipientUser.id)
+      .eq('user2_id', recipientUser.id)
+      .maybeSingle()
+
+    console.log('Demo couples found - sender:', senderDemoCouple, 'recipient:', recipientDemoCouple)
+
+    // Delete demo mode couples before creating the real connection
+    if (senderDemoCouple) {
+      console.log('Deleting sender demo couple:', senderDemoCouple.id)
+      const { error: deleteSenderError } = await supabase
+        .from('couples')
+        .delete()
+        .eq('id', senderDemoCouple.id)
+      
+      if (deleteSenderError) {
+        console.error('Error deleting sender demo couple:', deleteSenderError)
+      }
+    }
+
+    if (recipientDemoCouple && recipientDemoCouple.id !== senderDemoCouple?.id) {
+      console.log('Deleting recipient demo couple:', recipientDemoCouple.id)
+      const { error: deleteRecipientError } = await supabase
+        .from('couples')
+        .delete()
+        .eq('id', recipientDemoCouple.id)
+      
+      if (deleteRecipientError) {
+        console.error('Error deleting recipient demo couple:', deleteRecipientError)
+      }
+    }
+
     // Create the couple connection
+    console.log('Creating new couple connection between:', senderUserId, 'and', recipientUser.id)
     const { data: newCouple, error: createCoupleError } = await supabase
       .from('couples')
       .insert({

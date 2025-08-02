@@ -71,9 +71,9 @@ const ExistingUserConnect = () => {
           description: "You are now connected with your partner.",
         });
 
-        // Redirect to dashboard after a short delay
+        // Force refresh by reloading the page to ensure fresh data
         setTimeout(() => {
-          navigate('/dashboard');
+          window.location.href = '/dashboard';
         }, 2000);
       } else {
         setStatus('error');
