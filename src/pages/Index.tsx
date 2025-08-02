@@ -48,25 +48,20 @@ const Index = () => {
 
         {/* Features */}
         <div className="space-y-3 text-left">
-          <div className="flex items-center gap-4 p-4 bg-white/20 rounded-2xl backdrop-blur-sm relative">
-            <div className="relative z-10 w-16 h-16 -mt-2 -mb-2">
-              <img 
-                src="/lovable-uploads/e96cb636-6076-4256-8622-93e09fe2fd42.png" 
-                alt="Quality Time" 
-                className="w-full h-full object-contain drop-shadow-lg"
-              />
+          <div className="flex items-center gap-4 p-4 bg-white/20 rounded-2xl backdrop-blur-sm">
+            <div className="w-10 h-10 bg-white/30 rounded-xl flex items-center justify-center">
+              <Heart className="text-white" size={20} />
             </div>
             <div className="flex-1">
               <h3 className="font-poppins font-bold text-white">Quality Time</h3>
             </div>
+            <div className="text-2xl">💑</div>
           </div>
           <div className="flex items-center gap-4 p-4 bg-white/20 rounded-2xl backdrop-blur-sm">
             <div className="w-10 h-10 bg-white/30 rounded-xl flex items-center justify-center">
               <Sparkles className="text-white" size={20} />
             </div>
-            <div className="flex-1">
-              <h3 className="font-poppins font-bold text-white">Soul Syncing</h3>
-            </div>
+            
             <div className="text-2xl">🤖</div>
           </div>
           <div className="flex items-center gap-4 p-4 bg-white/20 rounded-2xl backdrop-blur-sm">
