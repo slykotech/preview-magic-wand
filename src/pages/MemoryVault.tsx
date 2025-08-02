@@ -292,7 +292,7 @@ export const MemoryVault = () => {
         
         {/* Enhanced Filter Tabs */}
         <Tabs value={filterType} onValueChange={value => setFilterType(value as typeof filterType)} className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-4 max-w-sm mx-auto">
             <TabsTrigger value="all">All</TabsTrigger>
             <TabsTrigger value="photos">Photos</TabsTrigger>
             <TabsTrigger value="notes">Notes</TabsTrigger>
