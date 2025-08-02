@@ -179,6 +179,55 @@ function updateUsageStats(source: string) {
   console.log(`API usage stats:`, usageStats);
 }
 
+// Enhanced cost tracking function
+async function logApiUsage(userId: string | null, apiSource: string, endpoint: string, success: boolean, responseSize: number, executionTime: number, errorMessage?: string) {
+  if (!userId) return;
+  
+  try {
+    // Get cost configuration for this API source
+    const { data: costConfig } = await supabase
+      .from('api_cost_config')
+      .select('cost_per_request')
+      .eq('api_source', apiSource)
+      .single();
+    
+    const costEstimate = costConfig?.cost_per_request || 0;
+    
+    // Log the API usage
+    await supabase.from('api_usage_logs').insert({
+      user_id: userId,
+      api_source: apiSource,
+      endpoint: endpoint,
+      cost_estimate: costEstimate,
+      request_params: {
+        timestamp: new Date().toISOString(),
+        cached: false
+      },
+      response_size: responseSize,
+      execution_time_ms: executionTime,
+      success: success,
+      error_message: errorMessage
+    });
+    
+    // Update user quota usage
+    if (success) {
+      await supabase.rpc('update_user_quota_usage', {
+        p_user_id: userId,
+        p_cost_increase: costEstimate
+      });
+    }
+  } catch (error) {
+    console.error('Error logging API usage:', error);
+  }
+}
+
+// Database connection for cost monitoring
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.53.0';
+const supabase = createClient(
+  Deno.env.get('SUPABASE_URL') ?? '',
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+);
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -187,6 +236,57 @@ serve(async (req) => {
 
   try {
     const { latitude, longitude, radius = 25, size = 20, keyword = '', locationName = '' } = await req.json();
+    
+    // Get user authentication
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      throw new Error('Authentication required');
+    }
+    
+    // Extract user ID from auth header
+    const token = authHeader.replace('Bearer ', '');
+    let userId = null;
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      userId = payload.sub;
+    } catch (e) {
+      console.log('Could not extract user ID from token, proceeding without user tracking');
+    }
+    
+    // Check user quota if user is authenticated
+    let quotaCheck = { can_proceed: true, daily_remaining: 10, monthly_cost_remaining: 5.0 };
+    if (userId) {
+      try {
+        const { data: quotaData, error: quotaError } = await supabase.rpc('check_user_quota', { 
+          p_user_id: userId, 
+          p_estimated_cost: 0.05 // Estimated cost for this request
+        });
+        
+        if (quotaError) {
+          console.error('Quota check error:', quotaError);
+        } else {
+          quotaCheck = quotaData;
+        }
+      } catch (error) {
+        console.error('Error checking quota:', error);
+      }
+    }
+    
+    // If quota exceeded, return error
+    if (!quotaCheck.can_proceed) {
+      return new Response(JSON.stringify({
+        error: 'API quota exceeded',
+        details: {
+          daily_remaining: quotaCheck.daily_remaining,
+          monthly_cost_remaining: quotaCheck.monthly_cost_remaining,
+          daily_limit: quotaCheck.daily_limit,
+          monthly_limit: quotaCheck.monthly_limit
+        }
+      }), {
+        status: 429,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
     
     // Check cache first
     const cacheKey = getCacheKey(latitude || 0, longitude || 0, radius, size, keyword);
