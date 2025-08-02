@@ -95,7 +95,13 @@ const Index = () => {
             <div className="flex-1">
               <h3 className="font-poppins font-bold text-white">Memory Vault</h3>
             </div>
-            <div className="text-2xl">📸</div>
+            <div className="w-16 h-16">
+              <img 
+                src="/lovable-uploads/5a655e7e-3004-45ee-bc2a-35b5292a98e2.png" 
+                alt="Memory Vault Couple" 
+                className="w-full h-full object-contain"
+              />
+            </div>
           </div>
         </div>
 
