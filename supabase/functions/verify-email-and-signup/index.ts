@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
     // Create the user account
     const { data: authData, error: signUpError } = await supabase.auth.admin.createUser({
       email: pendingVerification.email,
-      password: pendingVerification.password_hash,
+      password: pendingVerification.password_hash, // This is actually the raw password, not hashed
       email_confirm: true, // Skip email confirmation since we're handling it manually
       user_metadata: {
         first_name: pendingVerification.first_name,

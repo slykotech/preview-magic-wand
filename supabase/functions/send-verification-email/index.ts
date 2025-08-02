@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
         email,
         first_name: firstName,
         last_name: lastName,
-        password_hash: password, // In real app, hash this
+        password_hash: password, // Stored as plain text, Supabase Auth handles hashing
         verification_token: verificationToken,
         expires_at: expiresAt.toISOString()
       })
