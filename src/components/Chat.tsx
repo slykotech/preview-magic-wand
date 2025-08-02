@@ -467,14 +467,9 @@ export const Chat: React.FC<ChatProps> = ({
                       {messageReactions[message.id].map((reaction) => (
                         <span
                           key={reaction.emoji}
-                          className={`flex items-center gap-0.5 px-1.5 py-0.5 text-xs rounded-full border ${
-                            reaction.users.includes(user?.id || '') 
-                              ? 'bg-primary/20 border-primary text-primary' 
-                              : 'bg-muted/50 border-muted'
-                          }`}
+                          className="text-sm"
                         >
-                          <span className="text-xs">{reaction.emoji}</span>
-                          <span className="text-xs font-medium">{reaction.count}</span>
+                          {reaction.emoji}
                         </span>
                       ))}
                     </div>
