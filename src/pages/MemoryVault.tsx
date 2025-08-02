@@ -1,29 +1,32 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '@/hooks/useAuth';
-import { useCoupleData } from '@/hooks/useCoupleData';
-import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { GradientHeader } from '@/components/GradientHeader';
-import { BottomNavigation } from '@/components/BottomNavigation';
-import { Button } from '@/components/ui/button';
+import { useAuth } from '@/hooks/useAuth';
+import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Card } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Heart, Search, Grid3X3, List, Star, Trash2, Camera, Upload, X, Plus, Calendar, Image as ImageIcon, FileText } from 'lucide-react';
+import { BottomNavigation } from '@/components/BottomNavigation';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useToast } from '@/hooks/use-toast';
 import { format, parseISO } from 'date-fns';
+import { useCoupleData } from '@/hooks/useCoupleData';
+import { Heart, Search, Grid3X3, List, Star, Camera, Upload, Plus, Image as ImageIcon, FileText, Edit3 } from 'lucide-react';
 
-// Data Models
+// Types
+interface MemoryImage {
+  id: string;
+  image_url: string;
+  file_name: string;
+  upload_order: number;
+}
+
 interface Memory {
   id: string;
   title: string;
   description: string | null;
   memory_date: string | null;
   image_url: string | null;
-  couple_id: string;
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -31,138 +34,168 @@ interface Memory {
   images?: MemoryImage[];
 }
 
-interface MemoryImage {
-  id: string;
-  memory_id: string;
-  image_url: string;
-  file_name: string | null;
-  upload_order: number;
-  created_at: string;
-}
-
 interface Note {
   id: string;
   title: string;
   content: string | null;
-  couple_id: string;
   created_by: string;
   created_at: string;
   updated_at: string;
   is_favorite: boolean;
 }
 
-type UnifiedItem = (Memory & { type: 'memory' }) | (Note & { type: 'note' });
+interface UnifiedItem {
+  id: string;
+  title: string;
+  description?: string | null;
+  memory_date?: string | null;
+  image_url?: string | null;
+  content?: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  is_favorite: boolean;
+  type: 'memory' | 'note';
+  images?: MemoryImage[];
+}
 
-const MemoryVault = () => {
+const MemoryVault: React.FC = () => {
   const { user } = useAuth();
-  const { coupleData } = useCoupleData();
   const { toast } = useToast();
+  const { coupleData, loading: coupleLoading } = useCoupleData();
 
-  // State Management
+  // State
   const [memories, setMemories] = useState<Memory[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'timeline'>('grid');
   const [filterType, setFilterType] = useState<'all' | 'photos' | 'notes' | 'favorites'>('all');
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [createType, setCreateType] = useState<'memory' | 'note'>('memory');
   const [showFabOptions, setShowFabOptions] = useState(false);
-  const [newMemory, setNewMemory] = useState({ title: "", description: "", memory_date: "" });
-  const [newNote, setNewNote] = useState({ title: "", content: "" });
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [dragActive, setDragActive] = useState(false);
-  const [showReadMore, setShowReadMore] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<UnifiedItem | null>(null);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [selectedMemory, setSelectedMemory] = useState<Memory | null>(null);
-  const [selectedNote, setSelectedNote] = useState<Note | null>(null);
-  const [deleting, setDeleting] = useState(false);
 
-  const coupleId = coupleData?.id;
+  // Form state
+  const [newMemory, setNewMemory] = useState({
+    title: '',
+    description: '',
+    memory_date: ''
+  });
 
-  // Data Fetching
-  const fetchMemories = useCallback(async (couple_id: string) => {
+  const [newNote, setNewNote] = useState({
+    title: '',
+    content: ''
+  });
+
+  // Fetch data
+  const fetchMemories = useCallback(async () => {
+    if (!coupleData?.id) return;
+
     try {
       const { data, error } = await supabase
         .from('memories')
-        .select(`*, images:memory_images(*)`)
-        .eq('couple_id', couple_id)
+        .select('*, images:memory_images(*)')
+        .eq('couple_id', coupleData.id)
         .order('created_at', { ascending: false });
+
       if (error) throw error;
       setMemories(data || []);
     } catch (error) {
       console.error('Error fetching memories:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load memories",
+        variant: "destructive",
+      });
     }
-  }, []);
+  }, [coupleData?.id, toast]);
 
-  const fetchNotes = useCallback(async (couple_id: string) => {
+  const fetchNotes = useCallback(async () => {
+    if (!coupleData?.id) return;
+
     try {
       const { data, error } = await supabase
         .from('notes')
         .select('*')
-        .eq('couple_id', couple_id)
+        .eq('couple_id', coupleData.id)
         .order('created_at', { ascending: false });
+
       if (error) throw error;
       setNotes(data || []);
     } catch (error) {
       console.error('Error fetching notes:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load notes",
+        variant: "destructive",
+      });
     }
-  }, []);
+  }, [coupleData?.id, toast]);
 
   useEffect(() => {
-    if (coupleId) {
-      Promise.all([fetchMemories(coupleId), fetchNotes(coupleId)]).finally(() => setLoading(false));
+    if (coupleData?.id) {
+      Promise.all([fetchMemories(), fetchNotes()]).finally(() => setLoading(false));
     }
-  }, [coupleId, fetchMemories, fetchNotes]);
+  }, [coupleData?.id, fetchMemories, fetchNotes]);
 
-  // File Upload Logic
-  const uploadImages = async (files: File[]) => {
-    setUploading(true);
-    try {
-      const uploadPromises = files.map(async (file, index) => {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${user?.id}/${Date.now()}_${index}.${fileExt}`;
-        
-        const { data, error } = await supabase.storage
-          .from('memory-images')
-          .upload(fileName, file);
+  // Upload images to Supabase Storage
+  const uploadImages = async (files: File[], memoryId: string) => {
+    const uploadPromises = files.map(async (file, index) => {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}_${index}.${fileExt}`;
+      const filePath = `${user?.id}/${fileName}`;
 
-        if (error) throw error;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('memory-images')
+        .upload(filePath, file);
 
-        const { data: urlData } = supabase.storage
-          .from('memory-images')
-          .getPublicUrl(fileName);
+      if (uploadError) throw uploadError;
 
-        return { url: urlData.publicUrl, fileName: file.name };
-      });
+      const { data: urlData } = supabase.storage
+        .from('memory-images')
+        .getPublicUrl(filePath);
 
-      return await Promise.all(uploadPromises);
-    } catch (error) {
-      console.error('Error uploading images:', error);
-      return [];
-    } finally {
-      setUploading(false);
-    }
+      return {
+        memory_id: memoryId,
+        image_url: urlData.publicUrl,
+        file_name: file.name,
+        upload_order: index
+      };
+    });
+
+    const imageData = await Promise.all(uploadPromises);
+
+    const { error: insertError } = await supabase
+      .from('memory_images')
+      .insert(imageData);
+
+    if (insertError) throw insertError;
   };
 
-  // CRUD Operations
+  // Create memory
   const createMemory = async () => {
-    if (!coupleId || !newMemory.title.trim()) {
-      toast({ title: "Missing information", variant: "destructive" });
+    if (!coupleData?.id || !user?.id || !newMemory.title.trim()) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
       return;
     }
 
     try {
+      setUploading(true);
+
       const { data: memoryData, error } = await supabase
         .from('memories')
         .insert({
-          title: newMemory.title,
-          description: newMemory.description || null,
+          couple_id: coupleData.id,
+          created_by: user.id,
+          title: newMemory.title.trim(),
+          description: newMemory.description.trim() || null,
           memory_date: newMemory.memory_date || null,
-          couple_id: coupleId,
-          created_by: user?.id
         })
         .select()
         .single();
@@ -170,139 +203,236 @@ const MemoryVault = () => {
       if (error) throw error;
 
       if (uploadedFiles.length > 0) {
-        const uploadResults = await uploadImages(uploadedFiles);
-        const memoryImages = uploadResults.map((result, index) => ({
-          memory_id: memoryData.id,
-          image_url: result.url,
-          file_name: result.fileName,
-          upload_order: index
-        }));
-
-        await supabase.from('memory_images').insert(memoryImages);
+        await uploadImages(uploadedFiles, memoryData.id);
       }
 
-      await fetchMemories(coupleId);
-      setNewMemory({ title: "", description: "", memory_date: "" });
-      setUploadedFiles([]);
+      await fetchMemories();
       setShowCreateForm(false);
-      toast({ title: "Memory Created! 💕" });
+      setNewMemory({ title: '', description: '', memory_date: '' });
+      setUploadedFiles([]);
+      setShowFabOptions(false);
+
+      toast({
+        title: "Success",
+        description: "Memory created successfully!",
+      });
     } catch (error) {
       console.error('Error creating memory:', error);
-      toast({ title: "Error", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: "Failed to create memory",
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(false);
     }
   };
 
+  // Create note
   const createNote = async () => {
-    if (!coupleId || !newNote.title.trim()) return;
+    if (!coupleData?.id || !user?.id || !newNote.title.trim()) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
-      await supabase.from('notes').insert({
-        title: newNote.title,
-        content: newNote.content || null,
-        couple_id: coupleId,
-        created_by: user?.id
-      });
+      const { error } = await supabase
+        .from('notes')
+        .insert({
+          couple_id: coupleData.id,
+          created_by: user.id,
+          title: newNote.title.trim(),
+          content: newNote.content.trim() || null,
+        });
 
-      await fetchNotes(coupleId);
-      setNewNote({ title: "", content: "" });
+      if (error) throw error;
+
+      await fetchNotes();
       setShowCreateForm(false);
-      toast({ title: "Note Created! 📝" });
+      setNewNote({ title: '', content: '' });
+      setShowFabOptions(false);
+
+      toast({
+        title: "Success",
+        description: "Note created successfully!",
+      });
     } catch (error) {
       console.error('Error creating note:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create note",
+        variant: "destructive",
+      });
     }
   };
 
-  const toggleFavorite = async (id: string, type: 'memory' | 'note', currentState: boolean) => {
+  // Toggle favorite
+  const toggleFavorite = async (id: string, type: 'memory' | 'note', currentFavorite: boolean) => {
     try {
-      await supabase
-        .from(type === 'memory' ? 'memories' : 'notes')
-        .update({ is_favorite: !currentState })
+      const table = type === 'memory' ? 'memories' : 'notes';
+      const { error } = await supabase
+        .from(table)
+        .update({ is_favorite: !currentFavorite })
         .eq('id', id);
 
+      if (error) throw error;
+
       if (type === 'memory') {
-        setMemories(prev => prev.map(m => m.id === id ? { ...m, is_favorite: !currentState } : m));
+        setMemories(prev => prev.map(memory => 
+          memory.id === id ? { ...memory, is_favorite: !currentFavorite } : memory
+        ));
       } else {
-        setNotes(prev => prev.map(n => n.id === id ? { ...n, is_favorite: !currentState } : n));
+        setNotes(prev => prev.map(note => 
+          note.id === id ? { ...note, is_favorite: !currentFavorite } : note
+        ));
       }
     } catch (error) {
       console.error('Error toggling favorite:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update favorite",
+        variant: "destructive",
+      });
     }
   };
 
-  // Filtering
-  const getFilteredItems = () => {
-    const allItems: UnifiedItem[] = [
-      ...memories.map(m => ({ ...m, type: 'memory' as const })),
-      ...notes.map(n => ({ ...n, type: 'note' as const }))
-    ];
+  // Filter and search items
+  const getFilteredItems = (): UnifiedItem[] => {
+    const memoryItems: UnifiedItem[] = memories.map(memory => ({ ...memory, type: 'memory' as const }));
+    const noteItems: UnifiedItem[] = notes.map(note => ({ ...note, type: 'note' as const }));
+    
+    let allItems = [...memoryItems, ...noteItems];
 
-    return allItems.filter(item => {
-      const matchesSearch = item.title.toLowerCase().includes(searchTerm.toLowerCase());
-      if (filterType === 'all') return matchesSearch;
-      if (filterType === 'photos') return matchesSearch && item.type === 'memory';
-      if (filterType === 'notes') return matchesSearch && item.type === 'note';
-      if (filterType === 'favorites') return matchesSearch && item.is_favorite;
-      return matchesSearch;
-    }).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    // Apply filter
+    if (filterType === 'photos') {
+      allItems = allItems.filter(item => item.type === 'memory');
+    } else if (filterType === 'notes') {
+      allItems = allItems.filter(item => item.type === 'note');
+    } else if (filterType === 'favorites') {
+      allItems = allItems.filter(item => item.is_favorite);
+    }
+
+    // Apply search
+    if (searchTerm) {
+      allItems = allItems.filter(item =>
+        item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (item.description && item.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (item.type === 'note' && item.content && item.content.toLowerCase().includes(searchTerm.toLowerCase()))
+      );
+    }
+
+    // Sort by created_at
+    return allItems.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   };
 
   const filteredItems = getFilteredItems();
 
-  if (loading) {
+  if (coupleLoading || loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin h-8 w-8 border-4 border-primary border-r-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading your memories...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted">
-      <GradientHeader title="Memory Vault" subtitle="Your love story collection" icon={<Heart />} />
-
-      <div className="container mx-auto px-4 py-6 pb-24">
-        {/* Search and Controls */}
-        <div className="flex flex-col gap-4 mb-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input
-              placeholder="Search memories and notes..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
+    <div className="min-h-screen bg-[#ECF0F1]">
+      {/* Header */}
+      <header className="bg-background p-6 pt-10 shadow-md">
+        <h1 className="font-bold text-3xl text-[#2C3E50] mb-1">Memory Vault</h1>
+        <p className="text-muted-foreground mb-4">Your love story collection</p>
+        
+        <div className="flex justify-between items-center">
+          {/* Filter Pills */}
+          <div className="flex space-x-2 overflow-x-auto pb-2">
+            <Button
+              variant={filterType === 'all' ? 'default' : 'outline'}
+              size="sm"
+              className={`rounded-full whitespace-nowrap font-semibold ${
+                filterType === 'all' ? 'bg-[#E74C3C] hover:bg-[#E74C3C]/90' : ''
+              }`}
+              onClick={() => setFilterType('all')}
+            >
+              All
+            </Button>
+            <Button
+              variant={filterType === 'photos' ? 'default' : 'outline'}
+              size="sm"
+              className={`rounded-full whitespace-nowrap font-semibold ${
+                filterType === 'photos' ? 'bg-[#E74C3C] hover:bg-[#E74C3C]/90' : ''
+              }`}
+              onClick={() => setFilterType('photos')}
+            >
+              Photos
+            </Button>
+            <Button
+              variant={filterType === 'notes' ? 'default' : 'outline'}
+              size="sm"
+              className={`rounded-full whitespace-nowrap font-semibold ${
+                filterType === 'notes' ? 'bg-[#E74C3C] hover:bg-[#E74C3C]/90' : ''
+              }`}
+              onClick={() => setFilterType('notes')}
+            >
+              Notes
+            </Button>
+            <Button
+              variant={filterType === 'favorites' ? 'default' : 'outline'}
+              size="sm"
+              className={`rounded-full whitespace-nowrap font-semibold ${
+                filterType === 'favorites' ? 'bg-[#E74C3C] hover:bg-[#E74C3C]/90' : ''
+              }`}
+              onClick={() => setFilterType('favorites')}
+            >
+              Favorites
+            </Button>
           </div>
-          
-          <div className="flex items-center justify-between">
-            <Tabs value={filterType} onValueChange={(value) => setFilterType(value as any)}>
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="all">All</TabsTrigger>
-                <TabsTrigger value="photos">Photos</TabsTrigger>
-                <TabsTrigger value="notes">Notes</TabsTrigger>
-                <TabsTrigger value="favorites">Favorites</TabsTrigger>
-              </TabsList>
-            </Tabs>
 
-            <div className="flex gap-2">
-              <Button
-                variant={viewMode === 'grid' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setViewMode('grid')}
-              >
-                <Grid3X3 className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={viewMode === 'timeline' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setViewMode('timeline')}
-              >
-                <List className="h-4 w-4" />
-              </Button>
-            </div>
+          {/* View Toggle */}
+          <div className="flex border border-border rounded-full p-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              className={`p-1.5 rounded-full ${
+                viewMode === 'grid' ? 'bg-[#2C3E50] text-white' : 'text-muted-foreground'
+              }`}
+              onClick={() => setViewMode('grid')}
+            >
+              <Grid3X3 className="h-5 w-5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className={`p-1.5 rounded-full ${
+                viewMode === 'timeline' ? 'bg-[#2C3E50] text-white' : 'text-muted-foreground'
+              }`}
+              onClick={() => setViewMode('timeline')}
+            >
+              <List className="h-5 w-5" />
+            </Button>
           </div>
         </div>
 
-        {/* Content Grid */}
+        {/* Search */}
+        <div className="mt-4 relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+          <Input
+            placeholder="Search your memories..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="p-6 relative min-h-[60vh]">
         {filteredItems.length === 0 ? (
           <div className="text-center py-12">
             <Heart className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
@@ -310,13 +440,21 @@ const MemoryVault = () => {
               No items found. Start creating your love story!
             </h3>
           </div>
-        ) : (
-          <div className={viewMode === 'grid' ? "columns-1 md:columns-2 lg:columns-3 gap-4 space-y-4" : "space-y-4"}>
+        ) : viewMode === 'grid' ? (
+          /* Masonry Grid View */
+          <div className="columns-1 md:columns-2 lg:columns-3 gap-4 space-y-4">
             {filteredItems.map((item) => (
-              <Card key={`${item.type}-${item.id}`} className="break-inside-avoid overflow-hidden hover:shadow-lg transition-all">
+              <Card 
+                key={`${item.type}-${item.id}`} 
+                className="break-inside-avoid overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
+              >
                 {item.type === 'memory' && item.images && item.images.length > 0 && (
                   <div className="relative">
-                    <img src={item.images[0].image_url} alt={item.title} className="w-full h-48 object-cover" />
+                    <img 
+                      src={item.images[0].image_url} 
+                      alt={item.title} 
+                      className="w-full h-48 object-cover" 
+                    />
                     {item.images.length > 1 && (
                       <div className="absolute top-2 right-2 bg-black/50 text-white px-2 py-1 rounded-full text-xs">
                         +{item.images.length - 1} more
@@ -327,8 +465,8 @@ const MemoryVault = () => {
 
                 <div className="p-4">
                   <div className="flex items-start justify-between mb-2">
-                    <div className="flex-1">
-                      <h3 className="font-medium line-clamp-2">{item.title}</h3>
+                    <div className="flex-1 pr-2">
+                      <h3 className="font-bold text-[#2C3E50] line-clamp-2 mb-1">{item.title}</h3>
                       <p className="text-sm text-muted-foreground">
                         {format(parseISO(item.created_at), 'MMM d, yyyy')}
                       </p>
@@ -337,73 +475,134 @@ const MemoryVault = () => {
                       variant="ghost"
                       size="sm"
                       onClick={() => toggleFavorite(item.id, item.type, item.is_favorite)}
+                      className="p-1"
                     >
-                      <Star className={`h-4 w-4 ${item.is_favorite ? 'fill-yellow-400 text-yellow-400' : ''}`} />
+                      <Star className={`h-5 w-5 ${item.is_favorite ? 'fill-[#F1C40F] text-[#F1C40F]' : 'text-muted-foreground'}`} />
                     </Button>
                   </div>
 
+                  {item.type === 'note' && item.content && (
+                    <p className="text-sm text-muted-foreground mb-2 line-clamp-3">
+                      {item.content}
+                    </p>
+                  )}
+
+                  {item.description && (
+                    <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
+                      {item.description}
+                    </p>
+                  )}
+
                   <div className="flex items-center justify-between">
-                     <Badge variant={item.type === 'memory' ? 'default' : 'secondary'}>
-                       {item.type === 'memory' ? (
-                         <>
-                           <ImageIcon className="h-3 w-3 mr-1" />
-                           Memory
-                         </>
-                       ) : (
-                         <>
-                           <FileText className="h-3 w-3 mr-1" />
-                           Note
-                         </>
-                       )}
-                     </Badge>
+                    <Badge variant={item.type === 'memory' ? 'default' : 'secondary'} className="text-xs">
+                      {item.type === 'memory' ? (
+                        <>
+                          <ImageIcon className="h-3 w-3 mr-1" />
+                          Memory
+                        </>
+                      ) : (
+                        <>
+                          <FileText className="h-3 w-3 mr-1" />
+                          Note
+                        </>
+                      )}
+                    </Badge>
                   </div>
                 </div>
               </Card>
             ))}
           </div>
+        ) : (
+          /* Timeline View */
+          <div className="relative">
+            <div className="absolute left-4 top-0 bottom-0 w-1 bg-border rounded-full"></div>
+            <div className="space-y-6">
+              {filteredItems.map((item) => (
+                <div key={`${item.type}-${item.id}`} className="relative pl-12">
+                  <div className="absolute left-2 top-2 h-5 w-5 border-4 border-background bg-[#E74C3C] rounded-full"></div>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    {format(parseISO(item.created_at), 'MMM d, yyyy')}
+                  </p>
+                  <Card className="p-4 shadow-sm">
+                    <div className="flex items-start justify-between mb-2">
+                      <h3 className="font-bold text-[#2C3E50]">{item.title}</h3>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => toggleFavorite(item.id, item.type, item.is_favorite)}
+                        className="p-1"
+                      >
+                        <Star className={`h-4 w-4 ${item.is_favorite ? 'fill-[#F1C40F] text-[#F1C40F]' : 'text-muted-foreground'}`} />
+                      </Button>
+                    </div>
+                    
+                    {item.type === 'note' && item.content && (
+                      <p className="text-muted-foreground">{item.content}</p>
+                    )}
+                    
+                    {item.description && (
+                      <p className="text-muted-foreground">{item.description}</p>
+                    )}
+
+                    {item.type === 'memory' && item.images && item.images.length > 0 && (
+                      <div className="mt-2 grid grid-cols-2 gap-2">
+                        {item.images.slice(0, 2).map((image, index) => (
+                          <img 
+                            key={image.id}
+                            src={image.image_url} 
+                            alt={`${item.title} ${index + 1}`}
+                            className="w-full h-24 object-cover rounded-lg" 
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </Card>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
 
-        {/* FAB */}
-        <div className="fixed bottom-24 right-4 flex flex-col items-end gap-3">
-          {/* Expandable Options */}
-          <div className={`flex flex-col gap-2 transition-all duration-300 ${showFabOptions ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}>
+        {/* Floating Action Button */}
+        <div className="fixed bottom-24 right-6 z-20">
+          <div className={`flex flex-col items-center space-y-3 mb-3 transition-all duration-300 ${
+            showFabOptions ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
+          }`}>
             <Button 
-              size="sm" 
-              className="rounded-full shadow-lg min-w-[120px]" 
-              onClick={() => { 
-                setCreateType('memory'); 
-                setShowCreateForm(true); 
-                setShowFabOptions(false);
-              }}
-            >
-              <Camera className="h-4 w-4 mr-2" />
-              Add Memory
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="rounded-full shadow-lg min-w-[120px]" 
+              size="sm"
+              className="bg-background w-14 h-14 rounded-full shadow-lg transition-transform hover:scale-110"
               onClick={() => { 
                 setCreateType('note'); 
                 setShowCreateForm(true); 
                 setShowFabOptions(false);
               }}
             >
-              <FileText className="h-4 w-4 mr-2" />
-              Add Note
+              <Edit3 className="h-6 w-6 text-[#2C3E50]" />
+            </Button>
+            <Button 
+              size="sm"
+              className="bg-background w-14 h-14 rounded-full shadow-lg transition-transform hover:scale-110"
+              onClick={() => { 
+                setCreateType('memory'); 
+                setShowCreateForm(true); 
+                setShowFabOptions(false);
+              }}
+            >
+              <Camera className="h-6 w-6 text-[#2C3E50]" />
             </Button>
           </div>
 
-          {/* Main FAB */}
           <Button 
             size="lg" 
-            className={`rounded-full shadow-lg transition-transform duration-300 ${showFabOptions ? 'rotate-45' : 'rotate-0'}`}
+            className={`bg-[#E74C3C] hover:bg-[#E74C3C]/90 w-16 h-16 rounded-full shadow-lg transition-all duration-300 ${
+              showFabOptions ? 'rotate-45' : 'rotate-0'
+            }`}
             onClick={() => setShowFabOptions(!showFabOptions)}
           >
-            <Plus className="h-6 w-6" />
+            <Plus className="h-8 w-8" />
           </Button>
         </div>
-      </div>
+      </main>
 
       {/* Create Modal */}
       <Dialog open={showCreateForm} onOpenChange={setShowCreateForm}>
@@ -437,7 +636,7 @@ const MemoryVault = () => {
                   value={newMemory.memory_date}
                   onChange={(e) => setNewMemory(prev => ({ ...prev, memory_date: e.target.value }))}
                 />
-                <div className="border-2 border-dashed rounded-lg p-6 text-center">
+                <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
                   <Upload className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
                   <input
                     type="file"
