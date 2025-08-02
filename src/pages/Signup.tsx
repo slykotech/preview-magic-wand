@@ -71,17 +71,23 @@ export const Signup = () => {
         }
       });
 
-      if (error) throw error;
+      // Handle function invocation errors
+      if (error) {
+        console.error('Function invocation error:', error);
+        throw new Error('Failed to send verification email. Please try again.');
+      }
 
-      if (data.success) {
-        setVerificationSent(true);
-        toast({
-          title: "Verification email sent! 📧",
-          description: "Check your email and click the verification link to complete your signup"
-        });
-      } else {
+      // Handle application logic errors (like user already exists)
+      if (!data.success) {
         throw new Error(data.error || 'Failed to send verification email');
       }
+
+      // Success case
+      setVerificationSent(true);
+      toast({
+        title: "Verification email sent! 📧",
+        description: "Check your email and click the verification link to complete your signup"
+      });
     } catch (error: any) {
       console.error('Signup error:', error);
       toast({
