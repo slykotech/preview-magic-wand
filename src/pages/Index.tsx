@@ -47,53 +47,70 @@ const Index = () => {
         </div>
 
         {/* Features */}
-        <div className="space-y-3 text-left">
-          <div className="flex items-center gap-4 p-4 bg-white/20 rounded-2xl backdrop-blur-sm relative">
-            <div className="relative z-10 w-16 h-16 -mt-2 -mb-2">
-              <img 
-                src="/lovable-uploads/e96cb636-6076-4256-8622-93e09fe2fd42.png" 
-                alt="Quality Time" 
-                className="w-full h-full object-contain drop-shadow-lg"
-              />
+        <div className="space-y-3 text-left relative">
+          <div className="flex items-center gap-4 p-4 bg-white/20 rounded-2xl backdrop-blur-sm">
+            <div className="w-10 h-10 bg-white/30 rounded-xl flex items-center justify-center">
+              <Heart className="text-white" size={20} />
             </div>
             <div className="flex-1">
               <h3 className="font-poppins font-bold text-white">Quality Time</h3>
             </div>
           </div>
-          <div className="flex items-center gap-4 p-4 bg-white/20 rounded-2xl backdrop-blur-sm">
-            <div className="w-10 h-10 bg-white/30 rounded-xl flex items-center justify-center">
-              <Sparkles className="text-white" size={20} />
+          
+          <div className="relative">
+            <div className="flex items-center gap-4 p-4 bg-white/20 rounded-2xl backdrop-blur-sm">
+              <div className="w-10 h-10 bg-white/30 rounded-xl flex items-center justify-center">
+                <Sparkles className="text-white" size={20} />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-poppins font-bold text-white">Soul Syncing</h3>
+              </div>
             </div>
-            <div className="flex-1">
-              <h3 className="font-poppins font-bold text-white">Soul Syncing</h3>
-            </div>
-            <div className="w-10 h-10">
+            <div className="absolute -right-4 top-1/2 transform -translate-y-1/2 w-20 h-20 z-10">
               <img 
                 src="/lovable-uploads/ea943bb4-0f80-4b60-8dab-9824039f4bc1.png" 
                 alt="Soul Syncing Avatar" 
-                className="w-full h-full object-contain"
+                className="w-full h-full object-contain drop-shadow-lg"
               />
             </div>
           </div>
-          <div className="flex items-center gap-4 p-4 bg-white/20 rounded-2xl backdrop-blur-sm">
-            <div className="w-10 h-10 bg-white/30 rounded-xl flex items-center justify-center">
-              <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center">
-                <div className="w-2 h-2 bg-purple-600 rounded-full"></div>
+          
+          <div className="relative">
+            <div className="flex items-center gap-4 p-4 bg-white/20 rounded-2xl backdrop-blur-sm">
+              <div className="w-10 h-10 bg-white/30 rounded-xl flex items-center justify-center">
+                <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center">
+                  <div className="w-2 h-2 bg-purple-600 rounded-full"></div>
+                </div>
+              </div>
+              <div className="flex-1">
+                <h3 className="font-poppins font-bold text-white">Connection Check-In</h3>
               </div>
             </div>
-            <div className="flex-1">
-              <h3 className="font-poppins font-bold text-white">Connection Check-In</h3>
+            <div className="absolute -right-4 top-1/2 transform -translate-y-1/2 w-20 h-20 z-10">
+              <img 
+                src="/lovable-uploads/379d21da-b57c-42de-8fa4-bb2cb2c617d5.png" 
+                alt="Connection Check-In Avatar" 
+                className="w-full h-full object-contain drop-shadow-lg"
+              />
             </div>
-            <div className="text-2xl">👫</div>
           </div>
-          <div className="flex items-center gap-4 p-4 bg-white/20 rounded-2xl backdrop-blur-sm">
-            <div className="w-10 h-10 bg-white/30 rounded-xl flex items-center justify-center">
-              <Calendar className="text-white" size={20} />
+          
+          <div className="relative">
+            <div className="flex items-center gap-4 p-4 bg-white/20 rounded-2xl backdrop-blur-sm">
+              <div className="w-10 h-10 bg-white/30 rounded-xl flex items-center justify-center">
+                <Calendar className="text-white" size={20} />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-poppins font-bold text-white">Memory Vault</h3>
+              </div>
             </div>
-            <div className="flex-1">
-              <h3 className="font-poppins font-bold text-white">Memory Vault</h3>
+            <div className="absolute -right-4 top-1/2 transform -translate-y-1/2 w-20 h-20 z-10">
+              <img 
+                src="/lovable-uploads/60e9a823-d70b-4be5-949d-e0f8315086ec.png" 
+                alt="Memory Vault Avatar" 
+                className="w-full h-full object-contain drop-shadow-lg"
+              />
             </div>
-            <div className="text-2xl">📸</div>
           </div>
         </div>
 
