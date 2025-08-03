@@ -274,14 +274,14 @@ serve(async (req) => {
       );
     }
 
-    // Scraping sources (run in parallel with timeout)
+    // Scraping sources (run in parallel with timeout) - now with location coordinates
     if (!isRateLimited('scraping')) {
       const scrapingPromises = [
-        fetchBookMyShowEvents(resolvedLocation).catch(e => { console.error('BookMyShow error:', e); return []; }),
-        fetchPaytmInsiderEvents(resolvedLocation).catch(e => { console.error('Paytm Insider error:', e); return []; }),
-        fetchDistrictEvents(resolvedLocation).catch(e => { console.error('District error:', e); return []; }),
-        fetchEventbriteEvents(resolvedLocation).catch(e => { console.error('Eventbrite error:', e); return []; }),
-        fetchTicketmasterEvents(resolvedLocation).catch(e => { console.error('Ticketmaster error:', e); return []; })
+        fetchBookMyShowEvents(resolvedLocation, finalLatitude, finalLongitude).catch(e => { console.error('BookMyShow error:', e); return []; }),
+        fetchPaytmInsiderEvents(resolvedLocation, finalLatitude, finalLongitude).catch(e => { console.error('Paytm Insider error:', e); return []; }),
+        fetchDistrictEvents(resolvedLocation, finalLatitude, finalLongitude).catch(e => { console.error('District error:', e); return []; }),
+        fetchEventbriteEvents(resolvedLocation, finalLatitude, finalLongitude).catch(e => { console.error('Eventbrite error:', e); return []; }),
+        fetchTicketmasterEvents(resolvedLocation, finalLatitude, finalLongitude).catch(e => { console.error('Ticketmaster error:', e); return []; })
       ];
 
       // Add scraping with timeout
