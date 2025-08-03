@@ -172,6 +172,105 @@ export type Database = {
         }
         Relationships: []
       }
+      card_games: {
+        Row: {
+          created_at: string
+          description: string
+          difficulty_level: string
+          estimated_duration_minutes: number
+          game_type: string
+          id: string
+          is_active: boolean
+          lgbtq_inclusive: boolean
+          max_players: number
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          difficulty_level?: string
+          estimated_duration_minutes?: number
+          game_type: string
+          id?: string
+          is_active?: boolean
+          lgbtq_inclusive?: boolean
+          max_players?: number
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          difficulty_level?: string
+          estimated_duration_minutes?: number
+          game_type?: string
+          id?: string
+          is_active?: boolean
+          lgbtq_inclusive?: boolean
+          max_players?: number
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      card_responses: {
+        Row: {
+          card_id: string
+          created_at: string
+          id: string
+          meaningful_response: boolean | null
+          partner_rating: number | null
+          response_audio_url: string | null
+          response_text: string | null
+          response_time_seconds: number | null
+          response_video_url: string | null
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          card_id: string
+          created_at?: string
+          id?: string
+          meaningful_response?: boolean | null
+          partner_rating?: number | null
+          response_audio_url?: string | null
+          response_text?: string | null
+          response_time_seconds?: number | null
+          response_video_url?: string | null
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          card_id?: string
+          created_at?: string
+          id?: string
+          meaningful_response?: boolean | null
+          partner_rating?: number | null
+          response_audio_url?: string | null
+          response_text?: string | null
+          response_time_seconds?: number | null
+          response_video_url?: string | null
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_card_responses_card"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "game_cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_card_responses_session"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "game_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversations: {
         Row: {
           couple_id: string
@@ -444,6 +543,164 @@ export type Database = {
             columns: ["couple_id"]
             isOneToOne: false
             referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      game_achievements: {
+        Row: {
+          achievement_name: string
+          achievement_type: string
+          couple_id: string
+          description: string
+          icon_name: string
+          id: string
+          sync_score_bonus: number | null
+          unlocked_at: string
+        }
+        Insert: {
+          achievement_name: string
+          achievement_type: string
+          couple_id: string
+          description: string
+          icon_name: string
+          id?: string
+          sync_score_bonus?: number | null
+          unlocked_at?: string
+        }
+        Update: {
+          achievement_name?: string
+          achievement_type?: string
+          couple_id?: string
+          description?: string
+          icon_name?: string
+          id?: string
+          sync_score_bonus?: number | null
+          unlocked_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_game_achievements_couple"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      game_cards: {
+        Row: {
+          card_number: number
+          category: string
+          created_at: string
+          difficulty_level: string
+          game_id: string
+          id: string
+          prompt: string
+          requires_action: boolean
+          requires_voice_response: boolean
+          time_limit_seconds: number | null
+          title: string
+        }
+        Insert: {
+          card_number: number
+          category: string
+          created_at?: string
+          difficulty_level?: string
+          game_id: string
+          id?: string
+          prompt: string
+          requires_action?: boolean
+          requires_voice_response?: boolean
+          time_limit_seconds?: number | null
+          title: string
+        }
+        Update: {
+          card_number?: number
+          category?: string
+          created_at?: string
+          difficulty_level?: string
+          game_id?: string
+          id?: string
+          prompt?: string
+          requires_action?: boolean
+          requires_voice_response?: boolean
+          time_limit_seconds?: number | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_game_cards_game"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "card_games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      game_sessions: {
+        Row: {
+          completed_at: string | null
+          couple_id: string
+          created_at: string
+          current_card_id: string | null
+          game_id: string
+          id: string
+          player_turn: string | null
+          session_data: Json | null
+          started_at: string
+          status: string
+          total_cards_played: number
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          couple_id: string
+          created_at?: string
+          current_card_id?: string | null
+          game_id: string
+          id?: string
+          player_turn?: string | null
+          session_data?: Json | null
+          started_at?: string
+          status?: string
+          total_cards_played?: number
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          couple_id?: string
+          created_at?: string
+          current_card_id?: string | null
+          game_id?: string
+          id?: string
+          player_turn?: string | null
+          session_data?: Json | null
+          started_at?: string
+          status?: string
+          total_cards_played?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_game_sessions_couple"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_game_sessions_current_card"
+            columns: ["current_card_id"]
+            isOneToOne: false
+            referencedRelation: "game_cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_game_sessions_game"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "card_games"
             referencedColumns: ["id"]
           },
         ]
