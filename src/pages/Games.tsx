@@ -86,7 +86,7 @@ export const Games = () => {
           <Button 
             variant="ghost" 
             size="icon"
-            onClick={() => navigate(-1)}
+            onClick={() => navigate('/dashboard')}
             className="hover:bg-pink-100 dark:hover:bg-pink-900/30"
           >
             <ArrowLeft className="h-5 w-5" />

@@ -87,17 +87,30 @@ export const useCardGames = () => {
     }
   };
 
-  const createGameSession = async (gameId: string) => {
+  const createGameSession = async (gameType: string) => {
     if (!user || !coupleData?.id) {
       throw new Error('User authentication or couple data required');
     }
 
     try {
+      // First, find the actual game UUID by game_type
+      const { data: gameData, error: gameError } = await supabase
+        .from('card_games')
+        .select('id')
+        .eq('game_type', gameType)
+        .eq('is_active', true)
+        .single();
+
+      if (gameError || !gameData) {
+        throw new Error(`Game type "${gameType}" not found`);
+      }
+
+      // Now create the game session with the actual game UUID
       const { data, error } = await supabase
         .from('game_sessions')
         .insert({
           couple_id: coupleData.id,
-          game_id: gameId,
+          game_id: gameData.id, // Use the actual UUID
           player_turn: user.id,
           status: 'active'
         })
@@ -109,7 +122,8 @@ export const useCardGames = () => {
       // Log activity for sync score
       await logActivity('message', { 
         game_session_started: true,
-        game_id: gameId 
+        game_id: gameData.id,
+        game_type: gameType
       }, 5);
 
       // Check for first game achievement
