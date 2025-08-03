@@ -62,6 +62,7 @@ export const Dashboard = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [showHealthTips, setShowHealthTips] = useState(false);
   const [showCheckinInsights, setShowCheckinInsights] = useState(false);
+  const [showGamesSection, setShowGamesSection] = useState(false);
   const {
     toast
   } = useToast();
@@ -909,112 +910,117 @@ export const Dashboard = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Relationship Games Section */}
+      {/* Relationship Games Button */}
       {!showSplash && (
-        <div className="px-4 pb-6 space-y-4">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full">
-              <Gamepad2 className="h-5 w-5 text-white" />
-            </div>
-            <h2 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-              Relationship Games
-            </h2>
-          </div>
+        <div className="px-4 pb-6">
+          <Button
+            onClick={() => setShowGamesSection(!showGamesSection)}
+            className="w-full bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500 hover:from-purple-600 hover:via-pink-600 hover:to-rose-600 text-white border-0 h-14 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02]"
+          >
+            <Gamepad2 className="h-6 w-6 mr-3" />
+            Relationship Games
+            <Sparkles className="h-5 w-5 ml-3" />
+          </Button>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Identity & Dreams Canvas */}
-            <Card className="p-6 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30 border-purple-200 dark:border-purple-800 hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
-              <div className="flex items-start gap-4">
-                <div className="p-3 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full flex-shrink-0">
-                  <Sparkles className="h-6 w-6 text-white" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-bold text-lg mb-2 text-purple-900 dark:text-purple-100">
-                    Identity & Dreams Canvas
-                  </h3>
-                  <p className="text-sm text-purple-700 dark:text-purple-300 mb-4 leading-relaxed">
-                    Explore authentic selves, professional goals, and build deeper understanding through inclusive conversations.
-                  </p>
-                  <Button 
-                    onClick={() => handleStartGame('identity-dreams')}
-                    className="w-full bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white border-0"
-                  >
-                    <Play className="h-4 w-4 mr-2" />
-                    Start Playing
-                  </Button>
-                </div>
-              </div>
-            </Card>
-
-            {/* Love Language Laboratory */}
-            <Card className="p-6 bg-gradient-to-br from-pink-50 to-rose-50 dark:from-pink-950/30 dark:to-rose-950/30 border-pink-200 dark:border-pink-800 hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
-              <div className="flex items-start gap-4">
-                <div className="p-3 bg-gradient-to-r from-pink-500 to-rose-500 rounded-full flex-shrink-0">
-                  <Heart className="h-6 w-6 text-white" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-bold text-lg mb-2 text-pink-900 dark:text-pink-100">
-                    Love Language Laboratory
-                  </h3>
-                  <p className="text-sm text-pink-700 dark:text-pink-300 mb-4 leading-relaxed">
-                    Discover and practice love languages through interactive challenges and real-world experiments.
-                  </p>
-                  <Button 
-                    onClick={() => handleStartGame('love-language')}
-                    className="w-full bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white border-0"
-                  >
-                    <Play className="h-4 w-4 mr-2" />
-                    Start Exploring
-                  </Button>
-                </div>
-              </div>
-            </Card>
-          </div>
-
-          {/* Active Sessions & Achievements */}
-          {(activeSessions.length > 0 || recentAchievements.length > 0) && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-              {/* Active Sessions */}
-              {activeSessions.length > 0 && (
-                <Card className="p-4 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 border-blue-200 dark:border-blue-800">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Activity className="h-4 w-4 text-blue-600" />
-                    <h4 className="font-semibold text-blue-900 dark:text-blue-100">Active Sessions</h4>
-                  </div>
-                  <div className="space-y-2">
-                    {activeSessions.slice(0, 2).map((session) => (
-                      <div key={session.id} className="flex items-center justify-between p-2 bg-white/60 dark:bg-white/10 rounded-lg">
-                        <span className="text-sm font-medium">{session.card_games.name}</span>
-                        <Button size="sm" variant="outline" onClick={() => navigate(`/games/${session.id}`)}>
-                          Continue
-                        </Button>
-                      </div>
-                    ))}
+          {/* Games Section - Expandable */}
+          {showGamesSection && (
+            <div className="mt-6 space-y-4 animate-fade-in">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Identity & Dreams Canvas */}
+                <Card className="p-6 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30 border-purple-200 dark:border-purple-800 hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full flex-shrink-0">
+                      <Sparkles className="h-6 w-6 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-lg mb-2 text-purple-900 dark:text-purple-100">
+                        Identity & Dreams Canvas
+                      </h3>
+                      <p className="text-sm text-purple-700 dark:text-purple-300 mb-4 leading-relaxed">
+                        Explore authentic selves, professional goals, and build deeper understanding through inclusive conversations.
+                      </p>
+                      <Button 
+                        onClick={() => handleStartGame('identity-dreams')}
+                        className="w-full bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white border-0"
+                      >
+                        <Play className="h-4 w-4 mr-2" />
+                        Start Playing
+                      </Button>
+                    </div>
                   </div>
                 </Card>
-              )}
 
-              {/* Recent Achievements */}
-              {recentAchievements.length > 0 && (
-                <Card className="p-4 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border-amber-200 dark:border-amber-800">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Trophy className="h-4 w-4 text-amber-600" />
-                    <h4 className="font-semibold text-amber-900 dark:text-amber-100">Recent Achievements</h4>
+                {/* Love Language Laboratory */}
+                <Card className="p-6 bg-gradient-to-br from-pink-50 to-rose-50 dark:from-pink-950/30 dark:to-rose-950/30 border-pink-200 dark:border-pink-800 hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 bg-gradient-to-r from-pink-500 to-rose-500 rounded-full flex-shrink-0">
+                      <Heart className="h-6 w-6 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-lg mb-2 text-pink-900 dark:text-pink-100">
+                        Love Language Laboratory
+                      </h3>
+                      <p className="text-sm text-pink-700 dark:text-pink-300 mb-4 leading-relaxed">
+                        Discover and practice love languages through interactive challenges and real-world experiments.
+                      </p>
+                      <Button 
+                        onClick={() => handleStartGame('love-language')}
+                        className="w-full bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white border-0"
+                      >
+                        <Play className="h-4 w-4 mr-2" />
+                        Start Exploring
+                      </Button>
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    {recentAchievements.slice(0, 2).map((achievement) => (
-                      <div key={achievement.id} className="p-2 bg-white/60 dark:bg-white/10 rounded-lg">
-                        <div className="flex items-center gap-2">
-                          <span className="text-lg">🏆</span>
-                          <div>
-                            <p className="text-sm font-medium">{achievement.achievement_name}</p>
-                            <p className="text-xs text-muted-foreground">{achievement.description}</p>
+                </Card>
+              </div>
+
+              {/* Active Sessions & Achievements */}
+              {(activeSessions.length > 0 || recentAchievements.length > 0) && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                  {/* Active Sessions */}
+                  {activeSessions.length > 0 && (
+                    <Card className="p-4 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 border-blue-200 dark:border-blue-800">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Activity className="h-4 w-4 text-blue-600" />
+                        <h4 className="font-semibold text-blue-900 dark:text-blue-100">Active Sessions</h4>
+                      </div>
+                      <div className="space-y-2">
+                        {activeSessions.slice(0, 2).map((session) => (
+                          <div key={session.id} className="flex items-center justify-between p-2 bg-white/60 dark:bg-white/10 rounded-lg">
+                            <span className="text-sm font-medium">{session.card_games.name}</span>
+                            <Button size="sm" variant="outline" onClick={() => navigate(`/games/${session.id}`)}>
+                              Continue
+                            </Button>
                           </div>
-                        </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                </Card>
+                    </Card>
+                  )}
+
+                  {/* Recent Achievements */}
+                  {recentAchievements.length > 0 && (
+                    <Card className="p-4 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border-amber-200 dark:border-amber-800">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Trophy className="h-4 w-4 text-amber-600" />
+                        <h4 className="font-semibold text-amber-900 dark:text-amber-100">Recent Achievements</h4>
+                      </div>
+                      <div className="space-y-2">
+                        {recentAchievements.slice(0, 2).map((achievement) => (
+                          <div key={achievement.id} className="p-2 bg-white/60 dark:bg-white/10 rounded-lg">
+                            <div className="flex items-center gap-2">
+                              <span className="text-lg">🏆</span>
+                              <div>
+                                <p className="text-sm font-medium">{achievement.achievement_name}</p>
+                                <p className="text-xs text-muted-foreground">{achievement.description}</p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </Card>
+                  )}
+                </div>
               )}
             </div>
           )}
