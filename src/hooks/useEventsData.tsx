@@ -20,6 +20,14 @@ export interface EventData {
   source?: string;
 }
 
+interface DataSourceInfo {
+  real_time_sources: string[];
+  fallback_used: boolean;
+  firecrawl_status: 'available' | 'failed' | 'not_configured';
+  cache_status: 'hit' | 'miss' | 'expired';
+  last_updated: string;
+}
+
 export const useEventsData = () => {
   const { toast } = useToast();
   const [events, setEvents] = useState<EventData[]>([]);
@@ -28,6 +36,8 @@ export const useEventsData = () => {
   const [lastFetchLocation, setLastFetchLocation] = useState<string | null>(null);
   const [lastFetchTime, setLastFetchTime] = useState<number>(0);
   const [cacheExpiry] = useState<number>(15 * 60 * 1000); // 15 minutes cache
+  const [dataSourceInfo, setDataSourceInfo] = useState<DataSourceInfo | null>(null);
+  const [quota, setQuota] = useState<any>(null);
 
   const getMockEvents = useCallback((): EventData[] => [
     {
@@ -223,6 +233,8 @@ export const useEventsData = () => {
     error,
     fetchEvents,
     clearEvents,
-    refreshEvents
+    refreshEvents,
+    dataSourceInfo,
+    quota
   };
 };

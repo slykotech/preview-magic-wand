@@ -91,13 +91,31 @@ const supabase = createClient(
 );
 
 serve(async (req) => {
+  const startTime = Date.now();
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Enhanced logging and monitoring
+  const requestId = crypto.randomUUID();
+  console.log(`[${requestId}] Processing fetch-events request`);
+
   try {
     const { latitude, longitude, radius = 50, size = 20, keyword = '', locationName = '' } = await req.json();
+    
+    // Validate input parameters
+    if (!latitude && !longitude && !locationName) {
+      throw new Error('Either coordinates or location name must be provided');
+    }
+    
+    // Log request parameters
+    console.log(`[${requestId}] Request params:`, {
+      latitude, longitude, radius, size, keyword, locationName,
+      hasCoords: !!(latitude && longitude),
+      hasLocationName: !!locationName
+    });
     
     // Get user authentication
     const authHeader = req.headers.get('Authorization');

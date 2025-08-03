@@ -5,14 +5,48 @@ import { UnifiedEvent, generateEventDates, formatEventTiming, EVENT_CATEGORIES, 
 
 const firecrawlApiKey = Deno.env.get('FIRECRAWL_API_KEY');
 
-// Initialize Firecrawl if available
+// Initialize Firecrawl with validation and retry mechanism
 let firecrawl: FirecrawlApp | null = null;
-if (firecrawlApiKey) {
-  firecrawl = new FirecrawlApp({ apiKey: firecrawlApiKey });
-  console.log('Firecrawl initialized successfully');
-} else {
-  console.log('FIRECRAWL_API_KEY not found - scraping will use fallback data');
+let firecrawlStatus = {
+  available: false,
+  tested: false,
+  error: null as string | null
+};
+
+async function initializeFirecrawl() {
+  if (!firecrawlApiKey) {
+    console.error('FIRECRAWL_API_KEY not found - all scraping will use fallback data');
+    firecrawlStatus.error = 'API key not configured';
+    return false;
+  }
+
+  try {
+    firecrawl = new FirecrawlApp({ apiKey: firecrawlApiKey });
+    
+    // Test the API key with a simple request
+    const testResult = await firecrawl.scrapeUrl('https://httpbin.org/status/200', {
+      formats: ['markdown'],
+      timeout: 5000
+    });
+    
+    if (testResult.success) {
+      console.log('Firecrawl initialized and tested successfully');
+      firecrawlStatus.available = true;
+      firecrawlStatus.tested = true;
+      return true;
+    } else {
+      throw new Error('API test failed: ' + testResult.error);
+    }
+  } catch (error) {
+    console.error('Firecrawl initialization failed:', error);
+    firecrawlStatus.error = error.message;
+    firecrawl = null;
+    return false;
+  }
 }
+
+// Initialize on module load
+await initializeFirecrawl();
 
 interface ScrapedEventData {
   title: string;
@@ -282,9 +316,9 @@ function createEventsFromTitles(
   return events.filter(event => event); // Remove undefined entries from distance filtering
 }
 
-// Generic scraping function with improved timeout and error handling
+// Enhanced scraping function with dynamic URL generation and better error handling
 async function scrapeEventSource(
-  url: string, 
+  baseUrl: string, 
   sourceName: string, 
   location: string,
   bookingUrl: string,
@@ -292,50 +326,222 @@ async function scrapeEventSource(
   userLat?: number,
   userLng?: number
 ): Promise<UnifiedEvent[]> {
-  if (!firecrawl) {
-    console.log(`${sourceName}: Firecrawl not available, using fallback`);
-    return fallbackGenerator();
+  const scrapingResult = {
+    source: sourceName,
+    url: baseUrl,
+    success: false,
+    error: null as string | null,
+    fallbackUsed: false,
+    eventsFound: 0,
+    contentLength: 0
+  };
+
+  if (!firecrawl || !firecrawlStatus.available) {
+    scrapingResult.error = firecrawlStatus.error || 'Firecrawl not available';
+    scrapingResult.fallbackUsed = true;
+    console.log(`${sourceName}: ${scrapingResult.error}, using fallback`);
+    const fallbackEvents = fallbackGenerator();
+    scrapingResult.eventsFound = fallbackEvents.length;
+    logScrapingResult(scrapingResult);
+    return fallbackEvents;
   }
 
-  try {
-    console.log(`Scraping ${sourceName}: ${url}`);
-    
-    // Shorter timeout for faster response
-    const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error('Scraping timeout')), 8000) // 8 second timeout
-    );
-    
-    const scrapePromise = firecrawl.scrapeUrl(url, {
-      formats: ['markdown'],
-      timeout: 6000,
-      waitFor: 2000 // Wait for page to load
-    });
-    
-    const result = await Promise.race([scrapePromise, timeoutPromise]);
-    
-    if (!result.success || !result.markdown) {
-      throw new Error(`Failed to scrape ${sourceName} - ${result.error || 'No content'}`);
-    }
+  // Generate dynamic URLs based on location and current time
+  const dynamicUrls = generateDynamicUrls(baseUrl, sourceName, location);
+  
+  for (const url of dynamicUrls) {
+    try {
+      console.log(`Attempting to scrape ${sourceName}: ${url}`);
+      scrapingResult.url = url;
+      
+      // Implement retry mechanism with exponential backoff
+      const maxRetries = 2;
+      let lastError: Error | null = null;
+      
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          const timeoutMs = 10000 + (attempt * 2000); // Progressive timeout
+          const timeoutPromise = new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('Scraping timeout')), timeoutMs)
+          );
+          
+          const scrapePromise = firecrawl.scrapeUrl(url, {
+            formats: ['markdown', 'html'],
+            timeout: timeoutMs - 1000,
+            waitFor: 3000, // Wait for dynamic content
+            screenshot: false, // Disable screenshot for faster scraping
+            onlyMainContent: true // Focus on main content
+          });
+          
+          const result = await Promise.race([scrapePromise, timeoutPromise]);
+          
+          if (!result.success) {
+            throw new Error(`Scraping failed: ${result.error || 'Unknown error'}`);
+          }
 
-    console.log(`${sourceName} raw content length:`, result.markdown.length);
-    
-    const titles = extractEventTitles(result.markdown, sourceName);
-    
-    if (titles.length === 0) {
-      console.log(`${sourceName}: No valid events found, using fallback`);
-      return fallbackGenerator();
+          const content = result.markdown || result.html || '';
+          scrapingResult.contentLength = content.length;
+          
+          if (content.length < 100) {
+            throw new Error('Content too short, likely blocked or empty page');
+          }
+
+          console.log(`${sourceName} content length: ${content.length} characters`);
+          
+          // Enhanced content validation
+          if (isValidEventContent(content, sourceName)) {
+            const titles = extractEventTitles(content, sourceName);
+            
+            if (titles.length > 0) {
+              const events = createEventsFromTitles(
+                titles, 
+                location, 
+                sourceName.toLowerCase().replace(/\s+/g, '-'), 
+                bookingUrl, 
+                userLat, 
+                userLng
+              );
+              
+              if (events.length > 0) {
+                scrapingResult.success = true;
+                scrapingResult.eventsFound = events.length;
+                console.log(`Successfully scraped ${events.length} events from ${sourceName}`);
+                logScrapingResult(scrapingResult);
+                return events;
+              }
+            }
+          }
+          
+          throw new Error('No valid events found in scraped content');
+          
+        } catch (error) {
+          lastError = error;
+          console.warn(`${sourceName} attempt ${attempt} failed:`, error.message);
+          
+          if (attempt < maxRetries) {
+            // Exponential backoff
+            await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+          }
+        }
+      }
+      
+      // If we get here, all retries failed for this URL
+      console.error(`${sourceName} all retries failed for ${url}:`, lastError?.message);
+      
+    } catch (error) {
+      console.error(`${sourceName} scraping error for ${url}:`, error);
     }
-    
-    const events = createEventsFromTitles(titles, location, sourceName.toLowerCase().replace(/\s+/g, '-'), bookingUrl, userLat, userLng);
-    console.log(`Scraped ${events.length} events from ${sourceName} (filtered by 50km radius)`);
-    
-    return events;
-    
-  } catch (error) {
-    console.error(`${sourceName} scraping error:`, error);
-    console.log(`${sourceName}: Using fallback due to error`);
-    return fallbackGenerator();
   }
+  
+  // All URLs failed, use fallback
+  scrapingResult.error = 'All scraping attempts failed';
+  scrapingResult.fallbackUsed = true;
+  console.log(`${sourceName}: All scraping attempts failed, using fallback`);
+  
+  const fallbackEvents = fallbackGenerator();
+  scrapingResult.eventsFound = fallbackEvents.length;
+  logScrapingResult(scrapingResult);
+  
+  return fallbackEvents;
+}
+
+// Generate dynamic URLs based on location and search patterns
+function generateDynamicUrls(baseUrl: string, sourceName: string, location: string): string[] {
+  const urls: string[] = [];
+  const locationKey = location.toLowerCase().replace(/\s+/g, '');
+  const today = new Date();
+  const monthName = today.toLocaleString('default', { month: 'long' }).toLowerCase();
+  
+  // Base URL
+  urls.push(baseUrl);
+  
+  // Location-specific patterns for each source
+  switch (sourceName.toLowerCase()) {
+    case 'bookmyshow':
+      if (locationKey.includes('mumbai')) {
+        urls.push('https://in.bookmyshow.com/mumbai/events');
+        urls.push('https://in.bookmyshow.com/mumbai/events/music');
+        urls.push('https://in.bookmyshow.com/mumbai/events/comedy');
+      } else if (locationKey.includes('delhi')) {
+        urls.push('https://in.bookmyshow.com/delhi-ncr/events');
+        urls.push('https://in.bookmyshow.com/delhi-ncr/events/music');
+      } else if (locationKey.includes('bangalore') || locationKey.includes('bengaluru')) {
+        urls.push('https://in.bookmyshow.com/bengaluru/events');
+        urls.push('https://in.bookmyshow.com/bengaluru/events/music');
+      }
+      break;
+      
+    case 'paytm insider':
+      urls.push(`https://insider.in/search?q=${encodeURIComponent(location)}`);
+      if (locationKey.includes('mumbai')) {
+        urls.push('https://insider.in/mumbai/events');
+      } else if (locationKey.includes('delhi')) {
+        urls.push('https://insider.in/delhi/events');
+      } else if (locationKey.includes('bangalore')) {
+        urls.push('https://insider.in/bengaluru/events');
+      }
+      break;
+      
+    case 'eventbrite':
+      urls.push(`https://www.eventbrite.com/d/india--${encodeURIComponent(location)}/events/`);
+      urls.push(`https://www.eventbrite.com/d/india--${encodeURIComponent(location)}/events/this-weekend/`);
+      break;
+      
+    case 'district':
+      urls.push('https://district.events/events');
+      urls.push(`https://district.events/search?q=${encodeURIComponent(location)}`);
+      break;
+      
+    case 'ticketmaster':
+      urls.push(`https://www.ticketmaster.com/search?q=${encodeURIComponent(location)}`);
+      break;
+  }
+  
+  return urls.slice(0, 3); // Limit to 3 URLs per source to avoid too many requests
+}
+
+// Validate if scraped content contains actual event data
+function isValidEventContent(content: string, sourceName: string): boolean {
+  const eventKeywords = [
+    'event', 'concert', 'show', 'performance', 'festival', 'party',
+    'comedy', 'music', 'theater', 'exhibition', 'workshop', 'seminar',
+    'conference', 'meetup', 'networking', 'art', 'cultural', 'sports'
+  ];
+  
+  const dateKeywords = [
+    'today', 'tomorrow', 'weekend', 'january', 'february', 'march',
+    'april', 'may', 'june', 'july', 'august', 'september', 'october',
+    'november', 'december', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'
+  ];
+  
+  const contentLower = content.toLowerCase();
+  
+  // Check for event-related keywords
+  const hasEventKeywords = eventKeywords.some(keyword => contentLower.includes(keyword));
+  const hasDateKeywords = dateKeywords.some(keyword => contentLower.includes(keyword));
+  
+  // Check for price patterns
+  const hasPricePattern = /₹|\$|free|price|cost|ticket/i.test(content);
+  
+  // Check for venue patterns
+  const hasVenuePattern = /venue|location|address|hall|center|club|theater|stadium/i.test(content);
+  
+  // Content should have at least 2 of these indicators
+  const indicators = [hasEventKeywords, hasDateKeywords, hasPricePattern, hasVenuePattern].filter(Boolean).length;
+  
+  return indicators >= 2;
+}
+
+// Log scraping results for monitoring
+function logScrapingResult(result: any) {
+  console.log(`Scraping result for ${result.source}:`, {
+    success: result.success,
+    url: result.url,
+    eventsFound: result.eventsFound,
+    fallbackUsed: result.fallbackUsed,
+    error: result.error,
+    contentLength: result.contentLength
+  });
 }
 
 // BookMyShow events - enhanced location-specific scraping

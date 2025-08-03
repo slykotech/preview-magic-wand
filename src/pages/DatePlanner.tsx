@@ -20,6 +20,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCoupleData } from '@/hooks/useCoupleData';
 import { useLocation } from '@/hooks/useLocation';
 import { useEventsData, EventData } from '@/hooks/useEventsData';
+import { DataSourceStatus } from '@/components/DataSourceStatus';
 
 interface DateIdea {
   id: string;
@@ -96,7 +97,9 @@ export const DatePlanner = () => {
     error: eventsError,
     fetchEvents,
     clearEvents,
-    refreshEvents
+    refreshEvents,
+    dataSourceInfo,
+    quota
   } = useEventsData();
   useEffect(() => {
     if (!authLoading && !user) {
@@ -632,6 +635,15 @@ export const DatePlanner = () => {
                 )}
               </div>
             </div>
+
+            {/* Data Source Status */}
+            {dataSourceInfo && (
+              <DataSourceStatus 
+                dataSourceInfo={dataSourceInfo} 
+                quota={quota}
+                className="bg-muted/30"
+              />
+            )}
 
             {/* Events Loading and Display */}
             {eventsLoading ? (
