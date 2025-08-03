@@ -7,7 +7,7 @@ import { useCardGames } from "@/hooks/useCardGames";
 
 const gameTypes = [
   {
-    id: "truth-or-love",
+    id: "truth_or_love",  // Updated to match database
     title: "Truth or Love",
     subtitle: "Deep Talk",
     icon: Heart,
@@ -18,7 +18,7 @@ const gameTypes = [
     description: "Honest conversations that deepen your connection"
   },
   {
-    id: "this-or-that", 
+    id: "this_or_that",  // Updated to match database
     title: "This or That",
     subtitle: "Fun",
     icon: Lightbulb,
@@ -29,7 +29,7 @@ const gameTypes = [
     description: "Fun choices that reveal your preferences"
   },
   {
-    id: "memory-match",
+    id: "memory_match",  // Updated to match database
     title: "Memory Match", 
     subtitle: "Bonding",
     icon: Brain,
@@ -40,7 +40,7 @@ const gameTypes = [
     description: "Test how well you know each other"
   },
   {
-    id: "love-coupons",
+    id: "love_coupons",  // Updated to match database
     title: "Love Coupons",
     subtitle: "Romantic", 
     icon: Ticket,
@@ -51,7 +51,7 @@ const gameTypes = [
     description: "Create romantic gestures for each other"
   },
   {
-    id: "couple-quiz",
+    id: "couple_quiz",  // Updated to match database
     title: "Couple Quiz",
     subtitle: "Knowledge",
     icon: Users, 
