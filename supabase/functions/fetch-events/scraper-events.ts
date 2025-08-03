@@ -232,6 +232,36 @@ function createEventsFromTitles(
       distance = `${Math.round(actualDistance * 10) / 10} km away`;
     }
     
+    // Extract venue name from title or generate a realistic one
+    let venueName = venue;
+    if (title.includes(' at ')) {
+      const parts = title.split(' at ');
+      if (parts.length > 1) {
+        venueName = parts[1].split(',')[0].split(' -')[0].trim();
+      }
+    } else if (title.includes('@')) {
+      const parts = title.split('@');
+      if (parts.length > 1) {
+        venueName = parts[1].split(',')[0].split(' -')[0].trim();
+      }
+    } else {
+      // Generate realistic venue names based on category
+      const venueNames = {
+        'Music': ['Amphitheater', 'Music Hall', 'Concert Stadium', 'Live Music Cafe', 'Arena'],
+        'Food & Drink': ['Restaurant', 'Brewery', 'Wine Bar', 'Culinary Studio', 'Rooftop Lounge'],
+        'Culture': ['Art Gallery', 'Cultural Center', 'Museum', 'Heritage Hall', 'Exhibition Center'],
+        'Comedy': ['Comedy Club', 'Entertainment Hub', 'Laugh Lounge', 'Comedy Theater'],
+        'Nightlife': ['Night Club', 'Rooftop Bar', 'Dance Club', 'Lounge'],
+        'Entertainment': ['Theater', 'Entertainment Complex', 'Auditorium', 'Performance Hall'],
+        'Sports': ['Sports Complex', 'Stadium', 'Sports Club', 'Athletic Center', 'Arena'],
+        'Business': ['Conference Center', 'Business Hub', 'Convention Hall', 'Meeting Center']
+      };
+      
+      const venues = venueNames[category] || ['Event Center', 'Community Hall', 'Venue'];
+      const randomVenue = venues[Math.floor(Math.random() * venues.length)];
+      venueName = `${location} ${randomVenue}`;
+    }
+
     events.push({
       id: `${source}_${location.replace(/\s+/g, '_')}_${index}_${Date.now()}`,
       title: title.charAt(0).toUpperCase() + title.slice(1),
@@ -239,7 +269,7 @@ function createEventsFromTitles(
       timing: formatEventTiming(eventDate),
       description: `Experience this amazing ${category.toLowerCase()} event in ${location}. Perfect for couples!`,
       category,
-      venue: `${venue} - ${location}`,
+      venue: venueName,
       city: location,
       price,
       date: eventDate.toISOString().split('T')[0],

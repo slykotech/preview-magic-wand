@@ -99,12 +99,12 @@ export const useEventsData = () => {
         {
           latitude: location.latitude,
           longitude: location.longitude,
-          radius: 25,
+          radius: 50,
           size: 20
         } : 
         {
           locationName: location.city,
-          radius: 25,
+          radius: 50,
           size: 20
         };
 
@@ -131,20 +131,18 @@ export const useEventsData = () => {
         console.log(`Successfully loaded ${data.events.length} events`);
         
         // Update location coordinates if geocoded by backend
-        if (data.location && updateLocationCallback) {
-          const { latitude, longitude, resolvedLocation } = data.location;
-          if (latitude && longitude) {
-            updateLocationCallback(latitude, longitude, resolvedLocation);
+        if (data.coordinates && updateLocationCallback) {
+          const { lat, lng } = data.coordinates;
+          if (lat && lng) {
+            updateLocationCallback(lat, lng, data.location);
           }
         }
 
-        const cacheStatus = data.metadata?.cached ? ' (cached)' : '';
-        const freeSourcesCount = (data.sources?.bookmyshow || 0) + (data.sources?.facebook || 0) + (data.sources?.meetup || 0);
-        const paidSourcesCount = data.events.length - freeSourcesCount;
+        const cacheStatus = data.cached ? ' (cached)' : '';
         
         toast({
           title: `Events loaded! 🎉${cacheStatus}`,
-          description: `Found ${data.events.length} events near ${location.displayName} (${freeSourcesCount} free, ${paidSourcesCount} paid sources)`,
+          description: `Found ${data.events.length} events within 50km`,
         });
         
         // Check for quota warnings  
