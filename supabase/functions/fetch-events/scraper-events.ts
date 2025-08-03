@@ -313,10 +313,13 @@ function createEventsFromTitles(
     });
   });
   
-  return events.filter(event => event); // Remove undefined entries from distance filtering
+  return events.filter(event => event !== null && event !== undefined); // Remove any null/undefined entries
 }
 
-// Enhanced scraping function with dynamic URL generation and better error handling
+// Enhanced scraping function with dynamic URL generation and better error handling  
+// Export firecrawlStatus for monitoring
+export { firecrawlStatus };
+
 async function scrapeEventSource(
   baseUrl: string, 
   sourceName: string, 
@@ -343,6 +346,9 @@ async function scrapeEventSource(
     const fallbackEvents = fallbackGenerator();
     scrapingResult.eventsFound = fallbackEvents.length;
     logScrapingResult(scrapingResult);
+    
+    // Log each fallback event being created
+    console.log(`${sourceName} fallback events:`, fallbackEvents.map(e => e.title));
     return fallbackEvents;
   }
 
@@ -405,7 +411,8 @@ async function scrapeEventSource(
               if (events.length > 0) {
                 scrapingResult.success = true;
                 scrapingResult.eventsFound = events.length;
-                console.log(`Successfully scraped ${events.length} events from ${sourceName}`);
+                console.log(`Successfully scraped ${events.length} events from ${sourceName}:`);
+                console.log(events.map(e => `- ${e.title} (${e.source})`));
                 logScrapingResult(scrapingResult);
                 return events;
               }
@@ -440,6 +447,7 @@ async function scrapeEventSource(
   
   const fallbackEvents = fallbackGenerator();
   scrapingResult.eventsFound = fallbackEvents.length;
+  console.log(`${sourceName} fallback events created:`, fallbackEvents.map(e => e.title));
   logScrapingResult(scrapingResult);
   
   return fallbackEvents;

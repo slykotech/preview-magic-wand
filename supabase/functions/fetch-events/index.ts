@@ -11,7 +11,8 @@ import {
   fetchPaytmInsiderEvents, 
   fetchDistrictEvents,
   fetchEventbriteEvents,
-  fetchTicketmasterEvents
+  fetchTicketmasterEvents,
+  firecrawlStatus
 } from './scraper-events.ts';
 import { 
   getCacheKey, 
@@ -369,13 +370,19 @@ serve(async (req) => {
     }
 
     const responseData = {
-      events: sortedEvents.slice(0, size),
+      events: sortedEvents, // Return all events, don't slice
       total: sortedEvents.length,
       cached: false,
       quota: quotaInfo,
       location: resolvedLocation || locationName,
       coordinates: { lat: finalLatitude, lng: finalLongitude },
-      stats: getCacheStats()
+      stats: {
+        ...getCacheStats(),
+        firecrawl_available: firecrawlStatus?.available || false,
+        firecrawl_error: firecrawlStatus?.error || null,
+        sources_attempted: eventPromises.length,
+        final_count: sortedEvents.length
+      }
     };
 
     setCache(cacheKey, responseData);
