@@ -79,8 +79,8 @@ export const useEventsData = () => {
     const now = Date.now();
     const isCacheValid = now - lastFetchTime < cacheExpiry;
     
-    // Don't skip if this is the same location but cache is expired or if it's been more than 5 minutes
-    if (lastFetchLocation === locationKey && events.length > 0 && isCacheValid && (now - lastFetchTime < 300000)) {
+    // Don't skip if this is the same location but cache is expired 
+    if (lastFetchLocation === locationKey && events.length > 0 && isCacheValid) {
       console.log('Skipping fetch, using cached events (cache valid for', Math.round((cacheExpiry - (now - lastFetchTime)) / 1000), 'seconds)');
       return;
     }

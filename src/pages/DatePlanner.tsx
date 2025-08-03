@@ -116,11 +116,11 @@ export const DatePlanner = () => {
         getCurrentLocation();
       } else {
         console.log('Location found, fetching events for:', location.displayName);
-        // Force refresh events to get real-time data
-        refreshEvents(location, updateLocationCoordinates);
+        // Fetch events without forcing refresh to avoid loops
+        fetchEvents(location, updateLocationCoordinates);
       }
     }
-  }, [activeTab, getCurrentLocation, refreshEvents, updateLocationCoordinates]);
+  }, [activeTab, location?.displayName]); // Only depend on tab and location name
 
   // Clear events when switching away from upcoming tab
   useEffect(() => {
