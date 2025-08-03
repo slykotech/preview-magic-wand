@@ -9,7 +9,9 @@ import { fetchGoogleEvents } from './google-events.ts';
 import { 
   fetchBookMyShowEvents, 
   fetchPaytmInsiderEvents, 
-  fetchDistrictEvents 
+  fetchDistrictEvents,
+  fetchEventbriteEvents,
+  fetchTicketmasterEvents
 } from './scraper-events.ts';
 import { 
   getCacheKey, 
@@ -277,7 +279,9 @@ serve(async (req) => {
       const scrapingPromises = [
         fetchBookMyShowEvents(resolvedLocation).catch(e => { console.error('BookMyShow error:', e); return []; }),
         fetchPaytmInsiderEvents(resolvedLocation).catch(e => { console.error('Paytm Insider error:', e); return []; }),
-        fetchDistrictEvents(resolvedLocation).catch(e => { console.error('District error:', e); return []; })
+        fetchDistrictEvents(resolvedLocation).catch(e => { console.error('District error:', e); return []; }),
+        fetchEventbriteEvents(resolvedLocation).catch(e => { console.error('Eventbrite error:', e); return []; }),
+        fetchTicketmasterEvents(resolvedLocation).catch(e => { console.error('Ticketmaster error:', e); return []; })
       ];
 
       // Add scraping with timeout
@@ -293,7 +297,7 @@ serve(async (req) => {
             setTimeout(() => {
               console.log('Scraping timeout, proceeding with available data');
               resolve([]);
-            }, 10000) // 10 second timeout for all scraping
+            }, 12000) // 12 second timeout for all scraping (increased for more sources)
           )
         ])
       );
