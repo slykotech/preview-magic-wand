@@ -71,7 +71,7 @@ export const useEventsData = () => {
       return;
     }
 
-    // Avoid duplicate requests for the same location and check cache expiry
+    // Check if this is a forced refresh or new location
     const locationKey = location.latitude !== 0 ? 
       `${location.latitude},${location.longitude}` : 
       location.city;
@@ -79,15 +79,13 @@ export const useEventsData = () => {
     const now = Date.now();
     const isCacheValid = now - lastFetchTime < cacheExpiry;
     
-    if (lastFetchLocation === locationKey && events.length > 0 && isCacheValid) {
-      console.log('Skipping fetch, same location already loaded and cache still valid');
+    // Don't skip if this is the same location but cache is expired or if it's been more than 5 minutes
+    if (lastFetchLocation === locationKey && events.length > 0 && isCacheValid && (now - lastFetchTime < 300000)) {
+      console.log('Skipping fetch, using cached events (cache valid for', Math.round((cacheExpiry - (now - lastFetchTime)) / 1000), 'seconds)');
       return;
     }
 
-    if (lastFetchLocation === locationKey && !isCacheValid) {
-      console.log('Cache expired, refetching events for same location');
-    }
-
+    console.log('Fetching fresh events for location:', location.displayName);
     setIsLoading(true);
     setError(null);
     setLastFetchLocation(locationKey);
@@ -212,8 +210,10 @@ export const useEventsData = () => {
   }, []);
 
   const refreshEvents = useCallback((location: LocationData, updateLocationCallback?: (lat: number, lng: number, resolvedName?: string) => void) => {
+    console.log('Force refreshing events for:', location.displayName);
     setLastFetchLocation(null); // Force refetch
     setLastFetchTime(0); // Reset cache timestamp
+    setEvents([]); // Clear existing events
     fetchEvents(location, updateLocationCallback);
   }, [fetchEvents]);
 

@@ -110,12 +110,17 @@ export const DatePlanner = () => {
 
   // Auto-fetch current location events when switching to upcoming tab
   useEffect(() => {
-    if (activeTab === 'upcoming' && !location) {
-      getCurrentLocation();
-    } else if (location && activeTab === 'upcoming') {
-      fetchEvents(location, updateLocationCoordinates);
+    if (activeTab === 'upcoming') {
+      if (!location) {
+        console.log('No location found, getting current location...');
+        getCurrentLocation();
+      } else {
+        console.log('Location found, fetching events for:', location.displayName);
+        // Force refresh events to get real-time data
+        refreshEvents(location, updateLocationCoordinates);
+      }
     }
-  }, [location, activeTab, fetchEvents, updateLocationCoordinates, getCurrentLocation]);
+  }, [activeTab, getCurrentLocation, refreshEvents, updateLocationCoordinates]);
 
   // Clear events when switching away from upcoming tab
   useEffect(() => {
