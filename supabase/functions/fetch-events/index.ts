@@ -97,7 +97,7 @@ serve(async (req) => {
   }
 
   try {
-    const { latitude, longitude, radius = 25, size = 20, keyword = '', locationName = '' } = await req.json();
+    const { latitude, longitude, radius = 50, size = 20, keyword = '', locationName = '' } = await req.json();
     
     // Get user authentication
     const authHeader = req.headers.get('Authorization');

@@ -62,9 +62,9 @@ function getLocationCoordinates(location: string): { lat: number; lng: number } 
   return cityCoords.mumbai;
 }
 
-// Generate realistic venue coordinates within city bounds (±0.1 degree ~11km radius)
+// Generate realistic venue coordinates within city bounds (±0.15 degree ~17km radius)
 function generateVenueCoordinates(centerLat: number, centerLng: number): { lat: number; lng: number } {
-  const randomOffset = () => (Math.random() - 0.5) * 0.2; // ±0.1 degree spread
+  const randomOffset = () => (Math.random() - 0.5) * 0.3; // ±0.15 degree spread for 50km radius
   
   return {
     lat: centerLat + randomOffset(),
@@ -224,11 +224,11 @@ function createEventsFromTitles(
     const venueCoords = generateVenueCoordinates(locationCoords.lat, locationCoords.lng);
     
     // Calculate real distance if user coordinates are provided
-    let distance = `${Math.floor(Math.random() * 20) + 3} km away`;
+    let distance = `${Math.floor(Math.random() * 30) + 5} km away`;
     if (userLat && userLng) {
       const actualDistance = calculateDistance(userLat, userLng, venueCoords.lat, venueCoords.lng);
-      // Only include events within 25km radius
-      if (actualDistance > 25) return;
+      // Only include events within 50km radius
+      if (actualDistance > 50) return;
       distance = `${Math.round(actualDistance * 10) / 10} km away`;
     }
     
@@ -297,7 +297,7 @@ async function scrapeEventSource(
     }
     
     const events = createEventsFromTitles(titles, location, sourceName.toLowerCase().replace(/\s+/g, '-'), bookingUrl, userLat, userLng);
-    console.log(`Scraped ${events.length} events from ${sourceName} (filtered by 25km radius)`);
+    console.log(`Scraped ${events.length} events from ${sourceName} (filtered by 50km radius)`);
     
     return events;
     
