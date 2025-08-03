@@ -625,6 +625,7 @@ export const DatePlanner = () => {
                       size="sm"
                       onClick={handleRefreshEvents}
                       disabled={eventsLoading}
+                      className="flex items-center justify-center"
                     >
                       {eventsLoading ? (
                         <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-primary"></div>
