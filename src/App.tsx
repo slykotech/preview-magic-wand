@@ -17,7 +17,7 @@ import { DatePlanner } from "./pages/DatePlanner";
 import MemoryVault from "./pages/MemoryVault";
 import { Messages } from "./pages/Messages";
 import { Profile } from "./pages/Profile";
-import { Games } from "./pages/Games";
+
 import { GameSession } from "./pages/GameSession";
 import { CoupleSetup } from "./pages/CoupleSetup";
 import { RelationshipInsights } from "./pages/RelationshipInsights";
@@ -71,8 +71,7 @@ const App = () => {
                 <Route path="/messages" element={<Messages />} />
                 <Route path="/coach" element={<AICoach />} />
               <Route path="/planner" element={<DatePlanner />} />
-              <Route path="/games" element={<Games />} />
-              <Route path="/games/:sessionId" element={<GameSession />} />
+          <Route path="/games/:sessionId" element={<GameSession />} />
               <Route path="/vault" element={<MemoryVault />} />
               <Route path="/profile" element={<Profile />} />
                 <Route path="/couple-setup" element={<CoupleSetup />} />

@@ -1,11 +1,10 @@
-import { Home, MessageCircle, Calendar, Heart, User, Gamepad2 } from "lucide-react";
+import { Home, MessageCircle, Calendar, Heart, User } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 const navItems = [
   { id: 'home', icon: Home, label: 'Home', path: '/' },
   { id: 'coach', icon: MessageCircle, label: 'Coach', path: '/coach' },
   { id: 'planner', icon: Calendar, label: 'Planner', path: '/planner' },
-  { id: 'games', icon: Gamepad2, label: 'Games', path: '/games' },
   { id: 'vault', icon: Heart, label: 'Vault', path: '/vault' },
   { id: 'profile', icon: User, label: 'Profile', path: '/profile' },
 ];
@@ -29,8 +28,6 @@ export const BottomNavigation = () => {
         return 'animate-pulse';
       case 'planner':
         return 'animate-bounce';
-      case 'games':
-        return 'animate-pulse';
       case 'vault':
         return 'animate-heart-pulse';
       case 'profile':
