@@ -694,6 +694,16 @@ export const Dashboard = () => {
               Get Relationship Insights
             </Button> : <div className="w-full h-12 bg-muted animate-pulse rounded-xl"></div>}
         </div>
+
+        {/* Relationship Games Button */}
+        <div className={`${isLoaded ? 'animate-fade-in' : 'opacity-0'}`} style={{
+          animationDelay: '750ms'
+        }}>
+          {isLoaded ? <Button className="w-full rounded-xl py-3 bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 text-white font-medium transition-all hover:scale-[1.02] duration-200" onClick={() => navigate('/games')}>
+              <Play className="mr-2" size={18} />
+              Relationship Games
+            </Button> : <div className="w-full h-12 bg-muted animate-pulse rounded-xl"></div>}
+        </div>
         </div>
       </div>
 
@@ -910,20 +920,6 @@ export const Dashboard = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Relationship Games Button */}
-      {!showSplash && (
-        <div className="px-4 pb-6">
-          <Button
-            onClick={() => navigate('/games')}
-            className="w-full bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500 hover:from-purple-600 hover:via-pink-600 hover:to-rose-600 text-white border-0 h-14 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02]"
-          >
-            <Gamepad2 className="h-6 w-6 mr-3" />
-            Relationship Games
-            <Sparkles className="h-5 w-5 ml-3" />
-          </Button>
-
-        </div>
-      )}
 
       {/* Bottom Navigation - hidden during splash */}
       {!showSplash && <BottomNavigation />}
