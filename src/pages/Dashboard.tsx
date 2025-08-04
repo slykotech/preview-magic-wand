@@ -31,6 +31,23 @@ const getTimeBasedMessage = () => {
     return "Evenings are made for cuddles, calm, and connection 🌙💖";
   }
 };
+
+// Helper function to convert mood names to emojis
+const getMoodEmoji = (mood: string): string => {
+  const moodEmojis: Record<string, string> = {
+    happy: '😊',
+    excited: '🤗',
+    love: '😍',
+    content: '😌',
+    neutral: '😐',
+    tired: '😴',
+    stressed: '😰',
+    sad: '😢',
+    angry: '😠',
+    romantic: '🥰'
+  };
+  return moodEmojis[mood] || '😐';
+};
 export const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -490,7 +507,7 @@ export const Dashboard = () => {
           top: `${30 + i % 2 * 40}%`,
           animation: `float-${i + 1} 2s ease-in-out infinite, fade-in 0.3s ease-out ${0.5 + i * 0.1}s both, fade-out 0.5s ease-out 1.3s forwards`
         }}>
-                  {partnerMood}
+                  {getMoodEmoji(partnerMood)}
                 </div>)}
               
               {/* Partner mood text */}
