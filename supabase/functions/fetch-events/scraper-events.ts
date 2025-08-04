@@ -23,10 +23,23 @@ async function initializeFirecrawl() {
   try {
     firecrawl = new FirecrawlApp({ apiKey: firecrawlApiKey });
     
-    // Skip API test to avoid initialization timeout - just assume it works
-    console.log('Firecrawl initialized (skipping test for performance)');
-    firecrawlStatus.available = true;
-    firecrawlStatus.tested = false; // Mark as not tested but available
+    // Test Firecrawl connection
+    console.log('Testing Firecrawl connection...');
+    const testResponse = await firecrawl.scrapeUrl('https://httpbin.org/get', {
+      formats: ['markdown'],
+      timeout: 3000
+    });
+    
+    if (testResponse.success) {
+      console.log('Firecrawl connection successful');
+      firecrawlStatus.available = true;
+      firecrawlStatus.tested = true;
+    } else {
+      console.error('Firecrawl test failed:', testResponse.error);
+      firecrawlStatus.available = false;
+      firecrawlStatus.error = testResponse.error || 'Test scrape failed';
+      firecrawlStatus.tested = true;
+    }
     return true;
   } catch (error) {
     console.error('Firecrawl initialization failed:', error);
@@ -362,13 +375,10 @@ async function scrapeEventSource(
           const timeoutMs = 30000; // Increase timeout significantly
           
           const result = await firecrawl.scrapeUrl(url, {
-            formats: ['markdown'], // Only markdown for faster processing
+            formats: ['markdown'],
             timeout: timeoutMs,
-            waitFor: 1000, // Reduce wait time
-            screenshot: false,
-            onlyMainContent: true,
-            includeTags: ['h1', 'h2', 'h3', 'h4', 'p', 'div', 'span'], // Only relevant tags
-            excludeTags: ['script', 'style', 'nav', 'footer', 'header', 'aside'] // Exclude noise
+            waitFor: 1000,
+            onlyMainContent: true
           });
           
           if (!result.success) {

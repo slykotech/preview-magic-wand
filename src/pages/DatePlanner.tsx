@@ -534,11 +534,25 @@ export const DatePlanner = () => {
                       {date.description}
                     </p>}
                    
-                   <div className="flex gap-2">
+                    <div className="flex gap-2">
                       <Button variant="outline" size="sm" className="flex-1" onClick={() => handleEditDate(date)}>
                         <Edit size={14} className="mr-1" />
                         Edit
                      </Button>
+                     
+                     <Button 
+                       variant="outline" 
+                       size="sm" 
+                       className="bg-red-50 text-red-600 border-red-200 hover:bg-red-100"
+                       onClick={() => {
+                         setDateToDelete(date);
+                         setShowDeleteConfirm(true);
+                       }}
+                     >
+                       <Trash2 size={14} className="mr-1" />
+                       Delete
+                     </Button>
+                     
                     {date.scheduled_date && isDateCompleted(date.scheduled_date) && (
                       <div className="flex gap-1 flex-1">
                         <Button variant="outline" size="sm" className="flex-1 bg-green-50 text-green-600 border-green-200 hover:bg-green-100" onClick={() => handleDateFeedback(date.id, true)}>
@@ -711,43 +725,59 @@ export const DatePlanner = () => {
                     {event.description}
                   </p>
                   
-                   <div className="flex gap-2">
-                     <Button 
-                       className="bg-gradient-primary hover:opacity-90 text-white flex-1" 
-                       size="sm"
-                       onClick={() => handleAddToDate(event)}
-                     >
-                       <Plus size={14} className="mr-1" />
-                       Add to Your Date
-                     </Button>
-                     
-                     {/* Get Directions button for Google Places events */}
-                     {event.source === 'google' && event.bookingUrl && (
-                       <Button 
-                         variant="outline"
-                         size="sm"
-                         onClick={() => window.open(event.bookingUrl, '_blank')}
-                         className="flex-1"
-                       >
-                         <MapPin size={14} className="mr-1" />
-                         Get Directions
-                       </Button>
-                     )}
-                     
-                     {/* Book button for web-scraped events */}
-                     {event.source !== 'google' && event.bookingUrl && 
-                      ['bookmyshow', 'paytm-insider', 'district', 'ticketmaster', 'eventbrite', 'facebook', 'meetup'].includes(event.source) && (
-                       <Button 
-                         variant="outline"
-                         size="sm"
-                         onClick={() => window.open(event.bookingUrl, '_blank')}
-                         className="flex-1"
-                       >
-                         <CalendarClock size={14} className="mr-1" />
-                         Book Now
-                       </Button>
-                     )}
-                   </div>
+                    <div className="flex gap-2">
+                      {/* Google Places events get Schedule option */}
+                      {event.source === 'google' ? (
+                        <>
+                          <Button 
+                            className="bg-gradient-secondary hover:opacity-90 text-white flex-1" 
+                            size="sm"
+                            onClick={() => handleScheduleUpcomingEvent(event)}
+                          >
+                            <CalendarPlus size={14} className="mr-1" />
+                            Schedule
+                          </Button>
+                          
+                          {event.bookingUrl && (
+                            <Button 
+                              variant="outline"
+                              size="sm"
+                              onClick={() => window.open(event.bookingUrl, '_blank')}
+                              className="flex-1"
+                            >
+                              <MapPin size={14} className="mr-1" />
+                              Get Directions
+                            </Button>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          {/* Firecrawl events get Add to Date option */}
+                          <Button 
+                            className="bg-gradient-primary hover:opacity-90 text-white flex-1" 
+                            size="sm"
+                            onClick={() => handleAddToDate(event)}
+                          >
+                            <Plus size={14} className="mr-1" />
+                            Add to Your Date
+                          </Button>
+                          
+                          {/* Book button for web-scraped events */}
+                          {event.bookingUrl && 
+                           ['bookmyshow', 'paytm-insider', 'district', 'ticketmaster', 'eventbrite', 'facebook', 'meetup'].includes(event.source) && (
+                            <Button 
+                              variant="outline"
+                              size="sm"
+                              onClick={() => window.open(event.bookingUrl, '_blank')}
+                              className="flex-1"
+                            >
+                              <CalendarClock size={14} className="mr-1" />
+                              Book Now
+                            </Button>
+                          )}
+                        </>
+                      )}
+                    </div>
                 </div>
               ))
             ) : null}
