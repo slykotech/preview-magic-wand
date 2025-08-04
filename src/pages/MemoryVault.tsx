@@ -624,23 +624,23 @@ const MemoryVault: React.FC = () => {
             <div className="flex items-center space-x-1">
               <Button
                 variant={viewMode === 'grid' ? "default" : "ghost"}
-                size="sm"
+                size="icon"
                 onClick={() => {
                   console.log('Grid view clicked');
                   setViewMode('grid');
                 }}
-                className="p-2"
+                className="h-10 w-10 rounded-full"
               >
                 <Grid3X3 className="h-5 w-5" />
               </Button>
               <Button
                 variant={viewMode === 'timeline' ? "default" : "ghost"}
-                size="sm"
+                size="icon"
                 onClick={() => {
                   console.log('Timeline view clicked');
                   setViewMode('timeline');
                 }}
-                className="p-2"
+                className="h-10 w-10 rounded-full"
               >
                 <List className="h-5 w-5" />
               </Button>
