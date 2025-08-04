@@ -21,10 +21,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-
 const getTimeBasedMessage = () => {
   const hour = new Date().getHours();
-  
   if (hour >= 5 && hour < 12) {
     return "Sunshine's here time to make your love bloom ☀️🌸";
   } else if (hour >= 12 && hour < 17) {
@@ -33,7 +31,6 @@ const getTimeBasedMessage = () => {
     return "Evenings are made for cuddles, calm, and connection 🌙💖";
   }
 };
-
 export const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -62,7 +59,6 @@ export const Dashboard = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [showHealthTips, setShowHealthTips] = useState(false);
   const [showCheckinInsights, setShowCheckinInsights] = useState(false);
-  
   const {
     toast
   } = useToast();
@@ -88,9 +84,14 @@ export const Dashboard = () => {
     isUserOnline,
     isPartnerOnline
   } = usePresence(coupleId);
-  
+
   // Use card games hook
-  const { activeSessions, recentAchievements, loading: gamesLoading, createGameSession } = useCardGames();
+  const {
+    activeSessions,
+    recentAchievements,
+    loading: gamesLoading,
+    createGameSession
+  } = useCardGames();
   useEffect(() => {
     if (!loading && !user) {
       navigate('/auth');
@@ -587,9 +588,7 @@ export const Dashboard = () => {
                       {lastCheckin ? format(new Date(lastCheckin.checkin_date), 'd MMMM') : '28 July'}
                     </p>
                     {lastCheckin && <div className="space-y-1">
-                        <p className="text-xs text-muted-foreground">
-                          Mood: <span className="text-foreground font-medium capitalize">{lastCheckin.mood}</span>
-                        </p>
+                        
                         {lastCheckin.energy_level && <p className="text-xs text-muted-foreground">
                             Energy: <span className="text-foreground font-medium">{lastCheckin.energy_level}/10</span>
                           </p>}
