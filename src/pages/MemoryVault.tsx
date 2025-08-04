@@ -13,7 +13,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useToast } from '@/hooks/use-toast';
 import { format, parseISO } from 'date-fns';
 import { useCoupleData } from '@/hooks/useCoupleData';
-import { Heart, Search, Grid3X3, Clock, Star, Camera, Upload, Plus, Image as ImageIcon, FileText, Edit3, Trash2, MoreVertical, Eye, Calendar, Activity, Edit2, X, Images } from 'lucide-react';
+import { Heart, Search, Grid3X3, List, Star, Camera, Upload, Plus, Image as ImageIcon, FileText, Edit3, Trash2, MoreVertical, Eye, Calendar, Clock, Activity, Edit2, X, Images } from 'lucide-react';
 
 // Types
 interface MemoryImage {
@@ -622,29 +622,24 @@ const MemoryVault: React.FC = () => {
               <h1 className="text-xl font-bold text-gray-900">Memory Vault</h1>
               <p className="text-sm text-gray-500">Your love story collection</p>
             </div>
-            <div className="flex items-center space-x-1">
-              <Button
-                variant={viewMode === 'grid' ? "default" : "ghost"}
-                size="icon"
-                onClick={() => {
-                  console.log('Grid view clicked');
-                  setViewMode('grid');
-                }}
-                className="h-10 w-10 rounded-full"
+            {/* View Toggle - Repositioned */}
+            <div className="absolute top-6 right-6 z-20 flex border border-border rounded-full p-1 bg-background/80 backdrop-blur-sm">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-1.5 rounded-full transition-colors ${
+                  viewMode === 'grid' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'
+                }`}
               >
-                <Grid3X3 className="h-5 w-5" />
-              </Button>
-              <Button
-                variant={viewMode === 'timeline' ? "default" : "ghost"}
-                size="icon"
-                onClick={() => {
-                  console.log('Timeline view clicked');
-                  setViewMode('timeline');
-                }}
-                className="h-10 w-10 rounded-full"
+                <Grid3X3 size={18} />
+              </button>
+              <button
+                onClick={() => setViewMode('timeline')}
+                className={`p-1.5 rounded-full transition-colors ${
+                  viewMode === 'timeline' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'
+                }`}
               >
-                <Clock className="h-5 w-5" />
-              </Button>
+                <List size={18} />
+              </button>
             </div>
           </div>
         </div>
@@ -681,11 +676,11 @@ const MemoryVault: React.FC = () => {
           ) : (
             <>
               {viewMode === 'grid' ? (
-                // Grid View - 2 columns
-                <div className="grid grid-cols-2 gap-3">
+                // Grid View - Masonry layout
+                <div className="columns-2 gap-4">
                   {filteredItems.map((item) => 
                     item.type === 'memory' ? (
-                      <div key={item.id} className="w-full">
+                      <div key={item.id} className="break-inside-avoid mb-4">
                         <MobileMemoryCard
                           memory={item}
                         onView={() => {
@@ -701,7 +696,7 @@ const MemoryVault: React.FC = () => {
                         />
                       </div>
                     ) : (
-                      <div key={item.id} className="w-full">
+                      <div key={item.id} className="break-inside-avoid mb-4">
                         <MobileNoteCard
                           note={item}
                         onView={() => {
@@ -720,43 +715,48 @@ const MemoryVault: React.FC = () => {
                   )}
                 </div>
               ) : (
-                // Timeline View - Single column
-                <div className="flex flex-col space-y-4">
-                  {filteredItems.map((item) => 
-                    item.type === 'memory' ? (
-                      <div key={item.id} className="w-full">
-                        <MobileMemoryCard
-                          memory={item}
-                        onView={() => {
-                          setSelectedItem(item);
-                          setShowViewDialog(true);
-                        }}
-                        onToggleFavorite={(id, currentState) => toggleFavorite(id, 'memory', currentState)}
-                        onEdit={() => startEdit(item)}
-                        onDelete={() => {
-                          setSelectedItem(item);
-                          setShowDeleteDialog(true);
-                        }}
-                        />
+                // Timeline View - Chronological with timeline line
+                <div className="relative">
+                  <div className="absolute left-4 top-0 bottom-0 w-1 bg-border rounded-full"></div>
+                  <div className="space-y-6">
+                    {filteredItems.map((item, index) => (
+                      <div key={item.id} className="relative pl-12">
+                        <div className="absolute left-2 w-5 h-5 bg-primary rounded-full border-4 border-background"></div>
+                        <div className="text-sm text-muted-foreground mb-2">
+                          {format(parseISO(item.memory_date || item.created_at), 'MMMM d, yyyy')}
+                        </div>
+                        {item.type === 'memory' ? (
+                          <MobileMemoryCard
+                            memory={item}
+                          onView={() => {
+                            setSelectedItem(item);
+                            setShowViewDialog(true);
+                          }}
+                          onToggleFavorite={(id, currentState) => toggleFavorite(id, 'memory', currentState)}
+                          onEdit={() => startEdit(item)}
+                          onDelete={() => {
+                            setSelectedItem(item);
+                            setShowDeleteDialog(true);
+                          }}
+                          />
+                        ) : (
+                          <MobileNoteCard
+                            note={item}
+                          onView={() => {
+                            setSelectedItem(item);
+                            setShowViewDialog(true);
+                          }}
+                          onToggleFavorite={(id, currentState) => toggleFavorite(id, 'note', currentState)}
+                          onEdit={() => startEdit(item)}
+                          onDelete={() => {
+                            setSelectedItem(item);
+                            setShowDeleteDialog(true);
+                          }}
+                          />
+                        )}
                       </div>
-                    ) : (
-                      <div key={item.id} className="w-full">
-                        <MobileNoteCard
-                          note={item}
-                        onView={() => {
-                          setSelectedItem(item);
-                          setShowViewDialog(true);
-                        }}
-                        onToggleFavorite={(id, currentState) => toggleFavorite(id, 'note', currentState)}
-                        onEdit={() => startEdit(item)}
-                        onDelete={() => {
-                          setSelectedItem(item);
-                          setShowDeleteDialog(true);
-                        }}
-                        />
-                      </div>
-                    )
-                  )}
+                    ))}
+                  </div>
                 </div>
               )}
             </>
