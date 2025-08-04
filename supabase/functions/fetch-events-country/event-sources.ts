@@ -52,19 +52,17 @@ export interface UnifiedEvent {
   category: string;
   venue?: string;
   city?: string;
+  state?: string;
+  country?: string;
   price?: string;
+  image?: string;
+  bookingUrl?: string;
   date?: string;
   time?: string;
   source: string;
-  bookingUrl?: string;
-  image?: string;
-  location?: {
-    latitude: number;
-    longitude: number;
-    city?: string;
-    state?: string;
-    country?: string;
-  };
+  location_lat?: number;
+  location_lng?: number;
+  location_name?: string;
 }
 
 export const EVENT_CATEGORIES = {
@@ -154,11 +152,9 @@ export function generateLocationBasedEvents(location: string, count: number = 10
       date: eventDate.toISOString().split('T')[0],
       time: `${18 + (index % 4)}:00`,
       source: 'generated',
-      location: {
-        latitude: 19.0760 + (Math.random() - 0.5) * 0.1,
-        longitude: 72.8777 + (Math.random() - 0.5) * 0.1,
-        city: location
-      }
+      location_lat: 19.0760 + (Math.random() - 0.5) * 0.1,
+      location_lng: 72.8777 + (Math.random() - 0.5) * 0.1,
+      location_name: `${venue}, ${location}`
     };
   });
 }

@@ -84,8 +84,11 @@ export async function fetchGoogleEvents(
       return [];
     }
 
-    // Get city name from reverse geocoding if not provided
+    // Enhanced reverse geocoding for better location data
     let resolvedCityName = cityName;
+    let resolvedState: string | undefined;
+    let resolvedCountry: string | undefined;
+    
     if (!resolvedCityName) {
       try {
         const geocodeResponse = await fetch(
@@ -95,11 +98,22 @@ export async function fetchGoogleEvents(
           const geocodeData = await geocodeResponse.json();
           if (geocodeData.status === 'OK' && geocodeData.results?.[0]) {
             const addressComponents = geocodeData.results[0].address_components;
+            
             const cityComponent = addressComponents.find(component => 
-              component.types.includes('locality') || 
+              component.types.includes('locality')
+            );
+            const stateComponent = addressComponents.find(component => 
               component.types.includes('administrative_area_level_1')
             );
-            resolvedCityName = cityComponent?.long_name || 'Unknown City';
+            const countryComponent = addressComponents.find(component => 
+              component.types.includes('country')
+            );
+            
+            resolvedCityName = cityComponent?.long_name || 
+                              stateComponent?.long_name || 
+                              'Unknown City';
+            resolvedState = stateComponent?.long_name;
+            resolvedCountry = countryComponent?.long_name;
           }
         }
       } catch (error) {
@@ -150,18 +164,18 @@ export async function fetchGoogleEvents(
         category,
         venue: place.displayName.text,
         city: resolvedCityName,
+        state: resolvedState,
+        country: resolvedCountry,
+        location_lat: place.location.latitude,
+        location_lng: place.location.longitude,
+        location_name: place.displayName.text,
         price: category === EVENT_CATEGORIES.FOOD ? '₹500 - ₹2000' : 
                category === EVENT_CATEGORIES.NIGHTLIFE ? '₹1000 - ₹3000' : 
                'Entry varies',
         date: eventDate.toISOString().split('T')[0],
         time: `${10 + (index % 12)}:00`,
         source: 'google',
-        bookingUrl: `https://www.google.com/maps/place/${encodeURIComponent(place.displayName.text)}`,
-        location: {
-          latitude: place.location.latitude,
-          longitude: place.location.longitude,
-          city: resolvedCityName
-        }
+        bookingUrl: `https://www.google.com/maps/place/${encodeURIComponent(place.displayName.text)}`
       });
     });
 

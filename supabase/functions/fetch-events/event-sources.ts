@@ -52,12 +52,17 @@ export interface UnifiedEvent {
   category: string;
   venue?: string;
   city?: string;
+  state?: string;
+  country?: string;
   price?: string;
   image?: string;
   bookingUrl?: string;
   date?: string;
   time?: string;
   source: string;
+  location_lat?: number;
+  location_lng?: number;
+  location_name?: string;
 }
 
 // Common categories for events

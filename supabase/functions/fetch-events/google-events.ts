@@ -83,8 +83,11 @@ export async function fetchGoogleEvents(
       return [];
     }
 
-    // Get city name from reverse geocoding if not provided
+    // Enhanced reverse geocoding for better location data
     let resolvedCityName = cityName;
+    let resolvedState: string | undefined;
+    let resolvedCountry: string | undefined;
+    
     if (!resolvedCityName) {
       try {
         const geocodeResponse = await fetch(
@@ -94,11 +97,22 @@ export async function fetchGoogleEvents(
           const geocodeData = await geocodeResponse.json();
           if (geocodeData.status === 'OK' && geocodeData.results?.[0]) {
             const addressComponents = geocodeData.results[0].address_components;
+            
             const cityComponent = addressComponents.find(component => 
-              component.types.includes('locality') || 
+              component.types.includes('locality')
+            );
+            const stateComponent = addressComponents.find(component => 
               component.types.includes('administrative_area_level_1')
             );
-            resolvedCityName = cityComponent?.long_name || 'Unknown City';
+            const countryComponent = addressComponents.find(component => 
+              component.types.includes('country')
+            );
+            
+            resolvedCityName = cityComponent?.long_name || 
+                              stateComponent?.long_name || 
+                              'Unknown City';
+            resolvedState = stateComponent?.long_name;
+            resolvedCountry = countryComponent?.long_name;
           }
         }
       } catch (error) {
@@ -110,10 +124,12 @@ export async function fetchGoogleEvents(
     const events: UnifiedEvent[] = [];
     const eventDates = generateEventDates(data.places.length);
 
-    data.places.forEach((place, index) => {
+    // Process places sequentially to handle async operations properly
+    for (let index = 0; index < data.places.length; index++) {
+      const place = data.places[index];
       // Skip if no proper name
       if (!place.displayName?.text || place.displayName.text.length < 3) {
-        return;
+        continue;
       }
 
       // Determine category based on place types
@@ -138,6 +154,42 @@ export async function fetchGoogleEvents(
         place.location.longitude
       );
 
+      // Get specific location data for this venue
+      let venueCityName = resolvedCityName;
+      let venueStateName = resolvedState;
+      let venueCountryName = resolvedCountry;
+      
+      // Try to get more specific location for this venue if coordinates differ significantly
+      if (distance > 5) { // Only if venue is more than 5km away from search center
+        try {
+          const venueGeocodeResponse = await fetch(
+            `https://maps.googleapis.com/maps/api/geocode/json?latlng=${place.location.latitude},${place.location.longitude}&key=${apiKey}`
+          );
+          if (venueGeocodeResponse.ok) {
+            const venueGeocodeData = await venueGeocodeResponse.json();
+            if (venueGeocodeData.status === 'OK' && venueGeocodeData.results?.[0]) {
+              const venueAddressComponents = venueGeocodeData.results[0].address_components;
+              
+              const venueCityComponent = venueAddressComponents.find(component => 
+                component.types.includes('locality')
+              );
+              const venueStateComponent = venueAddressComponents.find(component => 
+                component.types.includes('administrative_area_level_1')
+              );
+              const venueCountryComponent = venueAddressComponents.find(component => 
+                component.types.includes('country')
+              );
+              
+              if (venueCityComponent) venueCityName = venueCityComponent.long_name;
+              if (venueStateComponent) venueStateName = venueStateComponent.long_name;
+              if (venueCountryComponent) venueCountryName = venueCountryComponent.long_name;
+            }
+          }
+        } catch (venueError) {
+          console.error('Venue-specific geocoding error:', venueError);
+        }
+      }
+
       const eventDate = eventDates[index];
       
       events.push({
@@ -148,7 +200,12 @@ export async function fetchGoogleEvents(
         description: `Explore this popular ${category.toLowerCase()} destination`,
         category,
         venue: place.displayName.text,
-        city: resolvedCityName,
+        city: venueCityName,
+        state: venueStateName,
+        country: venueCountryName,
+        location_lat: place.location.latitude,
+        location_lng: place.location.longitude,
+        location_name: place.displayName.text,
         price: category === EVENT_CATEGORIES.FOOD ? '₹500 - ₹2000' : 
                category === EVENT_CATEGORIES.NIGHTLIFE ? '₹1000 - ₹3000' : 
                'Entry varies',
@@ -157,7 +214,7 @@ export async function fetchGoogleEvents(
         source: 'google',
         bookingUrl: `https://www.google.com/maps/place/${encodeURIComponent(place.displayName.text)}`
       });
-    });
+    }
 
     console.log(`Fetched ${events.length} events from Google Places`);
     return events;
