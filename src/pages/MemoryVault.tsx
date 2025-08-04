@@ -1064,17 +1064,17 @@ const MobileMemoryCard: React.FC<{
             alt={memory.title}
             className="w-full h-full object-cover"
           />
-          {/* Dark overlay for text readability */}
-          <div className="absolute inset-0 bg-black/20" />
+          {/* Dark overlay only at bottom for text readability */}
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent h-20" />
           
-          {/* Title overlay */}
+          {/* Title and description - Bottom only */}
           <div className="absolute bottom-0 left-0 right-0 p-3">
-            <h3 className="text-white font-bold text-lg leading-tight drop-shadow-lg">
+            <h3 className="text-white font-bold text-sm leading-tight drop-shadow-lg line-clamp-1">
               {memory.title}
             </h3>
             {memory.description && (
               <div className="mt-1">
-                <p className="text-white/90 text-sm drop-shadow">
+                <p className="text-white/90 text-xs drop-shadow line-clamp-1">
                   {displayDescription}
                 </p>
                 {shouldTruncateDescription && (
@@ -1083,9 +1083,9 @@ const MobileMemoryCard: React.FC<{
                       e.stopPropagation();
                       setIsExpanded(!isExpanded);
                     }}
-                    className="text-white/80 text-xs underline mt-1 hover:text-white transition-colors"
+                    className="text-white/80 text-xs underline hover:text-white transition-colors"
                   >
-                    {isExpanded ? "Read less" : "Read more"}
+                    {isExpanded ? "less" : "more"}
                   </button>
                 )}
               </div>
