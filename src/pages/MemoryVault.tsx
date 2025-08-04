@@ -660,7 +660,7 @@ const MemoryVault: React.FC = () => {
 
         {/* View Item Dialog */}
         <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto mx-4 my-8">
             <DialogHeader>
               <DialogTitle>
                 {selectedItem && ('images' in selectedItem ? 'Memory Details' : 'Note Details')}
