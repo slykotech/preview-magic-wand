@@ -1085,11 +1085,11 @@ const MobileMemoryCard: React.FC<{
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      setIsExpanded(!isExpanded);
+                      onView(); // Open full detail popup instead of expanding inline
                     }}
                     className="text-white/80 text-xs underline hover:text-white transition-colors"
                   >
-                    {isExpanded ? "less" : "more"}
+                    more
                   </button>
                 )}
               </div>
@@ -1144,17 +1144,17 @@ const MobileMemoryCard: React.FC<{
                   <p className="text-gray-600 text-sm">
                     {displayDescription}
                   </p>
-                  {shouldTruncateDescription && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setIsExpanded(!isExpanded);
-                      }}
-                      className="text-primary text-xs underline mt-1 hover:text-primary/80 transition-colors"
-                    >
-                      {isExpanded ? "Read less" : "Read more"}
-                    </button>
-                  )}
+                   {shouldTruncateDescription && (
+                     <button
+                       onClick={(e) => {
+                         e.stopPropagation();
+                         onView(); // Open full detail popup instead of expanding inline
+                       }}
+                       className="text-primary text-xs underline mt-1 hover:text-primary/80 transition-colors"
+                     >
+                       more
+                     </button>
+                   )}
                 </div>
               )}
               <div className="flex items-center text-xs text-gray-500">
