@@ -455,9 +455,6 @@ const MemoryVault: React.FC = () => {
               >
                 {viewMode === 'grid' ? <List className="h-5 w-5" /> : <Grid3X3 className="h-5 w-5" />}
               </Button>
-              <Button onClick={() => setShowCreateForm(true)} size="sm">
-                <Plus className="h-4 w-4" />
-              </Button>
             </div>
           </div>
         </div>
@@ -483,7 +480,7 @@ const MemoryVault: React.FC = () => {
         </div>
 
         {/* Content */}
-        <div className="p-4">
+        <div className="p-2">
           {filteredItems.length === 0 ? (
             <div className="text-center py-12">
               <Heart className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
@@ -492,12 +489,12 @@ const MemoryVault: React.FC = () => {
               </h3>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="columns-2 gap-2">
               {filteredItems.map((item) => 
                 item.type === 'memory' ? (
-                  <MobileMemoryCard
-                    key={item.id}
-                    memory={item}
+                  <div key={item.id} className="break-inside-avoid mb-2">
+                    <MobileMemoryCard
+                      memory={item}
                     onView={() => {
                       setSelectedItem(item);
                       setShowViewDialog(true);
@@ -510,11 +507,12 @@ const MemoryVault: React.FC = () => {
                       setSelectedItem(item);
                       setShowDeleteDialog(true);
                     }}
-                  />
+                    />
+                  </div>
                 ) : (
-                  <MobileNoteCard
-                    key={item.id}
-                    note={item}
+                  <div key={item.id} className="break-inside-avoid mb-2">
+                    <MobileNoteCard
+                      note={item}
                     onView={() => {
                       setSelectedItem(item);
                       setShowViewDialog(true);
@@ -527,7 +525,8 @@ const MemoryVault: React.FC = () => {
                       setSelectedItem(item);
                       setShowDeleteDialog(true);
                     }}
-                  />
+                    />
+                  </div>
                 )
               )}
             </div>
