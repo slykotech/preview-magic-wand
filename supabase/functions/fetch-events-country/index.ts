@@ -4,8 +4,8 @@ import {
   UnifiedEvent, 
   EVENT_SOURCES, 
   generateLocationBasedEvents 
-} from '../fetch-events/event-sources.ts';
-import { fetchGoogleEvents } from '../fetch-events/google-events.ts';
+} from './event-sources.ts';
+import { fetchGoogleEvents } from './google-events.ts';
 import { 
   fetchFirecrawlBookMyShowEvents, 
   fetchFirecrawlPaytmInsiderEvents, 
@@ -13,7 +13,7 @@ import {
   fetchEventbriteEvents,
   fetchTicketmasterEvents,
   getFirecrawlStatus
-} from '../fetch-events/scraper-events.ts';
+} from './scraper-events.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
