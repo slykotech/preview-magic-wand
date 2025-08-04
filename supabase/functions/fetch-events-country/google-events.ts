@@ -125,59 +125,93 @@ export async function fetchGoogleEvents(
     const events: UnifiedEvent[] = [];
     const eventDates = generateEventDates(data.places.length);
 
-    data.places.forEach((place, index) => {
+    for (let index = 0; index < data.places.length; index++) {
+      const place = data.places[index];
+      
       // Skip if no proper name
       if (!place.displayName?.text || place.displayName.text.length < 3) {
-        return;
+        continue;
       }
 
-      // Determine category based on place types
-      let category = EVENT_CATEGORIES.ENTERTAINMENT;
-      if (place.types.includes('museum') || place.types.includes('art_gallery')) {
-        category = EVENT_CATEGORIES.ARTS;
-      } else if (place.types.includes('restaurant') || place.types.includes('cafe')) {
-        category = EVENT_CATEGORIES.FOOD;
-      } else if (place.types.includes('night_club')) {
-        category = EVENT_CATEGORIES.NIGHTLIFE;
-      } else if (place.types.includes('amusement_park') || place.types.includes('zoo')) {
-        category = EVENT_CATEGORIES.OUTDOOR;
-      } else if (place.types.includes('tourist_attraction')) {
-        category = EVENT_CATEGORIES.CULTURAL;
+      try {
+        // Get detailed place information including address
+        let venueAddress = '';
+        let placeDetails = null;
+        
+        // Try to get place details for proper address
+        try {
+          const detailsResponse = await fetch(
+            `https://places.googleapis.com/v1/places/${place.id}?fields=formattedAddress,addressComponents&key=${apiKey}`,
+            {
+              headers: {
+                'X-Goog-Api-Key': apiKey
+              }
+            }
+          );
+          
+          if (detailsResponse.ok) {
+            placeDetails = await detailsResponse.json();
+            venueAddress = placeDetails.formattedAddress || '';
+          }
+        } catch (error) {
+          console.log(`Failed to get address for place ${place.id}:`, error);
+        }
+
+        // Determine category based on place types
+        let category = EVENT_CATEGORIES.ENTERTAINMENT;
+        if (place.types.includes('museum') || place.types.includes('art_gallery')) {
+          category = EVENT_CATEGORIES.ARTS;
+        } else if (place.types.includes('restaurant') || place.types.includes('cafe')) {
+          category = EVENT_CATEGORIES.FOOD;
+        } else if (place.types.includes('night_club')) {
+          category = EVENT_CATEGORIES.NIGHTLIFE;
+        } else if (place.types.includes('amusement_park') || place.types.includes('zoo')) {
+          category = EVENT_CATEGORIES.OUTDOOR;
+        } else if (place.types.includes('tourist_attraction')) {
+          category = EVENT_CATEGORIES.CULTURAL;
+        }
+
+        // Calculate distance
+        const distance = calculateDistance(
+          latitude,
+          longitude,
+          place.location.latitude,
+          place.location.longitude
+        );
+
+        const eventDate = eventDates[index];
+        
+        // Create proper directions URL instead of place URL
+        const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${place.location.latitude},${place.location.longitude}&destination_place_id=${place.id}`;
+        
+        events.push({
+          id: `google_${place.id}`,
+          title: `Visit ${place.displayName.text}`,
+          distance: `${Math.round(distance * 10) / 10} km away`,
+          timing: formatEventTiming(eventDate),
+          description: `Explore this popular ${category.toLowerCase()} destination${venueAddress ? ` at ${venueAddress}` : ''}`,
+          category,
+          venue: place.displayName.text,
+          city: resolvedCityName,
+          state: resolvedState,
+          country: resolvedCountry,
+          location_lat: place.location.latitude,
+          location_lng: place.location.longitude,
+          location_name: venueAddress || place.displayName.text,
+          price: category === EVENT_CATEGORIES.FOOD ? '₹500 - ₹2000' : 
+                 category === EVENT_CATEGORIES.NIGHTLIFE ? '₹1000 - ₹3000' : 
+                 'Entry varies',
+          date: eventDate.toISOString().split('T')[0],
+          time: `${10 + (index % 12)}:00`,
+          source: 'google',
+          bookingUrl: directionsUrl
+        });
+        
+      } catch (error) {
+        console.error(`Error processing Google Place ${index}:`, error);
+        // Continue with next place
       }
-
-      // Calculate distance
-      const distance = calculateDistance(
-        latitude,
-        longitude,
-        place.location.latitude,
-        place.location.longitude
-      );
-
-      const eventDate = eventDates[index];
-      
-      events.push({
-        id: `google_${place.id}`,
-        title: `Visit ${place.displayName.text}`,
-        distance: `${Math.round(distance)} km away`,
-        timing: formatEventTiming(eventDate),
-        description: `Explore this popular ${category.toLowerCase()} destination`,
-        category,
-        venue: place.displayName.text,
-        city: resolvedCityName,
-        state: resolvedState,
-        country: resolvedCountry,
-        location_lat: place.location.latitude,
-        location_lng: place.location.longitude,
-        location_name: place.displayName.text,
-        price: category === EVENT_CATEGORIES.FOOD ? '₹500 - ₹2000' : 
-               category === EVENT_CATEGORIES.NIGHTLIFE ? '₹1000 - ₹3000' : 
-               'Entry varies',
-        date: eventDate.toISOString().split('T')[0],
-        time: `${10 + (index % 12)}:00`,
-        source: 'google',
-        bookingUrl: `https://www.google.com/maps/place/${encodeURIComponent(place.displayName.text)}`
-      });
-    });
+    }
 
     console.log(`Fetched ${events.length} events from Google Places`);
     return events;
