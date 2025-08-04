@@ -2,7 +2,6 @@ import { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-
 interface GradientHeaderProps {
   title: string;
   subtitle: string;
@@ -12,18 +11,16 @@ interface GradientHeaderProps {
   className?: string;
   children?: ReactNode;
 }
-
-export const GradientHeader = ({ 
-  title, 
-  subtitle, 
-  icon, 
-  showBackButton = true, 
+export const GradientHeader = ({
+  title,
+  subtitle,
+  icon,
+  showBackButton = true,
   backRoute,
   className = "",
-  children 
+  children
 }: GradientHeaderProps) => {
   const navigate = useNavigate();
-
   const handleBackClick = () => {
     if (backRoute) {
       navigate(backRoute);
@@ -31,9 +28,7 @@ export const GradientHeader = ({
       navigate(-1);
     }
   };
-
-  return (
-    <div className={`bg-gradient-romance text-white p-6 pb-8 shadow-romantic relative overflow-hidden rounded-b-[2rem] ${className}`}>
+  return <div className={`bg-gradient-romance text-white p-6 pb-8 shadow-romantic relative overflow-hidden rounded-b-[2rem] ${className}`}>
       {/* Background Pattern with curved overlay */}
       <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-black/10 rounded-b-[2rem]" />
       <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl transform translate-x-24 -translate-y-24" />
@@ -44,16 +39,7 @@ export const GradientHeader = ({
       
       <div className="relative z-10">
         <div className="flex items-center gap-3 mb-4">
-          {showBackButton && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleBackClick}
-              className="text-white hover:bg-white/20 p-2 backdrop-blur-sm"
-            >
-              <ArrowLeft size={20} />
-            </Button>
-          )}
+          {showBackButton}
           <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm border border-white/10">
             {icon}
           </div>
@@ -65,12 +51,9 @@ export const GradientHeader = ({
           </div>
         </div>
         
-        {children && (
-          <div className="mt-6">
+        {children && <div className="mt-6">
             {children}
-          </div>
-        )}
+          </div>}
       </div>
-    </div>
-  );
+    </div>;
 };
