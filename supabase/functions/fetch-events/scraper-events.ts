@@ -1,66 +1,5 @@
-// Web scraping for event sources (BookMyShow, Paytm Insider, District, Eventbrite, Ticketmaster)
-
-import FirecrawlApp from 'npm:@mendable/firecrawl-js@^1.0.0';
+// Enhanced API-based event fetching for multiple sources
 import { UnifiedEvent, generateEventDates, formatEventTiming, EVENT_CATEGORIES, calculateDistance } from './event-sources.ts';
-
-const firecrawlApiKey = Deno.env.get('FIRECRAWL_API_KEY');
-
-// Initialize Firecrawl with validation and retry mechanism
-let firecrawl: FirecrawlApp | null = null;
-let firecrawlStatus = {
-  available: false,
-  tested: false,
-  error: null as string | null
-};
-
-async function initializeFirecrawl() {
-  if (!firecrawlApiKey) {
-    console.error('FIRECRAWL_API_KEY not found - all scraping will use fallback data');
-    firecrawlStatus.error = 'API key not configured';
-    return false;
-  }
-
-  try {
-    firecrawl = new FirecrawlApp({ apiKey: firecrawlApiKey });
-    
-    // Test Firecrawl connection
-    console.log('Testing Firecrawl connection...');
-    const testResponse = await firecrawl.scrapeUrl('https://httpbin.org/get', {
-      formats: ['markdown'],
-      timeout: 3000
-    });
-    
-    if (testResponse.success) {
-      console.log('Firecrawl connection successful');
-      firecrawlStatus.available = true;
-      firecrawlStatus.tested = true;
-    } else {
-      console.error('Firecrawl test failed:', testResponse.error);
-      firecrawlStatus.available = false;
-      firecrawlStatus.error = testResponse.error || 'Test scrape failed';
-      firecrawlStatus.tested = true;
-    }
-    return true;
-  } catch (error) {
-    console.error('Firecrawl initialization failed:', error);
-    firecrawlStatus.error = error.message;
-    firecrawl = null;
-    return false;
-  }
-}
-
-// Initialize on module load
-await initializeFirecrawl();
-
-interface ScrapedEventData {
-  title: string;
-  category: string;
-  venue?: string;
-  price?: string;
-  description?: string;
-  date?: string;
-  time?: string;
-}
 
 // Location coordinates for major Indian cities
 function getLocationCoordinates(location: string): { lat: number; lng: number } {
@@ -89,156 +28,301 @@ function getLocationCoordinates(location: string): { lat: number; lng: number } 
   
   const locationKey = location.toLowerCase().replace(/\s+/g, '');
   
-  // Try to find exact match first
   for (const [city, coords] of Object.entries(cityCoords)) {
     if (locationKey.includes(city) || city.includes(locationKey)) {
       return coords;
     }
   }
   
-  // Default to Mumbai if location not found
-  return cityCoords.mumbai;
+  return cityCoords.mumbai; // Default fallback
 }
 
-// Generate realistic venue coordinates within city bounds (±0.15 degree ~17km radius)
+// Generate realistic venue coordinates within city bounds
 function generateVenueCoordinates(centerLat: number, centerLng: number): { lat: number; lng: number } {
-  const randomOffset = () => (Math.random() - 0.5) * 0.3; // ±0.15 degree spread for 50km radius
-  
+  const randomOffset = () => (Math.random() - 0.5) * 0.3;
   return {
     lat: centerLat + randomOffset(),
     lng: centerLng + randomOffset()
   };
 }
 
-// Enhanced text cleaning function
-function cleanScrapedText(text: string): string {
-  return text
-    .replace(/\[|\]|\(|\)/g, '') // Remove brackets
-    .replace(/\*\*/g, '') // Remove markdown bold
-    .replace(/#{1,6}/g, '') // Remove headers
-    .replace(/!\[.*?\]/g, '') // Remove image references
-    .replace(/https?:\/\/[^\s]+/g, '') // Remove URLs
-    .replace(/\\+/g, ' ') // Replace backslashes
-    .replace(/₹\d+[^\s]*/g, '') // Remove inline prices
-    .replace(/onwards|Delhi|NCR|app-store|GurugramHaryana/gi, '') // Remove common noise
-    .replace(/For you|Dining|Events|Movies|Activities|Search for events/gi, '') // Remove navigation
-    .replace(/Select Location|All Cities/gi, '') // Remove location selectors
-    .replace(/\s+/g, ' ') // Normalize spaces
-    .trim();
-}
+// Status for monitoring API availability
+export const firecrawlStatus = {
+  available: false,
+  tested: false,
+  error: 'Rebuilding with direct API calls'
+};
 
-// Improved event title extraction with better filtering
-function extractEventTitles(content: string, source: string): string[] {
-  const cleanText = cleanScrapedText(content);
+// Ticketmaster API Integration
+export async function fetchTicketmasterEvents(location: string, userLat?: number, userLng?: number): Promise<UnifiedEvent[]> {
+  const apiKey = Deno.env.get('TICKETMASTER_API_KEY');
   
-  // Skip obvious error pages
-  const errorIndicators = [
-    'page doesn\'t exist', 'privacy note', 'partner with us',
-    'select location', 'all cities', 'got a show', 'error 404',
-    'access denied', 'page not found'
-  ];
-  
-  if (errorIndicators.some(indicator => cleanText.toLowerCase().includes(indicator))) {
-    console.log(`${source}: Detected error/navigation page`);
-    return [];
+  if (!apiKey) {
+    console.log('Ticketmaster: API key not found, using fallback');
+    return generateTicketmasterFallback(location, userLat, userLng);
   }
 
-  // Split content and look for event-like patterns
-  const lines = cleanText.split(/[\n\r\|\!]/).map(line => line.trim());
-  
-  const potentialTitles: string[] = [];
-  const eventKeywords = [
-    'concert', 'show', 'event', 'festival', 'party', 'night', 'live', 
-    'performance', 'comedy', 'standup', 'music', 'dance', 'art', 'exhibition',
-    'workshop', 'class', 'seminar', 'conference', 'meetup', 'screening',
-    'theater', 'drama', 'musical', 'opera', 'ballet'
-  ];
-  
-  for (const line of lines) {
-    const lowerLine = line.toLowerCase();
+  try {
+    console.log(`Fetching Ticketmaster events for: ${location}`);
     
-    // Basic length and content filtering
-    if (line.length < 8 || line.length > 150) continue;
+    const locationCoords = getLocationCoordinates(location);
+    const lat = userLat || locationCoords.lat;
+    const lng = userLng || locationCoords.lng;
     
-    // Skip obvious non-events
-    if (lowerLine.match(/^\d+\s*(am|pm|january|february|march|april|may|june|july|august|september|october|november|december)/i)) continue;
-    if (lowerLine.match(/^(mon|tue|wed|thu|fri|sat|sun|monday|tuesday|wednesday|thursday|friday|saturday|sunday)/i)) continue;
-    if (lowerLine.includes('bookmyshow') || lowerLine.includes('insider.in') || lowerLine.includes('district.in')) continue;
+    // Ticketmaster Discovery API endpoint
+    const url = `https://app.ticketmaster.com/discovery/v2/events.json?apikey=${apiKey}&locale=en-us&latlong=${lat},${lng}&radius=50&unit=km&size=20&sort=date,asc`;
     
-    // Look for event indicators
-    const hasEventKeyword = eventKeywords.some(keyword => lowerLine.includes(keyword));
-    const hasBookingTerms = ['book', 'ticket', 'buy', 'reserve', 'register'].some(term => lowerLine.includes(term));
-    const hasTimeIndicators = ['tonight', 'weekend', 'saturday', 'sunday', 'evening', 'morning'].some(time => lowerLine.includes(time));
-    
-    if (hasEventKeyword || (hasBookingTerms && hasTimeIndicators)) {
-      potentialTitles.push(line);
+    const response = await fetch(url, {
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'EventApp/1.0'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Ticketmaster API error: ${response.status}`);
     }
+
+    const data = await response.json();
+    
+    if (!data._embedded?.events) {
+      console.log('Ticketmaster: No events found');
+      return generateTicketmasterFallback(location, userLat, userLng);
+    }
+
+    const events: UnifiedEvent[] = data._embedded.events.map((event: any, index: number) => {
+      const venue = event._embedded?.venues?.[0];
+      const eventLocation = venue?.location || { latitude: lat, longitude: lng };
+      
+      // Calculate distance from user
+      let distance = '15 km away';
+      if (userLat && userLng) {
+        const actualDistance = calculateDistance(userLat, userLng, eventLocation.latitude, eventLocation.longitude);
+        distance = `${Math.round(actualDistance * 10) / 10} km away`;
+      }
+
+      return {
+        id: `ticketmaster_${event.id}`,
+        title: event.name,
+        distance,
+        timing: event.dates?.start?.localDate ? formatEventTiming(new Date(event.dates.start.localDate)) : 'This Weekend',
+        description: event.info || `Experience ${event.name} - a premier event perfect for couples!`,
+        category: categorizeTicketmasterEvent(event.classifications?.[0]?.segment?.name || 'Entertainment'),
+        venue: venue?.name || 'Event Venue',
+        city: location,
+        price: event.priceRanges?.[0] ? `₹${Math.round(event.priceRanges[0].min * 80)} - ₹${Math.round(event.priceRanges[0].max * 80)}` : '₹800 - ₹3500',
+        date: event.dates?.start?.localDate || new Date(Date.now() + (index + 1) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        time: event.dates?.start?.localTime || `${18 + (index % 4)}:00`,
+        source: 'ticketmaster',
+        bookingUrl: event.url || 'https://www.ticketmaster.com',
+        image: event.images?.[0]?.url,
+        location: {
+          latitude: eventLocation.latitude,
+          longitude: eventLocation.longitude,
+          city: location
+        }
+      };
+    });
+
+    console.log(`Ticketmaster: Successfully fetched ${events.length} events`);
+    return events;
+
+  } catch (error) {
+    console.error('Ticketmaster API error:', error);
+    return generateTicketmasterFallback(location, userLat, userLng);
   }
-  
-  // Remove duplicates and limit results
-  const uniqueTitles = [...new Set(potentialTitles)].slice(0, 12);
-  console.log(`${source} extracted ${uniqueTitles.length} potential events:`, uniqueTitles.slice(0, 3));
-  
-  return uniqueTitles;
 }
 
-// Enhanced categorization with more categories
-function categorizeEvent(title: string): { category: string; venue: string; price: string } {
-  const lowerTitle = title.toLowerCase();
+// Eventbrite API Integration
+export async function fetchEventbriteEvents(location: string, userLat?: number, userLng?: number): Promise<UnifiedEvent[]> {
+  const apiKey = Deno.env.get('EVENTBRITE_API_KEY');
   
-  if (lowerTitle.includes('music') || lowerTitle.includes('concert') || lowerTitle.includes('band') || lowerTitle.includes('singer')) {
-    return {
-      category: EVENT_CATEGORIES.MUSIC,
-      venue: 'Concert Hall',
-      price: '₹800 - ₹3500'
-    };
-  } else if (lowerTitle.includes('comedy') || lowerTitle.includes('standup') || lowerTitle.includes('comic')) {
-    return {
-      category: EVENT_CATEGORIES.COMEDY,
-      venue: 'Comedy Club',
-      price: '₹400 - ₹1800'
-    };
-  } else if (lowerTitle.includes('party') || lowerTitle.includes('night') || lowerTitle.includes('club') || lowerTitle.includes('dj')) {
-    return {
-      category: EVENT_CATEGORIES.NIGHTLIFE,
-      venue: 'Night Club',
-      price: '₹1200 - ₹6000'
-    };
-  } else if (lowerTitle.includes('art') || lowerTitle.includes('gallery') || lowerTitle.includes('exhibition') || lowerTitle.includes('museum')) {
-    return {
-      category: EVENT_CATEGORIES.ARTS,
-      venue: 'Art Gallery',
-      price: '₹200 - ₹1000'
-    };
-  } else if (lowerTitle.includes('food') || lowerTitle.includes('culinary') || lowerTitle.includes('wine') || lowerTitle.includes('dining')) {
-    return {
-      category: EVENT_CATEGORIES.FOOD,
-      venue: 'Restaurant',
-      price: '₹800 - ₹3000'
-    };
-  } else if (lowerTitle.includes('workshop') || lowerTitle.includes('class') || lowerTitle.includes('learning') || lowerTitle.includes('seminar')) {
-    return {
-      category: EVENT_CATEGORIES.WORKSHOP,
-      venue: 'Learning Center',
-      price: '₹500 - ₹2000'
-    };
-  } else if (lowerTitle.includes('theater') || lowerTitle.includes('drama') || lowerTitle.includes('play') || lowerTitle.includes('musical')) {
-    return {
-      category: EVENT_CATEGORIES.ENTERTAINMENT,
-      venue: 'Theater',
-      price: '₹600 - ₹2500'
-    };
+  if (!apiKey) {
+    console.log('Eventbrite: API key not found, using fallback');
+    return generateEventbriteFallback(location, userLat, userLng);
   }
+
+  try {
+    console.log(`Fetching Eventbrite events for: ${location}`);
+    
+    const locationCoords = getLocationCoordinates(location);
+    const lat = userLat || locationCoords.lat;
+    const lng = userLng || locationCoords.lng;
+    
+    // Eventbrite Search API endpoint
+    const url = `https://www.eventbriteapi.com/v3/events/search/?location.latitude=${lat}&location.longitude=${lng}&location.within=50km&sort_by=date&expand=venue,organizer&token=${apiKey}`;
+    
+    const response = await fetch(url, {
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Eventbrite API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    if (!data.events || data.events.length === 0) {
+      console.log('Eventbrite: No events found');
+      return generateEventbriteFallback(location, userLat, userLng);
+    }
+
+    const events: UnifiedEvent[] = data.events.slice(0, 15).map((event: any, index: number) => {
+      const venue = event.venue;
+      const eventLat = venue?.latitude || lat;
+      const eventLng = venue?.longitude || lng;
+      
+      // Calculate distance
+      let distance = '12 km away';
+      if (userLat && userLng) {
+        const actualDistance = calculateDistance(userLat, userLng, eventLat, eventLng);
+        distance = `${Math.round(actualDistance * 10) / 10} km away`;
+      }
+
+      return {
+        id: `eventbrite_${event.id}`,
+        title: event.name?.text || 'Special Event',
+        distance,
+        timing: event.start?.local ? formatEventTiming(new Date(event.start.local)) : 'This Weekend',
+        description: event.description?.text || `Join us for ${event.name?.text} - perfect for couples looking for memorable experiences!`,
+        category: categorizeEventbriteEvent(event.category_id),
+        venue: venue?.name || 'Event Venue',
+        city: location,
+        price: event.ticket_availability?.is_free ? 'Free' : '₹500 - ₹2500',
+        date: event.start?.local ? event.start.local.split('T')[0] : new Date(Date.now() + (index + 1) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        time: event.start?.local ? event.start.local.split('T')[1].slice(0, 5) : `${19 + (index % 3)}:00`,
+        source: 'eventbrite',
+        bookingUrl: event.url || 'https://www.eventbrite.com',
+        image: event.logo?.url,
+        location: {
+          latitude: eventLat,
+          longitude: eventLng,
+          city: location
+        }
+      };
+    });
+
+    console.log(`Eventbrite: Successfully fetched ${events.length} events`);
+    return events;
+
+  } catch (error) {
+    console.error('Eventbrite API error:', error);
+    return generateEventbriteFallback(location, userLat, userLng);
+  }
+}
+
+// BookMyShow fallback (as they don't have public API)
+export async function fetchBookMyShowEvents(location: string, userLat?: number, userLng?: number): Promise<UnifiedEvent[]> {
+  console.log(`BookMyShow: Generating curated events for ${location}`);
+  return generateBookMyShowFallback(location, userLat, userLng);
+}
+
+// Paytm Insider fallback (as they don't have public API)
+export async function fetchPaytmInsiderEvents(location: string, userLat?: number, userLng?: number): Promise<UnifiedEvent[]> {
+  console.log(`Paytm Insider: Generating curated events for ${location}`);
+  return generatePaytmInsiderFallback(location, userLat, userLng);
+}
+
+// District fallback (as they don't have public API)
+export async function fetchDistrictEvents(location: string, userLat?: number, userLng?: number): Promise<UnifiedEvent[]> {
+  console.log(`District: Generating curated events for ${location}`);
+  return generateDistrictFallback(location, userLat, userLng);
+}
+
+// Categorization functions
+function categorizeTicketmasterEvent(segment: string): string {
+  const segmentLower = segment?.toLowerCase() || '';
   
-  return {
-    category: EVENT_CATEGORIES.ENTERTAINMENT,
-    venue: 'Event Venue',
-    price: '₹500 - ₹2500'
+  if (segmentLower.includes('music')) return EVENT_CATEGORIES.MUSIC;
+  if (segmentLower.includes('sports')) return EVENT_CATEGORIES.SPORTS;
+  if (segmentLower.includes('comedy')) return EVENT_CATEGORIES.COMEDY;
+  if (segmentLower.includes('theater') || segmentLower.includes('arts')) return EVENT_CATEGORIES.ARTS;
+  
+  return EVENT_CATEGORIES.ENTERTAINMENT;
+}
+
+function categorizeEventbriteEvent(categoryId: string): string {
+  // Eventbrite category IDs mapping
+  const categoryMap: { [key: string]: string } = {
+    '103': EVENT_CATEGORIES.MUSIC,      // Music
+    '105': EVENT_CATEGORIES.FOOD,       // Food & Drink  
+    '110': EVENT_CATEGORIES.ARTS,       // Performing & Visual Arts
+    '113': EVENT_CATEGORIES.COMEDY,     // Comedy
+    '115': EVENT_CATEGORIES.WORKSHOP,   // Education
+    '108': EVENT_CATEGORIES.SPORTS,     // Sports & Fitness
+    '199': EVENT_CATEGORIES.ENTERTAINMENT // Other
   };
+  
+  return categoryMap[categoryId] || EVENT_CATEGORIES.ENTERTAINMENT;
 }
 
-// Convert extracted titles to UnifiedEvent objects with real location data
-function createEventsFromTitles(
+// Enhanced fallback generators with realistic data
+function generateTicketmasterFallback(location: string, userLat?: number, userLng?: number): UnifiedEvent[] {
+  const locationCoords = getLocationCoordinates(location);
+  const eventTitles = [
+    'Live Concert Series - International Artists',
+    'Comedy Night Extravaganza',
+    'Musical Theater Performance',
+    'Rock Concert - Local & International Bands',
+    'Stand-up Comedy Special Show'
+  ];
+  
+  return createEnhancedEvents(eventTitles, location, 'ticketmaster', 'https://www.ticketmaster.com', userLat, userLng);
+}
+
+function generateEventbriteFallback(location: string, userLat?: number, userLng?: number): UnifiedEvent[] {
+  const eventTitles = [
+    'Art & Wine Workshop for Couples',
+    'Food Festival - Taste of the City',
+    'Photography Workshop Weekend',
+    'Cultural Dance Performance',
+    'Business Networking Mixer'
+  ];
+  
+  return createEnhancedEvents(eventTitles, location, 'eventbrite', 'https://www.eventbrite.com', userLat, userLng);
+}
+
+function generateBookMyShowFallback(location: string, userLat?: number, userLng?: number): UnifiedEvent[] {
+  const eventTitles = [
+    'Bollywood Movie Night - Latest Releases',
+    'Theater Festival - Classic Performances',
+    'Live Music Concert - Acoustic Evening',
+    'Comedy Show - Stand-up Special',
+    'Dance Performance - Contemporary Arts'
+  ];
+  
+  return createEnhancedEvents(eventTitles, location, 'bookmyshow', 'https://in.bookmyshow.com', userLat, userLng);
+}
+
+function generatePaytmInsiderFallback(location: string, userLat?: number, userLng?: number): UnifiedEvent[] {
+  const eventTitles = [
+    'Weekend Night Party - DJ Special',
+    'Culinary Experience - Chef\'s Table',
+    'Adventure Sports Challenge',
+    'Gaming Tournament Weekend',
+    'Fitness Bootcamp Session'
+  ];
+  
+  return createEnhancedEvents(eventTitles, location, 'paytm-insider', 'https://insider.in', userLat, userLng);
+}
+
+function generateDistrictFallback(location: string, userLat?: number, userLng?: number): UnifiedEvent[] {
+  const eventTitles = [
+    'Craft Beer Tasting Evening',
+    'Live Jazz Performance Night',
+    'Rooftop Dining Experience',
+    'Wine & Paint Workshop',
+    'Weekend Brunch Special'
+  ];
+  
+  return createEnhancedEvents(eventTitles, location, 'district', 'https://www.district.in', userLat, userLng);
+}
+
+// Enhanced event creation with realistic data
+function createEnhancedEvents(
   titles: string[], 
   location: string, 
   source: string, 
@@ -246,498 +330,70 @@ function createEventsFromTitles(
   userLat?: number,
   userLng?: number
 ): UnifiedEvent[] {
-  if (titles.length === 0) return [];
-  
+  const locationCoords = getLocationCoordinates(location);
   const events: UnifiedEvent[] = [];
   const eventDates = generateEventDates(titles.length);
   
-  // Location-specific venue coordinates (approximate city centers)
-  const locationCoords = getLocationCoordinates(location);
-  
   titles.forEach((title, index) => {
-    const { category, venue, price } = categorizeEvent(title);
+    const { category, venue, price } = categorizeEventByTitle(title);
     const eventDate = eventDates[index];
-    
-    // Generate realistic coordinates within the city area
     const venueCoords = generateVenueCoordinates(locationCoords.lat, locationCoords.lng);
     
-    // Calculate real distance if user coordinates are provided
-    let distance = `${Math.floor(Math.random() * 30) + 5} km away`;
+    // Calculate realistic distance
+    let distance = `${Math.floor(Math.random() * 25) + 5} km away`;
     if (userLat && userLng) {
       const actualDistance = calculateDistance(userLat, userLng, venueCoords.lat, venueCoords.lng);
-      // Only include events within 50km radius
-      if (actualDistance > 50) return;
+      if (actualDistance > 50) return; // Skip events too far away
       distance = `${Math.round(actualDistance * 10) / 10} km away`;
     }
     
-    // Extract venue name from title or generate a realistic one
-    let venueName = venue;
-    if (title.includes(' at ')) {
-      const parts = title.split(' at ');
-      if (parts.length > 1) {
-        venueName = parts[1].split(',')[0].split(' -')[0].trim();
-      }
-    } else if (title.includes('@')) {
-      const parts = title.split('@');
-      if (parts.length > 1) {
-        venueName = parts[1].split(',')[0].split(' -')[0].trim();
-      }
-    } else {
-      // Generate realistic venue names based on category
-      const venueNames = {
-        'Music': ['Amphitheater', 'Music Hall', 'Concert Stadium', 'Live Music Cafe', 'Arena'],
-        'Food & Drink': ['Restaurant', 'Brewery', 'Wine Bar', 'Culinary Studio', 'Rooftop Lounge'],
-        'Culture': ['Art Gallery', 'Cultural Center', 'Museum', 'Heritage Hall', 'Exhibition Center'],
-        'Comedy': ['Comedy Club', 'Entertainment Hub', 'Laugh Lounge', 'Comedy Theater'],
-        'Nightlife': ['Night Club', 'Rooftop Bar', 'Dance Club', 'Lounge'],
-        'Entertainment': ['Theater', 'Entertainment Complex', 'Auditorium', 'Performance Hall'],
-        'Sports': ['Sports Complex', 'Stadium', 'Sports Club', 'Athletic Center', 'Arena'],
-        'Business': ['Conference Center', 'Business Hub', 'Convention Hall', 'Meeting Center']
-      };
-      
-      const venues = venueNames[category] || ['Event Center', 'Community Hall', 'Venue'];
-      const randomVenue = venues[Math.floor(Math.random() * venues.length)];
-      venueName = `${location} ${randomVenue}`;
-    }
-
     events.push({
       id: `${source}_${location.replace(/\s+/g, '_')}_${index}_${Date.now()}`,
-      title: title.charAt(0).toUpperCase() + title.slice(1),
+      title,
       distance,
       timing: formatEventTiming(eventDate),
-      description: `Experience this amazing ${category.toLowerCase()} event in ${location}. Perfect for couples!`,
+      description: `Experience ${title.toLowerCase()} in ${location}. Perfect for couples looking for memorable experiences!`,
       category,
-      venue: venueName,
+      venue: `${location} ${venue}`,
       city: location,
       price,
       date: eventDate.toISOString().split('T')[0],
-      time: `${17 + (index % 6)}:00`,
+      time: `${18 + (index % 5)}:00`,
       source,
-      bookingUrl
+      bookingUrl,
+      location: {
+        latitude: venueCoords.lat,
+        longitude: venueCoords.lng,
+        city: location
+      }
     });
   });
   
-  return events.filter(event => event !== null && event !== undefined); // Remove any null/undefined entries
+  return events;
 }
 
-// Enhanced scraping function with dynamic URL generation and better error handling  
-// Export firecrawlStatus for monitoring
-export { firecrawlStatus };
-
-async function scrapeEventSource(
-  baseUrl: string, 
-  sourceName: string, 
-  location: string,
-  bookingUrl: string,
-  fallbackGenerator: () => UnifiedEvent[],
-  userLat?: number,
-  userLng?: number
-): Promise<UnifiedEvent[]> {
-  const scrapingResult = {
-    source: sourceName,
-    url: baseUrl,
-    success: false,
-    error: null as string | null,
-    fallbackUsed: false,
-    eventsFound: 0,
-    contentLength: 0
-  };
-
-  if (!firecrawl || !firecrawlStatus.available) {
-    scrapingResult.error = firecrawlStatus.error || 'Firecrawl not available';
-    scrapingResult.fallbackUsed = true;
-    console.log(`${sourceName}: ${scrapingResult.error}, using enriched fallback`);
-    
-    // Generate more fallback events to compensate for scraping failure
-    const fallbackEvents = fallbackGenerator();
-    scrapingResult.eventsFound = fallbackEvents.length;
-    logScrapingResult(scrapingResult);
-    
-    // Log each fallback event being created
-    console.log(`${sourceName} fallback events:`, fallbackEvents.map(e => e.title));
-    return fallbackEvents;
-  }
-
-  // Generate dynamic URLs based on location and current time
-  const dynamicUrls = generateDynamicUrls(baseUrl, sourceName, location);
+// Enhanced categorization
+function categorizeEventByTitle(title: string): { category: string; venue: string; price: string } {
+  const lowerTitle = title.toLowerCase();
   
-  for (const url of dynamicUrls) {
-    try {
-      console.log(`Attempting to scrape ${sourceName}: ${url}`);
-      scrapingResult.url = url;
-      
-      // Implement retry mechanism with shorter timeouts and simpler scraping
-      const maxRetries = 1; // Reduce retries for faster processing
-      let lastError: Error | null = null;
-      
-      for (let attempt = 1; attempt <= maxRetries; attempt++) {
-        try {
-          const timeoutMs = 30000; // Increase timeout significantly
-          
-          const result = await firecrawl.scrapeUrl(url, {
-            formats: ['markdown'],
-            timeout: timeoutMs,
-            waitFor: 1000,
-            onlyMainContent: true
-          });
-          
-          if (!result.success) {
-            throw new Error(`Scraping failed: ${result.error || 'Unknown error'}`);
-          }
-
-          const content = result.markdown || result.html || '';
-          scrapingResult.contentLength = content.length;
-          
-          if (content.length < 100) {
-            throw new Error('Content too short, likely blocked or empty page');
-          }
-
-          console.log(`${sourceName} content length: ${content.length} characters`);
-          
-          // Enhanced content validation
-          if (isValidEventContent(content, sourceName)) {
-            const titles = extractEventTitles(content, sourceName);
-            
-            if (titles.length > 0) {
-              const events = createEventsFromTitles(
-                titles, 
-                location, 
-                sourceName.toLowerCase().replace(/\s+/g, '-'), 
-                bookingUrl, 
-                userLat, 
-                userLng
-              );
-              
-              if (events.length > 0) {
-                scrapingResult.success = true;
-                scrapingResult.eventsFound = events.length;
-                console.log(`Successfully scraped ${events.length} events from ${sourceName}:`);
-                console.log(events.map(e => `- ${e.title} (${e.source})`));
-                logScrapingResult(scrapingResult);
-                return events;
-              }
-            }
-          }
-          
-          throw new Error('No valid events found in scraped content');
-          
-        } catch (error) {
-          lastError = error;
-          console.warn(`${sourceName} attempt ${attempt} failed:`, error.message);
-          
-          if (attempt < maxRetries) {
-            // Exponential backoff
-            await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
-          }
-        }
-      }
-      
-      // If we get here, all retries failed for this URL
-      console.error(`${sourceName} all retries failed for ${url}:`, lastError?.message);
-      
-    } catch (error) {
-      console.error(`${sourceName} scraping error for ${url}:`, error);
-    }
+  if (lowerTitle.includes('music') || lowerTitle.includes('concert') || lowerTitle.includes('band')) {
+    return { category: EVENT_CATEGORIES.MUSIC, venue: 'Concert Hall', price: '₹800 - ₹3500' };
+  }
+  if (lowerTitle.includes('comedy') || lowerTitle.includes('standup')) {
+    return { category: EVENT_CATEGORIES.COMEDY, venue: 'Comedy Club', price: '₹400 - ₹1800' };
+  }
+  if (lowerTitle.includes('party') || lowerTitle.includes('night') || lowerTitle.includes('dj')) {
+    return { category: EVENT_CATEGORIES.NIGHTLIFE, venue: 'Night Club', price: '₹1200 - ₹6000' };
+  }
+  if (lowerTitle.includes('art') || lowerTitle.includes('gallery') || lowerTitle.includes('workshop')) {
+    return { category: EVENT_CATEGORIES.ARTS, venue: 'Art Gallery', price: '₹300 - ₹1500' };
+  }
+  if (lowerTitle.includes('food') || lowerTitle.includes('culinary') || lowerTitle.includes('dining')) {
+    return { category: EVENT_CATEGORIES.FOOD, venue: 'Restaurant', price: '₹800 - ₹3000' };
+  }
+  if (lowerTitle.includes('theater') || lowerTitle.includes('performance')) {
+    return { category: EVENT_CATEGORIES.ENTERTAINMENT, venue: 'Theater', price: '₹600 - ₹2500' };
   }
   
-  // All URLs failed, use enhanced fallback
-  scrapingResult.error = 'All scraping attempts failed - using enriched fallback data';
-  scrapingResult.fallbackUsed = true;
-  console.log(`${sourceName}: All scraping attempts failed, using enhanced fallback`);
-  
-  const fallbackEvents = fallbackGenerator();
-  scrapingResult.eventsFound = fallbackEvents.length;
-  console.log(`${sourceName} fallback events created:`, fallbackEvents.map(e => e.title));
-  logScrapingResult(scrapingResult);
-  
-  return fallbackEvents;
-}
-
-// Generate dynamic URLs based on location and search patterns
-function generateDynamicUrls(baseUrl: string, sourceName: string, location: string): string[] {
-  const urls: string[] = [];
-  const locationKey = location.toLowerCase().replace(/\s+/g, '');
-  const today = new Date();
-  const monthName = today.toLocaleString('default', { month: 'long' }).toLowerCase();
-  
-  // Base URL
-  urls.push(baseUrl);
-  
-  // Location-specific patterns for each source
-  switch (sourceName.toLowerCase()) {
-    case 'bookmyshow':
-      if (locationKey.includes('mumbai')) {
-        urls.push('https://in.bookmyshow.com/mumbai/events');
-        urls.push('https://in.bookmyshow.com/mumbai/events/music');
-        urls.push('https://in.bookmyshow.com/mumbai/events/comedy');
-      } else if (locationKey.includes('delhi')) {
-        urls.push('https://in.bookmyshow.com/delhi-ncr/events');
-        urls.push('https://in.bookmyshow.com/delhi-ncr/events/music');
-      } else if (locationKey.includes('bangalore') || locationKey.includes('bengaluru')) {
-        urls.push('https://in.bookmyshow.com/bengaluru/events');
-        urls.push('https://in.bookmyshow.com/bengaluru/events/music');
-      }
-      break;
-      
-    case 'paytm insider':
-      urls.push(`https://insider.in/search?q=${encodeURIComponent(location)}`);
-      if (locationKey.includes('mumbai')) {
-        urls.push('https://insider.in/mumbai/events');
-      } else if (locationKey.includes('delhi')) {
-        urls.push('https://insider.in/delhi/events');
-      } else if (locationKey.includes('bangalore')) {
-        urls.push('https://insider.in/bengaluru/events');
-      }
-      break;
-      
-    case 'eventbrite':
-      urls.push(`https://www.eventbrite.com/d/india--${encodeURIComponent(location)}/events/`);
-      urls.push(`https://www.eventbrite.com/d/india--${encodeURIComponent(location)}/events/this-weekend/`);
-      break;
-      
-    case 'district':
-      urls.push('https://district.events/events');
-      urls.push(`https://district.events/search?q=${encodeURIComponent(location)}`);
-      break;
-      
-    case 'ticketmaster':
-      urls.push(`https://www.ticketmaster.com/search?q=${encodeURIComponent(location)}`);
-      break;
-  }
-  
-  return urls.slice(0, 3); // Limit to 3 URLs per source to avoid too many requests
-}
-
-// Validate if scraped content contains actual event data
-function isValidEventContent(content: string, sourceName: string): boolean {
-  const eventKeywords = [
-    'event', 'concert', 'show', 'performance', 'festival', 'party',
-    'comedy', 'music', 'theater', 'exhibition', 'workshop', 'seminar',
-    'conference', 'meetup', 'networking', 'art', 'cultural', 'sports'
-  ];
-  
-  const dateKeywords = [
-    'today', 'tomorrow', 'weekend', 'january', 'february', 'march',
-    'april', 'may', 'june', 'july', 'august', 'september', 'october',
-    'november', 'december', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'
-  ];
-  
-  const contentLower = content.toLowerCase();
-  
-  // Check for event-related keywords
-  const hasEventKeywords = eventKeywords.some(keyword => contentLower.includes(keyword));
-  const hasDateKeywords = dateKeywords.some(keyword => contentLower.includes(keyword));
-  
-  // Check for price patterns
-  const hasPricePattern = /₹|\$|free|price|cost|ticket/i.test(content);
-  
-  // Check for venue patterns
-  const hasVenuePattern = /venue|location|address|hall|center|club|theater|stadium/i.test(content);
-  
-  // Content should have at least 2 of these indicators
-  const indicators = [hasEventKeywords, hasDateKeywords, hasPricePattern, hasVenuePattern].filter(Boolean).length;
-  
-  return indicators >= 2;
-}
-
-// Log scraping results for monitoring
-function logScrapingResult(result: any) {
-  console.log(`Scraping result for ${result.source}:`, {
-    success: result.success,
-    url: result.url,
-    eventsFound: result.eventsFound,
-    fallbackUsed: result.fallbackUsed,
-    error: result.error,
-    contentLength: result.contentLength
-  });
-}
-
-// BookMyShow events - enhanced location-specific scraping
-export async function fetchBookMyShowEvents(location: string, userLat?: number, userLng?: number): Promise<UnifiedEvent[]> {
-  const fallback = (): UnifiedEvent[] => [
-    ...createEventsFromTitles([
-      'Live Music Concert - Bollywood Hits',
-      'Stand-up Comedy Night Special',
-      'Cultural Dance Performance Evening',
-      'Rock Band Live Concert'
-    ], location, 'bookmyshow', 'https://in.bookmyshow.com', userLat, userLng)
-  ];
-  
-  // Enhanced location mapping for BookMyShow
-  const locationMap: { [key: string]: string } = {
-    'mumbai': 'mumbai',
-    'delhi': 'delhi-ncr',
-    'bangalore': 'bengaluru',
-    'bengaluru': 'bengaluru',
-    'chennai': 'chennai',
-    'kolkata': 'kolkata',
-    'hyderabad': 'hyderabad',
-    'pune': 'pune',
-    'ahmedabad': 'ahmedabad',
-    'jaipur': 'jaipur',
-    'surat': 'surat',
-    'lucknow': 'lucknow',
-    'kanpur': 'kanpur',
-    'nagpur': 'nagpur',
-    'indore': 'indore'
-  };
-  
-  // Try to find the best matching URL
-  let scrapingUrl = 'https://in.bookmyshow.com/explore/home';
-  const locationKey = location.toLowerCase().replace(/\s+/g, '');
-  
-  for (const [city, bmsCityName] of Object.entries(locationMap)) {
-    if (locationKey.includes(city) || city.includes(locationKey)) {
-      scrapingUrl = `https://in.bookmyshow.com/${bmsCityName}/events`;
-      break;
-    }
-  }
-  
-  return scrapeEventSource(
-    scrapingUrl,
-    'BookMyShow',
-    location,
-    'https://in.bookmyshow.com',
-    fallback,
-    userLat,
-    userLng
-  );
-}
-
-// Paytm Insider events - enhanced with location-based URLs
-export async function fetchPaytmInsiderEvents(location: string, userLat?: number, userLng?: number): Promise<UnifiedEvent[]> {
-  const fallback = (): UnifiedEvent[] => [
-    ...createEventsFromTitles([
-      'Weekend Party at Rooftop Lounge',
-      'Art Exhibition Opening Night',
-      'Wine Tasting and Jazz Evening',
-      'Poetry Night at Cozy Cafe'
-    ], location, 'paytm-insider', 'https://insider.in', userLat, userLng)
-  ];
-  
-  // Try location-specific Insider URLs
-  const locationKey = location.toLowerCase().replace(/\s+/g, '');
-  let scrapingUrl = 'https://insider.in/events';
-  
-  // Insider has city-specific pages
-  if (locationKey.includes('mumbai')) {
-    scrapingUrl = 'https://insider.in/mumbai/events';
-  } else if (locationKey.includes('delhi')) {
-    scrapingUrl = 'https://insider.in/delhi/events';
-  } else if (locationKey.includes('bangalore') || locationKey.includes('bengaluru')) {
-    scrapingUrl = 'https://insider.in/bengaluru/events';
-  } else if (locationKey.includes('chennai')) {
-    scrapingUrl = 'https://insider.in/chennai/events';
-  } else if (locationKey.includes('pune')) {
-    scrapingUrl = 'https://insider.in/pune/events';
-  } else if (locationKey.includes('hyderabad')) {
-    scrapingUrl = 'https://insider.in/hyderabad/events';
-  }
-  
-  return scrapeEventSource(
-    scrapingUrl,
-    'Paytm Insider',
-    location,
-    'https://insider.in',
-    fallback,
-    userLat,
-    userLng
-  );
-}
-
-// District events - enhanced with location targeting
-export async function fetchDistrictEvents(location: string, userLat?: number, userLng?: number): Promise<UnifiedEvent[]> {
-  const fallback = (): UnifiedEvent[] => [
-    ...createEventsFromTitles([
-      'DJ Night at Trendy Club',
-      'Wine Tasting Experience',
-      'Rooftop Party with City Views',
-      'Live Music and Cocktails'
-    ], location, 'district', 'https://district.in', userLat, userLng)
-  ];
-  
-  // District operates mainly in Mumbai, Delhi, Bangalore
-  const locationKey = location.toLowerCase().replace(/\s+/g, '');
-  let scrapingUrl = 'https://district.in/events';
-  
-  if (locationKey.includes('mumbai')) {
-    scrapingUrl = 'https://district.in/mumbai/events';
-  } else if (locationKey.includes('delhi')) {
-    scrapingUrl = 'https://district.in/delhi/events';
-  } else if (locationKey.includes('bangalore') || locationKey.includes('bengaluru')) {
-    scrapingUrl = 'https://district.in/bangalore/events';
-  }
-  
-  return scrapeEventSource(
-    scrapingUrl,
-    'District',
-    location,
-    'https://district.in',
-    fallback,
-    userLat,
-    userLng
-  );
-}
-
-// Eventbrite events - enhanced location targeting
-export async function fetchEventbriteEvents(location: string, userLat?: number, userLng?: number): Promise<UnifiedEvent[]> {
-  const fallback = (): UnifiedEvent[] => [
-    ...createEventsFromTitles([
-      'Professional Networking Mixer',
-      'Technology Workshop for Couples',
-      'Weekend Photography Walk',
-      'Cooking Class for Two'
-    ], location, 'eventbrite', 'https://www.eventbrite.com', userLat, userLng)
-  ];
-  
-  // Enhanced location-based search with multiple URL patterns
-  const searchUrls = [
-    `https://www.eventbrite.com/d/india--${encodeURIComponent(location)}/events/`,
-    `https://www.eventbrite.com/d/${encodeURIComponent(location)}/events/`,
-    `https://www.eventbrite.com/d/india/events/?q=${encodeURIComponent(location)}`
-  ];
-  
-  // Try the most specific URL first
-  const searchUrl = searchUrls[0];
-  
-  return scrapeEventSource(
-    searchUrl,
-    'Eventbrite',
-    location,
-    'https://www.eventbrite.com',
-    fallback,
-    userLat,
-    userLng
-  );
-}
-
-// Ticketmaster events - enhanced with region targeting
-export async function fetchTicketmasterEvents(location: string, userLat?: number, userLng?: number): Promise<UnifiedEvent[]> {
-  const fallback = (): UnifiedEvent[] => [
-    ...createEventsFromTitles([
-      'International Music Festival',
-      'Comedy Tour Special Show',
-      'Sports Event Viewing Party',
-      'Theater Production Weekend'
-    ], location, 'ticketmaster', 'https://www.ticketmaster.com', userLat, userLng)
-  ];
-  
-  // Ticketmaster has different regional sites
-  let scrapingUrl = 'https://www.ticketmaster.com/browse/concerts-music-id-10001';
-  
-  // Try to use location-specific parameters
-  const locationKey = location.toLowerCase().replace(/\s+/g, '');
-  if (locationKey.includes('mumbai') || locationKey.includes('delhi') || locationKey.includes('bangalore')) {
-    scrapingUrl = `https://www.ticketmaster.com/search?q=${encodeURIComponent(location)}&classificationId=KZFzniwnSyZfZ7v7nJ`;
-  }
-  
-  return scrapeEventSource(
-    scrapingUrl,
-    'Ticketmaster',
-    location,
-    'https://www.ticketmaster.com',
-    fallback,
-    userLat,
-    userLng
-  );
+  return { category: EVENT_CATEGORIES.ENTERTAINMENT, venue: 'Event Venue', price: '₹500 - ₹2500' };
 }
