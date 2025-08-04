@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useCoupleData } from '@/hooks/useCoupleData';
 import { useEventSuggestions, EventSuggestion } from '@/hooks/useEventSuggestions';
+import { triggerEventFetch } from '@/utils/triggerEventFetch';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -336,6 +337,30 @@ export const DatePlanner = () => {
       toast({
         title: "Error",
         description: "Failed to save event. Please try again."
+      });
+    }
+  };
+
+  // Handle manual event refresh
+  const handleRefreshEvents = async () => {
+    try {
+      toast({
+        title: "Fetching Events...",
+        description: "Getting fresh events from official sources. This may take a moment."
+      });
+
+      await triggerEventFetch();
+      
+      // Wait a bit then reload events
+      setTimeout(() => {
+        window.location.reload();
+      }, 3000);
+      
+    } catch (error) {
+      console.error('Error triggering event fetch:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch new events. Please try again later."
       });
     }
   };
@@ -686,13 +711,22 @@ export const DatePlanner = () => {
                 <Card>
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
-                      <CardTitle className="flex items-center gap-2">
-                        <Filter className="h-5 w-5" />
-                        Filter Events
-                      </CardTitle>
-                      <Badge variant="secondary">
-                        {filteredEvents.length} events found
-                      </Badge>
+                       <CardTitle className="flex items-center gap-2">
+                         <Filter className="h-5 w-5" />
+                         Filter Events
+                       </CardTitle>
+                       <div className="flex gap-2">
+                         <Button
+                           variant="outline"
+                           size="sm"
+                           onClick={handleRefreshEvents}
+                         >
+                           Refresh Events
+                         </Button>
+                         <Badge variant="secondary">
+                           {filteredEvents.length} events found
+                         </Badge>
+                       </div>
                     </div>
                   </CardHeader>
                   <CardContent>
