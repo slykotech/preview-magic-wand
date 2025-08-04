@@ -543,14 +543,13 @@ export const DatePlanner = () => {
                      <Button 
                        variant="outline" 
                        size="sm" 
-                       className="bg-red-50 text-red-600 border-red-200 hover:bg-red-100"
+                       className="bg-red-50 text-red-600 border-red-200 hover:bg-red-100 px-2"
                        onClick={() => {
                          setDateToDelete(date);
                          setShowDeleteConfirm(true);
                        }}
                      >
-                       <Trash2 size={14} className="mr-1" />
-                       Delete
+                       <Trash2 size={14} />
                      </Button>
                      
                     {date.scheduled_date && isDateCompleted(date.scheduled_date) && (
