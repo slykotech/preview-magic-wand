@@ -110,14 +110,19 @@ export function formatEventTiming(date: Date): string {
   });
 }
 
-// Helper to generate mock events for a location
+// Helper to generate enhanced mock events for a location
 export function generateLocationBasedEvents(location: string, count: number = 5): UnifiedEvent[] {
-  const venues = [
-    'Downtown Cultural Center',
-    'City Convention Hall',
-    'Metropolitan Arts Complex',
-    'Urban Entertainment Hub',
-    'Community Event Space'
+  const eventTypes = [
+    { title: 'Live Music Concert', venues: ['Amphitheater', 'Concert Hall', 'Music Venue', 'Outdoor Stage'] },
+    { title: 'Food Festival', venues: ['Food Court', 'Park Grounds', 'Exhibition Center', 'Street Market'] },
+    { title: 'Art Exhibition', venues: ['Art Gallery', 'Museum', 'Cultural Center', 'Gallery Space'] },
+    { title: 'Comedy Show', venues: ['Comedy Club', 'Theater', 'Auditorium', 'Performance Hall'] },
+    { title: 'Dance Performance', venues: ['Dance Studio', 'Cultural Center', 'Theater', 'Community Hall'] },
+    { title: 'Wine Tasting', venues: ['Wine Bar', 'Restaurant', 'Hotel Lounge', 'Rooftop'] },
+    { title: 'Movie Screening', venues: ['Cinema', 'Outdoor Theater', 'Community Hall', 'Cultural Center'] },
+    { title: 'Workshop', venues: ['Community Center', 'Library', 'Art Studio', 'Creative Space'] },
+    { title: 'Market Fair', venues: ['Market Square', 'Exhibition Ground', 'Park', 'Community Plaza'] },
+    { title: 'Romantic Dinner', venues: ['Fine Dining Restaurant', 'Rooftop Restaurant', 'Garden Restaurant', 'Waterfront Cafe'] }
   ];
   
   const events: UnifiedEvent[] = [];
@@ -125,21 +130,25 @@ export function generateLocationBasedEvents(location: string, count: number = 5)
   
   for (let i = 0; i < count; i++) {
     const eventDate = dates[i];
-    const venue = venues[i % venues.length];
+    const eventType = eventTypes[i % eventTypes.length];
+    const venue = eventType.venues[Math.floor(Math.random() * eventType.venues.length)];
+    const categories = Object.keys(EVENT_CATEGORIES);
+    const category = categories[i % categories.length];
     
     events.push({
-      id: `local_${location.replace(/\s+/g, '_')}_${i}`,
-      title: `${location} Cultural Event ${i + 1}`,
-      distance: `${Math.floor(Math.random() * 15) + 2} km away`,
+      id: `local_${location.replace(/\s+/g, '_')}_${i}_${Date.now()}`,
+      title: `${eventType.title} in ${location}`,
+      distance: `${Math.floor(Math.random() * 20) + 1} km away`,
       timing: formatEventTiming(eventDate),
-      description: `Discover local culture and entertainment in ${location}`,
-      category: Object.values(EVENT_CATEGORIES)[i % Object.values(EVENT_CATEGORIES).length],
-      venue,
+      description: `Join us for an amazing ${eventType.title.toLowerCase()} experience in ${location}. Perfect for couples and friends!`,
+      category: EVENT_CATEGORIES[category],
+      venue: `${venue}, ${location}`,
       city: location,
-      price: `₹${(Math.floor(Math.random() * 10) + 3) * 100}`,
+      price: `₹${(Math.floor(Math.random() * 15) + 2) * 100}`,
       date: eventDate.toISOString().split('T')[0],
-      time: `${18 + (i % 6)}:30`,
-      source: 'local'
+      time: `${17 + (i % 7)}:${Math.random() > 0.5 ? '00' : '30'}`,
+      source: 'local-enhanced',
+      bookingUrl: `https://tickets.example.com/event/${i + 1}`
     });
   }
   

@@ -303,7 +303,7 @@ serve(async (req) => {
         fetchTicketmasterEvents(resolvedLocation, finalLatitude, finalLongitude).catch(e => { console.error('Ticketmaster error:', e); return []; })
       ];
 
-      // Add scraping with timeout
+      // Add scraping with extended timeout
       eventPromises.push(
         Promise.race([
           Promise.all(scrapingPromises).then(results => {
@@ -316,7 +316,7 @@ serve(async (req) => {
             setTimeout(() => {
               console.log('Scraping timeout, proceeding with available data');
               resolve([]);
-            }, 12000) // 12 second timeout for all scraping (increased for more sources)
+            }, 45000) // Increased to 45 seconds for reliable scraping
           )
         ])
       );
@@ -338,9 +338,11 @@ serve(async (req) => {
     const currentEventsCount = allEvents.length;
     console.log(`Current events count: ${currentEventsCount}`);
 
-    if (currentEventsCount < Math.floor(size * 0.5)) {
-      console.log(`Adding location-based events to reach target count`);
-      const neededEvents = size - currentEventsCount;
+    // If we have very few events (less than 50% of requested), add more fallback events
+    const minEventsNeeded = Math.floor(size * 0.5);
+    if (currentEventsCount < minEventsNeeded) {
+      console.log(`Adding location-based events to reach minimum target count (${minEventsNeeded})`);
+      const neededEvents = Math.max(size - currentEventsCount, minEventsNeeded);
       const locationEvents = generateLocationBasedEvents(resolvedLocation || 'Your Area', neededEvents);
       allEvents.push(...locationEvents);
       console.log(`Added ${locationEvents.length} location-based events`);
