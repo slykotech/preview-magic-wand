@@ -175,7 +175,24 @@ const MemoryVault: React.FC = () => {
   };
 
   const handleFilesSelect = (files: File[]) => {
-    setUploadedFiles(files);
+    const imageFiles = files.filter(file => file.type.startsWith('image/'));
+    if (imageFiles.length !== files.length) {
+      toast({
+        title: "Some files skipped",
+        description: "Only image files are supported",
+        variant: "destructive"
+      });
+    }
+    setUploadedFiles(prev => [...prev, ...imageFiles]);
+  };
+
+  const removeFile = (index: number) => {
+    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const triggerFileInput = () => {
+    const fileInput = document.getElementById('file-upload') as HTMLInputElement;
+    fileInput?.click();
   };
 
   // Upload images to Supabase Storage
@@ -760,12 +777,49 @@ const MemoryVault: React.FC = () => {
                         <span>Choose Files</span>
                       </Button>
                     </label>
-                    {uploadedFiles.length > 0 && (
-                      <p className="text-xs text-primary mt-2">
-                        {uploadedFiles.length} file(s) selected
-                      </p>
-                    )}
-                  </div>
+                     {uploadedFiles.length > 0 && (
+                       <p className="text-xs text-primary mt-2">
+                         {uploadedFiles.length} file(s) selected
+                       </p>
+                     )}
+                   </div>
+
+                   {/* File Preview */}
+                   {uploadedFiles.length > 0 && (
+                     <div className="space-y-2">
+                       <div className="flex items-center justify-between">
+                         <label className="text-sm font-medium">Selected Images ({uploadedFiles.length})</label>
+                         <Button 
+                           variant="ghost" 
+                           size="sm"
+                           onClick={() => setUploadedFiles([])}
+                           className="text-xs h-6 px-2"
+                         >
+                           Clear All
+                         </Button>
+                       </div>
+                       <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto">
+                         {uploadedFiles.map((file, index) => (
+                           <div key={index} className="relative group">
+                             <img
+                               src={URL.createObjectURL(file)}
+                               alt={`Upload ${index + 1}`}
+                               className="w-full h-20 object-cover rounded-lg"
+                             />
+                             <button
+                               onClick={() => removeFile(index)}
+                               className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                             >
+                               <X size={12} />
+                             </button>
+                             <div className="absolute bottom-1 left-1 bg-black/70 text-white text-xs px-1 py-0.5 rounded">
+                               {file.name.split('.').pop()?.toUpperCase()}
+                             </div>
+                           </div>
+                         ))}
+                       </div>
+                     </div>
+                   )}
                 </>
               ) : (
                 <Textarea
