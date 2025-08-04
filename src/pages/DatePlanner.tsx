@@ -99,6 +99,55 @@ export const DatePlanner = () => {
     }
   }, [user, navigate, coupleId]);
 
+  // Real-time subscription for date_ideas changes
+  useEffect(() => {
+    if (!coupleId) return;
+
+    console.log('Setting up real-time subscription for date_ideas...');
+    
+    const channel = supabase
+      .channel('date_ideas_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
+          schema: 'public',
+          table: 'date_ideas',
+          filter: `couple_id=eq.${coupleId}`
+        },
+        (payload) => {
+          console.log('Real-time date_ideas change:', payload);
+          
+          if (payload.eventType === 'DELETE') {
+            // Remove the deleted item from local state
+            setPlannedDates(prev => prev.filter(date => date.id !== payload.old?.id));
+          } else if (payload.eventType === 'INSERT') {
+            // Add new item if it's not completed
+            const newDate = payload.new as DateIdea;
+            if (!newDate.is_completed) {
+              setPlannedDates(prev => {
+                // Prevent duplicates
+                if (prev.some(date => date.id === newDate.id)) return prev;
+                return [newDate, ...prev];
+              });
+            }
+          } else if (payload.eventType === 'UPDATE') {
+            // Update existing item
+            const updatedDate = payload.new as DateIdea;
+            setPlannedDates(prev => prev.map(date => 
+              date.id === updatedDate.id ? updatedDate : date
+            ));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log('Cleaning up real-time subscription...');
+      supabase.removeChannel(channel);
+    };
+  }, [coupleId]);
+
   const fetchPlannedDates = async () => {
     try {
       if (!coupleData?.id) return;
@@ -278,14 +327,53 @@ export const DatePlanner = () => {
   };
 
   const handleDeleteDate = async (dateId: string) => {
+    if (!dateId) {
+      console.error('No dateId provided for deletion');
+      return;
+    }
+
+    console.log('Attempting to delete date with ID:', dateId);
+    
     try {
-      const { error } = await supabase
+      // First verify the date exists and user has permission
+      const { data: existingDate, error: fetchError } = await supabase
+        .from('date_ideas')
+        .select('*')
+        .eq('id', dateId)
+        .single();
+
+      if (fetchError) {
+        console.error('Error fetching date to delete:', fetchError);
+        throw new Error('Date not found or access denied');
+      }
+
+      if (!existingDate) {
+        console.error('Date not found:', dateId);
+        toast({
+          title: "Error",
+          description: "Date not found or already deleted.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      console.log('Found date to delete:', existingDate);
+
+      // Perform the deletion
+      const { error: deleteError } = await supabase
         .from('date_ideas')
         .delete()
         .eq('id', dateId);
 
-      if (error) throw error;
+      if (deleteError) {
+        console.error('Database deletion error:', deleteError);
+        throw deleteError;
+      }
 
+      console.log('Date successfully deleted from database:', dateId);
+
+      // The real-time subscription will handle updating the UI
+      // But also update local state immediately for better UX
       setPlannedDates(prev => prev.filter(date => date.id !== dateId));
       setDeleteConfirm(null);
 
@@ -297,7 +385,8 @@ export const DatePlanner = () => {
       console.error('Error deleting date:', error);
       toast({
         title: "Error",
-        description: "Failed to delete date. Please try again."
+        description: "Failed to delete the date. Please try again.",
+        variant: "destructive"
       });
     }
   };
