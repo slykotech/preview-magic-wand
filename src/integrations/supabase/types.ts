@@ -1754,6 +1754,34 @@ export type Database = {
           distance_km: number
         }[]
       }
+      get_events_by_location_enhanced: {
+        Args: {
+          user_lat: number
+          user_lng: number
+          radius_km?: number
+          max_events?: number
+        }
+        Returns: {
+          id: string
+          title: string
+          description: string
+          category: string
+          venue: string
+          location_name: string
+          location_lat: number
+          location_lng: number
+          event_date: string
+          event_time: string
+          price: string
+          image_url: string
+          booking_url: string
+          source: string
+          city: string
+          country: string
+          state: string
+          distance_km: number
+        }[]
+      }
       get_events_by_location_unlimited: {
         Args: {
           user_lat: number

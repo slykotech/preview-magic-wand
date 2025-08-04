@@ -271,11 +271,31 @@ const EventCard = ({ event }: { event: EventData }) => {
 
   const handleBooking = () => {
     if (event.bookingUrl) {
-      window.open(event.bookingUrl, '_blank');
+      // Check if it's a directions link or booking link
+      const isDirectionsLink = event.bookingUrl.includes('maps.google.com') || 
+                              event.bookingUrl.includes('maps.app.goo.gl') ||
+                              event.bookingUrl.includes('destination=');
+      
+      if (isDirectionsLink) {
+        // Open directions in new tab
+        window.open(event.bookingUrl, '_blank', 'noopener,noreferrer');
+        toast({
+          title: "Opening directions",
+          description: `Getting directions to ${event.venue || 'venue'}`,
+        });
+      } else {
+        // Open booking page in new tab
+        window.open(event.bookingUrl, '_blank', 'noopener,noreferrer');
+        toast({
+          title: "Opening booking page",
+          description: `Redirecting to ${event.source || 'booking'} for tickets`,
+        });
+      }
     } else {
       toast({
-        title: "Booking info",
-        description: "Visit the venue or check local listings for tickets",
+        title: "Booking unavailable",
+        description: "No booking link available for this event",
+        variant: "destructive"
       });
     }
   };
@@ -368,7 +388,13 @@ const EventCard = ({ event }: { event: EventData }) => {
                 </div>
                 
                 <Button size="sm" onClick={handleBooking} className="h-8">
-                  Book Now
+                  {/* Dynamic button text based on URL type */}
+                  {event.bookingUrl?.includes('maps.google.com') || 
+                   event.bookingUrl?.includes('maps.app.goo.gl') || 
+                   event.bookingUrl?.includes('destination=') 
+                    ? 'Get Directions' 
+                    : 'Book Now'
+                  }
                 </Button>
               </div>
             </div>
