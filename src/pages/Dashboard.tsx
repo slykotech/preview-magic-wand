@@ -601,7 +601,7 @@ export const Dashboard = () => {
               <div className="bg-card border rounded-lg p-3 shadow-sm cursor-pointer hover:shadow-md transition-all hover:scale-105 duration-200" onClick={() => setShowHealthTips(true)}>
                 <div className="flex items-center gap-2 mb-2">
                   <div className="w-8 h-8 bg-secondary rounded-full flex items-center justify-center">
-                    <Activity className="text-white" size={16} />
+                     <Activity className="text-white" size={16} />
                   </div>
                   <div className="flex-1">
                     <p className="text-xs text-muted-foreground">Relationship Health</p>
@@ -638,7 +638,7 @@ export const Dashboard = () => {
               {/* Daily Check-in */}
               <div className="bg-card border rounded-xl p-4 text-center cursor-pointer hover:shadow-sm transition-all shadow-sm hover:scale-105 duration-200" onClick={handleCheckinClick}>
                 <div className="w-12 h-12 bg-secondary rounded-full flex items-center justify-center mx-auto mb-3">
-                  <MessageCircle className="text-white" size={24} />
+                   <MessageCircle className="text-white" size={24} />
                 </div>
                 <h3 className="font-semibold text-foreground mb-1">Daily Check-in</h3>
                 <p className="text-xs text-muted-foreground">Keep the streak!</p>
@@ -647,7 +647,7 @@ export const Dashboard = () => {
               {/* Weekly Planning */}
               <div className="bg-card border rounded-xl p-4 text-center cursor-pointer hover:shadow-sm transition-all shadow-sm hover:scale-105 duration-200" onClick={() => navigate('/planner')}>
                 <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center mx-auto mb-3">
-                  <Calendar className="text-accent-foreground" size={24} />
+                   <Calendar className="text-accent-foreground" size={24} />
                 </div>
                 <h3 className="font-semibold text-foreground mb-1">Dates Planned</h3>
                 <p className="text-xs text-muted-foreground">
