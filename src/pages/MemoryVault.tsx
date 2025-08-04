@@ -1054,8 +1054,11 @@ const MobileMemoryCard: React.FC<{
 
   return (
     <Card 
-      className="w-full overflow-hidden bg-white rounded-xl shadow-sm border-0"
-      onClick={onView}
+      className="w-full overflow-hidden bg-white rounded-xl shadow-sm border-0 cursor-pointer"
+      onClick={(e) => {
+        console.log('Memory card clicked', memory.title);
+        onView();
+      }}
     >
       {firstImage && (
         <div className="relative h-48">
@@ -1211,7 +1214,13 @@ const MobileNoteCard: React.FC<{
   const shouldTruncate = note.content && note.content.length > 150;
 
   return (
-    <Card className="w-full bg-white rounded-xl shadow-sm border-0 overflow-hidden">
+    <Card 
+      className="w-full bg-white rounded-xl shadow-sm border-0 overflow-hidden cursor-pointer"
+      onClick={(e) => {
+        console.log('Note card clicked', note.title);
+        onView();
+      }}
+    >
       <div className="p-3">
         <div className="flex items-start justify-between mb-2">
           <div className="flex items-center">
