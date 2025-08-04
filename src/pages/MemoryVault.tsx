@@ -448,7 +448,7 @@ const MemoryVault: React.FC = () => {
             </div>
           ) : viewMode === 'grid' ? (
             /* Masonry Grid View - Pinterest Style */
-            <div className="columns-1 md:columns-2 lg:columns-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredItems.map((item, index) => {
                 // Generate vibrant colors for memory cards to match reference
                 const colors = [
