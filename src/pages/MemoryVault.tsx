@@ -902,7 +902,6 @@ const MobileNoteCard: React.FC<{
   onEdit: () => void;
   onDelete: () => void;
 }> = ({ note, onView, onToggleFavorite, onEdit, onDelete }) => {
-  const [showFullContent, setShowFullContent] = useState(false);
   const shouldTruncate = note.content && note.content.length > 150;
 
   return (
@@ -956,22 +955,18 @@ const MobileNoteCard: React.FC<{
         
         {note.content && (
           <div className="mb-2">
-            <p className={`text-gray-600 text-sm leading-relaxed ${!showFullContent && shouldTruncate ? 'line-clamp-3' : ''}`}>
+            <p className="text-gray-600 text-sm leading-relaxed line-clamp-3">
               {note.content}
             </p>
             {shouldTruncate && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (showFullContent) {
-                    onView();
-                  } else {
-                    setShowFullContent(true);
-                  }
+                  onView();
                 }}
                 className="text-purple-600 text-sm font-medium mt-1 hover:underline"
               >
-                {showFullContent ? 'Show less' : 'Read more'}
+                Read more
               </button>
             )}
           </div>
