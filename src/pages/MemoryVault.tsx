@@ -660,7 +660,7 @@ const MemoryVault: React.FC = () => {
 
         {/* View Item Dialog */}
         <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto mx-4 my-8">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {selectedItem && ('images' in selectedItem ? 'Memory Details' : 'Note Details')}
@@ -715,9 +715,7 @@ const MemoryVault: React.FC = () => {
                 {('content' in selectedItem) && selectedItem.content && (
                   <div>
                     <h3 className="font-semibold mb-2">Content</h3>
-                    <div className="mx-4 my-6 p-6 bg-muted/30 rounded-lg border">
-                      <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">{selectedItem.content}</p>
-                    </div>
+                    <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">{selectedItem.content}</p>
                   </div>
                 )}
 
