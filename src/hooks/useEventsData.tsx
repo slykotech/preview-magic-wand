@@ -239,6 +239,7 @@ export const useEventsData = () => {
     fetchEvents,
     clearEvents,
     refreshEvents,
+    setEvents, // Expose setEvents for direct updates
     dataSourceInfo,
     quota
   };

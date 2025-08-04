@@ -101,6 +101,7 @@ export const DatePlanner = () => {
     fetchEvents,
     clearEvents,
     refreshEvents,
+    setEvents,
     dataSourceInfo,
     quota
   } = useEventsData();
@@ -169,8 +170,69 @@ export const DatePlanner = () => {
 
   const handleLocationSubmit = () => {
     if (locationInput.trim()) {
+      // First try to search existing events in the database for this city
+      searchEventsByCity(locationInput.trim());
       setManualLocation(locationInput.trim());
       setLocationInput('');
+    }
+  };
+
+  const searchEventsByCity = async (cityName: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('events')
+        .select('*')
+        .ilike('city', `%${cityName}%`)
+        .gt('expires_at', new Date().toISOString())
+        .order('fetch_timestamp', { ascending: false })
+        .limit(50);
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        // Convert database events to EventData format
+        const formattedEvents: EventData[] = data.map(event => ({
+          id: event.id,
+          title: event.title,
+          description: event.description || '',
+          category: event.category || 'Other',
+          venue: event.venue || '',
+          city: event.city || '',
+          distance: '0 km away',
+          timing: event.event_time || 'Time TBD',
+          price: event.price || 'Free',
+          image: event.image_url || '',
+          bookingUrl: event.booking_url || '',
+          date: event.event_date || '',
+          time: event.event_time || '',
+          source: event.source || 'database'
+        }));
+
+        // Update the events state directly with city search results
+        setEvents(formattedEvents);
+        console.log(`Found ${formattedEvents.length} stored events for ${cityName}`);
+        
+        toast({
+          title: `Found ${formattedEvents.length} events in ${cityName}! 🎉`,
+          description: "Showing stored events from our database"
+        });
+
+      } else {
+        toast({
+          title: `No stored events found in ${cityName} 😔`,
+          description: "Try fetching fresh events or check a different city"
+        });
+        
+        // If no stored events, proceed with normal location-based fetching
+        // Don't call setManualLocation here as it's already called in handleLocationSubmit
+      }
+    } catch (error) {
+      console.error('Error searching events by city:', error);
+      toast({
+        title: "Search error",
+        description: "Could not search for events. Try again.",
+        variant: "destructive"
+      });
     }
   };
 
