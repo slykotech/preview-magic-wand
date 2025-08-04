@@ -214,22 +214,282 @@ export async function fetchEventbriteEvents(location: string, userLat?: number, 
   }
 }
 
-// BookMyShow fallback (as they don't have public API)
+// BookMyShow Web Scraper
 export async function fetchBookMyShowEvents(location: string, userLat?: number, userLng?: number): Promise<UnifiedEvent[]> {
-  console.log(`BookMyShow: Generating curated events for ${location}`);
-  return generateBookMyShowFallback(location, userLat, userLng);
+  try {
+    console.log(`BookMyShow: Scraping events for ${location}`);
+    
+    const locationSlug = location.toLowerCase().replace(/\s+/g, '-');
+    const url = `https://in.bookmyshow.com/${locationSlug}/events`;
+    
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Accept-Encoding': 'gzip, deflate',
+        'DNT': '1',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1',
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`BookMyShow request failed: ${response.status}`);
+    }
+
+    const html = await response.text();
+    const events: UnifiedEvent[] = [];
+    
+    // Extract event information using regex patterns
+    const eventPattern = /<div[^>]*class="[^"]*__event-card[^"]*"[^>]*>(.*?)<\/div>/gs;
+    const titlePattern = /<h3[^>]*class="[^"]*__title[^"]*"[^>]*>(.*?)<\/h3>/s;
+    const venuePattern = /<span[^>]*class="[^"]*__venue[^"]*"[^>]*>(.*?)<\/span>/s;
+    const pricePattern = /<span[^>]*class="[^"]*__price[^"]*"[^>]*>.*?₹\s*(\d+)/s;
+    const imagePattern = /<img[^>]*src="([^"]*)"[^>]*class="[^"]*__image[^"]*"/s;
+    const linkPattern = /<a[^>]*href="([^"]*)"[^>]*class="[^"]*__link[^"]*"/s;
+
+    let match;
+    let index = 0;
+    while ((match = eventPattern.exec(html)) !== null && index < 10) {
+      const eventHtml = match[1];
+      
+      const titleMatch = titlePattern.exec(eventHtml);
+      const venueMatch = venuePattern.exec(eventHtml);
+      const priceMatch = pricePattern.exec(eventHtml);
+      const imageMatch = imagePattern.exec(eventHtml);
+      const linkMatch = linkPattern.exec(eventHtml);
+      
+      if (titleMatch) {
+        const title = titleMatch[1].replace(/<[^>]*>/g, '').trim();
+        const venue = venueMatch ? venueMatch[1].replace(/<[^>]*>/g, '').trim() : `${location} Venue`;
+        const price = priceMatch ? `₹${priceMatch[1]} onwards` : '₹500 - ₹2500';
+        const image = imageMatch ? imageMatch[1] : undefined;
+        const bookingUrl = linkMatch ? `https://in.bookmyshow.com${linkMatch[1]}` : 'https://in.bookmyshow.com';
+        
+        const eventDate = new Date(Date.now() + (index + 1) * 24 * 60 * 60 * 1000);
+        const locationCoords = getLocationCoordinates(location);
+        const venueCoords = generateVenueCoordinates(locationCoords.lat, locationCoords.lng);
+        
+        events.push({
+          id: `bookmyshow_${location.replace(/\s+/g, '_')}_${index}_${Date.now()}`,
+          title: title,
+          distance: userLat && userLng ? 
+            `${Math.round(calculateDistance(userLat, userLng, venueCoords.lat, venueCoords.lng) * 10) / 10} km away` :
+            `${Math.floor(Math.random() * 20) + 5} km away`,
+          timing: formatEventTiming(eventDate),
+          description: `Experience ${title} in ${location}. Book your tickets now on BookMyShow!`,
+          category: categorizeEventByTitle(title).category,
+          venue: venue,
+          city: location,
+          price: price,
+          date: eventDate.toISOString().split('T')[0],
+          time: `${18 + (index % 5)}:00`,
+          source: 'bookmyshow',
+          bookingUrl: bookingUrl,
+          image: image,
+          location: {
+            latitude: venueCoords.lat,
+            longitude: venueCoords.lng,
+            city: location
+          }
+        });
+        
+        index++;
+      }
+    }
+    
+    console.log(`BookMyShow: Successfully scraped ${events.length} events`);
+    return events.length > 0 ? events : generateBookMyShowFallback(location, userLat, userLng);
+    
+  } catch (error) {
+    console.error('BookMyShow scraping error:', error);
+    return generateBookMyShowFallback(location, userLat, userLng);
+  }
 }
 
-// Paytm Insider fallback (as they don't have public API)
+// Paytm Insider Web Scraper
 export async function fetchPaytmInsiderEvents(location: string, userLat?: number, userLng?: number): Promise<UnifiedEvent[]> {
-  console.log(`Paytm Insider: Generating curated events for ${location}`);
-  return generatePaytmInsiderFallback(location, userLat, userLng);
+  try {
+    console.log(`Paytm Insider: Scraping events for ${location}`);
+    
+    const locationSlug = location.toLowerCase().replace(/\s+/g, '-');
+    const url = `https://insider.in/${locationSlug}`;
+    
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Referer': 'https://insider.in/',
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Paytm Insider request failed: ${response.status}`);
+    }
+
+    const html = await response.text();
+    const events: UnifiedEvent[] = [];
+    
+    // Extract event information using regex patterns for Insider's structure
+    const eventPattern = /<div[^>]*class="[^"]*event-card[^"]*"[^>]*>(.*?)<\/div>/gs;
+    const titlePattern = /<h2[^>]*class="[^"]*event-title[^"]*"[^>]*>(.*?)<\/h2>/s;
+    const venuePattern = /<div[^>]*class="[^"]*venue-name[^"]*"[^>]*>(.*?)<\/div>/s;
+    const pricePattern = /<span[^>]*class="[^"]*price[^"]*"[^>]*>.*?₹\s*(\d+)/s;
+    const datePattern = /<div[^>]*class="[^"]*event-date[^"]*"[^>]*>(.*?)<\/div>/s;
+    const imagePattern = /<img[^>]*src="([^"]*)"[^>]*class="[^"]*event-image[^"]*"/s;
+
+    let match;
+    let index = 0;
+    while ((match = eventPattern.exec(html)) !== null && index < 10) {
+      const eventHtml = match[1];
+      
+      const titleMatch = titlePattern.exec(eventHtml);
+      const venueMatch = venuePattern.exec(eventHtml);
+      const priceMatch = pricePattern.exec(eventHtml);
+      const dateMatch = datePattern.exec(eventHtml);
+      const imageMatch = imagePattern.exec(eventHtml);
+      
+      if (titleMatch) {
+        const title = titleMatch[1].replace(/<[^>]*>/g, '').trim();
+        const venue = venueMatch ? venueMatch[1].replace(/<[^>]*>/g, '').trim() : `${location} Event Space`;
+        const price = priceMatch ? `₹${priceMatch[1]} onwards` : '₹800 - ₹3500';
+        const image = imageMatch ? imageMatch[1] : undefined;
+        
+        const eventDate = new Date(Date.now() + (index + 2) * 24 * 60 * 60 * 1000);
+        const locationCoords = getLocationCoordinates(location);
+        const venueCoords = generateVenueCoordinates(locationCoords.lat, locationCoords.lng);
+        
+        events.push({
+          id: `insider_${location.replace(/\s+/g, '_')}_${index}_${Date.now()}`,
+          title: title,
+          distance: userLat && userLng ? 
+            `${Math.round(calculateDistance(userLat, userLng, venueCoords.lat, venueCoords.lng) * 10) / 10} km away` :
+            `${Math.floor(Math.random() * 25) + 8} km away`,
+          timing: formatEventTiming(eventDate),
+          description: `Join ${title} in ${location}. Book your experience on Paytm Insider!`,
+          category: categorizeEventByTitle(title).category,
+          venue: venue,
+          city: location,
+          price: price,
+          date: eventDate.toISOString().split('T')[0],
+          time: `${19 + (index % 4)}:00`,
+          source: 'paytm-insider',
+          bookingUrl: 'https://insider.in',
+          image: image,
+          location: {
+            latitude: venueCoords.lat,
+            longitude: venueCoords.lng,
+            city: location
+          }
+        });
+        
+        index++;
+      }
+    }
+    
+    console.log(`Paytm Insider: Successfully scraped ${events.length} events`);
+    return events.length > 0 ? events : generatePaytmInsiderFallback(location, userLat, userLng);
+    
+  } catch (error) {
+    console.error('Paytm Insider scraping error:', error);
+    return generatePaytmInsiderFallback(location, userLat, userLng);
+  }
 }
 
-// District fallback (as they don't have public API)
+// District Web Scraper
 export async function fetchDistrictEvents(location: string, userLat?: number, userLng?: number): Promise<UnifiedEvent[]> {
-  console.log(`District: Generating curated events for ${location}`);
-  return generateDistrictFallback(location, userLat, userLng);
+  try {
+    console.log(`District: Scraping events for ${location}`);
+    
+    // District typically has location-specific URLs
+    const locationSlug = location.toLowerCase().replace(/\s+/g, '-');
+    const url = `https://district.in/${locationSlug}/events`;
+    
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Referer': 'https://district.in/',
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`District request failed: ${response.status}`);
+    }
+
+    const html = await response.text();
+    const events: UnifiedEvent[] = [];
+    
+    // Extract event information using regex patterns for District's structure
+    const eventPattern = /<article[^>]*class="[^"]*event[^"]*"[^>]*>(.*?)<\/article>/gs;
+    const titlePattern = /<h3[^>]*class="[^"]*title[^"]*"[^>]*>(.*?)<\/h3>/s;
+    const venuePattern = /<span[^>]*class="[^"]*location[^"]*"[^>]*>(.*?)<\/span>/s;
+    const pricePattern = /<div[^>]*class="[^"]*price[^"]*"[^>]*>.*?₹\s*(\d+)/s;
+    const timePattern = /<time[^>]*datetime="([^"]*)"[^>]*>/s;
+    const imagePattern = /<img[^>]*src="([^"]*)"[^>]*alt="[^"]*event[^"]*"/s;
+    const linkPattern = /<a[^>]*href="([^"]*)"[^>]*class="[^"]*event-link[^"]*"/s;
+
+    let match;
+    let index = 0;
+    while ((match = eventPattern.exec(html)) !== null && index < 8) {
+      const eventHtml = match[1];
+      
+      const titleMatch = titlePattern.exec(eventHtml);
+      const venueMatch = venuePattern.exec(eventHtml);
+      const priceMatch = pricePattern.exec(eventHtml);
+      const timeMatch = timePattern.exec(eventHtml);
+      const imageMatch = imagePattern.exec(eventHtml);
+      const linkMatch = linkPattern.exec(eventHtml);
+      
+      if (titleMatch) {
+        const title = titleMatch[1].replace(/<[^>]*>/g, '').trim();
+        const venue = venueMatch ? venueMatch[1].replace(/<[^>]*>/g, '').trim() : `${location} District Venue`;
+        const price = priceMatch ? `₹${priceMatch[1]} onwards` : '₹1200 - ₹5000';
+        const image = imageMatch ? imageMatch[1] : undefined;
+        const bookingUrl = linkMatch ? `https://district.in${linkMatch[1]}` : 'https://district.in';
+        
+        const eventDate = timeMatch ? new Date(timeMatch[1]) : new Date(Date.now() + (index + 3) * 24 * 60 * 60 * 1000);
+        const locationCoords = getLocationCoordinates(location);
+        const venueCoords = generateVenueCoordinates(locationCoords.lat, locationCoords.lng);
+        
+        events.push({
+          id: `district_${location.replace(/\s+/g, '_')}_${index}_${Date.now()}`,
+          title: title,
+          distance: userLat && userLng ? 
+            `${Math.round(calculateDistance(userLat, userLng, venueCoords.lat, venueCoords.lng) * 10) / 10} km away` :
+            `${Math.floor(Math.random() * 30) + 10} km away`,
+          timing: formatEventTiming(eventDate),
+          description: `Experience ${title} at District in ${location}. Premium nightlife and dining experiences!`,
+          category: categorizeEventByTitle(title).category,
+          venue: venue,
+          city: location,
+          price: price,
+          date: eventDate.toISOString().split('T')[0],
+          time: `${20 + (index % 3)}:00`,
+          source: 'district',
+          bookingUrl: bookingUrl,
+          image: image,
+          location: {
+            latitude: venueCoords.lat,
+            longitude: venueCoords.lng,
+            city: location
+          }
+        });
+        
+        index++;
+      }
+    }
+    
+    console.log(`District: Successfully scraped ${events.length} events`);
+    return events.length > 0 ? events : generateDistrictFallback(location, userLat, userLng);
+    
+  } catch (error) {
+    console.error('District scraping error:', error);
+    return generateDistrictFallback(location, userLat, userLng);
+  }
 }
 
 // Categorization functions
