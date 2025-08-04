@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { SyncScoreBreakdown } from "@/components/SyncScoreBreakdown";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { GradientHeader } from "@/components/GradientHeader";
-import { User, Heart, Settings, Award, Calendar, LogOut, ChevronRight } from "lucide-react";
+import { SubscriptionSection } from "@/components/SubscriptionSection";
+import { User, Heart, Settings, Award, Calendar, LogOut, ChevronRight, Crown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -63,6 +64,7 @@ export const Profile = () => {
   const [loading, setLoading] = useState(true);
   const [showSyncBreakdown, setShowSyncBreakdown] = useState(false);
   const [showDateHistory, setShowDateHistory] = useState(false);
+  const [showSubscription, setShowSubscription] = useState(false);
   
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -290,6 +292,11 @@ export const Profile = () => {
               onClick={() => setShowDateHistory(true)}
             />
           </div>
+        </div>
+
+        {/* Subscription Section */}
+        <div className="space-y-2">
+          <SubscriptionSection />
         </div>
 
         {/* Settings Section */}
