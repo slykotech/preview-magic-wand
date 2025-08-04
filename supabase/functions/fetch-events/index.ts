@@ -22,6 +22,7 @@ import {
   cleanupCache,
   getCacheStats
 } from './cache-manager.ts';
+import { parseAndCleanLocation } from '../_shared/location-parser.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -362,24 +363,32 @@ serve(async (req) => {
       console.log(`Storing ${sortedEvents.length} events in database`);
       
       try {
-        // Prepare events for database storage
-        const eventsToStore = sortedEvents.map(event => ({
-          external_id: `${event.source}-${event.id}`,
-          title: event.title,
-          description: event.description,
-          category: event.category,
-          venue: event.venue,
-          city: event.city || resolvedLocation || locationName,
-          location_lat: event.location?.latitude,
-          location_lng: event.location?.longitude,
-          location_name: event.location?.city || event.city || resolvedLocation || locationName,
-          price: event.price,
-          event_date: event.date ? new Date(event.date).toISOString().split('T')[0] : null,
-          event_time: event.time,
-          source: event.source,
-          image_url: event.image,
-          booking_url: event.bookingUrl
-        }));
+        // Prepare events for database storage with clean location parsing
+        const eventsToStore = sortedEvents.map(event => {
+          // Parse the location data properly
+          const locationToParse = event.location?.city || event.city || resolvedLocation || locationName || '';
+          const parsedLocation = parseAndCleanLocation(locationToParse);
+          
+          return {
+            external_id: `${event.source}-${event.id}`,
+            title: event.title,
+            description: event.description,
+            category: event.category,
+            venue: event.venue,
+            city: parsedLocation.city,
+            state: parsedLocation.state,
+            country: parsedLocation.country,
+            location_lat: event.location?.latitude,
+            location_lng: event.location?.longitude,
+            location_name: event.location?.city || event.city || resolvedLocation || locationName,
+            price: event.price,
+            event_date: event.date ? new Date(event.date).toISOString().split('T')[0] : null,
+            event_time: event.time,
+            source: event.source,
+            image_url: event.image,
+            booking_url: event.bookingUrl
+          };
+        });
 
         // Store events using upsert to avoid duplicates
         const { error: storeError } = await supabase
