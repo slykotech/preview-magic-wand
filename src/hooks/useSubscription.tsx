@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Capacitor } from '@capacitor/core';
 
 export interface SubscriptionPlan {
   id: string;
@@ -56,32 +57,66 @@ export const useSubscription = () => {
   const [plans] = useState(SUBSCRIPTION_PLANS);
 
   useEffect(() => {
-    // Simulate checking subscription status
-    // In a real app, this would check RevenueCat or your backend
+    // Check subscription status
     const checkSubscriptionStatus = async () => {
       try {
-        // Simulate API call delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        setSubscriptionInfo(prev => ({ ...prev, isLoading: true }));
         
-        // Mock subscription check - in real app, check with RevenueCat
-        const hasActiveSubscription = localStorage.getItem('hasActiveSubscription') === 'true';
-        const activePlan = localStorage.getItem('activePlan');
-        
-        if (hasActiveSubscription && activePlan) {
-          const nextBilling = new Date();
-          nextBilling.setMonth(nextBilling.getMonth() + 1);
-          
-          setSubscriptionInfo({
-            isActive: true,
-            planName: activePlan,
-            nextBillingDate: nextBilling.toLocaleDateString(),
-            isLoading: false
-          });
+        if (Capacitor.isNativePlatform()) {
+          // On mobile, use RevenueCat to check subscription status
+          // This is where you'd integrate RevenueCat SDK
+          try {
+            // Example RevenueCat integration (requires RevenueCat plugin)
+            // const customerInfo = await Purchases.getCustomerInfo();
+            // const isPro = typeof customerInfo.entitlements.active["pro"] !== "undefined";
+            
+            // For now, use localStorage fallback
+            const hasActiveSubscription = localStorage.getItem('hasActiveSubscription') === 'true';
+            const activePlan = localStorage.getItem('activePlan');
+            
+            if (hasActiveSubscription && activePlan) {
+              const nextBilling = new Date();
+              nextBilling.setMonth(nextBilling.getMonth() + 1);
+              
+              setSubscriptionInfo({
+                isActive: true,
+                planName: activePlan,
+                nextBillingDate: nextBilling.toLocaleDateString(),
+                isLoading: false
+              });
+            } else {
+              setSubscriptionInfo({
+                isActive: false,
+                isLoading: false
+              });
+            }
+          } catch (error) {
+            console.error('RevenueCat error:', error);
+            setSubscriptionInfo({ isActive: false, isLoading: false });
+          }
         } else {
-          setSubscriptionInfo({
-            isActive: false,
-            isLoading: false
-          });
+          // Web fallback - simulate subscription check
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          const hasActiveSubscription = localStorage.getItem('hasActiveSubscription') === 'true';
+          const activePlan = localStorage.getItem('activePlan');
+          
+          if (hasActiveSubscription && activePlan) {
+            const nextBilling = new Date();
+            nextBilling.setMonth(nextBilling.getMonth() + 1);
+            
+            setSubscriptionInfo({
+              isActive: true,
+              planName: activePlan,
+              nextBillingDate: nextBilling.toLocaleDateString(),
+              isLoading: false
+            });
+          } else {
+            setSubscriptionInfo({
+              isActive: false,
+              isLoading: false
+            });
+          }
         }
       } catch (error) {
         console.error('Error checking subscription status:', error);
@@ -97,31 +132,60 @@ export const useSubscription = () => {
 
   const subscribeToPlan = async (planId: string): Promise<boolean> => {
     try {
-      // In a real app, this would trigger RevenueCat purchase flow
-      // For now, simulate successful purchase
       console.log(`Subscribing to plan: ${planId}`);
       
       const plan = plans.find(p => p.id === planId);
       if (!plan) return false;
 
-      // Simulate purchase process
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Mock successful subscription
-      localStorage.setItem('hasActiveSubscription', 'true');
-      localStorage.setItem('activePlan', plan.name);
-      
-      const nextBilling = new Date();
-      nextBilling.setMonth(nextBilling.getMonth() + 1);
-      
-      setSubscriptionInfo({
-        isActive: true,
-        planName: plan.name,
-        nextBillingDate: nextBilling.toLocaleDateString(),
-        isLoading: false
-      });
-      
-      return true;
+      if (Capacitor.isNativePlatform()) {
+        // On mobile, use RevenueCat for in-app purchases
+        try {
+          // Example RevenueCat purchase flow:
+          // const offerings = await Purchases.getOfferings();
+          // const packageToPurchase = offerings.current?.monthly; // or quarterly, etc.
+          // const { customerInfo } = await Purchases.purchasePackage(packageToPurchase);
+          // const isPro = typeof customerInfo.entitlements.active["pro"] !== "undefined";
+          
+          // For now, simulate successful purchase
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
+          localStorage.setItem('hasActiveSubscription', 'true');
+          localStorage.setItem('activePlan', plan.name);
+          
+          const nextBilling = new Date();
+          nextBilling.setMonth(nextBilling.getMonth() + 1);
+          
+          setSubscriptionInfo({
+            isActive: true,
+            planName: plan.name,
+            nextBillingDate: nextBilling.toLocaleDateString(),
+            isLoading: false
+          });
+          
+          return true;
+        } catch (error) {
+          console.error('RevenueCat purchase error:', error);
+          return false;
+        }
+      } else {
+        // Web fallback - simulate purchase process
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        localStorage.setItem('hasActiveSubscription', 'true');
+        localStorage.setItem('activePlan', plan.name);
+        
+        const nextBilling = new Date();
+        nextBilling.setMonth(nextBilling.getMonth() + 1);
+        
+        setSubscriptionInfo({
+          isActive: true,
+          planName: plan.name,
+          nextBillingDate: nextBilling.toLocaleDateString(),
+          isLoading: false
+        });
+        
+        return true;
+      }
     } catch (error) {
       console.error('Error subscribing to plan:', error);
       return false;
@@ -129,21 +193,37 @@ export const useSubscription = () => {
   };
 
   const manageBilling = () => {
-    // In a real app, this would open App Store/Play Store subscription management
-    // For web, this might redirect to Stripe customer portal
-    console.log('Opening subscription management...');
-    window.open('https://support.apple.com/en-us/HT202039', '_blank');
+    if (Capacitor.isNativePlatform()) {
+      // On mobile, deep link to App Store/Play Store subscription management
+      if (Capacitor.getPlatform() === 'ios') {
+        window.open('https://apps.apple.com/account/subscriptions', '_system');
+      } else if (Capacitor.getPlatform() === 'android') {
+        window.open('https://play.google.com/store/account/subscriptions', '_system');
+      }
+    } else {
+      // Web fallback
+      window.open('https://support.apple.com/en-us/HT202039', '_blank');
+    }
   };
 
   const restorePurchases = async (): Promise<boolean> => {
     try {
-      // In a real app, this would call RevenueCat.restorePurchases()
       console.log('Restoring purchases...');
-      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Mock restore - check if there's a stored subscription
-      const hasActiveSubscription = localStorage.getItem('hasActiveSubscription') === 'true';
-      return hasActiveSubscription;
+      if (Capacitor.isNativePlatform()) {
+        // On mobile, use RevenueCat restore purchases
+        // const customerInfo = await Purchases.restorePurchases();
+        // const isPro = typeof customerInfo.entitlements.active["pro"] !== "undefined";
+        // return isPro;
+        
+        // For now, check localStorage
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        return localStorage.getItem('hasActiveSubscription') === 'true';
+      } else {
+        // Web fallback
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        return localStorage.getItem('hasActiveSubscription') === 'true';
+      }
     } catch (error) {
       console.error('Error restoring purchases:', error);
       return false;
