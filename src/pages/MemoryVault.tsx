@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+// Force refresh to fix Timeline reference error
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Card } from '@/components/ui/card';
