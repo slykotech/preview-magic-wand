@@ -134,26 +134,20 @@ export const useEventsData = () => {
           }
         }
       } else if (location.city) {
-        // Search by city name
+        // Search by city name using the new city function
         console.log('Querying database for events in city:', location.city);
         
-        const { data, error: dbError } = await supabase
-          .from('events')
-          .select('*')
-          .ilike('city', `%${location.city}%`)
-          .gt('expires_at', new Date().toISOString())
-          .order('fetch_timestamp', { ascending: false })
-          .limit(20);
+        const { data, error: dbError } = await supabase.rpc('get_events_by_city', {
+          city_name: location.city,
+          max_events: 20
+        });
 
         if (dbError) {
           console.error('Database query error:', dbError);
           throw new Error(dbError.message);
         }
 
-        dbEvents = (data || []).map(event => ({
-          ...event,
-          distance_km: 0, // City search doesn't calculate distance
-        }));
+        dbEvents = data || [];
       }
 
       // Transform database events to match expected format

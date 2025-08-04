@@ -1605,6 +1605,27 @@ export type Database = {
           jobid: number
         }[]
       }
+      get_events_by_city: {
+        Args: { city_name: string; max_events?: number }
+        Returns: {
+          id: string
+          title: string
+          description: string
+          category: string
+          venue: string
+          location_name: string
+          location_lat: number
+          location_lng: number
+          event_date: string
+          event_time: string
+          price: string
+          image_url: string
+          booking_url: string
+          source: string
+          city: string
+          distance_km: number
+        }[]
+      }
       get_events_by_location: {
         Args: {
           user_lat: number
