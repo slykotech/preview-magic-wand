@@ -162,62 +162,9 @@ async function fetchTicketmasterEvents(city: string, country: string): Promise<a
 }
 
 async function fetchGoogleEvents(city: string, country: string): Promise<any[]> {
-  if (!googleApiKey) {
-    console.log('Google API key not configured');
-    return [];
-  }
-  
-  try {
-    console.log(`Fetching Google events for ${city}, ${country}`);
-    
-    // Use Google Places API to find events
-    const searchQuery = `events in ${city} ${country}`;
-    const placesUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json`;
-    const params = new URLSearchParams({
-      'query': searchQuery,
-      'type': 'establishment',
-      'key': googleApiKey
-    });
-    
-    const response = await fetch(`${placesUrl}?${params}`);
-    
-    if (!response.ok) {
-      console.error(`Google Places API error: ${response.status} ${response.statusText}`);
-      return [];
-    }
-    
-    const data = await response.json();
-    const places = data.results || [];
-    
-    console.log(`Found ${places.length} Google places for ${city}`);
-    
-    // Filter and format places that could be events
-    return places
-      .filter((place: any) => 
-        place.types?.some((type: string) => 
-          ['tourist_attraction', 'establishment', 'point_of_interest'].includes(type)
-        ) && place.rating && place.rating > 3.5
-      )
-      .slice(0, 10) // Limit to top 10
-      .map((place: any) => ({
-        title: place.name || '',
-        description: `Highly rated attraction in ${city}`,
-        date: new Date(Date.now() + Math.random() * 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Random date within 2 weeks
-        time: '10:00 AM',
-        venue: place.name || '',
-        venue_address: place.formatted_address || '',
-        price: 'Check website',
-        category: 'attraction',
-        booking_url: `https://www.google.com/search?q=${encodeURIComponent(place.name + ' ' + city)}`,
-        image_url: place.photos?.[0] ? 
-          `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${place.photos[0].photo_reference}&key=${googleApiKey}` : '',
-        latitude: place.geometry?.location?.lat || null,
-        longitude: place.geometry?.location?.lng || null
-      }));
-  } catch (error) {
-    console.error('Google events fetch error:', error);
-    return [];
-  }
+  // DISABLED: Google Places API was creating mock events and event management companies
+  console.log(`Google Events API disabled to prevent mock data creation for ${city}, ${country}`);
+  return [];
 }
 
 function getCountryCode(country: string): string {
@@ -256,10 +203,33 @@ function isValidEvent(event: any): boolean {
   const threeMonthsFromNow = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
   if (eventDate > threeMonthsFromNow) return false;
   
-  // Filter out generic/template events
-  const genericTitles = ['visit', 'tour', 'explore', 'discover', 'experience'];
+  // Strict filtering - reject event management companies and generic places
+  const invalidTerms = [
+    'event management', 'event company', 'event studio', 'event ustaad', 
+    'event sculptors', 'epicreation events', 'eventsyug', 'tani events',
+    'tradition n trendz', 'onstaage', 'on the move', 'onstage experiences',
+    'corporate event', 'event planner', 'event designer', 'event organizer',
+    'management company', 'pvt ltd', 'llp', 'private limited', 'entertainment company',
+    'occasionz events', 'entertainment pvt', 'events and design'
+  ];
+  
   const titleLower = event.title.toLowerCase();
-  if (genericTitles.some(generic => titleLower.startsWith(generic))) return false;
+  const descLower = (event.description || '').toLowerCase();
+  
+  // Check if title or description contains invalid terms
+  for (const term of invalidTerms) {
+    if (titleLower.includes(term) || descLower.includes(term)) {
+      console.log(`Rejecting event management company: ${event.title}`);
+      return false;
+    }
+  }
+  
+  // Filter out generic/template events
+  const genericTitles = ['visit', 'tour', 'explore', 'discover', 'experience', 'highly rated attraction'];
+  if (genericTitles.some(generic => titleLower.includes(generic))) {
+    console.log(`Rejecting generic event: ${event.title}`);
+    return false;
+  }
   
   return true;
 }
