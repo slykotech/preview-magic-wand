@@ -637,6 +637,42 @@ export type Database = {
         }
         Relationships: []
       }
+      event_suggestions_cache: {
+        Row: {
+          cached_events: Json
+          created_at: string
+          events_count: number
+          expires_at: string
+          id: string
+          latitude: number
+          location_key: string
+          longitude: number
+          radius_km: number
+        }
+        Insert: {
+          cached_events?: Json
+          created_at?: string
+          events_count?: number
+          expires_at?: string
+          id?: string
+          latitude: number
+          location_key: string
+          longitude: number
+          radius_km?: number
+        }
+        Update: {
+          cached_events?: Json
+          created_at?: string
+          events_count?: number
+          expires_at?: string
+          id?: string
+          latitude?: number
+          location_key?: string
+          longitude?: number
+          radius_km?: number
+        }
+        Relationships: []
+      }
       events: {
         Row: {
           audience_tags: string[] | null
@@ -1524,6 +1560,51 @@ export type Database = {
           conversation_id?: string
           created_at?: string
           id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_location_cache: {
+        Row: {
+          city: string | null
+          country: string | null
+          created_at: string
+          display_name: string
+          id: string
+          is_current: boolean | null
+          latitude: number
+          longitude: number
+          search_radius: number | null
+          state: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          display_name: string
+          id?: string
+          is_current?: boolean | null
+          latitude: number
+          longitude: number
+          search_radius?: number | null
+          state?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          display_name?: string
+          id?: string
+          is_current?: boolean | null
+          latitude?: number
+          longitude?: number
+          search_radius?: number | null
+          state?: string | null
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
