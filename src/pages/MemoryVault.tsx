@@ -1053,10 +1053,11 @@ const MobileMemoryCard: React.FC<{
     : memory.description;
 
   return (
-    <Card 
+    <div
       className="w-full overflow-hidden bg-white rounded-xl shadow-sm border-0 cursor-pointer"
       onClick={(e) => {
         console.log('Memory card clicked', memory.title);
+        console.log('Memory data:', memory);
         onView();
       }}
     >
@@ -1199,7 +1200,7 @@ const MobileMemoryCard: React.FC<{
           </div>
         </div>
       )}
-    </Card>
+    </div>
   );
 };
 
