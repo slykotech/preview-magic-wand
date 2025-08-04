@@ -168,21 +168,25 @@ export const DatePlanner = () => {
     }
   };
 
-  const handleLocationSubmit = () => {
+  const handleLocationSubmit = async () => {
     if (locationInput.trim()) {
       // First try to search existing events in the database for this city
-      searchEventsByCity(locationInput.trim());
-      setManualLocation(locationInput.trim());
+      const foundEvents = await searchEventsByCity(locationInput.trim());
+      
+      // Only proceed with location-based fetching if no stored events were found
+      if (!foundEvents || foundEvents.length === 0) {
+        setManualLocation(locationInput.trim());
+      }
       setLocationInput('');
     }
   };
 
-  const searchEventsByCity = async (cityName: string) => {
+  const searchEventsByCity = async (cityName: string): Promise<EventData[]> => {
     try {
       const { data, error } = await supabase
         .from('events')
         .select('*')
-        .ilike('city', `%${cityName}%`)
+        .or(`city.ilike.%${cityName}%,location_name.ilike.%${cityName}%,venue.ilike.%${cityName}%`)
         .gt('expires_at', new Date().toISOString())
         .order('fetch_timestamp', { ascending: false })
         .limit(50);
@@ -217,14 +221,14 @@ export const DatePlanner = () => {
           description: "Showing stored events from our database"
         });
 
+        return formattedEvents;
       } else {
         toast({
           title: `No stored events found in ${cityName} 😔`,
           description: "Try fetching fresh events or check a different city"
         });
         
-        // If no stored events, proceed with normal location-based fetching
-        // Don't call setManualLocation here as it's already called in handleLocationSubmit
+        return [];
       }
     } catch (error) {
       console.error('Error searching events by city:', error);
@@ -233,6 +237,7 @@ export const DatePlanner = () => {
         description: "Could not search for events. Try again.",
         variant: "destructive"
       });
+      return [];
     }
   };
 
@@ -742,7 +747,7 @@ export const DatePlanner = () => {
                 <div className="flex gap-2">
                   <div className="flex-1 flex gap-2">
                     <Input
-                      placeholder="Enter city name..."
+                      placeholder="Try: Mumbai, Delhi, Bangalore, Hyderabad, Goa..."
                       value={locationInput}
                       onChange={(e) => setLocationInput(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && handleLocationSubmit()}
@@ -759,6 +764,25 @@ export const DatePlanner = () => {
                   <Button onClick={handleRefreshEvents} variant="outline" size="sm" disabled={eventsLoading}>
                     Refresh
                   </Button>
+                </div>
+                
+                {/* City suggestions */}
+                <div className="text-xs text-muted-foreground">
+                  <span className="font-medium">Popular cities with events:</span>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {['Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Chennai', 'Kolkata', 'Pune', 'Goa'].map(city => (
+                      <button
+                        key={city}
+                        onClick={() => {
+                          setLocationInput(city);
+                          handleLocationSubmit();
+                        }}
+                        className="text-primary hover:underline"
+                      >
+                        {city}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
