@@ -22,7 +22,6 @@ import { useLocation } from '@/hooks/useLocation';
 import { useEventsData, EventData } from '@/hooks/useEventsData';
 import { useSavedEvents } from '@/hooks/useSavedEvents';
 import { DataSourceStatus } from '@/components/DataSourceStatus';
-
 interface DateIdea {
   id: string;
   title: string;
@@ -42,7 +41,6 @@ interface DateIdea {
   scheduled_date?: string;
   scheduled_time?: string;
 }
-
 export const DatePlanner = () => {
   const [activeTab, setActiveTab] = useState<'planned' | 'upcoming'>('planned');
   const [plannedDates, setPlannedDates] = useState<DateIdea[]>([]);
@@ -78,12 +76,18 @@ export const DatePlanner = () => {
     time: '',
     category: 'romantic'
   });
-
-  const { toast } = useToast();
-  const { user, loading: authLoading } = useAuth();
-  const { coupleData } = useCoupleData();
+  const {
+    toast
+  } = useToast();
+  const {
+    user,
+    loading: authLoading
+  } = useAuth();
+  const {
+    coupleData
+  } = useCoupleData();
   const navigate = useNavigate();
-  
+
   // Use new hooks for location and events
   const {
     location,
@@ -93,7 +97,6 @@ export const DatePlanner = () => {
     clearLocation,
     updateLocationCoordinates
   } = useLocation();
-  
   const {
     events: upcomingEvents,
     isLoading: eventsLoading,
@@ -105,12 +108,11 @@ export const DatePlanner = () => {
     dataSourceInfo,
     quota
   } = useEventsData();
-
-  const { 
-    savedEvents, 
-    isLoading: savedEventsLoading, 
-    fetchSavedEvents, 
-    saveEventForUser 
+  const {
+    savedEvents,
+    isLoading: savedEventsLoading,
+    fetchSavedEvents,
+    saveEventForUser
   } = useSavedEvents();
   useEffect(() => {
     if (!authLoading && !user) {
@@ -152,13 +154,12 @@ export const DatePlanner = () => {
   const fetchPlannedDates = async () => {
     try {
       if (!coupleData?.id) return;
-      const { data, error } = await supabase
-        .from('date_ideas')
-        .select('*')
-        .eq('couple_id', coupleData.id)
-        .eq('is_completed', false)
-        .order('created_at', { ascending: false });
-      
+      const {
+        data,
+        error
+      } = await supabase.from('date_ideas').select('*').eq('couple_id', coupleData.id).eq('is_completed', false).order('created_at', {
+        ascending: false
+      });
       if (error) throw error;
       setPlannedDates(data || []);
     } catch (error) {
@@ -167,12 +168,11 @@ export const DatePlanner = () => {
       setLoading(false);
     }
   };
-
   const handleLocationSubmit = async () => {
     if (locationInput.trim()) {
       // First try to search existing events in the database for this city
       const foundEvents = await searchEventsByCity(locationInput.trim());
-      
+
       // Only proceed with location-based fetching if no stored events were found
       if (!foundEvents || foundEvents.length === 0) {
         setManualLocation(locationInput.trim());
@@ -180,19 +180,15 @@ export const DatePlanner = () => {
       setLocationInput('');
     }
   };
-
   const searchEventsByCity = async (cityName: string): Promise<EventData[]> => {
     try {
-      const { data, error } = await supabase
-        .from('events')
-        .select('*')
-        .or(`city.ilike.%${cityName}%,location_name.ilike.%${cityName}%,venue.ilike.%${cityName}%`)
-        .gt('expires_at', new Date().toISOString())
-        .order('fetch_timestamp', { ascending: false })
-        .limit(50);
-
+      const {
+        data,
+        error
+      } = await supabase.from('events').select('*').or(`city.ilike.%${cityName}%,location_name.ilike.%${cityName}%,venue.ilike.%${cityName}%`).gt('expires_at', new Date().toISOString()).order('fetch_timestamp', {
+        ascending: false
+      }).limit(50);
       if (error) throw error;
-
       if (data && data.length > 0) {
         // Convert database events to EventData format
         const formattedEvents: EventData[] = data.map(event => ({
@@ -215,19 +211,16 @@ export const DatePlanner = () => {
         // Update the events state directly with city search results
         setEvents(formattedEvents);
         console.log(`Found ${formattedEvents.length} stored events for ${cityName}`);
-        
         toast({
           title: `Found ${formattedEvents.length} events in ${cityName}! 🎉`,
           description: "Showing stored events from our database"
         });
-
         return formattedEvents;
       } else {
         toast({
           title: `No stored events found in ${cityName} 😔`,
           description: "Try fetching fresh events or check a different city"
         });
-        
         return [];
       }
     } catch (error) {
@@ -240,13 +233,11 @@ export const DatePlanner = () => {
       return [];
     }
   };
-
   const handleClearLocation = () => {
     clearLocation();
     clearEvents();
     setLocationInput('');
   };
-
   const handleRefreshEvents = () => {
     if (location) {
       refreshEvents(location, updateLocationCoordinates);
@@ -425,11 +416,12 @@ export const DatePlanner = () => {
       });
     }
   };
-
   const handleAddToDate = async (event: EventData) => {
     if (!coupleData?.id) return;
     try {
-      const { error } = await supabase.from('date_ideas').insert({
+      const {
+        error
+      } = await supabase.from('date_ideas').insert({
         title: event.title,
         description: event.description,
         category: event.category,
@@ -438,20 +430,17 @@ export const DatePlanner = () => {
         location: event.venue || 'TBD',
         is_completed: false
       });
-      
       if (error) throw error;
-      
       toast({
         title: "Added to your dates! 💕",
         description: `${event.title} has been added to your planned dates. Switch to the Planned tab to schedule it.`
       });
-      
+
       // Switch to planned tab after a short delay
       setTimeout(() => {
         setActiveTab('planned');
         fetchPlannedDates();
       }, 1500);
-      
     } catch (error) {
       console.error('Error adding event to dates:', error);
       toast({
@@ -493,7 +482,6 @@ export const DatePlanner = () => {
       setShowUnsuccessfulOptions(dateId);
     }
   };
-
   const handleUnsuccessfulAction = async (dateId: string, action: 'reschedule' | 'delete') => {
     if (action === 'reschedule') {
       const dateToReschedule = plannedDates.find(d => d.id === dateId);
@@ -509,33 +497,26 @@ export const DatePlanner = () => {
     }
     setShowUnsuccessfulOptions(null);
   };
-
   const handleDeleteDate = async () => {
     if (!dateToDelete) return;
-    
     try {
       console.log('Deleting date with ID:', dateToDelete.id);
-      
-      const { error } = await supabase
-        .from('date_ideas')
-        .delete()
-        .eq('id', dateToDelete.id);
-        
+      const {
+        error
+      } = await supabase.from('date_ideas').delete().eq('id', dateToDelete.id);
       if (error) {
         console.error('Supabase delete error:', error);
         throw error;
       }
-      
       console.log('Date deleted successfully');
-      
+
       // Remove from local state immediately
       setPlannedDates(prev => prev.filter(date => date.id !== dateToDelete.id));
-      
       toast({
         title: "Date deleted",
         description: `${dateToDelete.title} has been removed from your planner.`
       });
-      
+
       // Also refresh the list to be sure
       setTimeout(() => {
         fetchPlannedDates();
@@ -555,7 +536,6 @@ export const DatePlanner = () => {
   const isDateCompleted = (scheduledDate: string, scheduledTime?: string) => {
     const now = new Date();
     const dateToCheck = new Date(scheduledDate);
-    
     if (scheduledTime) {
       const [hours, minutes] = scheduledTime.split(':').map(Number);
       dateToCheck.setHours(hours, minutes);
@@ -563,22 +543,18 @@ export const DatePlanner = () => {
       // If no time specified, consider it completed at end of day
       dateToCheck.setHours(23, 59, 59);
     }
-    
     return dateToCheck < now;
   };
-
   const isFutureDate = (scheduledDate: string, scheduledTime?: string) => {
     return !isDateCompleted(scheduledDate, scheduledTime);
   };
 
   // Get unique categories from events
   const availableCategories = Array.from(new Set(upcomingEvents.map(event => event.category))).sort();
-  
+
   // Filter events by selected categories
-  const filteredEvents = selectedCategories.length === 0 
-    ? upcomingEvents 
-    : upcomingEvents.filter(event => selectedCategories.includes(event.category));
-  
+  const filteredEvents = selectedCategories.length === 0 ? upcomingEvents : upcomingEvents.filter(event => selectedCategories.includes(event.category));
+
   // Group events by category
   const eventsByCategory = filteredEvents.reduce((acc, event) => {
     const category = event.category || 'Other';
@@ -605,15 +581,9 @@ export const DatePlanner = () => {
     };
     return emojiMap[category] || '✨';
   };
-
   const handleCategoryToggle = (category: string) => {
-    setSelectedCategories(prev => 
-      prev.includes(category) 
-        ? prev.filter(c => c !== category)
-        : [...prev, category]
-    );
+    setSelectedCategories(prev => prev.includes(category) ? prev.filter(c => c !== category) : [...prev, category]);
   };
-
   const clearAllFilters = () => {
     setSelectedCategories([]);
   };
@@ -697,23 +667,15 @@ export const DatePlanner = () => {
                       </Button>
                       
                       {/* Show delete button only for future dates */}
-                      {date.scheduled_date && isFutureDate(date.scheduled_date, date.scheduled_time) && (
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="bg-red-50 text-red-600 border-red-200 hover:bg-red-100 px-2"
-                          onClick={() => {
-                            setDateToDelete(date);
-                            setShowDeleteConfirm(true);
-                          }}
-                        >
+                      {date.scheduled_date && isFutureDate(date.scheduled_date, date.scheduled_time) && <Button variant="outline" size="sm" className="bg-red-50 text-red-600 border-red-200 hover:bg-red-100 px-2" onClick={() => {
+                setDateToDelete(date);
+                setShowDeleteConfirm(true);
+              }}>
                           <Trash2 size={14} />
-                        </Button>
-                      )}
+                        </Button>}
                       
                      {/* Show feedback buttons only for completed dates */}
-                     {date.scheduled_date && isDateCompleted(date.scheduled_date, date.scheduled_time) && (
-                       <div className="flex gap-1 flex-1">
+                     {date.scheduled_date && isDateCompleted(date.scheduled_date, date.scheduled_time) && <div className="flex gap-1 flex-1">
                          <Button variant="outline" size="sm" className="flex-1 bg-green-50 text-green-600 border-green-200 hover:bg-green-100" onClick={() => handleDateFeedback(date.id, true)}>
                            <Heart size={14} className="mr-1" />
                            Successful
@@ -722,8 +684,7 @@ export const DatePlanner = () => {
                            <X size={14} className="mr-1" />
                            Not Great
                          </Button>
-                      </div>
-                    )}
+                      </div>}
                   </div>
                 </div>)}
           </TabsContent>
@@ -746,13 +707,7 @@ export const DatePlanner = () => {
                 
                 <div className="flex gap-2">
                   <div className="flex-1 flex gap-2">
-                    <Input
-                      placeholder="Try: Mumbai, Delhi, Bangalore, Hyderabad, Goa..."
-                      value={locationInput}
-                      onChange={(e) => setLocationInput(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && handleLocationSubmit()}
-                      className="flex-1"
-                    />
+                    <Input placeholder="Try: Mumbai, Delhi, Bangalore, Hyderabad, Goa..." value={locationInput} onChange={e => setLocationInput(e.target.value)} onKeyPress={e => e.key === 'Enter' && handleLocationSubmit()} className="flex-1" />
                     <Button onClick={handleLocationSubmit} variant="outline" size="sm">
                       Search
                     </Button>
@@ -770,30 +725,21 @@ export const DatePlanner = () => {
                 <div className="text-xs text-muted-foreground">
                   <span className="font-medium">Popular cities with events:</span>
                   <div className="flex flex-wrap gap-1 mt-1">
-                    {['Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Chennai', 'Kolkata', 'Pune', 'Goa'].map(city => (
-                      <button
-                        key={city}
-                        onClick={() => {
-                          setLocationInput(city);
-                          handleLocationSubmit();
-                        }}
-                        className="text-primary hover:underline"
-                      >
+                    {['Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Chennai', 'Kolkata', 'Pune', 'Goa'].map(city => <button key={city} onClick={() => {
+                    setLocationInput(city);
+                    handleLocationSubmit();
+                  }} className="text-primary hover:underline">
                         {city}
-                      </button>
-                    ))}
+                      </button>)}
                   </div>
                 </div>
               </div>
             </div>
             {/* Events Loading and Display */}
-            {eventsLoading ? (
-              <div className="text-center py-8">
+            {eventsLoading ? <div className="text-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
                 <p className="text-muted-foreground font-bold">Finding romantic events near you...</p>
-              </div>
-            ) : eventsError ? (
-              <div className="text-center py-12">
+              </div> : eventsError ? <div className="text-center py-12">
                 <Sparkles className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
                 <p className="text-lg font-bold text-muted-foreground mb-2">
                   {eventsError}
@@ -801,74 +747,42 @@ export const DatePlanner = () => {
                 <Button onClick={handleRefreshEvents} variant="outline">
                   Try Again
                 </Button>
-              </div>
-            ) : upcomingEvents.length === 0 ? (
-              <div className="text-center py-12">
+              </div> : upcomingEvents.length === 0 ? <div className="text-center py-12">
                 <Sparkles className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
                 <p className="text-lg font-bold text-muted-foreground">
                   {location ? 'No events found nearby. Try again later!' : 'Loading events from database...'}
                 </p>
-              </div>
-            ) : (
-              <div className="space-y-6">
+              </div> : <div className="space-y-6">
                 {/* Category Filter Tags */}
                 <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-2xl p-4">
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="text-lg font-bold text-foreground">Filter by Category</h3>
-                    {selectedCategories.length > 0 && (
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={clearAllFilters}
-                        className="text-muted-foreground hover:text-foreground"
-                      >
+                    {selectedCategories.length > 0 && <Button variant="ghost" size="sm" onClick={clearAllFilters} className="text-muted-foreground hover:text-foreground">
                         Clear All
-                      </Button>
-                    )}
+                      </Button>}
                   </div>
                   
                   <div className="flex flex-wrap gap-2">
-                    {availableCategories.slice(0, showAllCategories ? availableCategories.length : 6).map((category) => (
-                      <Badge
-                        key={category}
-                        variant={selectedCategories.includes(category) ? "default" : "outline"}
-                        className={`cursor-pointer transition-all hover:scale-105 ${
-                          selectedCategories.includes(category)
-                            ? 'bg-primary text-primary-foreground'
-                            : 'hover:bg-muted'
-                        }`}
-                        onClick={() => handleCategoryToggle(category)}
-                      >
+                    {availableCategories.slice(0, showAllCategories ? availableCategories.length : 6).map(category => <Badge key={category} variant={selectedCategories.includes(category) ? "default" : "outline"} className={`cursor-pointer transition-all hover:scale-105 ${selectedCategories.includes(category) ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`} onClick={() => handleCategoryToggle(category)}>
                         <span className="mr-1">{getCategoryEmoji(category)}</span>
                         {category}
                         <span className="ml-1 text-xs opacity-70">
                           ({upcomingEvents.filter(e => e.category === category).length})
                         </span>
-                      </Badge>
-                    ))}
+                      </Badge>)}
                     
-                    {availableCategories.length > 6 && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setShowAllCategories(!showAllCategories)}
-                        className="text-xs"
-                      >
+                    {availableCategories.length > 6 && <Button variant="ghost" size="sm" onClick={() => setShowAllCategories(!showAllCategories)} className="text-xs">
                         {showAllCategories ? 'Show Less' : `+${availableCategories.length - 6} More`}
-                      </Button>
-                    )}
+                      </Button>}
                   </div>
                   
-                  {selectedCategories.length > 0 && (
-                    <p className="text-sm text-muted-foreground mt-2">
+                  {selectedCategories.length > 0 && <p className="text-sm text-muted-foreground mt-2">
                       Showing {filteredEvents.length} of {upcomingEvents.length} events
-                    </p>
-                  )}
+                    </p>}
                 </div>
 
                 {/* Events grouped by category */}
-                {Object.entries(eventsByCategory).map(([category, events]) => (
-                  <div key={category} className="space-y-3">
+                {Object.entries(eventsByCategory).map(([category, events]) => <div key={category} className="space-y-3">
                     <div className="flex items-center gap-2 mb-4">
                       <span className="text-2xl">{getCategoryEmoji(category)}</span>
                       <h3 className="text-xl font-bold text-foreground">{category}</h3>
@@ -878,12 +792,9 @@ export const DatePlanner = () => {
                     </div>
                     
                     <div className="space-y-4">
-                      {events.map((event, index) => (
-                        <div 
-                          key={event.id} 
-                          className="bg-card rounded-2xl p-6 shadow-soft hover:shadow-romantic transition-all duration-200 transform hover:scale-102 animate-fade-in" 
-                          style={{ animationDelay: `${index * 100}ms` }}
-                        >
+                      {events.map((event, index) => <div key={event.id} className="bg-card rounded-2xl p-6 shadow-soft hover:shadow-romantic transition-all duration-200 transform hover:scale-102 animate-fade-in" style={{
+                  animationDelay: `${index * 100}ms`
+                }}>
                           <div className="flex items-start justify-between mb-4">
                             <div className="flex-1">
                               <h4 className="text-xl font-extrabold font-poppins text-foreground mb-2">
@@ -901,30 +812,20 @@ export const DatePlanner = () => {
                                   <span className="font-bold">{event.timing}</span>
                                 </div>
                               </div>
-                              {(event.venue || event.city) && (
-                                <p className="text-sm text-muted-foreground mb-1">
-                                  📍 {event.venue && event.city && event.venue !== event.city 
-                                      ? `${event.venue}, ${event.city}` 
-                                      : event.venue || event.city}
-                                </p>
-                              )}
-                              {event.price && (
-                                <p className="text-sm font-bold text-green-600 mb-2">
+                              {event.venue || event.city}
+                              {event.price && <p className="text-sm font-bold text-green-600 mb-2">
                                   💰 {event.price}
-                                </p>
-                              )}
+                                </p>}
                             </div>
                             <div className="flex flex-col gap-2">
                               <Badge className="bg-purple-50 text-purple-600 border-purple-200">
                                 <Sparkles size={12} className="mr-1" />
                                 {event.source}
                               </Badge>
-                              {event.source === 'google' && (
-                                <Badge className="bg-blue-50 text-blue-600 border-blue-200">
+                              {event.source === 'google' && <Badge className="bg-blue-50 text-blue-600 border-blue-200">
                                   <MapPin size={12} className="mr-1" />
                                   Google Places
-                                </Badge>
-                              )}
+                                </Badge>}
                             </div>
                           </div>
                           
@@ -934,64 +835,34 @@ export const DatePlanner = () => {
                           
                           <div className="flex gap-2">
                             {/* Google Places events get Schedule option */}
-                            {event.source === 'google' ? (
-                              <>
-                                <Button 
-                                  className="bg-gradient-secondary hover:opacity-90 text-white flex-1" 
-                                  size="sm"
-                                  onClick={() => handleScheduleUpcomingEvent(event)}
-                                >
+                            {event.source === 'google' ? <>
+                                <Button className="bg-gradient-secondary hover:opacity-90 text-white flex-1" size="sm" onClick={() => handleScheduleUpcomingEvent(event)}>
                                   <CalendarPlus size={14} className="mr-1" />
                                   Schedule
                                 </Button>
                                 
-                                {event.bookingUrl && (
-                                  <Button 
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => window.open(event.bookingUrl, '_blank')}
-                                    className="flex-1"
-                                  >
+                                {event.bookingUrl && <Button variant="outline" size="sm" onClick={() => window.open(event.bookingUrl, '_blank')} className="flex-1">
                                     <MapPin size={14} className="mr-1" />
                                     Get Directions
-                                  </Button>
-                                )}
-                              </>
-                            ) : (
-                              <>
+                                  </Button>}
+                              </> : <>
                                 {/* Firecrawl events get Add to Date option */}
-                                <Button 
-                                  className="bg-gradient-primary hover:opacity-90 text-white flex-1" 
-                                  size="sm"
-                                  onClick={() => handleAddToDate(event)}
-                                >
+                                <Button className="bg-gradient-primary hover:opacity-90 text-white flex-1" size="sm" onClick={() => handleAddToDate(event)}>
                                   <Plus size={14} className="mr-1" />
                                   Add to Your Date
                                 </Button>
                                 
                                 {/* Book button for web-scraped events */}
-                                {event.bookingUrl && 
-                                 ['bookmyshow', 'paytm-insider', 'district', 'ticketmaster', 'eventbrite', 'facebook', 'meetup'].includes(event.source) && (
-                                  <Button 
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => window.open(event.bookingUrl, '_blank')}
-                                    className="flex-1"
-                                  >
+                                {event.bookingUrl && ['bookmyshow', 'paytm-insider', 'district', 'ticketmaster', 'eventbrite', 'facebook', 'meetup'].includes(event.source) && <Button variant="outline" size="sm" onClick={() => window.open(event.bookingUrl, '_blank')} className="flex-1">
                                     <CalendarClock size={14} className="mr-1" />
                                     Book Now
-                                  </Button>
-                                )}
-                              </>
-                            )}
+                                  </Button>}
+                              </>}
                           </div>
-                        </div>
-                      ))}
+                        </div>)}
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
+                  </div>)}
+              </div>}
           </TabsContent>
         </Tabs>
       </div>
@@ -1206,8 +1077,7 @@ export const DatePlanner = () => {
         </div>}
 
       {/* Unsuccessful Date Options Modal */}
-      {showUnsuccessfulOptions && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      {showUnsuccessfulOptions && <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-card rounded-xl p-6 w-full max-w-md shadow-romantic animate-slide-up">
             <div className="text-center mb-6">
               <h3 className="text-xl font-extrabold font-poppins mb-2">Date didn't go as planned?</h3>
@@ -1215,47 +1085,25 @@ export const DatePlanner = () => {
             </div>
 
             <div className="space-y-3">
-              <Button 
-                onClick={() => handleUnsuccessfulAction(showUnsuccessfulOptions, 'reschedule')}
-                className="w-full bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100"
-                variant="outline"
-              >
+              <Button onClick={() => handleUnsuccessfulAction(showUnsuccessfulOptions, 'reschedule')} className="w-full bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100" variant="outline">
                 <CalendarIcon size={16} className="mr-2" />
                 Reschedule for another time
               </Button>
               
-              <Button 
-                onClick={() => handleUnsuccessfulAction(showUnsuccessfulOptions, 'delete')}
-                className="w-full bg-red-50 text-red-600 border border-red-200 hover:bg-red-100"
-                variant="outline"
-              >
+              <Button onClick={() => handleUnsuccessfulAction(showUnsuccessfulOptions, 'delete')} className="w-full bg-red-50 text-red-600 border border-red-200 hover:bg-red-100" variant="outline">
                 <Trash2 size={16} className="mr-2" />
                 Remove from planner
               </Button>
               
-              <Button 
-                onClick={() => setShowUnsuccessfulOptions(null)}
-                variant="outline"
-                className="w-full"
-              >
+              <Button onClick={() => setShowUnsuccessfulOptions(null)} variant="outline" className="w-full">
                 Cancel
               </Button>
             </div>
           </div>
-        </div>
-      )}
+        </div>}
 
       {/* Delete Confirmation Dialog */}
-      <ConfirmDialog
-        open={showDeleteConfirm}
-        onOpenChange={setShowDeleteConfirm}
-        title="Delete Date"
-        description={`Are you sure you want to delete "${dateToDelete?.title}"? This action cannot be undone.`}
-        confirmText="Delete"
-        cancelText="Cancel"
-        onConfirm={handleDeleteDate}
-        variant="destructive"
-      />
+      <ConfirmDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm} title="Delete Date" description={`Are you sure you want to delete "${dateToDelete?.title}"? This action cannot be undone.`} confirmText="Delete" cancelText="Cancel" onConfirm={handleDeleteDate} variant="destructive" />
 
       <BottomNavigation />
     </div>;
