@@ -83,6 +83,10 @@ const MemoryVault: React.FC = () => {
   const [showViewDialog, setShowViewDialog] = useState(false);
   const [editing, setEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [editingItem, setEditingItem] = useState<UnifiedItem | null>(null);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
+  const [showImageActionsDialog, setShowImageActionsDialog] = useState(false);
 
   // Form state
   const [newMemory, setNewMemory] = useState({
@@ -395,6 +399,134 @@ const MemoryVault: React.FC = () => {
     }
   };
 
+  // Edit item functionality
+  const startEdit = (item: UnifiedItem) => {
+    setEditingItem(item);
+    if (item.type === 'memory') {
+      setNewMemory({
+        title: item.title,
+        description: item.description || '',
+        memory_date: item.memory_date || '',
+        image_url: ''
+      });
+    } else {
+      setNewNote({
+        title: item.title,
+        content: item.content || ''
+      });
+    }
+    setShowEditDialog(true);
+  };
+
+  const updateItem = async () => {
+    if (!editingItem) return;
+
+    try {
+      setEditing(true);
+      
+      if (editingItem.type === 'memory') {
+        const { error } = await supabase
+          .from('memories')
+          .update({
+            title: newMemory.title,
+            description: newMemory.description || null,
+            memory_date: newMemory.memory_date || null,
+          })
+          .eq('id', editingItem.id);
+
+        if (error) throw error;
+
+        // Update local state
+        setMemories(prev => prev.map(m => 
+          m.id === editingItem.id 
+            ? { 
+                ...m, 
+                title: newMemory.title,
+                description: newMemory.description || null,
+                memory_date: newMemory.memory_date || null,
+              }
+            : m
+        ));
+
+        toast({ title: "Memory Updated! 💕" });
+      } else {
+        const { error } = await supabase
+          .from('notes')
+          .update({
+            title: newNote.title,
+            content: newNote.content || null,
+          })
+          .eq('id', editingItem.id);
+
+        if (error) throw error;
+
+        // Update local state
+        setNotes(prev => prev.map(n => 
+          n.id === editingItem.id 
+            ? { 
+                ...n, 
+                title: newNote.title,
+                content: newNote.content || null,
+              }
+            : n
+        ));
+
+        toast({ title: "Note Updated! 📝" });
+      }
+
+      setShowEditDialog(false);
+      setEditingItem(null);
+      setNewMemory({ title: "", description: "", memory_date: "", image_url: "" });
+      setNewNote({ title: "", content: "" });
+    } catch (error) {
+      console.error('Error updating item:', error);
+      toast({ title: "Error", variant: "destructive" });
+    } finally {
+      setEditing(false);
+    }
+  };
+
+  // Delete individual image
+  const deleteImage = async (imageId: string, imageUrl: string) => {
+    if (!selectedItem || !('images' in selectedItem)) return;
+
+    try {
+      // Delete from storage
+      const fileName = imageUrl.split('/').pop();
+      if (fileName) {
+        await supabase.storage
+          .from('memory-images')
+          .remove([fileName]);
+      }
+
+      // Delete from database
+      const { error } = await supabase
+        .from('memory_images')
+        .delete()
+        .eq('id', imageId);
+
+      if (error) throw error;
+
+      // Update local state
+      setMemories(prev => prev.map(m => 
+        m.id === selectedItem.id 
+          ? { ...m, images: m.images?.filter(img => img.id !== imageId) }
+          : m
+      ));
+
+      // Update selectedItem
+      setSelectedItem(prev => prev ? {
+        ...prev,
+        images: prev.images?.filter(img => img.id !== imageId)
+      } : null);
+
+      toast({ title: "Image deleted successfully" });
+    } catch (error) {
+      console.error('Error deleting image:', error);
+      toast({ title: "Error deleting image", variant: "destructive" });
+    }
+  };
+
   // Filter and search items
   const getFilteredItems = (): UnifiedItem[] => {
     const memoryItems: UnifiedItem[] = memories.map(memory => ({ ...memory, type: 'memory' as const }));
@@ -500,9 +632,7 @@ const MemoryVault: React.FC = () => {
                       setShowViewDialog(true);
                     }}
                     onToggleFavorite={(id, currentState) => toggleFavorite(id, 'memory', currentState)}
-                    onEdit={() => {
-                      // TODO: Implement edit functionality
-                    }}
+                    onEdit={() => startEdit(item)}
                     onDelete={() => {
                       setSelectedItem(item);
                       setShowDeleteDialog(true);
@@ -518,9 +648,7 @@ const MemoryVault: React.FC = () => {
                       setShowViewDialog(true);
                     }}
                     onToggleFavorite={(id, currentState) => toggleFavorite(id, 'note', currentState)}
-                    onEdit={() => {
-                      // TODO: Implement edit functionality
-                    }}
+                    onEdit={() => startEdit(item)}
                     onDelete={() => {
                       setSelectedItem(item);
                       setShowDeleteDialog(true);
@@ -690,16 +818,28 @@ const MemoryVault: React.FC = () => {
                   </Button>
                 </div>
 
-                {/* Images for memories */}
+                {/* Images for memories with action buttons */}
                 {('images' in selectedItem) && selectedItem.images && selectedItem.images.length > 0 && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {selectedItem.images.map((image) => (
-                      <img 
-                        key={image.id}
-                        src={image.image_url} 
-                        alt={selectedItem.title}
-                        className="w-full h-64 object-cover rounded-lg" 
-                      />
+                      <div key={image.id} className="relative group">
+                        <img 
+                          src={image.image_url} 
+                          alt={selectedItem.title}
+                          className="w-full h-64 object-cover rounded-lg" 
+                        />
+                        {/* Image action buttons */}
+                        <div className="absolute top-2 right-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => deleteImage(image.id, image.image_url)}
+                            className="h-8 w-8 p-0 bg-red-500/90 hover:bg-red-600 text-white"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
                     ))}
                   </div>
                 )}
@@ -737,6 +877,74 @@ const MemoryVault: React.FC = () => {
                     className="flex-1"
                   >
                     Close
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Item Dialog */}
+        <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>
+                {editingItem && (editingItem.type === 'memory' ? 'Edit Memory' : 'Edit Note')}
+              </DialogTitle>
+            </DialogHeader>
+
+            {editingItem && (
+              <div className="space-y-4">
+                <Input
+                  value={editingItem.type === 'memory' ? newMemory.title : newNote.title}
+                  onChange={(e) => {
+                    if (editingItem.type === 'memory') {
+                      setNewMemory(prev => ({ ...prev, title: e.target.value }));
+                    } else {
+                      setNewNote(prev => ({ ...prev, title: e.target.value }));
+                    }
+                  }}
+                  placeholder="Title"
+                />
+
+                {editingItem.type === 'memory' ? (
+                  <>
+                    <Textarea
+                      value={newMemory.description}
+                      onChange={(e) => setNewMemory(prev => ({ ...prev, description: e.target.value }))}
+                      placeholder="Description"
+                    />
+                    <Input
+                      type="date"
+                      value={newMemory.memory_date}
+                      onChange={(e) => setNewMemory(prev => ({ ...prev, memory_date: e.target.value }))}
+                    />
+                  </>
+                ) : (
+                  <Textarea
+                    value={newNote.content}
+                    onChange={(e) => setNewNote(prev => ({ ...prev, content: e.target.value }))}
+                    placeholder="Content"
+                    rows={4}
+                  />
+                )}
+
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={updateItem} 
+                    disabled={editing} 
+                    className="flex-1"
+                  >
+                    {editing ? 'Updating...' : 'Update'}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setShowEditDialog(false);
+                      setEditingItem(null);
+                    }}
+                  >
+                    Cancel
                   </Button>
                 </div>
               </div>
@@ -820,6 +1028,17 @@ const MobileMemoryCard: React.FC<{
           
           {/* Action buttons */}
           <div className="absolute top-3 right-3 flex space-x-1">
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit();
+              }}
+              className="h-8 w-8 p-0 bg-white/90 hover:bg-white"
+            >
+              <Edit2 className="h-4 w-4 text-gray-600" />
+            </Button>
             <Button
               size="sm"
               variant="secondary"
