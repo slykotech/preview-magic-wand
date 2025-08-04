@@ -419,6 +419,7 @@ const MemoryVault: React.FC = () => {
   // Edit item functionality
   const startEdit = (item: UnifiedItem) => {
     setEditingItem(item);
+    setUploadedFiles([]); // Clear any existing uploaded files
     if (item.type === 'memory') {
       setNewMemory({
         title: item.title,
@@ -442,6 +443,27 @@ const MemoryVault: React.FC = () => {
       setEditing(true);
       
       if (editingItem.type === 'memory') {
+        // Handle new image uploads for existing memory
+        let newImageResults: Array<{url: string, fileName: string}> = [];
+        if (uploadedFiles.length > 0) {
+          newImageResults = await uploadImages(uploadedFiles);
+          
+          // Insert new memory images
+          const memoryImages = newImageResults.map((result, index) => ({
+            memory_id: editingItem.id,
+            image_url: result.url,
+            file_name: result.fileName,
+            upload_order: (editingItem.images?.length || 0) + index
+          }));
+
+          const { error: imagesError } = await supabase
+            .from('memory_images')
+            .insert(memoryImages);
+
+          if (imagesError) throw imagesError;
+        }
+
+        // Update memory details
         const { error } = await supabase
           .from('memories')
           .update({
@@ -453,17 +475,19 @@ const MemoryVault: React.FC = () => {
 
         if (error) throw error;
 
-        // Update local state
-        setMemories(prev => prev.map(m => 
-          m.id === editingItem.id 
-            ? { 
-                ...m, 
-                title: newMemory.title,
-                description: newMemory.description || null,
-                memory_date: newMemory.memory_date || null,
-              }
-            : m
-        ));
+        // Fetch updated memory with all images
+        const { data: updatedMemory } = await supabase
+          .from('memories')
+          .select(`*, images:memory_images(*)`)
+          .eq('id', editingItem.id)
+          .single();
+
+        if (updatedMemory) {
+          // Update local state with fresh data
+          setMemories(prev => prev.map(m => 
+            m.id === editingItem.id ? updatedMemory : m
+          ));
+        }
 
         toast({ title: "Memory Updated! 💕" });
       } else {
@@ -495,6 +519,7 @@ const MemoryVault: React.FC = () => {
       setEditingItem(null);
       setNewMemory({ title: "", description: "", memory_date: "", image_url: "" });
       setNewNote({ title: "", content: "" });
+      setUploadedFiles([]);
     } catch (error) {
       console.error('Error updating item:', error);
       toast({ title: "Error", variant: "destructive" });
@@ -973,6 +998,95 @@ const MemoryVault: React.FC = () => {
                       value={newMemory.memory_date}
                       onChange={(e) => setNewMemory(prev => ({ ...prev, memory_date: e.target.value }))}
                     />
+                    
+                    {/* Show existing images */}
+                    {editingItem.images && editingItem.images.length > 0 && (
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Current Images ({editingItem.images.length})</label>
+                        <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
+                          {editingItem.images.map((image, index) => (
+                            <div key={image.id} className="relative group">
+                              <img
+                                src={image.image_url}
+                                alt={`Existing ${index + 1}`}
+                                className="w-full h-16 object-cover rounded-lg"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Add new images section */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Add New Images</label>
+                      <div 
+                        className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors ${
+                          dragActive ? 'border-primary bg-primary/5' : 'border-border'
+                        }`}
+                        onDragEnter={handleDrag}
+                        onDragLeave={handleDrag}
+                        onDragOver={handleDrag}
+                        onDrop={handleDrop}
+                      >
+                        <Upload className="mx-auto h-6 w-6 text-muted-foreground mb-2" />
+                        <p className="text-xs text-muted-foreground mb-2">
+                          Drag & drop images here or click to choose
+                        </p>
+                        <input
+                          type="file"
+                          multiple
+                          accept="image/*"
+                          onChange={(e) => e.target.files && handleFilesSelect(Array.from(e.target.files))}
+                          className="hidden"
+                          id="file-upload-edit"
+                        />
+                        <label htmlFor="file-upload-edit">
+                          <Button variant="outline" size="sm" asChild>
+                            <span>Choose Files</span>
+                          </Button>
+                        </label>
+                        {uploadedFiles.length > 0 && (
+                          <p className="text-xs text-primary mt-2">
+                            {uploadedFiles.length} new file(s) selected
+                          </p>
+                        )}
+                      </div>
+
+                      {/* New images preview */}
+                      {uploadedFiles.length > 0 && (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <label className="text-sm font-medium">New Images ({uploadedFiles.length})</label>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => setUploadedFiles([])}
+                              className="text-xs h-6 px-2"
+                            >
+                              Clear All
+                            </Button>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
+                            {uploadedFiles.map((file, index) => (
+                              <div key={index} className="relative group">
+                                <img
+                                  src={URL.createObjectURL(file)}
+                                  alt={`New Upload ${index + 1}`}
+                                  className="w-full h-16 object-cover rounded-lg"
+                                />
+                                <button
+                                  onClick={() => removeFile(index)}
+                                  className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                  <X size={10} />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </>
                 ) : (
                   <Textarea
