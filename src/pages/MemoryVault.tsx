@@ -1092,9 +1092,9 @@ const MobileMemoryCard: React.FC<{
             )}
           </div>
           
-          {/* Multiple photos indicator */}
+          {/* Multiple photos indicator - Top Left */}
           {totalImages > 1 && (
-            <div className="absolute bottom-3 right-3 bg-black/70 text-white text-xs px-2 py-1 rounded-full flex items-center">
+            <div className="absolute top-3 left-3 bg-black/70 text-white text-xs px-2 py-1 rounded-full flex items-center">
               <Images className="h-3 w-3 mr-1" />
               +{totalImages - 1}
             </div>
