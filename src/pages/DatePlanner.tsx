@@ -129,6 +129,30 @@ export const DatePlanner = () => {
 
       if (error) throw error;
 
+      // Create the new date object for local state
+      const newDateIdea = {
+        id: crypto.randomUUID(), // Temporary ID
+        title: newEvent.title,
+        description: newEvent.description,
+        location: newEvent.location,
+        category: newEvent.category,
+        couple_id: coupleData.id,
+        created_by: user?.id!,
+        scheduled_date: newEvent.date.toISOString().split('T')[0],
+        scheduled_time: newEvent.time,
+        is_completed: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        rating: null,
+        completed_date: null,
+        estimated_cost: null,
+        estimated_duration: null,
+        notes: null
+      };
+
+      // Update local state immediately
+      setPlannedDates(prev => [...prev, newDateIdea]);
+
       toast({
         title: "Date added! 💕",
         description: `${newEvent.title} has been added to your planner`
@@ -143,7 +167,6 @@ export const DatePlanner = () => {
         time: '',
         category: 'romantic'
       });
-      fetchPlannedDates();
     } catch (error) {
       console.error('Error adding event:', error);
       toast({
@@ -192,6 +215,22 @@ export const DatePlanner = () => {
 
       if (error) throw error;
 
+      // Update local state immediately
+      setPlannedDates(prev => prev.map(date => 
+        date.id === editingDate.id 
+          ? {
+              ...date,
+              title: editEvent.title,
+              description: editEvent.description,
+              location: editEvent.location,
+              category: editEvent.category,
+              scheduled_date: editEvent.date.toISOString().split('T')[0],
+              scheduled_time: editEvent.time,
+              updated_at: new Date().toISOString()
+            }
+          : date
+      ));
+
       toast({
         title: "Date updated! 💕",
         description: `${editEvent.title} has been updated successfully`
@@ -199,7 +238,6 @@ export const DatePlanner = () => {
 
       setShowEditForm(false);
       setEditingDate(null);
-      fetchPlannedDates();
     } catch (error) {
       console.error('Error updating event:', error);
       toast({
