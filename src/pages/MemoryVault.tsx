@@ -645,7 +645,7 @@ const MemoryVault: React.FC = () => {
         </div>
 
         {/* Filter Tabs */}
-        <div className="bg-white px-4 py-2 border-b sticky top-16 z-10">
+        <div className="bg-background/95 backdrop-blur-sm px-4 py-2 border-b sticky top-16 z-10">
           <div className="flex space-x-1">
             {(['all', 'photos', 'notes', 'favorites'] as const).map((filter) => (
               <Button
