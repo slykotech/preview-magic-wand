@@ -282,9 +282,6 @@ export const DatePlanner = () => {
 
       setDateToDelete(null);
       setShowDeleteConfirm(false);
-      
-      // Still fetch to ensure data consistency
-      fetchPlannedDates();
     } catch (error) {
       console.error('Error deleting date:', error);
       toast({
