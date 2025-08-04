@@ -87,15 +87,17 @@ export const DatePlanner = () => {
     notes: ''
   });
 
+  const coupleId = coupleData?.id;
+  
   useEffect(() => {
     if (!user) {
       navigate('/auth');
       return;
     }
-    if (user && coupleData?.id) {
+    if (user && coupleId) {
       fetchPlannedDates();
     }
-  }, [user, navigate, coupleData?.id]);
+  }, [user, navigate, coupleId]);
 
   const fetchPlannedDates = async () => {
     try {
@@ -289,7 +291,7 @@ export const DatePlanner = () => {
 
       toast({
         title: "Date removed",
-        description: "The date has been removed from your planner."
+        description: "The date has been permanently removed from your planner."
       });
     } catch (error) {
       console.error('Error deleting date:', error);
