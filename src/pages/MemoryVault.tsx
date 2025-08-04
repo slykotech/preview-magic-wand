@@ -343,278 +343,285 @@ const MemoryVault: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#ECF0F1]">
-      {/* Header */}
-      <header className="bg-background p-6 pt-10 shadow-md">
-        <h1 className="font-bold text-3xl text-[#2C3E50] mb-1">Memory Vault</h1>
-        <p className="text-muted-foreground mb-4">Your love story collection</p>
-        
-        <div className="flex justify-between items-center">
-          {/* Filter Pills */}
-          <div className="flex space-x-2 overflow-x-auto pb-2">
-            <Button
-              variant={filterType === 'all' ? 'default' : 'outline'}
-              size="sm"
-              className={`rounded-full whitespace-nowrap font-semibold ${
-                filterType === 'all' ? 'bg-[#E74C3C] hover:bg-[#E74C3C]/90' : ''
-              }`}
-              onClick={() => setFilterType('all')}
-            >
-              All
-            </Button>
-            <Button
-              variant={filterType === 'photos' ? 'default' : 'outline'}
-              size="sm"
-              className={`rounded-full whitespace-nowrap font-semibold ${
-                filterType === 'photos' ? 'bg-[#E74C3C] hover:bg-[#E74C3C]/90' : ''
-              }`}
-              onClick={() => setFilterType('photos')}
-            >
-              Photos
-            </Button>
-            <Button
-              variant={filterType === 'notes' ? 'default' : 'outline'}
-              size="sm"
-              className={`rounded-full whitespace-nowrap font-semibold ${
-                filterType === 'notes' ? 'bg-[#E74C3C] hover:bg-[#E74C3C]/90' : ''
-              }`}
-              onClick={() => setFilterType('notes')}
-            >
-              Notes
-            </Button>
-            <Button
-              variant={filterType === 'favorites' ? 'default' : 'outline'}
-              size="sm"
-              className={`rounded-full whitespace-nowrap font-semibold ${
-                filterType === 'favorites' ? 'bg-[#E74C3C] hover:bg-[#E74C3C]/90' : ''
-              }`}
-              onClick={() => setFilterType('favorites')}
-            >
-              Favorites
-            </Button>
-          </div>
-
-          {/* View Toggle */}
-          <div className="flex border border-border rounded-full p-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              className={`p-1.5 rounded-full ${
-                viewMode === 'grid' ? 'bg-[#2C3E50] text-white' : 'text-muted-foreground'
-              }`}
-              onClick={() => setViewMode('grid')}
-            >
-              <Grid3X3 className="h-5 w-5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className={`p-1.5 rounded-full ${
-                viewMode === 'timeline' ? 'bg-[#2C3E50] text-white' : 'text-muted-foreground'
-              }`}
-              onClick={() => setViewMode('timeline')}
-            >
-              <List className="h-5 w-5" />
-            </Button>
-          </div>
+    <div className="min-h-screen bg-background">
+      {/* Header with gradient background - matching Dashboard style */}
+      <div className="bg-gradient-primary py-12 px-6 -mx-6 -mt-8 mb-8 rounded-b-[4rem] relative overflow-hidden before:absolute before:bottom-0 before:left-0 before:right-0 before:h-12 before:bg-gradient-primary before:rounded-b-[5rem] before:-z-10 after:absolute after:bottom-0 after:left-0 before:right-0 after:h-6 after:bg-gradient-primary after:rounded-b-[6rem] after:-z-20">
+        <div className="text-center space-y-2">
+          <h1 className="font-bold text-3xl text-white mb-1">Memory Vault</h1>
+          <p className="text-white/80 mb-4">Your love story collection</p>
         </div>
+      </div>
 
-        {/* Search */}
-        <div className="mt-4 relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-          <Input
-            placeholder="Search your memories..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-      </header>
+      <div className="container mx-auto px-6 space-y-6 pb-20">
+        {/* Controls Section */}
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            {/* Filter Pills */}
+            <div className="flex space-x-2 overflow-x-auto pb-2">
+              <Button
+                variant={filterType === 'all' ? 'default' : 'outline'}
+                size="sm"
+                className={`rounded-full whitespace-nowrap font-semibold ${
+                  filterType === 'all' ? 'bg-primary hover:bg-primary/90' : ''
+                }`}
+                onClick={() => setFilterType('all')}
+              >
+                All
+              </Button>
+              <Button
+                variant={filterType === 'photos' ? 'default' : 'outline'}
+                size="sm"
+                className={`rounded-full whitespace-nowrap font-semibold ${
+                  filterType === 'photos' ? 'bg-primary hover:bg-primary/90' : ''
+                }`}
+                onClick={() => setFilterType('photos')}
+              >
+                Photos
+              </Button>
+              <Button
+                variant={filterType === 'notes' ? 'default' : 'outline'}
+                size="sm"
+                className={`rounded-full whitespace-nowrap font-semibold ${
+                  filterType === 'notes' ? 'bg-primary hover:bg-primary/90' : ''
+                }`}
+                onClick={() => setFilterType('notes')}
+              >
+                Notes
+              </Button>
+              <Button
+                variant={filterType === 'favorites' ? 'default' : 'outline'}
+                size="sm"
+                className={`rounded-full whitespace-nowrap font-semibold ${
+                  filterType === 'favorites' ? 'bg-primary hover:bg-primary/90' : ''
+                }`}
+                onClick={() => setFilterType('favorites')}
+              >
+                Favorites
+              </Button>
+            </div>
 
-      {/* Main Content */}
-      <main className="p-6 relative min-h-[60vh]">
-        {filteredItems.length === 0 ? (
-          <div className="text-center py-12">
-            <Heart className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-medium text-muted-foreground mb-2">
-              No items found. Start creating your love story!
-            </h3>
-          </div>
-        ) : viewMode === 'grid' ? (
-          /* Masonry Grid View - Pinterest Style */
-          <div className="columns-1 md:columns-2 lg:columns-3 gap-4">
-            {filteredItems.map((item, index) => {
-              // Generate vibrant colors for memory cards to match reference
-              const colors = [
-                'from-orange-400 to-orange-600', // Orange like in reference
-                'from-purple-500 to-purple-700', // Purple
-                'from-blue-500 to-blue-700',     // Blue  
-                'from-green-500 to-green-700',   // Green
-                'from-pink-500 to-pink-700',     // Pink
-                'from-teal-500 to-teal-700',     // Teal
-                'from-indigo-500 to-indigo-700', // Indigo
-                'from-red-500 to-red-700'        // Red
-              ];
-              const colorClass = colors[index % colors.length];
-              
-              return (
-                <div 
-                  key={`${item.type}-${item.id}`} 
-                  className="break-inside-avoid mb-4 cursor-pointer"
-                >
-                  {item.type === 'memory' && item.images && item.images.length > 0 ? (
-                    /* Photo Memory Card - Colorful like reference */
-                    <div className={`relative rounded-xl overflow-hidden bg-gradient-to-br ${colorClass} shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]`}>
-                      <div className="relative">
-                        <img 
-                          src={item.images[0].image_url} 
-                          alt={item.title} 
-                          className="w-full object-cover" 
-                          style={{ height: `${Math.floor(Math.random() * 100) + 200}px` }} // Variable heights like reference
-                        />
-                        
-                        {/* Dark overlay for text readability */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                        
-                        {/* Content overlay */}
-                        <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
-                          <div className="flex items-start justify-between mb-1">
-                            <div className="flex-1">
-                              <h3 className="font-semibold text-base leading-tight mb-1">{item.title}</h3>
-                              <p className="text-xs text-white/80">
-                                {item.memory_date ? format(parseISO(item.memory_date), 'MMM d, yyyy') : format(parseISO(item.created_at), 'MMM d, yyyy')}
-                              </p>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                toggleFavorite(item.id, item.type, item.is_favorite);
-                              }}
-                              className="p-1 hover:bg-white/20 h-auto"
-                            >
-                              <Star className={`h-4 w-4 ${item.is_favorite ? 'fill-yellow-400 text-yellow-400' : 'text-white/70'}`} />
-                            </Button>
-                          </div>
-                          
-                          {item.description && item.description.length > 50 && (
-                            <div>
-                              <p className="text-xs text-white/90 line-clamp-3 mb-1">
-                                {item.description}
-                              </p>
-                              <button className="text-xs text-white/80 underline">Show less</button>
-                            </div>
-                          )}
-                          
-                          {item.description && item.description.length <= 50 && (
-                            <p className="text-xs text-white/90">
-                              {item.description}
-                            </p>
-                          )}
-                        </div>
-
-                        {/* Multiple photos indicator */}
-                        {item.images.length > 1 && (
-                          <div className="absolute top-3 left-3 bg-black/60 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1">
-                            <span>+{item.images.length - 1}</span>
-                          </div>
-                        )}
-                        
-                        {/* Favorite star in top right */}
-                        {item.is_favorite && (
-                          <div className="absolute top-3 right-3">
-                            <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ) : (
-                    /* Note Card - Clean white like reference */
-                    <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300">
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center">
-                              <FileText className="h-3 w-3 text-purple-600" />
-                            </div>
-                          </div>
-                          <h3 className="font-semibold text-gray-900 text-sm leading-tight mb-1">{item.title}</h3>
-                          <p className="text-xs text-gray-500">
-                            {format(parseISO(item.created_at), 'MMM d, yyyy')}
-                          </p>
-                        </div>
-                        {item.is_favorite && (
-                          <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                        )}
-                      </div>
-
-                      {item.content && (
-                        <div>
-                          <p className="text-gray-700 text-sm leading-relaxed line-clamp-4 mb-2">
-                            {item.content}
-                          </p>
-                          {item.content.length > 100 && (
-                            <button className="text-xs text-gray-500 underline">Show less</button>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          /* Timeline View */
-          <div className="relative">
-            <div className="absolute left-4 top-0 bottom-0 w-1 bg-border rounded-full"></div>
-            <div className="space-y-6">
-              {filteredItems.map((item) => (
-                <div key={`${item.type}-${item.id}`} className="relative pl-12">
-                  <div className="absolute left-2 top-2 h-5 w-5 border-4 border-background bg-[#E74C3C] rounded-full"></div>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    {format(parseISO(item.created_at), 'MMM d, yyyy')}
-                  </p>
-                  <Card className="p-4 shadow-sm">
-                    <div className="flex items-start justify-between mb-2">
-                      <h3 className="font-bold text-[#2C3E50]">{item.title}</h3>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => toggleFavorite(item.id, item.type, item.is_favorite)}
-                        className="p-1"
-                      >
-                        <Star className={`h-4 w-4 ${item.is_favorite ? 'fill-[#F1C40F] text-[#F1C40F]' : 'text-muted-foreground'}`} />
-                      </Button>
-                    </div>
-                    
-                    {item.type === 'note' && item.content && (
-                      <p className="text-muted-foreground">{item.content}</p>
-                    )}
-                    
-                    {item.description && (
-                      <p className="text-muted-foreground">{item.description}</p>
-                    )}
-
-                    {item.type === 'memory' && item.images && item.images.length > 0 && (
-                      <div className="mt-2 grid grid-cols-2 gap-2">
-                        {item.images.slice(0, 2).map((image, index) => (
-                          <img 
-                            key={image.id}
-                            src={image.image_url} 
-                            alt={`${item.title} ${index + 1}`}
-                            className="w-full h-24 object-cover rounded-lg" 
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </Card>
-                </div>
-              ))}
+            {/* View Toggle */}
+            <div className="flex border border-border rounded-full p-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`p-1.5 rounded-full ${
+                  viewMode === 'grid' ? 'bg-foreground text-background' : 'text-muted-foreground'
+                }`}
+                onClick={() => setViewMode('grid')}
+              >
+                <Grid3X3 className="h-5 w-5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`p-1.5 rounded-full ${
+                  viewMode === 'timeline' ? 'bg-foreground text-background' : 'text-muted-foreground'
+                }`}
+                onClick={() => setViewMode('timeline')}
+              >
+                <List className="h-5 w-5" />
+              </Button>
             </div>
           </div>
-        )}
+
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input
+              placeholder="Search your memories..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="relative min-h-[60vh]">
+          {filteredItems.length === 0 ? (
+            <div className="text-center py-12">
+              <Heart className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium text-muted-foreground mb-2">
+                No items found. Start creating your love story!
+              </h3>
+            </div>
+          ) : viewMode === 'grid' ? (
+            /* Masonry Grid View - Pinterest Style */
+            <div className="columns-1 md:columns-2 lg:columns-3 gap-4">
+              {filteredItems.map((item, index) => {
+                // Generate vibrant colors for memory cards to match reference
+                const colors = [
+                  'from-orange-400 to-orange-600', // Orange like in reference
+                  'from-purple-500 to-purple-700', // Purple
+                  'from-blue-500 to-blue-700',     // Blue  
+                  'from-green-500 to-green-700',   // Green
+                  'from-pink-500 to-pink-700',     // Pink
+                  'from-teal-500 to-teal-700',     // Teal
+                  'from-indigo-500 to-indigo-700', // Indigo
+                  'from-red-500 to-red-700'        // Red
+                ];
+                const colorClass = colors[index % colors.length];
+                
+                return (
+                  <div 
+                    key={`${item.type}-${item.id}`} 
+                    className="break-inside-avoid mb-4 cursor-pointer"
+                  >
+                    {item.type === 'memory' && item.images && item.images.length > 0 ? (
+                      /* Photo Memory Card - Colorful like reference */
+                      <div className={`relative rounded-xl overflow-hidden bg-gradient-to-br ${colorClass} shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]`}>
+                        <div className="relative">
+                          <img 
+                            src={item.images[0].image_url} 
+                            alt={item.title} 
+                            className="w-full object-cover" 
+                            style={{ height: `${Math.floor(Math.random() * 100) + 200}px` }} // Variable heights like reference
+                          />
+                          
+                          {/* Dark overlay for text readability */}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                          
+                          {/* Content overlay */}
+                          <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
+                            <div className="flex items-start justify-between mb-1">
+                              <div className="flex-1">
+                                <h3 className="font-semibold text-base leading-tight mb-1">{item.title}</h3>
+                                <p className="text-xs text-white/80">
+                                  {item.memory_date ? format(parseISO(item.memory_date), 'MMM d, yyyy') : format(parseISO(item.created_at), 'MMM d, yyyy')}
+                                </p>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleFavorite(item.id, item.type, item.is_favorite);
+                                }}
+                                className="p-1 hover:bg-white/20 h-auto"
+                              >
+                                <Star className={`h-4 w-4 ${item.is_favorite ? 'fill-yellow-400 text-yellow-400' : 'text-white/70'}`} />
+                              </Button>
+                            </div>
+                            
+                            {item.description && item.description.length > 50 && (
+                              <div>
+                                <p className="text-xs text-white/90 line-clamp-3 mb-1">
+                                  {item.description}
+                                </p>
+                                <button className="text-xs text-white/80 underline">Show less</button>
+                              </div>
+                            )}
+                            
+                            {item.description && item.description.length <= 50 && (
+                              <p className="text-xs text-white/90">
+                                {item.description}
+                              </p>
+                            )}
+                          </div>
+
+                          {/* Multiple photos indicator */}
+                          {item.images.length > 1 && (
+                            <div className="absolute top-3 left-3 bg-black/60 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1">
+                              <span>+{item.images.length - 1}</span>
+                            </div>
+                          )}
+                          
+                          {/* Favorite star in top right */}
+                          {item.is_favorite && (
+                            <div className="absolute top-3 right-3">
+                              <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      /* Note Card - Clean white like reference */
+                      <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center">
+                                <FileText className="h-3 w-3 text-purple-600" />
+                              </div>
+                            </div>
+                            <h3 className="font-semibold text-gray-900 text-sm leading-tight mb-1">{item.title}</h3>
+                            <p className="text-xs text-gray-500">
+                              {format(parseISO(item.created_at), 'MMM d, yyyy')}
+                            </p>
+                          </div>
+                          {item.is_favorite && (
+                            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                          )}
+                        </div>
+
+                        {item.content && (
+                          <div>
+                            <p className="text-gray-700 text-sm leading-relaxed line-clamp-4 mb-2">
+                              {item.content}
+                            </p>
+                            {item.content.length > 100 && (
+                              <button className="text-xs text-gray-500 underline">Show less</button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            /* Timeline View */
+            <div className="relative">
+              <div className="absolute left-4 top-0 bottom-0 w-1 bg-border rounded-full"></div>
+              <div className="space-y-6">
+                {filteredItems.map((item) => (
+                  <div key={`${item.type}-${item.id}`} className="relative pl-12">
+                    <div className="absolute left-2 top-2 h-5 w-5 border-4 border-background bg-primary rounded-full"></div>
+                    <p className="text-sm text-muted-foreground mb-2">
+                      {format(parseISO(item.created_at), 'MMM d, yyyy')}
+                    </p>
+                    <Card className="p-4 shadow-sm">
+                      <div className="flex items-start justify-between mb-2">
+                        <h3 className="font-bold text-foreground">{item.title}</h3>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => toggleFavorite(item.id, item.type, item.is_favorite)}
+                          className="p-1"
+                        >
+                          <Star className={`h-4 w-4 ${item.is_favorite ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'}`} />
+                        </Button>
+                      </div>
+                      
+                      {item.type === 'note' && item.content && (
+                        <p className="text-muted-foreground">{item.content}</p>
+                      )}
+                      
+                      {item.description && (
+                        <p className="text-muted-foreground">{item.description}</p>
+                      )}
+
+                      {item.type === 'memory' && item.images && item.images.length > 0 && (
+                        <div className="mt-2 grid grid-cols-2 gap-2">
+                          {item.images.slice(0, 2).map((image, index) => (
+                            <img 
+                              key={image.id}
+                              src={image.image_url} 
+                              alt={`${item.title} ${index + 1}`}
+                              className="w-full h-24 object-cover rounded-lg" 
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </Card>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Floating Action Button */}
         <div className="fixed bottom-24 right-6 z-20">
@@ -630,7 +637,7 @@ const MemoryVault: React.FC = () => {
                 setShowFabOptions(false);
               }}
             >
-              <Edit3 className="h-6 w-6 text-[#2C3E50]" />
+              <Edit3 className="h-6 w-6 text-foreground" />
             </Button>
             <Button 
               size="sm"
@@ -641,13 +648,13 @@ const MemoryVault: React.FC = () => {
                 setShowFabOptions(false);
               }}
             >
-              <Camera className="h-6 w-6 text-[#2C3E50]" />
+              <Camera className="h-6 w-6 text-foreground" />
             </Button>
           </div>
 
           <Button 
             size="lg" 
-            className={`bg-[#E74C3C] hover:bg-[#E74C3C]/90 w-16 h-16 rounded-full shadow-lg transition-all duration-300 ${
+            className={`bg-primary hover:bg-primary/90 w-16 h-16 rounded-full shadow-lg transition-all duration-300 ${
               showFabOptions ? 'rotate-45' : 'rotate-0'
             }`}
             onClick={() => setShowFabOptions(!showFabOptions)}
@@ -655,7 +662,7 @@ const MemoryVault: React.FC = () => {
             <Plus className="h-8 w-8" />
           </Button>
         </div>
-      </main>
+      </div>
 
       {/* Create Modal */}
       <Dialog open={showCreateForm} onOpenChange={setShowCreateForm}>
