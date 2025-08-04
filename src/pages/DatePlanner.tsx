@@ -139,12 +139,12 @@ export const DatePlanner = () => {
     console.log('DatePlanner: isLoading:', eventsLoading, 'error:', eventsError);
   }, [upcomingEvents, eventsLoading, eventsError]);
 
-  // Clear events when switching away from upcoming tab
+  // Clear events when switching away from upcoming tab (but don't run on mount)
   useEffect(() => {
     if (activeTab !== 'upcoming') {
       clearEvents();
     }
-  }, [activeTab, clearEvents]);
+  }, [activeTab]); // Remove clearEvents from deps to avoid unnecessary clears
 
   const fetchPlannedDates = async () => {
     try {
