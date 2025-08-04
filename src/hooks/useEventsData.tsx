@@ -112,11 +112,11 @@ export const useEventsData = () => {
       if (location.latitude !== 0 && location.longitude !== 0) {
         console.log('Querying database for events near coordinates:', location.latitude, location.longitude);
         
-        // Use the unlimited database function for smart location-based querying
+        // Use the enhanced unlimited database function for smart location-based querying
         const { data, error: dbError } = await supabase.rpc('get_events_by_location_unlimited', {
           user_lat: location.latitude,
           user_lng: location.longitude,
-          radius_km: 25,
+          radius_km: 50, // Increased from 25 to 50km for better coverage
           max_events: 100
         });
 
@@ -136,10 +136,10 @@ export const useEventsData = () => {
           }
         }
       } else if (location.city) {
-        // Search by city name using the new city function
+        // Search by city name using the enhanced city function for better partial matching
         console.log('Querying database for events in city:', location.city);
         
-        const { data, error: dbError } = await supabase.rpc('get_events_by_city_unlimited', {
+        const { data, error: dbError } = await supabase.rpc('get_events_by_city_enhanced', {
           city_name: location.city,
           max_events: 100
         });
