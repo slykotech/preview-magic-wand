@@ -7,12 +7,12 @@ import {
 } from './event-sources.ts';
 import { fetchGoogleEvents } from './google-events.ts';
 import { 
-  fetchBookMyShowEvents, 
-  fetchPaytmInsiderEvents, 
-  fetchDistrictEvents,
+  fetchFirecrawlBookMyShowEvents, 
+  fetchFirecrawlPaytmInsiderEvents, 
+  fetchFirecrawlDistrictEvents,
   fetchEventbriteEvents,
   fetchTicketmasterEvents,
-  firecrawlStatus
+  getFirecrawlStatus
 } from './scraper-events.ts';
 import { 
   getCacheKey, 
@@ -293,12 +293,12 @@ serve(async (req) => {
       );
     }
 
-    // Scraping sources (run in parallel with timeout) - now with location coordinates
+    // Scraping sources (run in parallel with timeout) - now with Firecrawl
     if (!isRateLimited('scraping')) {
       const scrapingPromises = [
-        fetchBookMyShowEvents(resolvedLocation, finalLatitude, finalLongitude).catch(e => { console.error('BookMyShow error:', e); return []; }),
-        fetchPaytmInsiderEvents(resolvedLocation, finalLatitude, finalLongitude).catch(e => { console.error('Paytm Insider error:', e); return []; }),
-        fetchDistrictEvents(resolvedLocation, finalLatitude, finalLongitude).catch(e => { console.error('District error:', e); return []; }),
+        fetchFirecrawlBookMyShowEvents(resolvedLocation, finalLatitude, finalLongitude).catch(e => { console.error('Firecrawl BookMyShow error:', e); return []; }),
+        fetchFirecrawlPaytmInsiderEvents(resolvedLocation, finalLatitude, finalLongitude).catch(e => { console.error('Firecrawl Paytm Insider error:', e); return []; }),
+        fetchFirecrawlDistrictEvents(resolvedLocation, finalLatitude, finalLongitude).catch(e => { console.error('Firecrawl District error:', e); return []; }),
         fetchEventbriteEvents(resolvedLocation, finalLatitude, finalLongitude).catch(e => { console.error('Eventbrite error:', e); return []; }),
         fetchTicketmasterEvents(resolvedLocation, finalLatitude, finalLongitude).catch(e => { console.error('Ticketmaster error:', e); return []; })
       ];
@@ -421,8 +421,8 @@ serve(async (req) => {
       coordinates: { lat: finalLatitude, lng: finalLongitude },
       stats: {
         ...getCacheStats(),
-        firecrawl_available: firecrawlStatus?.available || false,
-        firecrawl_error: firecrawlStatus?.error || null,
+        firecrawl_available: getFirecrawlStatus().available,
+        firecrawl_error: getFirecrawlStatus().error,
         sources_attempted: eventPromises.length,
         final_count: sortedEvents.length
       }

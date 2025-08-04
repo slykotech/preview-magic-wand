@@ -1,5 +1,101 @@
-// Enhanced API-based event fetching for multiple sources
+// Enhanced API-based event fetching for multiple sources with Firecrawl integration
 import { UnifiedEvent, generateEventDates, formatEventTiming, EVENT_CATEGORIES, calculateDistance } from './event-sources.ts';
+
+// Firecrawl Service for reliable web scraping
+class FirecrawlService {
+  private static apiKey: string | null = null;
+  private static initialized = false;
+  
+  static initialize(): boolean {
+    if (!this.initialized) {
+      this.apiKey = Deno.env.get('FIRECRAWL_API_KEY');
+      this.initialized = true;
+      console.log('Firecrawl Service:', this.apiKey ? 'Initialized with API key' : 'No API key found');
+    }
+    return !!this.apiKey;
+  }
+  
+  static async scrapeEvents(url: string, extractionPrompt: string): Promise<any> {
+    if (!this.apiKey) {
+      throw new Error('Firecrawl API key not configured');
+    }
+    
+    console.log(`Firecrawl: Scraping ${url}`);
+    
+    const response = await fetch('https://api.firecrawl.dev/v0/scrape', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        url,
+        pageOptions: {
+          onlyMainContent: true,
+          includeHtml: false,
+          waitFor: 2000,
+        },
+        extractorOptions: {
+          mode: 'llm-extraction-from-markdown',
+          extractionPrompt: extractionPrompt,
+          extractionSchema: {
+            type: 'object',
+            properties: {
+              events: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    title: { type: 'string' },
+                    date: { type: 'string' },
+                    time: { type: 'string' },
+                    venue: { type: 'string' },
+                    price: { type: 'string' },
+                    description: { type: 'string' },
+                    category: { type: 'string' },
+                    image_url: { type: 'string' }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }),
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Firecrawl API error: ${response.status} - ${errorText}`);
+    }
+    
+    const result = await response.json();
+    console.log(`Firecrawl: Successfully extracted ${result.data?.events?.length || 0} events`);
+    return result.data;
+  }
+}
+
+// Firecrawl status tracking
+let firecrawlStatus = {
+  available: false,
+  error: null as string | null,
+  lastChecked: null as number | null
+};
+
+export function getFirecrawlStatus() {
+  return firecrawlStatus;
+}
+
+// Initialize Firecrawl on first import
+try {
+  firecrawlStatus.available = FirecrawlService.initialize();
+  firecrawlStatus.lastChecked = Date.now();
+  if (!firecrawlStatus.available) {
+    firecrawlStatus.error = 'API key not configured';
+  }
+} catch (error) {
+  firecrawlStatus.error = error.message;
+  console.error('Firecrawl initialization error:', error);
+}
 
 // Location coordinates for major Indian cities
 function getLocationCoordinates(location: string): { lat: number; lng: number } {
@@ -46,12 +142,6 @@ function generateVenueCoordinates(centerLat: number, centerLng: number): { lat: 
   };
 }
 
-// Status for monitoring API availability
-export const firecrawlStatus = {
-  available: false,
-  tested: false,
-  error: 'Rebuilding with direct API calls'
-};
 
 // Ticketmaster API Integration
 export async function fetchTicketmasterEvents(location: string, userLat?: number, userLng?: number): Promise<UnifiedEvent[]> {
@@ -656,4 +746,219 @@ function categorizeEventByTitle(title: string): { category: string; venue: strin
   }
   
   return { category: EVENT_CATEGORIES.ENTERTAINMENT, venue: 'Event Venue', price: '₹500 - ₹2500' };
+}
+
+// ============= FIRECRAWL-POWERED SCRAPERS =============
+
+// Firecrawl-powered BookMyShow Events
+export async function fetchFirecrawlBookMyShowEvents(location: string, userLat?: number, userLng?: number): Promise<UnifiedEvent[]> {
+  if (!getFirecrawlStatus().available) {
+    console.log('Firecrawl not available, falling back to old BookMyShow scraper');
+    return fetchBookMyShowEvents(location, userLat, userLng);
+  }
+
+  try {
+    console.log(`Firecrawl BookMyShow: Fetching events for ${location}`);
+    
+    const locationSlug = location.toLowerCase().replace(/\s+/g, '-');
+    const url = `https://in.bookmyshow.com/${locationSlug}/events`;
+    
+    const extractionPrompt = `Extract event information from this BookMyShow events page. 
+    Focus on events that would be suitable for couples (entertainment, music, theater, comedy, cultural events).
+    For each event, extract:
+    - title (event name)
+    - venue (location/theater name)
+    - price (ticket price, convert to ₹ if needed)
+    - date (event date)
+    - time (event time)
+    - description (brief description)
+    - category (music, theater, comedy, entertainment, etc.)`;
+
+    const result = await FirecrawlService.scrapeEvents(url, extractionPrompt);
+    
+    if (!result?.events || result.events.length === 0) {
+      console.log('Firecrawl BookMyShow: No events extracted, using fallback');
+      return generateBookMyShowFallback(location, userLat, userLng);
+    }
+
+    const locationCoords = getLocationCoordinates(location);
+    const events: UnifiedEvent[] = result.events.slice(0, 10).map((event: any, index: number) => {
+      const venueCoords = generateVenueCoordinates(locationCoords.lat, locationCoords.lng);
+      const eventDate = event.date ? new Date(event.date) : new Date(Date.now() + (index + 1) * 24 * 60 * 60 * 1000);
+      
+      return {
+        id: `firecrawl_bookmyshow_${location.replace(/\s+/g, '_')}_${index}_${Date.now()}`,
+        title: event.title || 'BookMyShow Event',
+        distance: userLat && userLng ? 
+          `${Math.round(calculateDistance(userLat, userLng, venueCoords.lat, venueCoords.lng) * 10) / 10} km away` :
+          `${Math.floor(Math.random() * 20) + 5} km away`,
+        timing: formatEventTiming(eventDate),
+        description: event.description || `Experience ${event.title} in ${location}. Book your tickets now on BookMyShow!`,
+        category: event.category ? categorizeEventByTitle(event.category).category : EVENT_CATEGORIES.ENTERTAINMENT,
+        venue: event.venue || `${location} Venue`,
+        city: location,
+        price: event.price || '₹500 - ₹2500',
+        date: eventDate.toISOString().split('T')[0],
+        time: event.time || `${18 + (index % 5)}:00`,
+        source: 'firecrawl-bookmyshow',
+        bookingUrl: 'https://in.bookmyshow.com',
+        image: event.image_url,
+        location: {
+          latitude: venueCoords.lat,
+          longitude: venueCoords.lng,
+          city: location
+        }
+      };
+    });
+
+    console.log(`Firecrawl BookMyShow: Successfully extracted ${events.length} events`);
+    return events;
+
+  } catch (error) {
+    console.error('Firecrawl BookMyShow error:', error);
+    firecrawlStatus.error = error.message;
+    return generateBookMyShowFallback(location, userLat, userLng);
+  }
+}
+
+// Firecrawl-powered Paytm Insider Events
+export async function fetchFirecrawlPaytmInsiderEvents(location: string, userLat?: number, userLng?: number): Promise<UnifiedEvent[]> {
+  if (!getFirecrawlStatus().available) {
+    console.log('Firecrawl not available, falling back to old Paytm Insider scraper');
+    return fetchPaytmInsiderEvents(location, userLat, userLng);
+  }
+
+  try {
+    console.log(`Firecrawl Paytm Insider: Fetching events for ${location}`);
+    
+    const locationSlug = location.toLowerCase().replace(/\s+/g, '-');
+    const url = `https://insider.in/${locationSlug}`;
+    
+    const extractionPrompt = `Extract event information from this Paytm Insider events page for ${location}. 
+    Focus on experiences that would be great for couples (nightlife, dining, adventures, workshops, parties).
+    For each event, extract:
+    - title (event/experience name)
+    - venue (location/venue name)
+    - price (ticket/experience price, convert to ₹ if needed)
+    - date (event date)
+    - time (event time)
+    - description (what the experience offers)
+    - category (nightlife, food, adventure, workshop, party, etc.)`;
+
+    const result = await FirecrawlService.scrapeEvents(url, extractionPrompt);
+    
+    if (!result?.events || result.events.length === 0) {
+      console.log('Firecrawl Paytm Insider: No events extracted, using fallback');
+      return generatePaytmInsiderFallback(location, userLat, userLng);
+    }
+
+    const locationCoords = getLocationCoordinates(location);
+    const events: UnifiedEvent[] = result.events.slice(0, 8).map((event: any, index: number) => {
+      const venueCoords = generateVenueCoordinates(locationCoords.lat, locationCoords.lng);
+      const eventDate = event.date ? new Date(event.date) : new Date(Date.now() + (index + 2) * 24 * 60 * 60 * 1000);
+      
+      return {
+        id: `firecrawl_insider_${location.replace(/\s+/g, '_')}_${index}_${Date.now()}`,
+        title: event.title || 'Insider Experience',
+        distance: userLat && userLng ? 
+          `${Math.round(calculateDistance(userLat, userLng, venueCoords.lat, venueCoords.lng) * 10) / 10} km away` :
+          `${Math.floor(Math.random() * 25) + 8} km away`,
+        timing: formatEventTiming(eventDate),
+        description: event.description || `Join ${event.title} in ${location}. Book your experience on Paytm Insider!`,
+        category: event.category ? categorizeEventByTitle(event.category).category : EVENT_CATEGORIES.ENTERTAINMENT,
+        venue: event.venue || `${location} Experience Center`,
+        city: location,
+        price: event.price || '₹800 - ₹3500',
+        date: eventDate.toISOString().split('T')[0],
+        time: event.time || `${19 + (index % 4)}:00`,
+        source: 'firecrawl-paytm-insider',
+        bookingUrl: 'https://insider.in',
+        image: event.image_url,
+        location: {
+          latitude: venueCoords.lat,
+          longitude: venueCoords.lng,
+          city: location
+        }
+      };
+    });
+
+    console.log(`Firecrawl Paytm Insider: Successfully extracted ${events.length} events`);
+    return events;
+
+  } catch (error) {
+    console.error('Firecrawl Paytm Insider error:', error);
+    firecrawlStatus.error = error.message;
+    return generatePaytmInsiderFallback(location, userLat, userLng);
+  }
+}
+
+// Firecrawl-powered District Events
+export async function fetchFirecrawlDistrictEvents(location: string, userLat?: number, userLng?: number): Promise<UnifiedEvent[]> {
+  if (!getFirecrawlStatus().available) {
+    console.log('Firecrawl not available, falling back to old District scraper');
+    return fetchDistrictEvents(location, userLat, userLng);
+  }
+
+  try {
+    console.log(`Firecrawl District: Fetching events for ${location}`);
+    
+    const locationSlug = location.toLowerCase().replace(/\s+/g, '-');
+    const url = `https://district.in/${locationSlug}/events`;
+    
+    const extractionPrompt = `Extract event information from this District events page for ${location}. 
+    Focus on premium dining, nightlife, and entertainment experiences perfect for couples.
+    For each event, extract:
+    - title (event/experience name)
+    - venue (restaurant/bar/venue name)
+    - price (event price, convert to ₹ if needed)
+    - date (event date)
+    - time (event time)
+    - description (event details and what makes it special)
+    - category (dining, nightlife, entertainment, music, etc.)`;
+
+    const result = await FirecrawlService.scrapeEvents(url, extractionPrompt);
+    
+    if (!result?.events || result.events.length === 0) {
+      console.log('Firecrawl District: No events extracted, using fallback');
+      return generateDistrictFallback(location, userLat, userLng);
+    }
+
+    const locationCoords = getLocationCoordinates(location);
+    const events: UnifiedEvent[] = result.events.slice(0, 6).map((event: any, index: number) => {
+      const venueCoords = generateVenueCoordinates(locationCoords.lat, locationCoords.lng);
+      const eventDate = event.date ? new Date(event.date) : new Date(Date.now() + (index + 3) * 24 * 60 * 60 * 1000);
+      
+      return {
+        id: `firecrawl_district_${location.replace(/\s+/g, '_')}_${index}_${Date.now()}`,
+        title: event.title || 'District Experience',
+        distance: userLat && userLng ? 
+          `${Math.round(calculateDistance(userLat, userLng, venueCoords.lat, venueCoords.lng) * 10) / 10} km away` :
+          `${Math.floor(Math.random() * 30) + 10} km away`,
+        timing: formatEventTiming(eventDate),
+        description: event.description || `Experience ${event.title} at District in ${location}. Premium dining and entertainment!`,
+        category: event.category ? categorizeEventByTitle(event.category).category : EVENT_CATEGORIES.NIGHTLIFE,
+        venue: event.venue || `${location} District Venue`,
+        city: location,
+        price: event.price || '₹1200 - ₹5000',
+        date: eventDate.toISOString().split('T')[0],
+        time: event.time || `${20 + (index % 3)}:00`,
+        source: 'firecrawl-district',
+        bookingUrl: 'https://district.in',
+        image: event.image_url,
+        location: {
+          latitude: venueCoords.lat,
+          longitude: venueCoords.lng,
+          city: location
+        }
+      };
+    });
+
+    console.log(`Firecrawl District: Successfully extracted ${events.length} events`);
+    return events;
+
+  } catch (error) {
+    console.error('Firecrawl District error:', error);
+    firecrawlStatus.error = error.message;
+    return generateDistrictFallback(location, userLat, userLng);
+  }
 }
