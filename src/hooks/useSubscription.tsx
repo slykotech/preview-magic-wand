@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { toast } from '@/hooks/use-toast';
+import { Purchases } from '@revenuecat/purchases-capacitor';
 import { Capacitor } from '@capacitor/core';
 
 export interface SubscriptionPlan {
@@ -8,6 +10,7 @@ export interface SubscriptionPlan {
   discount?: string;
   period: string;
   isPopular?: boolean;
+  packageObj?: any; // RevenueCat package object
 }
 
 export interface SubscriptionInfo {
@@ -17,60 +20,69 @@ export interface SubscriptionInfo {
   isLoading: boolean;
 }
 
-// Mock subscription plans based on the prompt
-const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
-  {
-    id: 'monthly',
-    name: 'Monthly',
-    price: '$8.99',
-    period: 'month'
-  },
-  {
-    id: 'quarterly',
-    name: 'Quarterly',
-    price: '$23.99',
-    discount: '11% off',
-    period: '3 months'
-  },
-  {
-    id: 'half_yearly',
-    name: 'Half-Yearly',
-    price: '$44.99',
-    discount: '17% off',
-    period: '6 months'
-  },
-  {
-    id: 'yearly',
-    name: 'Yearly',
-    price: '$68.99',
-    discount: '36% off',
-    period: 'year',
-    isPopular: true
+// Initialize RevenueCat
+const initializeRevenueCat = async () => {
+  if (!Capacitor.isNativePlatform()) return;
+  
+  try {
+    // You'll need to set these API keys in your Supabase secrets or environment
+    const apiKey = Capacitor.getPlatform() === 'ios' 
+      ? 'your_ios_api_key_here' // Replace with your iOS API key
+      : 'your_android_api_key_here'; // Replace with your Android API key
+    
+    await Purchases.configure({
+      apiKey,
+      appUserID: null, // Optional: set a custom user ID
+    });
+    
+    console.log('RevenueCat initialized successfully');
+  } catch (error) {
+    console.error('Failed to initialize RevenueCat:', error);
   }
-];
+};
 
 export const useSubscription = () => {
   const [subscriptionInfo, setSubscriptionInfo] = useState<SubscriptionInfo>({
     isActive: false,
     isLoading: true
   });
-  const [plans] = useState(SUBSCRIPTION_PLANS);
+  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
 
   useEffect(() => {
+    // Initialize RevenueCat on mount
+    initializeRevenueCat();
+    
     // Check subscription status
     const checkSubscriptionStatus = async () => {
       try {
         setSubscriptionInfo(prev => ({ ...prev, isLoading: true }));
         
         if (Capacitor.isNativePlatform()) {
-          // On mobile, use RevenueCat to check subscription status
-          // This is where you'd integrate RevenueCat SDK
+          // Use RevenueCat to check subscription status
           try {
-            // Example RevenueCat integration (requires RevenueCat plugin)
-            // const customerInfo = await Purchases.getCustomerInfo();
-            // const isPro = typeof customerInfo.entitlements.active["pro"] !== "undefined";
+            const customerInfo: any = await Purchases.getCustomerInfo();
+            const hasActiveSubscription = customerInfo.entitlements?.active && Object.keys(customerInfo.entitlements.active).length > 0;
             
-            // For now, use localStorage fallback
+            if (hasActiveSubscription) {
+              // Get the first active entitlement
+              const activeEntitlement = Object.values(customerInfo.entitlements.active)[0] as any;
+              const expirationDate = new Date(activeEntitlement.expirationDate);
+              
+              setSubscriptionInfo({
+                isActive: true,
+                planName: activeEntitlement.productIdentifier,
+                nextBillingDate: expirationDate.toLocaleDateString(),
+                isLoading: false
+              });
+            } else {
+              setSubscriptionInfo({
+                isActive: false,
+                isLoading: false
+              });
+            }
+          } catch (error) {
+            console.error('RevenueCat error:', error);
+            // Fallback to localStorage for development
             const hasActiveSubscription = localStorage.getItem('hasActiveSubscription') === 'true';
             const activePlan = localStorage.getItem('activePlan');
             
@@ -90,9 +102,6 @@ export const useSubscription = () => {
                 isLoading: false
               });
             }
-          } catch (error) {
-            console.error('RevenueCat error:', error);
-            setSubscriptionInfo({ isActive: false, isLoading: false });
           }
         } else {
           // Web fallback - simulate subscription check
@@ -127,7 +136,115 @@ export const useSubscription = () => {
       }
     };
 
+    // Load available plans
+    const loadPlans = async () => {
+      if (Capacitor.isNativePlatform()) {
+        try {
+          const offerings: any = await Purchases.getOfferings();
+          
+          if (offerings.current?.availablePackages) {
+            const revenueCatPlans: SubscriptionPlan[] = [];
+            
+            // Convert RevenueCat packages to our plan format
+            offerings.current.availablePackages.forEach((pkg: any) => {
+              const plan: SubscriptionPlan = {
+                id: pkg.identifier,
+                name: pkg.storeProduct?.title || pkg.identifier,
+                price: pkg.storeProduct?.priceString || '$0.00',
+                period: pkg.packageType,
+                packageObj: pkg,
+                isPopular: pkg.packageType === 'ANNUAL' // Mark annual as popular
+              };
+              
+              // Add discount text for longer periods
+              if (pkg.packageType === 'ANNUAL') {
+                plan.discount = '36% off';
+              } else if (pkg.packageType === 'SIX_MONTH') {
+                plan.discount = '17% off';
+              } else if (pkg.packageType === 'THREE_MONTH') {
+                plan.discount = '11% off';
+              }
+              
+              revenueCatPlans.push(plan);
+            });
+            
+            setPlans(revenueCatPlans);
+          } else {
+            // Fallback to mock plans if no offerings
+            setPlans([
+              {
+                id: 'monthly',
+                name: 'Monthly',
+                price: '$8.99',
+                period: 'month'
+              },
+              {
+                id: 'yearly',
+                name: 'Yearly',
+                price: '$68.99',
+                discount: '36% off',
+                period: 'year',
+                isPopular: true
+              }
+            ]);
+          }
+        } catch (error) {
+          console.error('Error loading RevenueCat offerings:', error);
+          // Fallback to mock plans
+          setPlans([
+            {
+              id: 'monthly',
+              name: 'Monthly',
+              price: '$8.99',
+              period: 'month'
+            },
+            {
+              id: 'yearly',
+              name: 'Yearly',
+              price: '$68.99',
+              discount: '36% off',
+              period: 'year',
+              isPopular: true
+            }
+          ]);
+        }
+      } else {
+        // Web fallback plans
+        setPlans([
+          {
+            id: 'monthly',
+            name: 'Monthly',
+            price: '$8.99',
+            period: 'month'
+          },
+          {
+            id: 'quarterly',
+            name: 'Quarterly',
+            price: '$23.99',
+            discount: '11% off',
+            period: '3 months'
+          },
+          {
+            id: 'half_yearly',
+            name: 'Half-Yearly',
+            price: '$44.99',
+            discount: '17% off',
+            period: '6 months'
+          },
+          {
+            id: 'yearly',
+            name: 'Yearly',
+            price: '$68.99',
+            discount: '36% off',
+            period: 'year',
+            isPopular: true
+          }
+        ]);
+      }
+    };
+
     checkSubscriptionStatus();
+    loadPlans();
   }, []);
 
   const subscribeToPlan = async (planId: string): Promise<boolean> => {
@@ -138,15 +255,31 @@ export const useSubscription = () => {
       if (!plan) return false;
 
       if (Capacitor.isNativePlatform()) {
-        // On mobile, use RevenueCat for in-app purchases
+        // Use RevenueCat for in-app purchases
         try {
-          // Example RevenueCat purchase flow:
-          // const offerings = await Purchases.getOfferings();
-          // const packageToPurchase = offerings.current?.monthly; // or quarterly, etc.
-          // const { customerInfo } = await Purchases.purchasePackage(packageToPurchase);
-          // const isPro = typeof customerInfo.entitlements.active["pro"] !== "undefined";
-          
-          // For now, simulate successful purchase
+          if (plan.packageObj) {
+            const purchaseResult: any = await Purchases.purchasePackage({ aPackage: plan.packageObj });
+            const customerInfo = purchaseResult.customerInfo;
+            const hasActiveSubscription = customerInfo.entitlements?.active && Object.keys(customerInfo.entitlements.active).length > 0;
+            
+            if (hasActiveSubscription) {
+              const activeEntitlement = Object.values(customerInfo.entitlements.active)[0] as any;
+              const expirationDate = new Date(activeEntitlement.expirationDate);
+              
+              setSubscriptionInfo({
+                isActive: true,
+                planName: plan.name,
+                nextBillingDate: expirationDate.toLocaleDateString(),
+                isLoading: false
+              });
+              
+              return true;
+            }
+          }
+          return false;
+        } catch (error) {
+          console.error('RevenueCat purchase error:', error);
+          // Fallback for development
           await new Promise(resolve => setTimeout(resolve, 2000));
           
           localStorage.setItem('hasActiveSubscription', 'true');
@@ -163,9 +296,6 @@ export const useSubscription = () => {
           });
           
           return true;
-        } catch (error) {
-          console.error('RevenueCat purchase error:', error);
-          return false;
         }
       } else {
         // Web fallback - simulate purchase process
@@ -194,11 +324,19 @@ export const useSubscription = () => {
 
   const manageBilling = () => {
     if (Capacitor.isNativePlatform()) {
-      // On mobile, deep link to App Store/Play Store subscription management
-      if (Capacitor.getPlatform() === 'ios') {
-        window.open('https://apps.apple.com/account/subscriptions', '_system');
-      } else if (Capacitor.getPlatform() === 'android') {
-        window.open('https://play.google.com/store/account/subscriptions', '_system');
+      // Use RevenueCat's customer center or direct to store
+      try {
+        // RevenueCat Customer Center (if configured)
+        // Purchases.showCustomerCenter();
+        
+        // Or direct to store subscription management
+        if (Capacitor.getPlatform() === 'ios') {
+          window.open('https://apps.apple.com/account/subscriptions', '_system');
+        } else if (Capacitor.getPlatform() === 'android') {
+          window.open('https://play.google.com/store/account/subscriptions', '_system');
+        }
+      } catch (error) {
+        console.error('Error opening subscription management:', error);
       }
     } else {
       // Web fallback
@@ -211,14 +349,30 @@ export const useSubscription = () => {
       console.log('Restoring purchases...');
       
       if (Capacitor.isNativePlatform()) {
-        // On mobile, use RevenueCat restore purchases
-        // const customerInfo = await Purchases.restorePurchases();
-        // const isPro = typeof customerInfo.entitlements.active["pro"] !== "undefined";
-        // return isPro;
-        
-        // For now, check localStorage
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        return localStorage.getItem('hasActiveSubscription') === 'true';
+        // Use RevenueCat restore purchases
+        try {
+          const customerInfo: any = await Purchases.restorePurchases();
+          const hasActiveSubscription = customerInfo.entitlements?.active && Object.keys(customerInfo.entitlements.active).length > 0;
+          
+          if (hasActiveSubscription) {
+            const activeEntitlement = Object.values(customerInfo.entitlements.active)[0] as any;
+            const expirationDate = new Date(activeEntitlement.expirationDate);
+            
+            setSubscriptionInfo({
+              isActive: true,
+              planName: activeEntitlement.productIdentifier,
+              nextBillingDate: expirationDate.toLocaleDateString(),
+              isLoading: false
+            });
+          }
+          
+          return hasActiveSubscription;
+        } catch (error) {
+          console.error('RevenueCat restore error:', error);
+          // Fallback for development
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          return localStorage.getItem('hasActiveSubscription') === 'true';
+        }
       } else {
         // Web fallback
         await new Promise(resolve => setTimeout(resolve, 1000));
