@@ -7,13 +7,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { BottomNavigation } from '@/components/BottomNavigation';
-import { GradientHeader } from '@/components/GradientHeader';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { format, parseISO } from 'date-fns';
 import { useCoupleData } from '@/hooks/useCoupleData';
-import { Heart, Search, Grid3X3, List, Star, Camera, Upload, Plus, Image as ImageIcon, FileText, Edit3, Trash2, MoreVertical, Eye } from 'lucide-react';
+import { Heart, Search, Grid3X3, List, Star, Camera, Upload, Plus, Image as ImageIcon, FileText, Edit3, Trash2, MoreVertical, Eye, Calendar, Clock, Edit2, X, Images } from 'lucide-react';
 
 // Types
 interface MemoryImage {
@@ -439,102 +438,52 @@ const MemoryVault: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col pb-20">
-      {/* Gradient Header */}
-      <GradientHeader 
-        title="Memory Vault" 
-        subtitle="Your love story collection" 
-        icon={<Heart size={24} />} 
-        showBackButton={false}
-      />
-
-      <div className="flex-1 container mx-auto px-6 space-y-6 mt-6">
-        {/* Controls Section */}
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            {/* Filter Pills */}
-            <div className="flex space-x-2 overflow-x-auto pb-2">
-              <Button
-                variant={filterType === 'all' ? 'default' : 'outline'}
-                size="sm"
-                className={`rounded-full whitespace-nowrap font-semibold ${
-                  filterType === 'all' ? 'bg-primary hover:bg-primary/90' : ''
-                }`}
-                onClick={() => setFilterType('all')}
-              >
-                All
-              </Button>
-              <Button
-                variant={filterType === 'photos' ? 'default' : 'outline'}
-                size="sm"
-                className={`rounded-full whitespace-nowrap font-semibold ${
-                  filterType === 'photos' ? 'bg-primary hover:bg-primary/90' : ''
-                }`}
-                onClick={() => setFilterType('photos')}
-              >
-                Photos
-              </Button>
-              <Button
-                variant={filterType === 'notes' ? 'default' : 'outline'}
-                size="sm"
-                className={`rounded-full whitespace-nowrap font-semibold ${
-                  filterType === 'notes' ? 'bg-primary hover:bg-primary/90' : ''
-                }`}
-                onClick={() => setFilterType('notes')}
-              >
-                Notes
-              </Button>
-              <Button
-                variant={filterType === 'favorites' ? 'default' : 'outline'}
-                size="sm"
-                className={`rounded-full whitespace-nowrap font-semibold ${
-                  filterType === 'favorites' ? 'bg-primary hover:bg-primary/90' : ''
-                }`}
-                onClick={() => setFilterType('favorites')}
-              >
-                Favorites
-              </Button>
+    <>
+      <div className="min-h-screen bg-gray-50 flex flex-col pb-20">
+        {/* Header */}
+        <div className="bg-white border-b px-4 py-3 sticky top-0 z-10">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-xl font-bold text-gray-900">Memory Vault</h1>
+              <p className="text-sm text-gray-500">Your love story collection</p>
             </div>
-
-            {/* View Toggle */}
-            <div className="flex border border-border rounded-full p-1">
+            <div className="flex space-x-1">
               <Button
                 variant="ghost"
                 size="sm"
-                className={`p-1.5 rounded-full ${
-                  viewMode === 'grid' ? 'bg-foreground text-background' : 'text-muted-foreground'
-                }`}
-                onClick={() => setViewMode('grid')}
+                onClick={() => setViewMode(viewMode === 'grid' ? 'timeline' : 'grid')}
               >
-                <Grid3X3 className="h-5 w-5" />
+                {viewMode === 'grid' ? <List className="h-5 w-5" /> : <Grid3X3 className="h-5 w-5" />}
               </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className={`p-1.5 rounded-full ${
-                  viewMode === 'timeline' ? 'bg-foreground text-background' : 'text-muted-foreground'
-                }`}
-                onClick={() => setViewMode('timeline')}
-              >
-                <List className="h-5 w-5" />
+              <Button onClick={() => setShowCreateForm(true)} size="sm">
+                <Plus className="h-4 w-4" />
               </Button>
             </div>
-          </div>
-
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input
-              placeholder="Search your memories..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
           </div>
         </div>
 
-        {/* Main Content */}
-        <div className="relative min-h-[60vh]">
+        {/* Filter Tabs */}
+        <div className="bg-white px-4 py-2 border-b sticky top-16 z-10">
+          <div className="flex space-x-1">
+            {(['all', 'photos', 'notes', 'favorites'] as const).map((filter) => (
+              <Button
+                key={filter}
+                variant={filterType === filter ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setFilterType(filter)}
+                className="capitalize text-sm"
+              >
+                {filter === 'photos' && <Camera className="h-4 w-4 mr-1" />}
+                {filter === 'notes' && <FileText className="h-4 w-4 mr-1" />}
+                {filter === 'favorites' && <Star className="h-4 w-4 mr-1" />}
+                {filter}
+              </Button>
+            ))}
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="p-4">
           {filteredItems.length === 0 ? (
             <div className="text-center py-12">
               <Heart className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
@@ -542,227 +491,45 @@ const MemoryVault: React.FC = () => {
                 No items found. Start creating your love story!
               </h3>
             </div>
-          ) : viewMode === 'grid' ? (
-            /* Masonry Grid View - Pinterest Style */
-            <div className="columns-1 md:columns-2 lg:columns-3 gap-4 space-y-4">
-              {filteredItems.map((item, index) => {
-                // Generate vibrant colors for memory cards to match reference
-                const colors = [
-                  'from-orange-400 to-orange-600', // Orange like in reference
-                  'from-purple-500 to-purple-700', // Purple
-                  'from-blue-500 to-blue-700',     // Blue  
-                  'from-green-500 to-green-700',   // Green
-                  'from-pink-500 to-pink-700',     // Pink
-                  'from-teal-500 to-teal-700',     // Teal
-                  'from-indigo-500 to-indigo-700', // Indigo
-                  'from-red-500 to-red-700'        // Red
-                ];
-                const colorClass = colors[index % colors.length];
-                
-                return (
-                  <div 
-                    key={`${item.type}-${item.id}`} 
-                    className="break-inside-avoid mb-4 cursor-pointer"
-                  >
-                    {item.type === 'memory' && item.images && item.images.length > 0 ? (
-                      /* Photo Memory Card - Colorful like reference */
-                <div 
-                          className={`relative rounded-xl overflow-hidden bg-gradient-to-br ${colorClass} shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] cursor-pointer`}
-                          onClick={() => {
-                            setSelectedItem(item);
-                            setShowViewDialog(true);
-                          }}
-                        >
-                         <div className="relative">
-                           <img 
-                             src={item.images[0].image_url} 
-                             alt={item.title} 
-                             className="w-full object-cover" 
-                             style={{ height: `${Math.floor(Math.random() * 100) + 200}px` }} // Variable heights like reference
-                           />
-                           
-                           {/* Dark overlay for text readability */}
-                           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                           
-                           {/* Content overlay */}
-                           <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
-                             <div className="flex items-start justify-between mb-1">
-                               <div className="flex-1">
-                                 <h3 className="font-semibold text-base leading-tight mb-1">{item.title}</h3>
-                                 <p className="text-xs text-white/80">
-                                   {item.memory_date ? format(parseISO(item.memory_date), 'MMM d, yyyy') : format(parseISO(item.created_at), 'MMM d, yyyy')}
-                                 </p>
-                               </div>
-                               <div className="flex gap-1">
-                                 <Button
-                                   variant="ghost"
-                                   size="sm"
-                                   onClick={(e) => {
-                                     e.stopPropagation();
-                                     toggleFavorite(item.id, item.type, item.is_favorite);
-                                   }}
-                                   className="p-1 hover:bg-white/20 h-auto"
-                                 >
-                                   <Star className={`h-4 w-4 ${item.is_favorite ? 'fill-yellow-400 text-yellow-400' : 'text-white/70'}`} />
-                                 </Button>
-                                 <Button
-                                   variant="ghost"
-                                   size="sm"
-                                   onClick={(e) => {
-                                     e.stopPropagation();
-                                     setSelectedItem(item);
-                                     setShowDeleteDialog(true);
-                                   }}
-                                   className="p-1 hover:bg-white/20 h-auto"
-                                 >
-                                   <Trash2 className="h-4 w-4 text-white/70" />
-                                 </Button>
-                               </div>
-                             </div>
-                            
-                            {item.description && item.description.length > 50 && (
-                              <div>
-                                <p className="text-xs text-white/90 line-clamp-3 mb-1">
-                                  {item.description}
-                                </p>
-                                <button className="text-xs text-white/80 underline">Show less</button>
-                              </div>
-                            )}
-                            
-                            {item.description && item.description.length <= 50 && (
-                              <p className="text-xs text-white/90">
-                                {item.description}
-                              </p>
-                            )}
-                          </div>
-
-                          {/* Multiple photos indicator */}
-                          {item.images.length > 1 && (
-                            <div className="absolute top-3 left-3 bg-black/60 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1">
-                              <span>+{item.images.length - 1}</span>
-                            </div>
-                          )}
-                          
-                          {/* Favorite star in top right */}
-                          {item.is_favorite && (
-                            <div className="absolute top-3 right-3">
-                              <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ) : (
-                      /* Note Card - Clean white like reference */
-                       <div 
-                         className="bg-card rounded-xl p-4 shadow-sm border hover:shadow-md transition-all duration-300 cursor-pointer"
-                         onClick={() => {
-                           setSelectedItem(item);
-                           setShowViewDialog(true);
-                         }}
-                       >
-                         <div className="flex items-start justify-between mb-3">
-                           <div className="flex-1">
-                             <div className="flex items-center gap-2 mb-2">
-                               <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center">
-                                 <FileText className="h-3 w-3 text-primary" />
-                               </div>
-                             </div>
-                             <h3 className="font-semibold text-foreground text-sm leading-tight mb-1">{item.title}</h3>
-                             <p className="text-xs text-muted-foreground">
-                               {format(parseISO(item.created_at), 'MMM d, yyyy')}
-                             </p>
-                           </div>
-                           <div className="flex gap-1">
-                             <Button
-                               variant="ghost"
-                               size="sm"
-                               onClick={(e) => {
-                                 e.stopPropagation();
-                                 toggleFavorite(item.id, item.type, item.is_favorite);
-                               }}
-                               className="p-1 h-auto"
-                             >
-                               <Star className={`h-4 w-4 ${item.is_favorite ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'}`} />
-                             </Button>
-                             <Button
-                               variant="ghost"
-                               size="sm"
-                               onClick={(e) => {
-                                 e.stopPropagation();
-                                 setSelectedItem(item);
-                                 setShowDeleteDialog(true);
-                               }}
-                               className="p-1 h-auto"
-                             >
-                               <Trash2 className="h-4 w-4 text-muted-foreground" />
-                             </Button>
-                           </div>
-                         </div>
-
-                         {item.content && (
-                           <div>
-                             <p className="text-muted-foreground text-sm leading-relaxed line-clamp-4 mb-2">
-                               {item.content}
-                             </p>
-                             {item.content.length > 100 && (
-                               <button className="text-xs text-muted-foreground underline">Show less</button>
-                             )}
-                           </div>
-                         )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
           ) : (
-            /* Timeline View */
-            <div className="relative">
-              <div className="absolute left-4 top-0 bottom-0 w-1 bg-border rounded-full"></div>
-              <div className="space-y-6">
-                {filteredItems.map((item) => (
-                  <div key={`${item.type}-${item.id}`} className="relative pl-12">
-                    <div className="absolute left-2 top-2 h-5 w-5 border-4 border-background bg-primary rounded-full"></div>
-                    <p className="text-sm text-muted-foreground mb-2">
-                      {format(parseISO(item.created_at), 'MMM d, yyyy')}
-                    </p>
-                    <Card className="p-4 shadow-sm">
-                      <div className="flex items-start justify-between mb-2">
-                        <h3 className="font-bold text-foreground">{item.title}</h3>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => toggleFavorite(item.id, item.type, item.is_favorite)}
-                          className="p-1"
-                        >
-                          <Star className={`h-4 w-4 ${item.is_favorite ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'}`} />
-                        </Button>
-                      </div>
-                      
-                      {item.type === 'note' && item.content && (
-                        <p className="text-muted-foreground">{item.content}</p>
-                      )}
-                      
-                      {item.description && (
-                        <p className="text-muted-foreground">{item.description}</p>
-                      )}
-
-                      {item.type === 'memory' && item.images && item.images.length > 0 && (
-                        <div className="mt-2 grid grid-cols-2 gap-2">
-                          {item.images.slice(0, 2).map((image, index) => (
-                            <img 
-                              key={image.id}
-                              src={image.image_url} 
-                              alt={`${item.title} ${index + 1}`}
-                              className="w-full h-24 object-cover rounded-lg" 
-                            />
-                          ))}
-                        </div>
-                      )}
-                    </Card>
-                  </div>
-                ))}
-              </div>
+            <div className="space-y-4">
+              {filteredItems.map((item) => 
+                item.type === 'memory' ? (
+                  <MobileMemoryCard
+                    key={item.id}
+                    memory={item}
+                    onView={() => {
+                      setSelectedItem(item);
+                      setShowViewDialog(true);
+                    }}
+                    onToggleFavorite={(id, currentState) => toggleFavorite(id, 'memory', currentState)}
+                    onEdit={() => {
+                      // TODO: Implement edit functionality
+                    }}
+                    onDelete={() => {
+                      setSelectedItem(item);
+                      setShowDeleteDialog(true);
+                    }}
+                  />
+                ) : (
+                  <MobileNoteCard
+                    key={item.id}
+                    note={item}
+                    onView={() => {
+                      setSelectedItem(item);
+                      setShowViewDialog(true);
+                    }}
+                    onToggleFavorite={(id, currentState) => toggleFavorite(id, 'note', currentState)}
+                    onEdit={() => {
+                      // TODO: Implement edit functionality
+                    }}
+                    onDelete={() => {
+                      setSelectedItem(item);
+                      setShowDeleteDialog(true);
+                    }}
+                  />
+                )
+              )}
             </div>
           )}
         </div>
@@ -806,203 +573,417 @@ const MemoryVault: React.FC = () => {
             <Plus className="h-8 w-8" />
           </Button>
         </div>
+
+        {/* Create Modal */}
+        <Dialog open={showCreateForm} onOpenChange={setShowCreateForm}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>{createType === 'memory' ? 'Create New Memory' : 'Create New Note'}</DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              <Input
+                value={createType === 'memory' ? newMemory.title : newNote.title}
+                onChange={(e) => {
+                  if (createType === 'memory') {
+                    setNewMemory(prev => ({ ...prev, title: e.target.value }));
+                  } else {
+                    setNewNote(prev => ({ ...prev, title: e.target.value }));
+                  }
+                }}
+                placeholder="Title"
+              />
+
+              {createType === 'memory' ? (
+                <>
+                  <Textarea
+                    value={newMemory.description}
+                    onChange={(e) => setNewMemory(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="Description"
+                  />
+                  <Input
+                    type="date"
+                    value={newMemory.memory_date}
+                    onChange={(e) => setNewMemory(prev => ({ ...prev, memory_date: e.target.value }))}
+                  />
+                  {/* Drag & Drop Upload Area */}
+                  <div 
+                    className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                      dragActive ? 'border-primary bg-primary/5' : 'border-border'
+                    }`}
+                    onDragEnter={handleDrag}
+                    onDragLeave={handleDrag}
+                    onDragOver={handleDrag}
+                    onDrop={handleDrop}
+                  >
+                    <Upload className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Drag & drop images here or click to choose
+                    </p>
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={(e) => e.target.files && handleFilesSelect(Array.from(e.target.files))}
+                      className="hidden"
+                      id="file-upload"
+                    />
+                    <label htmlFor="file-upload">
+                      <Button variant="outline" size="sm" asChild>
+                        <span>Choose Files</span>
+                      </Button>
+                    </label>
+                    {uploadedFiles.length > 0 && (
+                      <p className="text-xs text-primary mt-2">
+                        {uploadedFiles.length} file(s) selected
+                      </p>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <Textarea
+                  value={newNote.content}
+                  onChange={(e) => setNewNote(prev => ({ ...prev, content: e.target.value }))}
+                  placeholder="Content"
+                  rows={4}
+                />
+              )}
+
+              <div className="flex gap-2">
+                <Button onClick={createType === 'memory' ? createMemory : createNote} disabled={uploading} className="flex-1">
+                  {uploading ? 'Uploading...' : createType === 'memory' ? 'Create Memory' : 'Create Note'}
+                </Button>
+                <Button variant="outline" onClick={() => setShowCreateForm(false)}>Cancel</Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* View Item Dialog */}
+        <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                {selectedItem && ('images' in selectedItem ? 'Memory Details' : 'Note Details')}
+              </DialogTitle>
+            </DialogHeader>
+
+            {selectedItem && (
+              <div className="space-y-4">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <h2 className="text-xl font-bold text-foreground mb-2">{selectedItem.title}</h2>
+                    <p className="text-sm text-muted-foreground">
+                      Created on {format(parseISO(selectedItem.created_at), 'MMMM d, yyyy')}
+                    </p>
+                    {('memory_date' in selectedItem) && selectedItem.memory_date && (
+                      <p className="text-sm text-muted-foreground">
+                        Memory from {format(parseISO(selectedItem.memory_date), 'MMMM d, yyyy')}
+                      </p>
+                    )}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => toggleFavorite(selectedItem.id, 'images' in selectedItem ? 'memory' : 'note', selectedItem.is_favorite)}
+                  >
+                    <Star className={`h-5 w-5 ${selectedItem.is_favorite ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'}`} />
+                  </Button>
+                </div>
+
+                {/* Images for memories */}
+                {('images' in selectedItem) && selectedItem.images && selectedItem.images.length > 0 && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {selectedItem.images.map((image) => (
+                      <img 
+                        key={image.id}
+                        src={image.image_url} 
+                        alt={selectedItem.title}
+                        className="w-full h-64 object-cover rounded-lg" 
+                      />
+                    ))}
+                  </div>
+                )}
+
+                {/* Description/Content */}
+                {('description' in selectedItem) && selectedItem.description && (
+                  <div>
+                    <h3 className="font-semibold mb-2">Description</h3>
+                    <p className="text-muted-foreground leading-relaxed">{selectedItem.description}</p>
+                  </div>
+                )}
+
+                {('content' in selectedItem) && selectedItem.content && (
+                  <div>
+                    <h3 className="font-semibold mb-2">Content</h3>
+                    <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">{selectedItem.content}</p>
+                  </div>
+                )}
+
+                <div className="flex gap-2 pt-4">
+                  <Button 
+                    variant="destructive" 
+                    onClick={() => {
+                      setShowViewDialog(false);
+                      setShowDeleteDialog(true);
+                    }}
+                    className="flex-1"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowViewDialog(false)}
+                    className="flex-1"
+                  >
+                    Close
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Item</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete this {selectedItem && 'images' in selectedItem ? 'memory' : 'note'}? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={deleteItem}
+                disabled={deleting}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {deleting ? 'Deleting...' : 'Delete'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
 
-      {/* Create Modal */}
-      <Dialog open={showCreateForm} onOpenChange={setShowCreateForm}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>{createType === 'memory' ? 'Create New Memory' : 'Create New Note'}</DialogTitle>
-          </DialogHeader>
+      <BottomNavigation />
+    </>
+  );
+};
 
-          <div className="space-y-4">
-            <Input
-              value={createType === 'memory' ? newMemory.title : newNote.title}
-              onChange={(e) => {
-                if (createType === 'memory') {
-                  setNewMemory(prev => ({ ...prev, title: e.target.value }));
-                } else {
-                  setNewNote(prev => ({ ...prev, title: e.target.value }));
-                }
-              }}
-              placeholder="Title"
-            />
+// Mobile Memory Card Component
+const MobileMemoryCard: React.FC<{
+  memory: UnifiedItem;
+  onView: () => void;
+  onToggleFavorite: (id: string, currentState: boolean) => void;
+  onEdit: () => void;
+  onDelete: () => void;
+}> = ({ memory, onView, onToggleFavorite, onEdit, onDelete }) => {
+  const firstImage = memory.images?.[0]?.image_url || memory.image_url;
+  const totalImages = memory.images?.length || (memory.image_url ? 1 : 0);
 
-            {createType === 'memory' ? (
-              <>
-                <Textarea
-                  value={newMemory.description}
-                  onChange={(e) => setNewMemory(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Description"
-                />
-                <Input
-                  type="date"
-                  value={newMemory.memory_date}
-                  onChange={(e) => setNewMemory(prev => ({ ...prev, memory_date: e.target.value }))}
-                />
-                {/* Drag & Drop Upload Area */}
-                <div 
-                  className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
-                    dragActive ? 'border-primary bg-primary/5' : 'border-border'
-                  }`}
-                  onDragEnter={handleDrag}
-                  onDragLeave={handleDrag}
-                  onDragOver={handleDrag}
-                  onDrop={handleDrop}
-                >
-                  <Upload className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
-                  <p className="text-sm text-muted-foreground mb-2">
-                    Drag & drop images here or click to choose
-                  </p>
-                  <input
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    onChange={(e) => e.target.files && handleFilesSelect(Array.from(e.target.files))}
-                    className="hidden"
-                    id="file-upload"
-                  />
-                  <label htmlFor="file-upload">
-                    <Button variant="outline" size="sm" asChild>
-                      <span>Choose Files</span>
-                    </Button>
-                  </label>
-                  {uploadedFiles.length > 0 && (
-                    <p className="text-xs text-primary mt-2">
-                      {uploadedFiles.length} file(s) selected
-                    </p>
-                  )}
-                </div>
-              </>
-            ) : (
-              <Textarea
-                value={newNote.content}
-                onChange={(e) => setNewNote(prev => ({ ...prev, content: e.target.value }))}
-                placeholder="Content"
-                rows={4}
-              />
+  return (
+    <Card 
+      className="w-full overflow-hidden bg-white rounded-xl shadow-sm border-0"
+      onClick={onView}
+    >
+      {firstImage && (
+        <div className="relative h-48">
+          <img
+            src={firstImage}
+            alt={memory.title}
+            className="w-full h-full object-cover"
+          />
+          {/* Dark overlay for text readability */}
+          <div className="absolute inset-0 bg-black/20" />
+          
+          {/* Title overlay */}
+          <div className="absolute bottom-0 left-0 right-0 p-3">
+            <h3 className="text-white font-bold text-lg leading-tight drop-shadow-lg">
+              {memory.title}
+            </h3>
+            {memory.description && (
+              <p className="text-white/90 text-sm mt-1 drop-shadow">
+                Visited {memory.description.split(' ').slice(0, 3).join(' ')}...
+              </p>
             )}
-
-            <div className="flex gap-2">
-              <Button onClick={createType === 'memory' ? createMemory : createNote} disabled={uploading} className="flex-1">
-                {uploading ? 'Uploading...' : createType === 'memory' ? 'Create Memory' : 'Create Note'}
-              </Button>
-              <Button variant="outline" onClick={() => setShowCreateForm(false)}>Cancel</Button>
-            </div>
           </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* View Item Dialog */}
-      <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {selectedItem && ('images' in selectedItem ? 'Memory Details' : 'Note Details')}
-            </DialogTitle>
-          </DialogHeader>
-
-          {selectedItem && (
-            <div className="space-y-4">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <h2 className="text-xl font-bold text-foreground mb-2">{selectedItem.title}</h2>
-                  <p className="text-sm text-muted-foreground">
-                    Created on {format(parseISO(selectedItem.created_at), 'MMMM d, yyyy')}
-                  </p>
-                  {('memory_date' in selectedItem) && selectedItem.memory_date && (
-                    <p className="text-sm text-muted-foreground">
-                      Memory from {format(parseISO(selectedItem.memory_date), 'MMMM d, yyyy')}
-                    </p>
-                  )}
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => toggleFavorite(selectedItem.id, 'images' in selectedItem ? 'memory' : 'note', selectedItem.is_favorite)}
-                >
-                  <Star className={`h-5 w-5 ${selectedItem.is_favorite ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'}`} />
-                </Button>
-              </div>
-
-              {/* Images for memories */}
-              {('images' in selectedItem) && selectedItem.images && selectedItem.images.length > 0 && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {selectedItem.images.map((image) => (
-                    <img 
-                      key={image.id}
-                      src={image.image_url} 
-                      alt={selectedItem.title}
-                      className="w-full h-64 object-cover rounded-lg" 
-                    />
-                  ))}
-                </div>
-              )}
-
-              {/* Description/Content */}
-              {('description' in selectedItem) && selectedItem.description && (
-                <div>
-                  <h3 className="font-semibold mb-2">Description</h3>
-                  <p className="text-muted-foreground leading-relaxed">{selectedItem.description}</p>
-                </div>
-              )}
-
-              {('content' in selectedItem) && selectedItem.content && (
-                <div>
-                  <h3 className="font-semibold mb-2">Content</h3>
-                  <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">{selectedItem.content}</p>
-                </div>
-              )}
-
-              <div className="flex gap-2 pt-4">
-                <Button 
-                  variant="destructive" 
-                  onClick={() => {
-                    setShowViewDialog(false);
-                    setShowDeleteDialog(true);
-                  }}
-                  className="flex-1"
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => setShowViewDialog(false)}
-                  className="flex-1"
-                >
-                  Close
-                </Button>
-              </div>
+          
+          {/* Multiple photos indicator */}
+          {totalImages > 1 && (
+            <div className="absolute bottom-3 right-3 bg-black/70 text-white text-xs px-2 py-1 rounded-full flex items-center">
+              <Images className="h-3 w-3 mr-1" />
+              +{totalImages - 1}
             </div>
           )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Item</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this {selectedItem && 'images' in selectedItem ? 'memory' : 'note'}? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={deleteItem}
-              disabled={deleting}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          
+          {/* Action buttons */}
+          <div className="absolute top-3 right-3 flex space-x-1">
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleFavorite(memory.id, memory.is_favorite);
+              }}
+              className="h-8 w-8 p-0 bg-white/90 hover:bg-white"
             >
-              {deleting ? 'Deleting...' : 'Delete'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+              <Star className={`h-4 w-4 ${memory.is_favorite ? 'fill-yellow-400 text-yellow-400' : 'text-gray-600'}`} />
+            </Button>
+          </div>
+        </div>
+      )}
+      
+      {!firstImage && (
+        <div className="p-3">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <h3 className="font-bold text-lg text-gray-900 mb-1">
+                {memory.title}
+              </h3>
+              {memory.description && (
+                <p className="text-gray-600 text-sm line-clamp-3 mb-2">
+                  {memory.description}
+                </p>
+              )}
+              <div className="flex items-center text-xs text-gray-500">
+                <Calendar className="h-3 w-3 mr-1" />
+                {memory.memory_date ? format(new Date(memory.memory_date), 'MMM d, yyyy') : format(new Date(memory.created_at), 'MMM d, yyyy')}
+              </div>
+            </div>
+            <div className="flex space-x-1 ml-2">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleFavorite(memory.id, memory.is_favorite);
+                }}
+                className="h-8 w-8 p-0"
+              >
+                <Star className={`h-4 w-4 ${memory.is_favorite ? 'fill-yellow-400 text-yellow-400' : 'text-gray-400'}`} />
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit();
+                }}
+                className="h-8 w-8 p-0"
+              >
+                <Edit2 className="h-4 w-4 text-gray-400" />
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete();
+                }}
+                className="h-8 w-8 p-0"
+              >
+                <Trash2 className="h-4 w-4 text-gray-400" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </Card>
+  );
+};
 
-      <BottomNavigation />
-    </div>
+// Mobile Note Card Component
+const MobileNoteCard: React.FC<{
+  note: UnifiedItem;
+  onView: () => void;
+  onToggleFavorite: (id: string, currentState: boolean) => void;
+  onEdit: () => void;
+  onDelete: () => void;
+}> = ({ note, onView, onToggleFavorite, onEdit, onDelete }) => {
+  const [showFullContent, setShowFullContent] = useState(false);
+  const shouldTruncate = note.content && note.content.length > 150;
+
+  return (
+    <Card className="w-full bg-white rounded-xl shadow-sm border-0 overflow-hidden">
+      <div className="p-3">
+        <div className="flex items-start justify-between mb-2">
+          <div className="flex items-center">
+            <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center mr-2">
+              <FileText className="h-3 w-3 text-purple-600" />
+            </div>
+            <h3 className="font-bold text-lg text-gray-900">
+              {note.title}
+            </h3>
+          </div>
+          <div className="flex space-x-1">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleFavorite(note.id, note.is_favorite);
+              }}
+              className="h-8 w-8 p-0"
+            >
+              <Star className={`h-4 w-4 ${note.is_favorite ? 'fill-yellow-400 text-yellow-400' : 'text-gray-400'}`} />
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit();
+              }}
+              className="h-8 w-8 p-0"
+            >
+              <Edit2 className="h-4 w-4 text-gray-400" />
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete();
+              }}
+              className="h-8 w-8 p-0"
+            >
+              <Trash2 className="h-4 w-4 text-gray-400" />
+            </Button>
+          </div>
+        </div>
+        
+        {note.content && (
+          <div className="mb-2">
+            <p className={`text-gray-600 text-sm leading-relaxed ${!showFullContent && shouldTruncate ? 'line-clamp-3' : ''}`}>
+              {note.content}
+            </p>
+            {shouldTruncate && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (showFullContent) {
+                    onView();
+                  } else {
+                    setShowFullContent(true);
+                  }
+                }}
+                className="text-purple-600 text-sm font-medium mt-1 hover:underline"
+              >
+                {showFullContent ? 'Show less' : 'Read more'}
+              </button>
+            )}
+          </div>
+        )}
+        
+        <div className="flex items-center text-xs text-gray-500">
+          <Calendar className="h-3 w-3 mr-1" />
+          {format(new Date(note.created_at), 'MMM d, yyyy')}
+        </div>
+      </div>
+    </Card>
   );
 };
 
