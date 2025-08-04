@@ -133,6 +133,12 @@ export const DatePlanner = () => {
     }
   }, [activeTab, location?.displayName]); // Only depend on tab and location name
 
+  // Debug log for events state
+  useEffect(() => {
+    console.log('DatePlanner: upcomingEvents state updated:', upcomingEvents.length, 'events');
+    console.log('DatePlanner: isLoading:', eventsLoading, 'error:', eventsError);
+  }, [upcomingEvents, eventsLoading, eventsError]);
+
   // Clear events when switching away from upcoming tab
   useEffect(() => {
     if (activeTab !== 'upcoming') {

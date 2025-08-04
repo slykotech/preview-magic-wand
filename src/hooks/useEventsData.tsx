@@ -132,7 +132,9 @@ export const useEventsData = () => {
       }
 
       // Handle successful response
-      if (data.events && Array.isArray(data.events) && data.events.length > 0) {
+      if (data.events && Array.isArray(data.events)) {
+        console.log(`API returned ${data.events.length} events`);
+        console.log('Events data:', data.events.slice(0, 2)); // Log first 2 events for debugging
         setEvents(data.events);
         setError(null);
         
