@@ -1553,27 +1553,7 @@ export type Database = {
       }
     }
     Views: {
-      cron_jobs_status: {
-        Row: {
-          active: boolean | null
-          jobid: number | null
-          jobname: string | null
-          schedule: string | null
-        }
-        Insert: {
-          active?: boolean | null
-          jobid?: number | null
-          jobname?: string | null
-          schedule?: string | null
-        }
-        Update: {
-          active?: boolean | null
-          jobid?: number | null
-          jobname?: string | null
-          schedule?: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       accept_signup_invitation: {
@@ -1615,6 +1595,15 @@ export type Database = {
       generate_relationship_insights: {
         Args: { p_couple_id: string }
         Returns: undefined
+      }
+      get_cron_jobs_status: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          jobname: string
+          schedule: string
+          active: boolean
+          jobid: number
+        }[]
       }
       get_events_by_location: {
         Args: {

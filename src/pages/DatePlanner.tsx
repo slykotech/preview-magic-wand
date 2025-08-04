@@ -613,95 +613,44 @@ export const DatePlanner = () => {
           </TabsContent>
           
           <TabsContent value="upcoming" className="space-y-4">
-            {/* Always Show Location Options */}
+            {/* Auto-loading Events with Location Info */}
             <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 rounded-2xl p-4">
               <div className="flex items-center gap-2 mb-3">
-                <MapPin size={18} className="text-purple-500" />
-                <h3 className="text-lg font-bold text-foreground">Find Events Near You</h3>
+                <Sparkles size={18} className="text-purple-500" />
+                <h3 className="text-lg font-bold text-foreground">Fresh Events Every 3 Hours</h3>
               </div>
               
               <div className="space-y-3">
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Search by city, address, or landmark..."
-                    value={locationInput}
-                    onChange={(e) => setLocationInput(e.target.value)}
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter') {
-                        handleLocationSubmit();
-                      }
-                    }}
-                    className="flex-1"
-                  />
-                  <Button 
-                    onClick={handleLocationSubmit}
-                    disabled={!locationInput.trim() || eventsLoading}
-                    size="sm"
-                    className="bg-gradient-secondary hover:opacity-90 text-white"
-                  >
-                    {eventsLoading ? (
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    ) : (
-                      'Search'
-                    )}
-                  </Button>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <MapPin size={14} />
+                  <span>
+                    {location ? `Showing events near ${location.displayName}` : 'Loading events for Mumbai...'}
+                  </span>
                 </div>
                 
                 <div className="flex gap-2">
-                  <Button 
-                    variant="outline" 
-                    onClick={getCurrentLocation}
-                    size="sm"
-                    className="flex-1"
-                    disabled={isGettingLocation || eventsLoading}
-                  >
-                    {isGettingLocation ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2"></div>
-                        Getting location...
-                      </>
-                    ) : (
-                      <>
-                        <MapPin size={14} className="mr-2" />
-                        Use Current Location
-                      </>
-                    )}
-                  </Button>
-                  
-                  {location && (
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={handleRefreshEvents}
-                      disabled={eventsLoading}
+                  <div className="flex-1 flex gap-2">
+                    <Input
+                      placeholder="Enter city name..."
+                      value={locationInput}
+                      onChange={(e) => setLocationInput(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleLocationSubmit()}
                       className="flex-1"
-                    >
-                      {eventsLoading ? (
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2"></div>
-                      ) : (
-                        'Refresh Events'
-                      )}
+                    />
+                    <Button onClick={handleLocationSubmit} variant="outline" size="sm">
+                      Search
                     </Button>
-                  )}
-                </div>
-                
-                {location && (
-                  <div className="text-sm text-muted-foreground text-center">
-                    📍 Showing events within 50km of: <span className="font-medium">{location.displayName}</span>
                   </div>
-                )}
+                  <Button onClick={getCurrentLocation} variant="outline" size="sm" disabled={isGettingLocation}>
+                    <MapPin size={14} className="mr-1" />
+                    My Location
+                  </Button>
+                  <Button onClick={handleRefreshEvents} variant="outline" size="sm" disabled={eventsLoading}>
+                    Refresh
+                  </Button>
+                </div>
               </div>
             </div>
-
-            {/* Data Source Status */}
-            {dataSourceInfo && (
-              <DataSourceStatus 
-                dataSourceInfo={dataSourceInfo} 
-                quota={quota}
-                className="bg-muted/30"
-              />
-            )}
-
             {/* Events Loading and Display */}
             {eventsLoading ? (
               <div className="text-center py-8">
@@ -718,14 +667,14 @@ export const DatePlanner = () => {
                   Try Again
                 </Button>
               </div>
-            ) : upcomingEvents.length === 0 && location ? (
+            ) : upcomingEvents.length === 0 ? (
               <div className="text-center py-12">
                 <Sparkles className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
                 <p className="text-lg font-bold text-muted-foreground">
-                  No events found nearby. Try again later!
+                  {location ? 'No events found nearby. Try again later!' : 'Loading events from database...'}
                 </p>
               </div>
-            ) : upcomingEvents.length > 0 ? (
+            ) : (
               upcomingEvents.map((event, index) => (
                 <div 
                   key={event.id} 
@@ -823,7 +772,7 @@ export const DatePlanner = () => {
                     </div>
                 </div>
               ))
-            ) : null}
+            )}
           </TabsContent>
         </Tabs>
       </div>
