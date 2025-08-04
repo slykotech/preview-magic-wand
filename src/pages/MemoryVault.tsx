@@ -715,9 +715,7 @@ const MemoryVault: React.FC = () => {
                 {('content' in selectedItem) && selectedItem.content && (
                   <div>
                     <h3 className="font-semibold mb-2">Content</h3>
-                    <div className="w-full min-h-[200px] p-3 border rounded-lg bg-gray-50 text-gray-700 text-sm leading-relaxed whitespace-pre-wrap resize-none appearance-none focus:outline-none">
-                      {selectedItem.content}
-                    </div>
+                    <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">{selectedItem.content}</p>
                   </div>
                 )}
 
