@@ -17,6 +17,7 @@ import { BottomNavigation } from '@/components/BottomNavigation';
 import { EventCard } from '@/components/EventCard';
 import { useToast } from '@/components/ui/use-toast';
 import { Calendar, MapPin, Clock, DollarSign, Users, Heart, Star, X, Plus, Trash2, Navigation2, Filter, Search, Target } from 'lucide-react';
+import { GradientHeader } from '@/components/GradientHeader';
 import { format } from 'date-fns';
 
 interface DateIdea {
@@ -489,13 +490,16 @@ export const DatePlanner = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
-      <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 p-6 text-center border-b border-border/50">
-        <h1 className="text-2xl font-bold mb-2">Date Planner</h1>
-        <p className="text-muted-foreground">Plan your perfect dates together</p>
-      </div>
+    <div className="min-h-screen bg-background flex flex-col pb-20">
+      {/* Gradient Header */}
+      <GradientHeader 
+        title="Date Planner" 
+        subtitle="Plan your perfect dates together" 
+        icon={<Heart size={24} />} 
+        showBackButton={false}
+      />
 
-      <div className="container mx-auto px-4 py-6 pb-20">
+      <div className="flex-1 overflow-y-auto container mx-auto px-4 py-6">
         <Tabs defaultValue="planned" className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-6">
             <TabsTrigger value="planned" className="text-base font-medium">
