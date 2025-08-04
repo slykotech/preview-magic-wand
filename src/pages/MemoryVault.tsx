@@ -625,7 +625,10 @@ const MemoryVault: React.FC = () => {
               <Button
                 variant={viewMode === 'grid' ? "default" : "ghost"}
                 size="sm"
-                onClick={() => setViewMode('grid')}
+                onClick={() => {
+                  console.log('Grid view clicked');
+                  setViewMode('grid');
+                }}
                 className="p-2"
               >
                 <Grid3X3 className="h-5 w-5" />
@@ -633,7 +636,10 @@ const MemoryVault: React.FC = () => {
               <Button
                 variant={viewMode === 'timeline' ? "default" : "ghost"}
                 size="sm"
-                onClick={() => setViewMode('timeline')}
+                onClick={() => {
+                  console.log('Timeline view clicked');
+                  setViewMode('timeline');
+                }}
                 className="p-2"
               >
                 <List className="h-5 w-5" />
