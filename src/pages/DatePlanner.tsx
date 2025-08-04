@@ -453,13 +453,18 @@ export const DatePlanner = () => {
       
       console.log('Date deleted successfully');
       
+      // Remove from local state immediately
+      setPlannedDates(prev => prev.filter(date => date.id !== dateToDelete.id));
+      
       toast({
         title: "Date deleted",
         description: `${dateToDelete.title} has been removed from your planner.`
       });
       
-      // Refresh the list
-      await fetchPlannedDates();
+      // Also refresh the list to be sure
+      setTimeout(() => {
+        fetchPlannedDates();
+      }, 500);
     } catch (error) {
       console.error('Error deleting date:', error);
       toast({
@@ -472,10 +477,23 @@ export const DatePlanner = () => {
       setDateToDelete(null);
     }
   };
-  const isDateCompleted = (scheduledDate: string) => {
-    const today = new Date();
+  const isDateCompleted = (scheduledDate: string, scheduledTime?: string) => {
+    const now = new Date();
     const dateToCheck = new Date(scheduledDate);
-    return dateToCheck < today;
+    
+    if (scheduledTime) {
+      const [hours, minutes] = scheduledTime.split(':').map(Number);
+      dateToCheck.setHours(hours, minutes);
+    } else {
+      // If no time specified, consider it completed at end of day
+      dateToCheck.setHours(23, 59, 59);
+    }
+    
+    return dateToCheck < now;
+  };
+
+  const isFutureDate = (scheduledDate: string, scheduledTime?: string) => {
+    return !isDateCompleted(scheduledDate, scheduledTime);
   };
   return <div className="min-h-screen bg-background pb-20">
       {/* Gradient Header */}
@@ -550,34 +568,38 @@ export const DatePlanner = () => {
                       {date.description}
                     </p>}
                    
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" className="flex-1" onClick={() => handleEditDate(date)}>
-                        <Edit size={14} className="mr-1" />
-                        Edit
-                     </Button>
-                     
-                     <Button 
-                       variant="outline" 
-                       size="sm" 
-                       className="bg-red-50 text-red-600 border-red-200 hover:bg-red-100 px-2"
-                       onClick={() => {
-                         setDateToDelete(date);
-                         setShowDeleteConfirm(true);
-                       }}
-                     >
-                       <Trash2 size={14} />
-                     </Button>
-                     
-                    {date.scheduled_date && isDateCompleted(date.scheduled_date) && (
-                      <div className="flex gap-1 flex-1">
-                        <Button variant="outline" size="sm" className="flex-1 bg-green-50 text-green-600 border-green-200 hover:bg-green-100" onClick={() => handleDateFeedback(date.id, true)}>
-                          <Heart size={14} className="mr-1" />
-                          Successful
+                     <div className="flex gap-2">
+                       <Button variant="outline" size="sm" className="flex-1" onClick={() => handleEditDate(date)}>
+                         <Edit size={14} className="mr-1" />
+                         Edit
+                      </Button>
+                      
+                      {/* Show delete button only for future dates */}
+                      {date.scheduled_date && isFutureDate(date.scheduled_date, date.scheduled_time) && (
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="bg-red-50 text-red-600 border-red-200 hover:bg-red-100 px-2"
+                          onClick={() => {
+                            setDateToDelete(date);
+                            setShowDeleteConfirm(true);
+                          }}
+                        >
+                          <Trash2 size={14} />
                         </Button>
-                        <Button variant="outline" size="sm" className="flex-1 bg-red-50 text-red-600 border-red-200 hover:bg-red-100" onClick={() => handleDateFeedback(date.id, false)}>
-                          <X size={14} className="mr-1" />
-                          Not Great
-                        </Button>
+                      )}
+                      
+                     {/* Show feedback buttons only for completed dates */}
+                     {date.scheduled_date && isDateCompleted(date.scheduled_date, date.scheduled_time) && (
+                       <div className="flex gap-1 flex-1">
+                         <Button variant="outline" size="sm" className="flex-1 bg-green-50 text-green-600 border-green-200 hover:bg-green-100" onClick={() => handleDateFeedback(date.id, true)}>
+                           <Heart size={14} className="mr-1" />
+                           Successful
+                         </Button>
+                         <Button variant="outline" size="sm" className="flex-1 bg-red-50 text-red-600 border-red-200 hover:bg-red-100" onClick={() => handleDateFeedback(date.id, false)}>
+                           <X size={14} className="mr-1" />
+                           Not Great
+                         </Button>
                       </div>
                     )}
                   </div>
