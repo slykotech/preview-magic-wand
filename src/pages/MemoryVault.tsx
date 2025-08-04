@@ -12,7 +12,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useToast } from '@/hooks/use-toast';
 import { format, parseISO } from 'date-fns';
 import { useCoupleData } from '@/hooks/useCoupleData';
-import { Heart, Search, Grid3X3, List, Star, Camera, Upload, Plus, Image as ImageIcon, FileText, Edit3, Trash2, MoreVertical, Eye, Calendar, Clock, Edit2, X, Images } from 'lucide-react';
+import { Heart, Search, Grid3X3, Activity, Star, Camera, Upload, Plus, Image as ImageIcon, FileText, Edit3, Trash2, MoreVertical, Eye, Calendar, Clock, Edit2, X, Images } from 'lucide-react';
 
 // Types
 interface MemoryImage {
@@ -642,7 +642,7 @@ const MemoryVault: React.FC = () => {
                 }}
                 className="h-10 w-10 rounded-full"
               >
-                <List className="h-5 w-5" />
+                <Activity className="h-5 w-5" />
               </Button>
             </div>
           </div>
