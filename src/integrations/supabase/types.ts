@@ -1578,6 +1578,10 @@ export type Database = {
         Args: { p_user_id: string; p_estimated_cost?: number }
         Returns: Json
       }
+      clean_existing_location_data: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
       cleanup_expired_events: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -1632,6 +1636,29 @@ export type Database = {
           distance_km: number
         }[]
       }
+      get_events_by_city_enhanced: {
+        Args: { city_name: string; max_events?: number }
+        Returns: {
+          id: string
+          title: string
+          description: string
+          category: string
+          venue: string
+          location_name: string
+          location_lat: number
+          location_lng: number
+          event_date: string
+          event_time: string
+          price: string
+          image_url: string
+          booking_url: string
+          source: string
+          city: string
+          country: string
+          state: string
+          distance_km: number
+        }[]
+      }
       get_events_by_city_unlimited: {
         Args: { city_name: string; max_events?: number }
         Returns: {
@@ -1656,6 +1683,29 @@ export type Database = {
         }[]
       }
       get_events_by_country: {
+        Args: { country_name: string; state_name?: string; max_events?: number }
+        Returns: {
+          id: string
+          title: string
+          description: string
+          category: string
+          venue: string
+          location_name: string
+          location_lat: number
+          location_lng: number
+          event_date: string
+          event_time: string
+          price: string
+          image_url: string
+          booking_url: string
+          source: string
+          city: string
+          country: string
+          state: string
+          distance_km: number
+        }[]
+      }
+      get_events_by_country_enhanced: {
         Args: { country_name: string; state_name?: string; max_events?: number }
         Returns: {
           id: string
@@ -1741,6 +1791,14 @@ export type Database = {
           p_points_awarded?: number
         }
         Returns: undefined
+      }
+      parse_location_string: {
+        Args: { location_string: string }
+        Returns: {
+          city: string
+          state: string
+          country: string
+        }[]
       }
       purge_user_completely: {
         Args: { user_email: string }
