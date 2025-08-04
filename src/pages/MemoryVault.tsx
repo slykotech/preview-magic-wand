@@ -680,10 +680,11 @@ const MemoryVault: React.FC = () => {
           ) : (
             <>
               {viewMode === 'grid' ? (
-                <div className="columns-2 gap-2">
+                // Grid View - 2 columns
+                <div className="grid grid-cols-2 gap-3">
                   {filteredItems.map((item) => 
                     item.type === 'memory' ? (
-                      <div key={item.id} className="break-inside-avoid mb-2">
+                      <div key={item.id} className="w-full">
                         <MobileMemoryCard
                           memory={item}
                         onView={() => {
@@ -699,7 +700,7 @@ const MemoryVault: React.FC = () => {
                         />
                       </div>
                     ) : (
-                      <div key={item.id} className="break-inside-avoid mb-2">
+                      <div key={item.id} className="w-full">
                         <MobileNoteCard
                           note={item}
                         onView={() => {
@@ -718,7 +719,8 @@ const MemoryVault: React.FC = () => {
                   )}
                 </div>
               ) : (
-                <div className="space-y-3">
+                // Timeline View - Single column
+                <div className="flex flex-col space-y-4">
                   {filteredItems.map((item) => 
                     item.type === 'memory' ? (
                       <div key={item.id} className="w-full">
