@@ -265,11 +265,13 @@ export const DatePlanner = () => {
 
         if (error) throw error;
 
+        // Update local state to remove completed date
+        setPlannedDates(prev => prev.filter(date => date.id !== dateId));
+
         toast({
           title: "Great! Date added to history 💕",
           description: "Your successful date has been added to your date history in the profile tab."
         });
-        fetchPlannedDates();
       } catch (error) {
         console.error('Error updating date feedback:', error);
         toast({
