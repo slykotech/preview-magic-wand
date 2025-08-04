@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { BottomNavigation } from '@/components/BottomNavigation';
+import { GradientHeader } from '@/components/GradientHeader';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { format, parseISO } from 'date-fns';
@@ -343,16 +344,16 @@ const MemoryVault: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header with gradient background - matching Dashboard style */}
-      <div className="bg-gradient-primary py-12 px-6 -mx-6 -mt-8 mb-8 rounded-b-[4rem] relative overflow-hidden before:absolute before:bottom-0 before:left-0 before:right-0 before:h-12 before:bg-gradient-primary before:rounded-b-[5rem] before:-z-10 after:absolute after:bottom-0 after:left-0 before:right-0 after:h-6 after:bg-gradient-primary after:rounded-b-[6rem] after:-z-20">
-        <div className="text-center space-y-2">
-          <h1 className="font-bold text-3xl text-white mb-1">Memory Vault</h1>
-          <p className="text-white/80 mb-4">Your love story collection</p>
-        </div>
-      </div>
+    <div className="min-h-screen bg-background flex flex-col pb-20">
+      {/* Gradient Header */}
+      <GradientHeader 
+        title="Memory Vault" 
+        subtitle="Your love story collection" 
+        icon={<Heart size={24} />} 
+        showBackButton={false}
+      />
 
-      <div className="container mx-auto px-6 space-y-6 pb-20">
+      <div className="flex-1 container mx-auto px-6 space-y-6 mt-6">
         {/* Controls Section */}
         <div className="space-y-4">
           <div className="flex justify-between items-center">
@@ -448,7 +449,7 @@ const MemoryVault: React.FC = () => {
             </div>
           ) : viewMode === 'grid' ? (
             /* Masonry Grid View - Pinterest Style */
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="columns-1 md:columns-2 lg:columns-3 gap-4 space-y-4">
               {filteredItems.map((item, index) => {
                 // Generate vibrant colors for memory cards to match reference
                 const colors = [
