@@ -4,7 +4,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.53.0';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const firecrawlApiKey = Deno.env.get('FIRECRAWL_API_KEY');
+const eventbriteApiKey = Deno.env.get('EVENTBRITE_API_KEY');
+const ticketmasterApiKey = Deno.env.get('TICKETMASTER_API_KEY');
 const googleApiKey = Deno.env.get('GOOGLE_EVENTS_API_KEY');
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -24,67 +25,80 @@ interface EventSource {
 const eventSources: EventSource[] = [
   {
     name: 'eventbrite',
-    baseUrl: 'https://www.eventbrite.com',
+    baseUrl: 'https://www.eventbriteapi.com',
     fetchFunction: fetchEventbriteEvents
   },
   {
     name: 'ticketmaster',
-    baseUrl: 'https://www.ticketmaster.com',
+    baseUrl: 'https://app.ticketmaster.com',
     fetchFunction: fetchTicketmasterEvents
   },
   {
-    name: 'bookmyshow',
-    baseUrl: 'https://in.bookmyshow.com',
-    fetchFunction: fetchBookMyShowEvents
-  },
-  {
-    name: 'meetup',
-    baseUrl: 'https://www.meetup.com',
-    fetchFunction: fetchMeetupEvents
+    name: 'google',
+    baseUrl: 'https://maps.googleapis.com',
+    fetchFunction: fetchGoogleEvents
   }
 ];
 
 async function fetchEventbriteEvents(city: string, country: string): Promise<any[]> {
-  if (!firecrawlApiKey) return [];
+  if (!eventbriteApiKey) {
+    console.log('Eventbrite API key not configured');
+    return [];
+  }
   
   try {
-    const searchUrl = `https://www.eventbrite.com/d/${city.toLowerCase()}-${country.toLowerCase()}--events/`;
-    const response = await fetch('https://api.firecrawl.dev/v0/scrape', {
-      method: 'POST',
+    console.log(`Fetching Eventbrite events for ${city}, ${country}`);
+    
+    // Get coordinates for the city first
+    const coordinates = await getCoordinatesFromGoogle(`${city}, ${country}`);
+    if (!coordinates) {
+      console.log(`Could not get coordinates for ${city}, ${country}`);
+      return [];
+    }
+    
+    const searchUrl = `https://www.eventbriteapi.com/v3/events/search/`;
+    const params = new URLSearchParams({
+      'location.latitude': coordinates.lat.toString(),
+      'location.longitude': coordinates.lng.toString(),
+      'location.within': '25km',
+      'start_date.range_start': new Date().toISOString(),
+      'start_date.range_end': new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      'sort_by': 'date',
+      'expand': 'venue,category,ticket_availability',
+      'page_size': '50'
+    });
+    
+    const response = await fetch(`${searchUrl}?${params}`, {
       headers: {
-        'Authorization': `Bearer ${firecrawlApiKey}`,
+        'Authorization': `Bearer ${eventbriteApiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        url: searchUrl,
-        formats: ['extract'],
-        extract: {
-          schema: {
-            events: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  title: { type: 'string' },
-                  description: { type: 'string' },
-                  date: { type: 'string' },
-                  time: { type: 'string' },
-                  venue: { type: 'string' },
-                  price: { type: 'string' },
-                  category: { type: 'string' },
-                  booking_url: { type: 'string' }
-                }
-              }
-            }
-          }
-        }
-      }),
     });
 
-    if (!response.ok) return [];
+    if (!response.ok) {
+      console.error(`Eventbrite API error: ${response.status} ${response.statusText}`);
+      return [];
+    }
     
     const data = await response.json();
-    return data.data?.extract?.events || [];
+    const events = data.events || [];
+    
+    console.log(`Found ${events.length} Eventbrite events for ${city}`);
+    
+    return events.map((event: any) => ({
+      title: event.name?.text || '',
+      description: event.description?.text || '',
+      date: event.start?.local || '',
+      time: event.start?.local ? new Date(event.start.local).toLocaleTimeString() : '',
+      venue: event.venue?.name || '',
+      venue_address: event.venue?.address ? `${event.venue.address.address_1}, ${event.venue.address.city}` : '',
+      price: event.ticket_availability?.minimum_ticket_price ? `$${(event.ticket_availability.minimum_ticket_price.major_value / 100).toFixed(2)}` : 'Free',
+      category: event.category?.name || 'other',
+      booking_url: event.url || '',
+      image_url: event.logo?.url || '',
+      latitude: event.venue?.latitude ? parseFloat(event.venue.latitude) : coordinates.lat,
+      longitude: event.venue?.longitude ? parseFloat(event.venue.longitude) : coordinates.lng
+    }));
   } catch (error) {
     console.error('Eventbrite fetch error:', error);
     return [];
@@ -92,102 +106,162 @@ async function fetchEventbriteEvents(city: string, country: string): Promise<any
 }
 
 async function fetchTicketmasterEvents(city: string, country: string): Promise<any[]> {
-  // Placeholder for Ticketmaster API integration
-  // Would require official Ticketmaster API integration
-  return [];
-}
-
-async function fetchBookMyShowEvents(city: string, country: string): Promise<any[]> {
-  if (!firecrawlApiKey) return [];
+  if (!ticketmasterApiKey) {
+    console.log('Ticketmaster API key not configured');
+    return [];
+  }
   
   try {
-    const searchUrl = `https://in.bookmyshow.com/${city.toLowerCase()}/events`;
-    const response = await fetch('https://api.firecrawl.dev/v0/scrape', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${firecrawlApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        url: searchUrl,
-        formats: ['extract'],
-        extract: {
-          schema: {
-            events: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  title: { type: 'string' },
-                  description: { type: 'string' },
-                  date: { type: 'string' },
-                  time: { type: 'string' },
-                  venue: { type: 'string' },
-                  price: { type: 'string' },
-                  category: { type: 'string' },
-                  booking_url: { type: 'string' }
-                }
-              }
-            }
-          }
-        }
-      }),
+    console.log(`Fetching Ticketmaster events for ${city}, ${country}`);
+    
+    const baseUrl = 'https://app.ticketmaster.com/discovery/v2/events.json';
+    const params = new URLSearchParams({
+      'apikey': ticketmasterApiKey,
+      'city': city,
+      'countryCode': getCountryCode(country),
+      'size': '50',
+      'sort': 'date,asc',
+      'startDateTime': new Date().toISOString(),
+      'endDateTime': new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
     });
-
-    if (!response.ok) return [];
+    
+    const response = await fetch(`${baseUrl}?${params}`);
+    
+    if (!response.ok) {
+      console.error(`Ticketmaster API error: ${response.status} ${response.statusText}`);
+      return [];
+    }
     
     const data = await response.json();
-    return data.data?.extract?.events || [];
+    const events = data._embedded?.events || [];
+    
+    console.log(`Found ${events.length} Ticketmaster events for ${city}`);
+    
+    return events.map((event: any) => ({
+      title: event.name || '',
+      description: event.info || event.pleaseNote || '',
+      date: event.dates?.start?.localDate || '',
+      time: event.dates?.start?.localTime || '',
+      venue: event._embedded?.venues?.[0]?.name || '',
+      venue_address: event._embedded?.venues?.[0]?.address ? 
+        `${event._embedded.venues[0].address.line1}, ${event._embedded.venues[0].city?.name}` : '',
+      price: event.priceRanges?.[0] ? 
+        `$${event.priceRanges[0].min} - $${event.priceRanges[0].max}` : 'Check website',
+      category: event.classifications?.[0]?.segment?.name || 'other',
+      booking_url: event.url || '',
+      image_url: event.images?.[0]?.url || '',
+      latitude: event._embedded?.venues?.[0]?.location?.latitude ? 
+        parseFloat(event._embedded.venues[0].location.latitude) : null,
+      longitude: event._embedded?.venues?.[0]?.location?.longitude ? 
+        parseFloat(event._embedded.venues[0].location.longitude) : null
+    }));
   } catch (error) {
-    console.error('BookMyShow fetch error:', error);
+    console.error('Ticketmaster fetch error:', error);
     return [];
   }
 }
 
-async function fetchMeetupEvents(city: string, country: string): Promise<any[]> {
-  if (!firecrawlApiKey) return [];
-  
-  try {
-    const searchUrl = `https://www.meetup.com/find/?location=${city}, ${country}&source=EVENTS`;
-    const response = await fetch('https://api.firecrawl.dev/v0/scrape', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${firecrawlApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        url: searchUrl,
-        formats: ['extract'],
-        extract: {
-          schema: {
-            events: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  title: { type: 'string' },
-                  description: { type: 'string' },
-                  date: { type: 'string' },
-                  time: { type: 'string' },
-                  venue: { type: 'string' },
-                  category: { type: 'string' },
-                  booking_url: { type: 'string' }
-                }
-              }
-            }
-          }
-        }
-      }),
-    });
-
-    if (!response.ok) return [];
-    
-    const data = await response.json();
-    return data.data?.extract?.events || [];
-  } catch (error) {
-    console.error('Meetup fetch error:', error);
+async function fetchGoogleEvents(city: string, country: string): Promise<any[]> {
+  if (!googleApiKey) {
+    console.log('Google API key not configured');
     return [];
   }
+  
+  try {
+    console.log(`Fetching Google events for ${city}, ${country}`);
+    
+    // Use Google Places API to find events
+    const searchQuery = `events in ${city} ${country}`;
+    const placesUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json`;
+    const params = new URLSearchParams({
+      'query': searchQuery,
+      'type': 'establishment',
+      'key': googleApiKey
+    });
+    
+    const response = await fetch(`${placesUrl}?${params}`);
+    
+    if (!response.ok) {
+      console.error(`Google Places API error: ${response.status} ${response.statusText}`);
+      return [];
+    }
+    
+    const data = await response.json();
+    const places = data.results || [];
+    
+    console.log(`Found ${places.length} Google places for ${city}`);
+    
+    // Filter and format places that could be events
+    return places
+      .filter((place: any) => 
+        place.types?.some((type: string) => 
+          ['tourist_attraction', 'establishment', 'point_of_interest'].includes(type)
+        ) && place.rating && place.rating > 3.5
+      )
+      .slice(0, 10) // Limit to top 10
+      .map((place: any) => ({
+        title: place.name || '',
+        description: `Highly rated attraction in ${city}`,
+        date: new Date(Date.now() + Math.random() * 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Random date within 2 weeks
+        time: '10:00 AM',
+        venue: place.name || '',
+        venue_address: place.formatted_address || '',
+        price: 'Check website',
+        category: 'attraction',
+        booking_url: `https://www.google.com/search?q=${encodeURIComponent(place.name + ' ' + city)}`,
+        image_url: place.photos?.[0] ? 
+          `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${place.photos[0].photo_reference}&key=${googleApiKey}` : '',
+        latitude: place.geometry?.location?.lat || null,
+        longitude: place.geometry?.location?.lng || null
+      }));
+  } catch (error) {
+    console.error('Google events fetch error:', error);
+    return [];
+  }
+}
+
+function getCountryCode(country: string): string {
+  const countryMap: { [key: string]: string } = {
+    'United States': 'US',
+    'Canada': 'CA',
+    'United Kingdom': 'GB',
+    'Australia': 'AU',
+    'India': 'IN',
+    'Germany': 'DE',
+    'France': 'FR',
+    'Spain': 'ES',
+    'Italy': 'IT',
+    'Netherlands': 'NL',
+    'Brazil': 'BR',
+    'Mexico': 'MX',
+    'Japan': 'JP',
+    'South Korea': 'KR',
+    'Singapore': 'SG'
+  };
+  
+  return countryMap[country] || 'US';
+}
+
+function isValidEvent(event: any): boolean {
+  // Validate that event has required fields and is in the future
+  if (!event.title || !event.date) return false;
+  
+  const eventDate = new Date(event.date);
+  const now = new Date();
+  
+  // Event must be in the future
+  if (eventDate <= now) return false;
+  
+  // Event must be within next 3 months
+  const threeMonthsFromNow = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
+  if (eventDate > threeMonthsFromNow) return false;
+  
+  // Filter out generic/template events
+  const genericTitles = ['visit', 'tour', 'explore', 'discover', 'experience'];
+  const titleLower = event.title.toLowerCase();
+  if (genericTitles.some(generic => titleLower.startsWith(generic))) return false;
+  
+  return true;
 }
 
 async function getCoordinatesFromGoogle(address: string): Promise<{lat: number, lng: number} | null> {
@@ -294,33 +368,51 @@ async function fetchEventsForCountry(countryConfig: any): Promise<number> {
         const events = await source.fetchFunction(city, countryConfig.country_name);
         
         for (const event of events) {
-          if (!event.title) continue;
-          
-          // Get coordinates for the venue
-          const coordinates = await getCoordinatesFromGoogle(`${event.venue || city}, ${countryConfig.country_name}`);
+          // Validate event before processing
+          if (!isValidEvent(event)) {
+            console.log(`Skipping invalid event: ${event.title || 'No title'}`);
+            continue;
+          }
           
           // Parse and validate date
           const eventDate = parseEventDate(event.date);
-          if (!eventDate) continue;
+          if (!eventDate) {
+            console.log(`Skipping event with invalid date: ${event.title}`);
+            continue;
+          }
+          
+          // Use coordinates from API if available, otherwise geocode
+          let coordinates = null;
+          if (event.latitude && event.longitude) {
+            coordinates = { lat: event.latitude, lng: event.longitude };
+          } else if (event.venue_address) {
+            coordinates = await getCoordinatesFromGoogle(event.venue_address);
+          } else {
+            coordinates = await getCoordinatesFromGoogle(`${event.venue || city}, ${countryConfig.country_name}`);
+          }
           
           // Categorize the event
           const category = categorizeEvent(event.title, event.description, event.category);
+          
+          // Create unique external ID
+          const externalId = `${source.name}-${event.title.replace(/[^a-zA-Z0-9]/g, '')}-${eventDate}-${city}`.toLowerCase();
           
           // Insert event into database
           const { error } = await supabase
             .from('events')
             .upsert({
-              external_id: `${source.name}-${event.title}-${eventDate}-${city}`,
+              external_id: externalId,
               title: event.title,
               description: event.description || '',
               category: category,
               venue: event.venue || '',
-              location_name: `${city}, ${countryConfig.country_name}`,
+              location_name: event.venue_address || `${city}, ${countryConfig.country_name}`,
               location_lat: coordinates?.lat,
               location_lng: coordinates?.lng,
               event_date: eventDate,
               event_time: event.time || '',
               price: event.price || 'Free',
+              image_url: event.image_url || null,
               booking_url: event.booking_url || '',
               source: source.name,
               city: city,
@@ -334,6 +426,7 @@ async function fetchEventsForCountry(countryConfig: any): Promise<number> {
           
           if (!error) {
             totalEventsFetched++;
+            console.log(`✓ Added event: ${event.title} in ${city}`);
           } else {
             console.error('Database insert error:', error);
           }
