@@ -672,43 +672,85 @@ const MemoryVault: React.FC = () => {
               </h3>
             </div>
           ) : (
-            <div className="columns-2 gap-2">
-              {filteredItems.map((item) => 
-                item.type === 'memory' ? (
-                  <div key={item.id} className="break-inside-avoid mb-2">
-                    <MobileMemoryCard
-                      memory={item}
-                    onView={() => {
-                      setSelectedItem(item);
-                      setShowViewDialog(true);
-                    }}
-                    onToggleFavorite={(id, currentState) => toggleFavorite(id, 'memory', currentState)}
-                    onEdit={() => startEdit(item)}
-                    onDelete={() => {
-                      setSelectedItem(item);
-                      setShowDeleteDialog(true);
-                    }}
-                    />
-                  </div>
-                ) : (
-                  <div key={item.id} className="break-inside-avoid mb-2">
-                    <MobileNoteCard
-                      note={item}
-                    onView={() => {
-                      setSelectedItem(item);
-                      setShowViewDialog(true);
-                    }}
-                    onToggleFavorite={(id, currentState) => toggleFavorite(id, 'note', currentState)}
-                    onEdit={() => startEdit(item)}
-                    onDelete={() => {
-                      setSelectedItem(item);
-                      setShowDeleteDialog(true);
-                    }}
-                    />
-                  </div>
-                )
+            <>
+              {viewMode === 'grid' ? (
+                <div className="columns-2 gap-2">
+                  {filteredItems.map((item) => 
+                    item.type === 'memory' ? (
+                      <div key={item.id} className="break-inside-avoid mb-2">
+                        <MobileMemoryCard
+                          memory={item}
+                        onView={() => {
+                          setSelectedItem(item);
+                          setShowViewDialog(true);
+                        }}
+                        onToggleFavorite={(id, currentState) => toggleFavorite(id, 'memory', currentState)}
+                        onEdit={() => startEdit(item)}
+                        onDelete={() => {
+                          setSelectedItem(item);
+                          setShowDeleteDialog(true);
+                        }}
+                        />
+                      </div>
+                    ) : (
+                      <div key={item.id} className="break-inside-avoid mb-2">
+                        <MobileNoteCard
+                          note={item}
+                        onView={() => {
+                          setSelectedItem(item);
+                          setShowViewDialog(true);
+                        }}
+                        onToggleFavorite={(id, currentState) => toggleFavorite(id, 'note', currentState)}
+                        onEdit={() => startEdit(item)}
+                        onDelete={() => {
+                          setSelectedItem(item);
+                          setShowDeleteDialog(true);
+                        }}
+                        />
+                      </div>
+                    )
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {filteredItems.map((item) => 
+                    item.type === 'memory' ? (
+                      <div key={item.id} className="w-full">
+                        <MobileMemoryCard
+                          memory={item}
+                        onView={() => {
+                          setSelectedItem(item);
+                          setShowViewDialog(true);
+                        }}
+                        onToggleFavorite={(id, currentState) => toggleFavorite(id, 'memory', currentState)}
+                        onEdit={() => startEdit(item)}
+                        onDelete={() => {
+                          setSelectedItem(item);
+                          setShowDeleteDialog(true);
+                        }}
+                        />
+                      </div>
+                    ) : (
+                      <div key={item.id} className="w-full">
+                        <MobileNoteCard
+                          note={item}
+                        onView={() => {
+                          setSelectedItem(item);
+                          setShowViewDialog(true);
+                        }}
+                        onToggleFavorite={(id, currentState) => toggleFavorite(id, 'note', currentState)}
+                        onEdit={() => startEdit(item)}
+                        onDelete={() => {
+                          setSelectedItem(item);
+                          setShowDeleteDialog(true);
+                        }}
+                        />
+                      </div>
+                    )
+                  )}
+                </div>
               )}
-            </div>
+            </>
           )}
         </div>
 
