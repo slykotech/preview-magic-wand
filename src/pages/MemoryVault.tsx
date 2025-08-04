@@ -621,21 +621,22 @@ const MemoryVault: React.FC = () => {
               <h1 className="text-xl font-bold text-gray-900">Memory Vault</h1>
               <p className="text-sm text-gray-500">Your love story collection</p>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1">
               <Button
-                variant="ghost"
+                variant={viewMode === 'grid' ? "default" : "ghost"}
                 size="sm"
-                onClick={() => setViewMode(viewMode === 'grid' ? 'timeline' : 'grid')}
+                onClick={() => setViewMode('grid')}
                 className="p-2"
               >
-                {viewMode === 'grid' ? <List className="h-5 w-5" /> : <Grid3X3 className="h-5 w-5" />}
+                <Grid3X3 className="h-5 w-5" />
               </Button>
               <Button
-                variant="ghost"
+                variant={viewMode === 'timeline' ? "default" : "ghost"}
                 size="sm"
+                onClick={() => setViewMode('timeline')}
                 className="p-2"
               >
-                <MoreVertical className="h-5 w-5" />
+                <List className="h-5 w-5" />
               </Button>
             </div>
           </div>
