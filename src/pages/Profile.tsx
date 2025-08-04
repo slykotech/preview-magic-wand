@@ -126,13 +126,15 @@ export const Profile = () => {
     try {
       setLoading(true);
 
-      // If we have couple data, use it; otherwise set defaults
-      if (coupleData && coupleData.user1_id !== coupleData.user2_id) {
-        // Calculate relationship stats
-        const createdDate = new Date(coupleData.created_at);
-        const today = new Date();
-        const diffTime = Math.abs(today.getTime() - createdDate.getTime());
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        // If we have couple data, use it; otherwise set defaults
+        if (coupleData && coupleData.user1_id !== coupleData.user2_id) {
+          // Calculate relationship stats - use anniversary date if available, otherwise created date
+          const startDate = coupleData.anniversary_date ? 
+            new Date(coupleData.anniversary_date) : 
+            new Date(coupleData.created_at);
+          const today = new Date();
+          const diffTime = Math.abs(today.getTime() - startDate.getTime());
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
         // Get memories count
         const { count: memoryCount } = await supabase
@@ -284,7 +286,7 @@ export const Profile = () => {
             <ProfileMenuItem
               icon={<Calendar size={20} />}
               title="Date History"
-              subtitle={`${relationshipStats.dateCount} amazing dates`}
+              subtitle={`${relationshipStats.dateCount} amazing dates • ${relationshipStats.daysConnected} days connected`}
               onClick={() => setShowDateHistory(true)}
             />
           </div>

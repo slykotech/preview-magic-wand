@@ -129,8 +129,9 @@ export const Dashboard = () => {
         // Clear date-related cached data
         localStorage.removeItem('mood_updated');
         localStorage.removeItem('checkin_completed');
-        // Refresh dashboard data
+        // Refresh dashboard data and sync score
         fetchDashboardData();
+        refreshSyncScore();
       }
 
       // Update the stored date
@@ -143,7 +144,7 @@ export const Dashboard = () => {
     // Set up interval to check every minute for date changes
     const interval = setInterval(checkDateChange, 60000);
     return () => clearInterval(interval);
-  }, [user]);
+  }, [user, refreshSyncScore]);
   const fetchDashboardData = async () => {
     try {
       console.log('Fetching dashboard data for user:', user?.id);
@@ -218,37 +219,15 @@ export const Dashboard = () => {
         ascending: false
       }).limit(1).maybeSingle();
 
-      // Calculate checkin streak
-      const {
-        data: allCheckins
-      } = await supabase.from('daily_checkins').select('checkin_date, user_id').eq('couple_id', currentCoupleId).order('checkin_date', {
-        ascending: false
-      });
-      let streak = 0;
-      if (allCheckins && allCheckins.length > 0) {
-        const todayStr = new Date().toDateString();
-        let currentDate = new Date();
-
-        // Group checkins by date
-        const checkinsByDate = allCheckins.reduce((acc, checkin) => {
-          const date = new Date(checkin.checkin_date).toDateString();
-          if (!acc[date]) acc[date] = [];
-          acc[date].push(checkin.user_id);
-          return acc;
-        }, {} as Record<string, string[]>);
-
-        // Calculate consecutive days where both partners checked in
-        while (true) {
-          const dateStr = currentDate.toDateString();
-          const dayCheckins = checkinsByDate[dateStr];
-          if (dayCheckins && dayCheckins.length === 2) {
-            streak++;
-            currentDate.setDate(currentDate.getDate() - 1);
-          } else {
-            break;
-          }
-        }
-      }
+      // Get streak data from couples table (updated by database functions)
+      const { data: coupleStreakData } = await supabase
+        .from('couples')
+        .select('checkin_streak, story_streak')
+        .eq('id', currentCoupleId)
+        .single();
+      
+      const currentCheckinStreak = coupleStreakData?.checkin_streak || 0;
+      const currentStoryStreak = coupleStreakData?.story_streak || 0;
 
       // Get today's moods
       const todayForMood = new Date().toISOString().split('T')[0];
@@ -281,8 +260,8 @@ export const Dashboard = () => {
       setScheduledDatesCount(scheduledCount || 0);
       setRecentMemory(memoryData);
       setLastCheckin(checkinData);
-      setCheckinStreak(streak);
-      setStoryStreak(streak); // For now, story streak = checkin streak
+      setCheckinStreak(currentCheckinStreak);
+      setStoryStreak(currentStoryStreak);
       setUserMood(userMoodData?.mood);
 
       // If testing with self, don't show partner mood as the same

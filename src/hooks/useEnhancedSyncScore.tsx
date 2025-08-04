@@ -42,21 +42,17 @@ export const useEnhancedSyncScore = (coupleId: string | null) => {
       let calculatedScore = 0; // Start from 0% base score
       
       try {
-        // Try to update streaks first
-        const { error: streakError } = await supabase.rpc('update_couple_streaks', { 
-          p_couple_id: coupleId 
-        });
+        // Always try enhanced calculation first
+        const { data: enhancedScore, error: enhancedError } = await supabase.rpc(
+          'calculate_enhanced_sync_score',
+          { p_couple_id: coupleId }
+        );
         
-        if (!streakError) {
-          // If streaks updated successfully, try enhanced calculation
-          const { data: enhancedScore, error: enhancedError } = await supabase.rpc(
-            'calculate_enhanced_sync_score',
-            { p_couple_id: coupleId }
-          );
-          
-          if (!enhancedError && enhancedScore !== null) {
-            calculatedScore = enhancedScore;
-          }
+        if (!enhancedError && enhancedScore !== null) {
+          calculatedScore = enhancedScore;
+        } else {
+          console.log('Enhanced sync score failed:', enhancedError);
+          throw new Error('Enhanced calculation failed');
         }
       } catch (enhancedErr) {
         console.log('Enhanced sync score not available, using fallback calculation');
@@ -88,6 +84,16 @@ export const useEnhancedSyncScore = (coupleId: string | null) => {
         } else {
           calculatedScore = 0; // Base score when no data
         }
+        
+        // Update couple's last sync score manually in fallback
+        await supabase
+          .from('couples')
+          .update({ 
+            last_sync_score: calculatedScore,
+            last_activity_date: new Date().toISOString().split('T')[0],
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', coupleId);
       }
 
       // Fetch detailed sync score data
@@ -226,11 +232,50 @@ export const useEnhancedSyncScore = (coupleId: string | null) => {
           fetchSyncScore();
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'daily_checkins',
+          filter: `couple_id=eq.${coupleId}`,
+        },
+        () => {
+          fetchSyncScore();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'stories',
+          filter: `couple_id=eq.${coupleId}`,
+        },
+        () => {
+          fetchSyncScore();
+        }
+      )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
+  }, [coupleId]);
+
+  // Auto-refresh every hour to handle day changes
+  useEffect(() => {
+    if (!coupleId) return;
+
+    const interval = setInterval(() => {
+      const now = new Date();
+      // Refresh at midnight and every hour to catch day changes
+      if (now.getHours() === 0 || now.getMinutes() === 0) {
+        fetchSyncScore();
+      }
+    }, 60000); // Check every minute
+
+    return () => clearInterval(interval);
   }, [coupleId]);
 
   return {
