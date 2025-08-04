@@ -56,6 +56,8 @@ export const DatePlanner = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [dateToDelete, setDateToDelete] = useState<DateIdea | null>(null);
   const [showUnsuccessfulOptions, setShowUnsuccessfulOptions] = useState<string | null>(null);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [showAllCategories, setShowAllCategories] = useState(false);
   const [newEvent, setNewEvent] = useState({
     title: '',
     description: '',
@@ -501,6 +503,53 @@ export const DatePlanner = () => {
   const isFutureDate = (scheduledDate: string, scheduledTime?: string) => {
     return !isDateCompleted(scheduledDate, scheduledTime);
   };
+
+  // Get unique categories from events
+  const availableCategories = Array.from(new Set(upcomingEvents.map(event => event.category))).sort();
+  
+  // Filter events by selected categories
+  const filteredEvents = selectedCategories.length === 0 
+    ? upcomingEvents 
+    : upcomingEvents.filter(event => selectedCategories.includes(event.category));
+  
+  // Group events by category
+  const eventsByCategory = filteredEvents.reduce((acc, event) => {
+    const category = event.category || 'Other';
+    if (!acc[category]) {
+      acc[category] = [];
+    }
+    acc[category].push(event);
+    return acc;
+  }, {} as Record<string, EventData[]>);
+
+  // Category emoji mapping
+  const getCategoryEmoji = (category: string) => {
+    const emojiMap: Record<string, string> = {
+      'Entertainment': '🎪',
+      'Music': '🎵',
+      'Comedy': '😂',
+      'Arts': '🎨',
+      'Cultural': '🏛️',
+      'Food & Drink': '🍽️',
+      'Nightlife': '🌙',
+      'Outdoor': '🌳',
+      'Workshop': '🛠️',
+      'Other': '✨'
+    };
+    return emojiMap[category] || '✨';
+  };
+
+  const handleCategoryToggle = (category: string) => {
+    setSelectedCategories(prev => 
+      prev.includes(category) 
+        ? prev.filter(c => c !== category)
+        : [...prev, category]
+    );
+  };
+
+  const clearAllFilters = () => {
+    setSelectedCategories([]);
+  };
   return <div className="min-h-screen bg-background pb-20">
       {/* Gradient Header */}
       <GradientHeader title="Date Planner" subtitle="Because love deserves beautiful plans" icon={<Heart size={24} />} showBackButton={false}>
@@ -675,103 +724,183 @@ export const DatePlanner = () => {
                 </p>
               </div>
             ) : (
-              upcomingEvents.map((event, index) => (
-                <div 
-                  key={event.id} 
-                  className="bg-card rounded-2xl p-6 shadow-soft hover:shadow-romantic transition-all duration-200 transform hover:scale-102 animate-fade-in" 
-                  style={{ animationDelay: `${index * 100}ms` }}
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <h3 className="text-xl font-extrabold font-poppins text-foreground mb-2">
-                        {event.title}
-                      </h3>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
-                        <div className="flex items-center gap-1">
-                          <MapPin size={16} />
-                          <span className="font-bold">{event.distance}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Clock size={16} />
-                          <span className="font-bold">{event.timing}</span>
-                        </div>
-                      </div>
-                      {event.venue && (
-                        <p className="text-sm text-muted-foreground mb-1">
-                          📍 {event.venue} {event.city && `• ${event.city}`}
-                        </p>
-                      )}
-                      {event.price && (
-                        <p className="text-sm font-bold text-green-600 mb-2">
-                          💰 {event.price}
-                        </p>
-                      )}
-                    </div>
-                    <Badge className="bg-purple-50 text-purple-600 border-purple-200">
-                      <Sparkles size={12} className="mr-1" />
-                      {event.category}
-                    </Badge>
+              <div className="space-y-6">
+                {/* Category Filter Tags */}
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-2xl p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-lg font-bold text-foreground">Filter by Category</h3>
+                    {selectedCategories.length > 0 && (
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={clearAllFilters}
+                        className="text-muted-foreground hover:text-foreground"
+                      >
+                        Clear All
+                      </Button>
+                    )}
                   </div>
                   
-                  <p className="text-muted-foreground font-inter mb-4 leading-relaxed">
-                    {event.description}
-                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {availableCategories.slice(0, showAllCategories ? availableCategories.length : 6).map((category) => (
+                      <Badge
+                        key={category}
+                        variant={selectedCategories.includes(category) ? "default" : "outline"}
+                        className={`cursor-pointer transition-all hover:scale-105 ${
+                          selectedCategories.includes(category)
+                            ? 'bg-primary text-primary-foreground'
+                            : 'hover:bg-muted'
+                        }`}
+                        onClick={() => handleCategoryToggle(category)}
+                      >
+                        <span className="mr-1">{getCategoryEmoji(category)}</span>
+                        {category}
+                        <span className="ml-1 text-xs opacity-70">
+                          ({upcomingEvents.filter(e => e.category === category).length})
+                        </span>
+                      </Badge>
+                    ))}
+                    
+                    {availableCategories.length > 6 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowAllCategories(!showAllCategories)}
+                        className="text-xs"
+                      >
+                        {showAllCategories ? 'Show Less' : `+${availableCategories.length - 6} More`}
+                      </Button>
+                    )}
+                  </div>
                   
-                    <div className="flex gap-2">
-                      {/* Google Places events get Schedule option */}
-                      {event.source === 'google' ? (
-                        <>
-                          <Button 
-                            className="bg-gradient-secondary hover:opacity-90 text-white flex-1" 
-                            size="sm"
-                            onClick={() => handleScheduleUpcomingEvent(event)}
-                          >
-                            <CalendarPlus size={14} className="mr-1" />
-                            Schedule
-                          </Button>
-                          
-                          {event.bookingUrl && (
-                            <Button 
-                              variant="outline"
-                              size="sm"
-                              onClick={() => window.open(event.bookingUrl, '_blank')}
-                              className="flex-1"
-                            >
-                              <MapPin size={14} className="mr-1" />
-                              Get Directions
-                            </Button>
-                          )}
-                        </>
-                      ) : (
-                        <>
-                          {/* Firecrawl events get Add to Date option */}
-                          <Button 
-                            className="bg-gradient-primary hover:opacity-90 text-white flex-1" 
-                            size="sm"
-                            onClick={() => handleAddToDate(event)}
-                          >
-                            <Plus size={14} className="mr-1" />
-                            Add to Your Date
-                          </Button>
-                          
-                          {/* Book button for web-scraped events */}
-                          {event.bookingUrl && 
-                           ['bookmyshow', 'paytm-insider', 'district', 'ticketmaster', 'eventbrite', 'facebook', 'meetup'].includes(event.source) && (
-                            <Button 
-                              variant="outline"
-                              size="sm"
-                              onClick={() => window.open(event.bookingUrl, '_blank')}
-                              className="flex-1"
-                            >
-                              <CalendarClock size={14} className="mr-1" />
-                              Book Now
-                            </Button>
-                          )}
-                        </>
-                      )}
-                    </div>
+                  {selectedCategories.length > 0 && (
+                    <p className="text-sm text-muted-foreground mt-2">
+                      Showing {filteredEvents.length} of {upcomingEvents.length} events
+                    </p>
+                  )}
                 </div>
-              ))
+
+                {/* Events grouped by category */}
+                {Object.entries(eventsByCategory).map(([category, events]) => (
+                  <div key={category} className="space-y-3">
+                    <div className="flex items-center gap-2 mb-4">
+                      <span className="text-2xl">{getCategoryEmoji(category)}</span>
+                      <h3 className="text-xl font-bold text-foreground">{category}</h3>
+                      <Badge variant="secondary" className="ml-2">
+                        {events.length} {events.length === 1 ? 'event' : 'events'}
+                      </Badge>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      {events.map((event, index) => (
+                        <div 
+                          key={event.id} 
+                          className="bg-card rounded-2xl p-6 shadow-soft hover:shadow-romantic transition-all duration-200 transform hover:scale-102 animate-fade-in" 
+                          style={{ animationDelay: `${index * 100}ms` }}
+                        >
+                          <div className="flex items-start justify-between mb-4">
+                            <div className="flex-1">
+                              <h4 className="text-xl font-extrabold font-poppins text-foreground mb-2">
+                                {event.title}
+                              </h4>
+                              <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
+                                <div className="flex items-center gap-1">
+                                  <MapPin size={16} />
+                                  <span className="font-bold">{event.distance}</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Clock size={16} />
+                                  <span className="font-bold">{event.timing}</span>
+                                </div>
+                              </div>
+                              {event.venue && (
+                                <p className="text-sm text-muted-foreground mb-1">
+                                  📍 {event.venue} {event.city && `• ${event.city}`}
+                                </p>
+                              )}
+                              {event.price && (
+                                <p className="text-sm font-bold text-green-600 mb-2">
+                                  💰 {event.price}
+                                </p>
+                              )}
+                            </div>
+                            <div className="flex flex-col gap-2">
+                              <Badge className="bg-purple-50 text-purple-600 border-purple-200">
+                                <Sparkles size={12} className="mr-1" />
+                                {event.source}
+                              </Badge>
+                              {event.source === 'google' && (
+                                <Badge className="bg-blue-50 text-blue-600 border-blue-200">
+                                  <MapPin size={12} className="mr-1" />
+                                  Google Places
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <p className="text-muted-foreground font-inter mb-4 leading-relaxed">
+                            {event.description}
+                          </p>
+                          
+                          <div className="flex gap-2">
+                            {/* Google Places events get Schedule option */}
+                            {event.source === 'google' ? (
+                              <>
+                                <Button 
+                                  className="bg-gradient-secondary hover:opacity-90 text-white flex-1" 
+                                  size="sm"
+                                  onClick={() => handleScheduleUpcomingEvent(event)}
+                                >
+                                  <CalendarPlus size={14} className="mr-1" />
+                                  Schedule
+                                </Button>
+                                
+                                {event.bookingUrl && (
+                                  <Button 
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => window.open(event.bookingUrl, '_blank')}
+                                    className="flex-1"
+                                  >
+                                    <MapPin size={14} className="mr-1" />
+                                    Get Directions
+                                  </Button>
+                                )}
+                              </>
+                            ) : (
+                              <>
+                                {/* Firecrawl events get Add to Date option */}
+                                <Button 
+                                  className="bg-gradient-primary hover:opacity-90 text-white flex-1" 
+                                  size="sm"
+                                  onClick={() => handleAddToDate(event)}
+                                >
+                                  <Plus size={14} className="mr-1" />
+                                  Add to Your Date
+                                </Button>
+                                
+                                {/* Book button for web-scraped events */}
+                                {event.bookingUrl && 
+                                 ['bookmyshow', 'paytm-insider', 'district', 'ticketmaster', 'eventbrite', 'facebook', 'meetup'].includes(event.source) && (
+                                  <Button 
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => window.open(event.bookingUrl, '_blank')}
+                                    className="flex-1"
+                                  >
+                                    <CalendarClock size={14} className="mr-1" />
+                                    Book Now
+                                  </Button>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
           </TabsContent>
         </Tabs>
