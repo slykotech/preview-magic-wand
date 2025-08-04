@@ -280,7 +280,7 @@ serve(async (req) => {
     const googleKey = Deno.env.get('GOOGLE_EVENTS_API_KEY');
     if (googleKey && finalLatitude && finalLongitude && !isRateLimited('google')) {
       eventPromises.push(
-        fetchGoogleEvents(googleKey, finalLatitude, finalLongitude, radius)
+        fetchGoogleEvents(googleKey, finalLatitude, finalLongitude, radius, resolvedLocation || locationName)
           .then(events => {
             updateUsageStats('google');
             console.log(`Fetched ${events.length} events from Google Places`);
@@ -369,9 +369,10 @@ serve(async (req) => {
           description: event.description,
           category: event.category,
           venue: event.venue,
+          city: event.city || resolvedLocation || locationName,
           location_lat: event.location?.latitude,
           location_lng: event.location?.longitude,
-          location_name: event.location?.city || resolvedLocation || locationName,
+          location_name: event.location?.city || event.city || resolvedLocation || locationName,
           price: event.price,
           event_date: event.date ? new Date(event.date).toISOString().split('T')[0] : null,
           event_time: event.time,

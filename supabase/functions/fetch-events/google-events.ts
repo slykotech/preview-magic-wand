@@ -34,7 +34,8 @@ export async function fetchGoogleEvents(
   apiKey: string,
   latitude: number,
   longitude: number,
-  radius: number = 25
+  radius: number = 25,
+  cityName?: string
 ): Promise<UnifiedEvent[]> {
   try {
     console.log('Fetching venues from Google Places (New API)');
@@ -71,6 +72,30 @@ export async function fetchGoogleEvents(
     if (!data.places || data.places.length === 0) {
       console.log('No places found from Google Places API');
       return [];
+    }
+
+    // Get city name from reverse geocoding if not provided
+    let resolvedCityName = cityName;
+    if (!resolvedCityName) {
+      try {
+        const geocodeResponse = await fetch(
+          `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${apiKey}`
+        );
+        if (geocodeResponse.ok) {
+          const geocodeData = await geocodeResponse.json();
+          if (geocodeData.status === 'OK' && geocodeData.results?.[0]) {
+            const addressComponents = geocodeData.results[0].address_components;
+            const cityComponent = addressComponents.find(component => 
+              component.types.includes('locality') || 
+              component.types.includes('administrative_area_level_1')
+            );
+            resolvedCityName = cityComponent?.long_name || 'Unknown City';
+          }
+        }
+      } catch (error) {
+        console.error('Reverse geocoding error:', error);
+        resolvedCityName = 'Unknown City';
+      }
     }
 
     const events: UnifiedEvent[] = [];
@@ -114,6 +139,7 @@ export async function fetchGoogleEvents(
         description: `Explore this popular ${category.toLowerCase()} destination`,
         category,
         venue: place.displayName.text,
+        city: resolvedCityName,
         price: category === EVENT_CATEGORIES.FOOD ? '₹500 - ₹2000' : 
                category === EVENT_CATEGORIES.NIGHTLIFE ? '₹1000 - ₹3000' : 
                'Entry varies',
