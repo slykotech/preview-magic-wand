@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { format, parseISO } from 'date-fns';
 import { useCoupleData } from '@/hooks/useCoupleData';
 import { Heart, Search, Grid3X3, List, Star, Camera, Upload, Plus, Image as ImageIcon, FileText, Edit3, Trash2, MoreVertical, Eye, Calendar, Clock, Activity, Edit2, X, Images } from 'lucide-react';
+import { GradientHeader } from '@/components/GradientHeader';
 
 // Types
 interface MemoryImage {
@@ -614,34 +615,33 @@ const MemoryVault: React.FC = () => {
 
   return (
     <>
-      <div className="min-h-screen bg-gray-50 flex flex-col pb-20">
-        {/* Header */}
-        <div className="bg-white border-b px-4 py-3 sticky top-0 z-10">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold text-gray-900">Memory Vault</h1>
-              <p className="text-sm text-gray-500">Your love story collection</p>
-            </div>
-            {/* View Toggle - Repositioned */}
-            <div className="absolute top-6 right-6 z-20 flex border border-border rounded-full p-1 bg-background/80 backdrop-blur-sm">
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`p-1.5 rounded-full transition-colors ${
-                  viewMode === 'grid' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'
-                }`}
-              >
-                <Grid3X3 size={18} />
-              </button>
-              <button
-                onClick={() => setViewMode('timeline')}
-                className={`p-1.5 rounded-full transition-colors ${
-                  viewMode === 'timeline' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'
-                }`}
-              >
-                <List size={18} />
-              </button>
-            </div>
-          </div>
+      <div className="min-h-screen bg-background flex flex-col pb-20">
+        {/* Gradient Header */}
+        <GradientHeader 
+          title="Memory Vault" 
+          subtitle="Your love story collection" 
+          icon={<Heart size={24} />} 
+          showBackButton={false}
+        />
+        
+        {/* View Toggle - Repositioned */}
+        <div className="absolute top-6 right-6 z-20 flex border border-border rounded-full p-1 bg-background/80 backdrop-blur-sm">
+          <button
+            onClick={() => setViewMode('grid')}
+            className={`p-1.5 rounded-full transition-colors ${
+              viewMode === 'grid' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'
+            }`}
+          >
+            <Grid3X3 size={18} />
+          </button>
+          <button
+            onClick={() => setViewMode('timeline')}
+            className={`p-1.5 rounded-full transition-colors ${
+              viewMode === 'timeline' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'
+            }`}
+          >
+            <List size={18} />
+          </button>
         </div>
 
         {/* Filter Tabs */}
