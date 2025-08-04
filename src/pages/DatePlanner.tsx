@@ -272,6 +272,9 @@ export const DatePlanner = () => {
 
       if (error) throw error;
 
+      // Update local state immediately to remove from UI
+      setPlannedDates(prev => prev.filter(date => date.id !== dateToDelete.id));
+
       toast({
         title: "Date deleted! 🗑️",
         description: `${dateToDelete.title} has been removed from your planner`
@@ -279,6 +282,8 @@ export const DatePlanner = () => {
 
       setDateToDelete(null);
       setShowDeleteConfirm(false);
+      
+      // Still fetch to ensure data consistency
       fetchPlannedDates();
     } catch (error) {
       console.error('Error deleting date:', error);
@@ -287,6 +292,9 @@ export const DatePlanner = () => {
         description: "Please try again",
         variant: "destructive"
       });
+      // Reset states on error
+      setDateToDelete(null);
+      setShowDeleteConfirm(false);
     }
   };
 
