@@ -1042,8 +1042,15 @@ const MobileMemoryCard: React.FC<{
   onEdit: () => void;
   onDelete: () => void;
 }> = ({ memory, onView, onToggleFavorite, onEdit, onDelete }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
   const firstImage = memory.images?.[0]?.image_url || memory.image_url;
   const totalImages = memory.images?.length || (memory.image_url ? 1 : 0);
+  
+  // Check if description needs truncation (about 2 lines worth of text - roughly 100 characters)
+  const shouldTruncateDescription = memory.description && memory.description.length > 100;
+  const displayDescription = shouldTruncateDescription && !isExpanded 
+    ? memory.description!.slice(0, 100) + "..."
+    : memory.description;
 
   return (
     <Card 
@@ -1066,9 +1073,22 @@ const MobileMemoryCard: React.FC<{
               {memory.title}
             </h3>
             {memory.description && (
-              <p className="text-white/90 text-sm mt-1 drop-shadow">
-                Visited {memory.description.split(' ').slice(0, 3).join(' ')}...
-              </p>
+              <div className="mt-1">
+                <p className="text-white/90 text-sm drop-shadow">
+                  {displayDescription}
+                </p>
+                {shouldTruncateDescription && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsExpanded(!isExpanded);
+                    }}
+                    className="text-white/80 text-xs underline mt-1 hover:text-white transition-colors"
+                  >
+                    {isExpanded ? "Read less" : "Read more"}
+                  </button>
+                )}
+              </div>
             )}
           </div>
           
@@ -1116,9 +1136,22 @@ const MobileMemoryCard: React.FC<{
                 {memory.title}
               </h3>
               {memory.description && (
-                <p className="text-gray-600 text-sm line-clamp-3 mb-2">
-                  {memory.description}
-                </p>
+                <div className="mb-2">
+                  <p className="text-gray-600 text-sm">
+                    {displayDescription}
+                  </p>
+                  {shouldTruncateDescription && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsExpanded(!isExpanded);
+                      }}
+                      className="text-primary text-xs underline mt-1 hover:text-primary/80 transition-colors"
+                    >
+                      {isExpanded ? "Read less" : "Read more"}
+                    </button>
+                  )}
+                </div>
               )}
               <div className="flex items-center text-xs text-gray-500">
                 <Calendar className="h-3 w-3 mr-1" />
