@@ -1263,7 +1263,7 @@ const MobileMemoryCard: React.FC<{
                     }}
                     className="text-white/80 text-xs underline hover:text-white transition-colors"
                   >
-                    more
+                    Read more
                   </button>
                 )}
               </div>
