@@ -547,6 +547,69 @@ export type Database = {
           },
         ]
       }
+      events: {
+        Row: {
+          booking_url: string | null
+          category: string | null
+          created_at: string
+          description: string | null
+          event_date: string | null
+          event_time: string | null
+          expires_at: string
+          external_id: string | null
+          id: string
+          image_url: string | null
+          location_lat: number | null
+          location_lng: number | null
+          location_name: string | null
+          price: string | null
+          source: string
+          title: string
+          updated_at: string
+          venue: string | null
+        }
+        Insert: {
+          booking_url?: string | null
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          event_date?: string | null
+          event_time?: string | null
+          expires_at?: string
+          external_id?: string | null
+          id?: string
+          image_url?: string | null
+          location_lat?: number | null
+          location_lng?: number | null
+          location_name?: string | null
+          price?: string | null
+          source: string
+          title: string
+          updated_at?: string
+          venue?: string | null
+        }
+        Update: {
+          booking_url?: string | null
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          event_date?: string | null
+          event_time?: string | null
+          expires_at?: string
+          external_id?: string | null
+          id?: string
+          image_url?: string | null
+          location_lat?: number | null
+          location_lng?: number | null
+          location_name?: string | null
+          price?: string | null
+          source?: string
+          title?: string
+          updated_at?: string
+          venue?: string | null
+        }
+        Relationships: []
+      }
       game_achievements: {
         Row: {
           achievement_name: string
@@ -1351,6 +1414,35 @@ export type Database = {
         }
         Relationships: []
       }
+      user_saved_events: {
+        Row: {
+          event_id: string
+          id: string
+          saved_at: string
+          user_id: string
+        }
+        Insert: {
+          event_id: string
+          id?: string
+          saved_at?: string
+          user_id: string
+        }
+        Update: {
+          event_id?: string
+          id?: string
+          saved_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_saved_events_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -1371,6 +1463,10 @@ export type Database = {
       check_user_quota: {
         Args: { p_user_id: string; p_estimated_cost?: number }
         Returns: Json
+      }
+      cleanup_expired_events: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       cleanup_expired_verifications: {
         Args: Record<PropertyKey, never>

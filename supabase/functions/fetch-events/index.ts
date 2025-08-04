@@ -357,6 +357,47 @@ serve(async (req) => {
 
     console.log(`Processed ${sortedEvents.length} unique couple-friendly events from ${allEvents.length} total events`);
 
+    // Store events in database for future use
+    if (sortedEvents.length > 0) {
+      console.log(`Storing ${sortedEvents.length} events in database`);
+      
+      try {
+        // Prepare events for database storage
+        const eventsToStore = sortedEvents.map(event => ({
+          external_id: `${event.source}-${event.id}`,
+          title: event.title,
+          description: event.description,
+          category: event.category,
+          venue: event.venue,
+          location_lat: event.location?.latitude,
+          location_lng: event.location?.longitude,
+          location_name: event.location?.city || resolvedLocation || locationName,
+          price: event.price,
+          event_date: event.date ? new Date(event.date).toISOString().split('T')[0] : null,
+          event_time: event.time,
+          source: event.source,
+          image_url: event.image,
+          booking_url: event.bookingUrl
+        }));
+
+        // Store events using upsert to avoid duplicates
+        const { error: storeError } = await supabase
+          .from('events')
+          .upsert(eventsToStore, { 
+            onConflict: 'external_id',
+            ignoreDuplicates: false 
+          });
+
+        if (storeError) {
+          console.error('Error storing events:', storeError);
+        } else {
+          console.log('Events stored successfully');
+        }
+      } catch (error) {
+        console.error('Error in event storage:', error);
+      }
+    }
+
     // Get updated quota info if user is authenticated
     let quotaInfo = null;
     if (userId) {

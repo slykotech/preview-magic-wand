@@ -20,6 +20,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCoupleData } from '@/hooks/useCoupleData';
 import { useLocation } from '@/hooks/useLocation';
 import { useEventsData, EventData } from '@/hooks/useEventsData';
+import { useSavedEvents } from '@/hooks/useSavedEvents';
 import { DataSourceStatus } from '@/components/DataSourceStatus';
 
 interface DateIdea {
@@ -101,6 +102,13 @@ export const DatePlanner = () => {
     dataSourceInfo,
     quota
   } = useEventsData();
+
+  const { 
+    savedEvents, 
+    isLoading: savedEventsLoading, 
+    fetchSavedEvents, 
+    saveEventForUser 
+  } = useSavedEvents();
   useEffect(() => {
     if (!authLoading && !user) {
       navigate('/auth');
@@ -431,19 +439,27 @@ export const DatePlanner = () => {
     if (!dateToDelete) return;
     
     try {
+      console.log('Deleting date with ID:', dateToDelete.id);
+      
       const { error } = await supabase
         .from('date_ideas')
         .delete()
         .eq('id', dateToDelete.id);
         
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase delete error:', error);
+        throw error;
+      }
+      
+      console.log('Date deleted successfully');
       
       toast({
         title: "Date deleted",
         description: `${dateToDelete.title} has been removed from your planner.`
       });
       
-      fetchPlannedDates();
+      // Refresh the list
+      await fetchPlannedDates();
     } catch (error) {
       console.error('Error deleting date:', error);
       toast({
