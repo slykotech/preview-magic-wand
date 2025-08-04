@@ -892,16 +892,20 @@ export const DatePlanner = () => {
                               <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
                                 <div className="flex items-center gap-1">
                                   <MapPin size={16} />
-                                  <span className="font-bold">{event.distance}</span>
+                                  <span className="font-bold">
+                                    {event.city || event.venue || 'Location TBD'}
+                                  </span>
                                 </div>
                                 <div className="flex items-center gap-1">
                                   <Clock size={16} />
                                   <span className="font-bold">{event.timing}</span>
                                 </div>
                               </div>
-                              {event.venue && (
+                              {(event.venue || event.city) && (
                                 <p className="text-sm text-muted-foreground mb-1">
-                                  📍 {event.venue} {event.city && `• ${event.city}`}
+                                  📍 {event.venue && event.city && event.venue !== event.city 
+                                      ? `${event.venue}, ${event.city}` 
+                                      : event.venue || event.city}
                                 </p>
                               )}
                               {event.price && (
