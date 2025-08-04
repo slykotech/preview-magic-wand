@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Crown, Check, Loader2, Star } from 'lucide-react';
+import { Crown, Check, Loader2, Star, Sparkles, Gift, Zap } from 'lucide-react';
 import { useSubscription, SubscriptionPlan } from '@/hooks/useSubscription';
 import { useToast } from '@/hooks/use-toast';
 
@@ -190,13 +190,38 @@ export const SubscriptionSection = ({ onClose }: SubscriptionSectionProps) => {
       ) : (
         // Subscription Plans Display
         <div className="space-y-4">
-          <Card className="p-4 bg-muted/30">
-            <div className="text-center space-y-2">
-              <Crown className="mx-auto text-muted-foreground" size={32} />
-              <h3 className="font-poppins font-bold">Unlock Premium Features</h3>
-              <p className="text-sm text-muted-foreground">
-                Get unlimited access to all relationship tools and insights
-              </p>
+          <Card className="p-6 bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
+            <div className="text-center space-y-4">
+              <div className="relative inline-block">
+                <Crown className="mx-auto text-primary" size={40} />
+                <Sparkles className="absolute -top-1 -right-1 text-yellow-500" size={16} />
+              </div>
+              <div>
+                <h3 className="font-poppins font-bold text-xl">Unlock Premium Features</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Transform your relationship with unlimited access to all tools
+                </p>
+              </div>
+              
+              {/* Premium Features List */}
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="flex items-center gap-2">
+                  <Zap className="text-primary" size={14} />
+                  <span>Unlimited AI coaching</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Sparkles className="text-primary" size={14} />
+                  <span>Advanced insights</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Gift className="text-primary" size={14} />
+                  <span>Premium date ideas</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Crown className="text-primary" size={14} />
+                  <span>Priority support</span>
+                </div>
+              </div>
             </div>
           </Card>
 
@@ -211,23 +236,31 @@ export const SubscriptionSection = ({ onClose }: SubscriptionSectionProps) => {
             ))}
           </div>
 
-          <div className="text-center">
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={handleRestore}
-              disabled={isRestoring}
-              className="text-muted-foreground"
-            >
-              {isRestoring ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Restoring...
-                </>
-              ) : (
-                'Restore Purchases'
-              )}
-            </Button>
+          <div className="space-y-3">
+            <div className="text-center">
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={handleRestore}
+                disabled={isRestoring}
+                className="text-muted-foreground"
+              >
+                {isRestoring ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Restoring...
+                  </>
+                ) : (
+                  'Restore Purchases'
+                )}
+              </Button>
+            </div>
+            
+            <div className="text-center text-xs text-muted-foreground space-y-1">
+              <p>✓ Cancel anytime</p>
+              <p>✓ Secure payments via App Store/Google Play</p>
+              <p>✓ 7-day free trial included</p>
+            </div>
           </div>
         </div>
       )}

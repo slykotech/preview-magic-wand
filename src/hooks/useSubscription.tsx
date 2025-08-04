@@ -20,24 +20,41 @@ export interface SubscriptionInfo {
   isLoading: boolean;
 }
 
-// Initialize RevenueCat
-const initializeRevenueCat = async () => {
-  if (!Capacitor.isNativePlatform()) return;
+// Initialize RevenueCat with production configuration
+const initializeRevenueCat = async (): Promise<boolean> => {
+  if (!Capacitor.isNativePlatform()) {
+    console.log('RevenueCat: Not on native platform, using web fallback');
+    return false;
+  }
   
   try {
-    // You'll need to set these API keys in your Supabase secrets or environment
-    const apiKey = Capacitor.getPlatform() === 'ios' 
-      ? 'your_ios_api_key_here' // Replace with your iOS API key
-      : 'your_android_api_key_here'; // Replace with your Android API key
+    const platform = Capacitor.getPlatform();
+    console.log(`RevenueCat: Initializing for platform: ${platform}`);
     
-    await Purchases.configure({
-      apiKey,
-      appUserID: null, // Optional: set a custom user ID
+    // Get API key from Supabase edge function
+    const response = await fetch('/functions/v1/get-revenuecat-config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ platform })
     });
     
-    console.log('RevenueCat initialized successfully');
+    const config = await response.json();
+    
+    if (!config.configured) {
+      console.log('RevenueCat: API keys not configured, using fallback mode');
+      return false;
+    }
+    
+    await Purchases.configure({
+      apiKey: config.apiKey,
+      appUserID: null // Let RevenueCat generate anonymous user ID
+    });
+    
+    console.log('RevenueCat: Successfully initialized with production config');
+    return true;
   } catch (error) {
-    console.error('Failed to initialize RevenueCat:', error);
+    console.error('RevenueCat: Failed to initialize -', error);
+    return false;
   }
 };
 
@@ -47,17 +64,22 @@ export const useSubscription = () => {
     isLoading: true
   });
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
+  const [isRevenueCatConfigured, setIsRevenueCatConfigured] = useState(false);
 
   useEffect(() => {
-    // Initialize RevenueCat on mount
-    initializeRevenueCat();
+    // Initialize RevenueCat on mount and check configuration
+    const init = async () => {
+      const configured = await initializeRevenueCat();
+      setIsRevenueCatConfigured(configured);
+    };
+    init();
     
     // Check subscription status
     const checkSubscriptionStatus = async () => {
       try {
         setSubscriptionInfo(prev => ({ ...prev, isLoading: true }));
         
-        if (Capacitor.isNativePlatform()) {
+        if (Capacitor.isNativePlatform() && isRevenueCatConfigured) {
           // Use RevenueCat to check subscription status
           try {
             const customerInfo: any = await Purchases.getCustomerInfo();
@@ -138,7 +160,7 @@ export const useSubscription = () => {
 
     // Load available plans
     const loadPlans = async () => {
-      if (Capacitor.isNativePlatform()) {
+      if (Capacitor.isNativePlatform() && isRevenueCatConfigured) {
         try {
           const offerings: any = await Purchases.getOfferings();
           
@@ -254,7 +276,7 @@ export const useSubscription = () => {
       const plan = plans.find(p => p.id === planId);
       if (!plan) return false;
 
-      if (Capacitor.isNativePlatform()) {
+      if (Capacitor.isNativePlatform() && isRevenueCatConfigured) {
         // Use RevenueCat for in-app purchases
         try {
           if (plan.packageObj) {
@@ -348,7 +370,7 @@ export const useSubscription = () => {
     try {
       console.log('Restoring purchases...');
       
-      if (Capacitor.isNativePlatform()) {
+      if (Capacitor.isNativePlatform() && isRevenueCatConfigured) {
         // Use RevenueCat restore purchases
         try {
           const customerInfo: any = await Purchases.restorePurchases();
