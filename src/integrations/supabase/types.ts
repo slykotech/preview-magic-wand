@@ -300,6 +300,42 @@ export type Database = {
           },
         ]
       }
+      country_event_config: {
+        Row: {
+          country_code: string
+          country_name: string
+          created_at: string | null
+          fetch_frequency_hours: number | null
+          id: string
+          is_active: boolean | null
+          major_cities: Json
+          sources_enabled: string[] | null
+          updated_at: string | null
+        }
+        Insert: {
+          country_code: string
+          country_name: string
+          created_at?: string | null
+          fetch_frequency_hours?: number | null
+          id?: string
+          is_active?: boolean | null
+          major_cities: Json
+          sources_enabled?: string[] | null
+          updated_at?: string | null
+        }
+        Update: {
+          country_code?: string
+          country_name?: string
+          created_at?: string | null
+          fetch_frequency_hours?: number | null
+          id?: string
+          is_active?: boolean | null
+          major_cities?: Json
+          sources_enabled?: string[] | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       couple_activity_log: {
         Row: {
           activity_data: Json | null
@@ -547,62 +583,134 @@ export type Database = {
           },
         ]
       }
+      event_fetch_jobs: {
+        Row: {
+          city: string | null
+          completed_at: string | null
+          cost_estimate: number | null
+          country_code: string | null
+          created_at: string | null
+          error_message: string | null
+          events_fetched: number | null
+          id: string
+          job_type: string
+          latitude: number | null
+          longitude: number | null
+          sources_used: string[] | null
+          started_at: string | null
+          status: string | null
+          target_location: string
+        }
+        Insert: {
+          city?: string | null
+          completed_at?: string | null
+          cost_estimate?: number | null
+          country_code?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          events_fetched?: number | null
+          id?: string
+          job_type: string
+          latitude?: number | null
+          longitude?: number | null
+          sources_used?: string[] | null
+          started_at?: string | null
+          status?: string | null
+          target_location: string
+        }
+        Update: {
+          city?: string | null
+          completed_at?: string | null
+          cost_estimate?: number | null
+          country_code?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          events_fetched?: number | null
+          id?: string
+          job_type?: string
+          latitude?: number | null
+          longitude?: number | null
+          sources_used?: string[] | null
+          started_at?: string | null
+          status?: string | null
+          target_location?: string
+        }
+        Relationships: []
+      }
       events: {
         Row: {
+          audience_tags: string[] | null
           booking_url: string | null
           category: string | null
+          city: string | null
+          country_code: string | null
           created_at: string
           description: string | null
           event_date: string | null
           event_time: string | null
           expires_at: string
           external_id: string | null
+          fetch_timestamp: string | null
           id: string
           image_url: string | null
           location_lat: number | null
           location_lng: number | null
           location_name: string | null
           price: string | null
+          region: string | null
+          rural_coverage_radius: number | null
           source: string
           title: string
           updated_at: string
           venue: string | null
         }
         Insert: {
+          audience_tags?: string[] | null
           booking_url?: string | null
           category?: string | null
+          city?: string | null
+          country_code?: string | null
           created_at?: string
           description?: string | null
           event_date?: string | null
           event_time?: string | null
           expires_at?: string
           external_id?: string | null
+          fetch_timestamp?: string | null
           id?: string
           image_url?: string | null
           location_lat?: number | null
           location_lng?: number | null
           location_name?: string | null
           price?: string | null
+          region?: string | null
+          rural_coverage_radius?: number | null
           source: string
           title: string
           updated_at?: string
           venue?: string | null
         }
         Update: {
+          audience_tags?: string[] | null
           booking_url?: string | null
           category?: string | null
+          city?: string | null
+          country_code?: string | null
           created_at?: string
           description?: string | null
           event_date?: string | null
           event_time?: string | null
           expires_at?: string
           external_id?: string | null
+          fetch_timestamp?: string | null
           id?: string
           image_url?: string | null
           location_lat?: number | null
           location_lng?: number | null
           location_name?: string | null
           price?: string | null
+          region?: string | null
+          rural_coverage_radius?: number | null
           source?: string
           title?: string
           updated_at?: string
@@ -1487,6 +1595,32 @@ export type Database = {
       generate_relationship_insights: {
         Args: { p_couple_id: string }
         Returns: undefined
+      }
+      get_events_by_location: {
+        Args: {
+          user_lat: number
+          user_lng: number
+          radius_km?: number
+          max_events?: number
+        }
+        Returns: {
+          id: string
+          title: string
+          description: string
+          category: string
+          venue: string
+          location_name: string
+          location_lat: number
+          location_lng: number
+          event_date: string
+          event_time: string
+          price: string
+          image_url: string
+          booking_url: string
+          source: string
+          city: string
+          distance_km: number
+        }[]
       }
       log_couple_activity: {
         Args: {

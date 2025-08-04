@@ -91,114 +91,123 @@ export const useEventsData = () => {
     
     // Don't skip if this is the same location but cache is expired 
     if (lastFetchLocation === locationKey && events.length > 0 && isCacheValid) {
-      console.log('Skipping fetch, using cached events (cache valid for', Math.round((cacheExpiry - (now - lastFetchTime)) / 1000), 'seconds)');
+      console.log('Using cached events (cache valid for', Math.round((cacheExpiry - (now - lastFetchTime)) / 1000), 'seconds)');
       return;
     }
 
-    console.log('Fetching fresh events for location:', location.displayName);
+    console.log('Fetching events from database for location:', location.displayName);
     setIsLoading(true);
     setError(null);
     setLastFetchLocation(locationKey);
     setLastFetchTime(now);
 
     try {
-      // Prepare request body based on location type
-      const requestBody = location.latitude !== 0 ? 
-        {
-          latitude: location.latitude,
-          longitude: location.longitude,
-          radius: 50,
-          size: 20
-        } : 
-        {
-          locationName: location.city,
-          radius: 50,
-          size: 20
-        };
+      let dbEvents = [];
+      let isRuralFallback = false;
+      let nearestCity = '';
 
-      console.log('Fetching events with request:', requestBody);
+      // Try to get events from database using the new function
+      if (location.latitude !== 0 && location.longitude !== 0) {
+        console.log('Querying database for events near coordinates:', location.latitude, location.longitude);
+        
+        // Use the database function for smart location-based querying
+        const { data, error: dbError } = await supabase.rpc('get_events_by_location', {
+          user_lat: location.latitude,
+          user_lng: location.longitude,
+          radius_km: 25,
+          max_events: 20
+        });
 
-      const { data, error: apiError } = await supabase.functions.invoke('fetch-events', {
-        body: requestBody
-      });
+        if (dbError) {
+          console.error('Database query error:', dbError);
+          throw new Error(dbError.message);
+        }
 
-      if (apiError) {
-        console.error('API Error:', apiError);
-        throw new Error(apiError.message || 'Failed to fetch events');
+        dbEvents = data || [];
+        
+        // If we got events from a distant city, it's a rural fallback
+        if (dbEvents.length > 0) {
+          const minDistance = Math.min(...dbEvents.map(e => e.distance_km));
+          if (minDistance > 50) {
+            isRuralFallback = true;
+            nearestCity = dbEvents[0]?.city || 'nearby city';
+          }
+        }
+      } else if (location.city) {
+        // Search by city name
+        console.log('Querying database for events in city:', location.city);
+        
+        const { data, error: dbError } = await supabase
+          .from('events')
+          .select('*')
+          .ilike('city', `%${location.city}%`)
+          .gt('expires_at', new Date().toISOString())
+          .order('fetch_timestamp', { ascending: false })
+          .limit(20);
+
+        if (dbError) {
+          console.error('Database query error:', dbError);
+          throw new Error(dbError.message);
+        }
+
+        dbEvents = (data || []).map(event => ({
+          ...event,
+          distance_km: 0, // City search doesn't calculate distance
+        }));
       }
 
-      if (!data) {
-        throw new Error('No data received from API');
-      }
+      // Transform database events to match expected format
+      const transformedEvents = dbEvents.map(event => ({
+        id: event.id,
+        title: event.title,
+        distance: `${event.distance_km?.toFixed(1) || '0'} km away`,
+        timing: event.event_time || 'Time TBD',
+        description: event.description || '',
+        category: event.category || 'Entertainment',
+        venue: event.venue,
+        city: event.city,
+        price: event.price,
+        image: event.image_url,
+        bookingUrl: event.booking_url,
+        date: event.event_date,
+        time: event.event_time,
+        source: event.source || 'database'
+      }));
 
-      // Handle successful response
-      if (data.events && Array.isArray(data.events)) {
-        console.log(`API returned ${data.events.length} events`);
-        console.log('Events data:', data.events.slice(0, 2)); // Log first 2 events for debugging
-        setEvents(data.events);
+      if (transformedEvents.length > 0) {
+        setEvents(transformedEvents);
         setError(null);
         
-        console.log(`Successfully loaded ${data.events.length} events`);
+        console.log(`✅ Loaded ${transformedEvents.length} events from database`);
         
-        // Update location coordinates if geocoded by backend
-        if (data.coordinates && updateLocationCallback) {
-          const { lat, lng } = data.coordinates;
-          if (lat && lng) {
-            updateLocationCallback(lat, lng, data.location);
-          }
-        }
-
-        const cacheStatus = data.cached ? ' (cached)' : '';
+        const titleSuffix = isRuralFallback ? ` in ${nearestCity}` : '';
+        const descriptionSuffix = isRuralFallback 
+          ? ` Events from ${nearestCity} (nearest city with events)`
+          : '';
         
         toast({
-          title: `Events loaded! 🎉${cacheStatus}`,
-          description: `Found ${data.events.length} events within 50km`,
+          title: `Events loaded! 🎉${titleSuffix}`,
+          description: `Found ${transformedEvents.length} events${descriptionSuffix}`,
         });
-        
-        // Check for quota warnings  
-        if (data.quota_info) {
-          const quota = data.quota_info;
-          if (quota.daily_remaining <= 2) {
-            toast({
-              title: "API quota warning",
-              description: `Only ${quota.daily_remaining} requests remaining today`,
-              variant: "destructive"
-            });
-          }
-          if (quota.monthly_cost_remaining <= 1) {
-            toast({
-              title: "Cost limit warning", 
-              description: `$${quota.monthly_cost_remaining.toFixed(2)} remaining this month`,
-              variant: "destructive"
-            });
-          }
-        }
       } else {
-        // No events found, but API call was successful
+        // No events found in database, show message with helpful info
         setEvents([]);
-        setError(`No events found near ${location.displayName}`);
+        
+        const noEventsMessage = location.latitude !== 0 
+          ? `No events found within 200km of your location. Events are automatically updated every 3 hours.`
+          : `No events found for ${location.city}. Try a nearby major city or check back later.`;
+        
+        setError(noEventsMessage);
         
         toast({
           title: "No events found",
-          description: `No events found near ${location.displayName}. Try a different location or check back later.`,
+          description: noEventsMessage,
           variant: "destructive"
         });
       }
+
     } catch (error) {
-      console.error('Error fetching events:', error);
-      
-      // Handle quota exceeded error specifically
-      if (error.message && error.message.includes('quota exceeded')) {
-        setEvents([]);
-        setError('API quota exceeded. Please try again tomorrow or upgrade your plan.');
-        
-        toast({
-          title: "API quota exceeded",
-          description: "You've reached your daily API limit. Please try again tomorrow.",
-          variant: "destructive"
-        });
-        return;
-      }
+      console.error('Error fetching events from database:', error);
       
       // Fallback to mock events on error
       const mockEvents = getMockEvents();
@@ -207,7 +216,7 @@ export const useEventsData = () => {
       
       toast({
         title: "Using sample events",
-        description: "Couldn't fetch live events, showing sample data instead",
+        description: "Database temporarily unavailable, showing sample events",
         variant: "destructive"
       });
     } finally {
