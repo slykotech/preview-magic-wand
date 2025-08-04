@@ -643,6 +643,7 @@ export type Database = {
           booking_url: string | null
           category: string | null
           city: string | null
+          country: string | null
           country_code: string | null
           created_at: string
           description: string | null
@@ -660,6 +661,7 @@ export type Database = {
           region: string | null
           rural_coverage_radius: number | null
           source: string
+          state: string | null
           title: string
           updated_at: string
           venue: string | null
@@ -669,6 +671,7 @@ export type Database = {
           booking_url?: string | null
           category?: string | null
           city?: string | null
+          country?: string | null
           country_code?: string | null
           created_at?: string
           description?: string | null
@@ -686,6 +689,7 @@ export type Database = {
           region?: string | null
           rural_coverage_radius?: number | null
           source: string
+          state?: string | null
           title: string
           updated_at?: string
           venue?: string | null
@@ -695,6 +699,7 @@ export type Database = {
           booking_url?: string | null
           category?: string | null
           city?: string | null
+          country?: string | null
           country_code?: string | null
           created_at?: string
           description?: string | null
@@ -712,6 +717,7 @@ export type Database = {
           region?: string | null
           rural_coverage_radius?: number | null
           source?: string
+          state?: string | null
           title?: string
           updated_at?: string
           venue?: string | null
@@ -1626,6 +1632,52 @@ export type Database = {
           distance_km: number
         }[]
       }
+      get_events_by_city_unlimited: {
+        Args: { city_name: string; max_events?: number }
+        Returns: {
+          id: string
+          title: string
+          description: string
+          category: string
+          venue: string
+          location_name: string
+          location_lat: number
+          location_lng: number
+          event_date: string
+          event_time: string
+          price: string
+          image_url: string
+          booking_url: string
+          source: string
+          city: string
+          country: string
+          state: string
+          distance_km: number
+        }[]
+      }
+      get_events_by_country: {
+        Args: { country_name: string; state_name?: string; max_events?: number }
+        Returns: {
+          id: string
+          title: string
+          description: string
+          category: string
+          venue: string
+          location_name: string
+          location_lat: number
+          location_lng: number
+          event_date: string
+          event_time: string
+          price: string
+          image_url: string
+          booking_url: string
+          source: string
+          city: string
+          country: string
+          state: string
+          distance_km: number
+        }[]
+      }
       get_events_by_location: {
         Args: {
           user_lat: number
@@ -1649,6 +1701,34 @@ export type Database = {
           booking_url: string
           source: string
           city: string
+          distance_km: number
+        }[]
+      }
+      get_events_by_location_unlimited: {
+        Args: {
+          user_lat: number
+          user_lng: number
+          radius_km?: number
+          max_events?: number
+        }
+        Returns: {
+          id: string
+          title: string
+          description: string
+          category: string
+          venue: string
+          location_name: string
+          location_lat: number
+          location_lng: number
+          event_date: string
+          event_time: string
+          price: string
+          image_url: string
+          booking_url: string
+          source: string
+          city: string
+          country: string
+          state: string
           distance_km: number
         }[]
       }

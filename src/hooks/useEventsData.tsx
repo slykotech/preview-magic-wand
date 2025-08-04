@@ -12,6 +12,8 @@ export interface EventData {
   category: string;
   venue?: string;
   city?: string;
+  state?: string;
+  country?: string;
   price?: string;
   image?: string;
   bookingUrl?: string;
@@ -110,12 +112,12 @@ export const useEventsData = () => {
       if (location.latitude !== 0 && location.longitude !== 0) {
         console.log('Querying database for events near coordinates:', location.latitude, location.longitude);
         
-        // Use the database function for smart location-based querying
-        const { data, error: dbError } = await supabase.rpc('get_events_by_location', {
+        // Use the unlimited database function for smart location-based querying
+        const { data, error: dbError } = await supabase.rpc('get_events_by_location_unlimited', {
           user_lat: location.latitude,
           user_lng: location.longitude,
           radius_km: 25,
-          max_events: 20
+          max_events: 100
         });
 
         if (dbError) {
@@ -137,9 +139,9 @@ export const useEventsData = () => {
         // Search by city name using the new city function
         console.log('Querying database for events in city:', location.city);
         
-        const { data, error: dbError } = await supabase.rpc('get_events_by_city', {
+        const { data, error: dbError } = await supabase.rpc('get_events_by_city_unlimited', {
           city_name: location.city,
-          max_events: 20
+          max_events: 100
         });
 
         if (dbError) {
@@ -150,7 +152,7 @@ export const useEventsData = () => {
         dbEvents = data || [];
       }
 
-      // Transform database events to match expected format
+      // Transform database events to match expected format with enhanced location data
       const transformedEvents = dbEvents.map(event => ({
         id: event.id,
         title: event.title,
@@ -160,6 +162,8 @@ export const useEventsData = () => {
         category: event.category || 'Entertainment',
         venue: event.venue,
         city: event.city,
+        state: event.state,
+        country: event.country,
         price: event.price,
         image: event.image_url,
         bookingUrl: event.booking_url,

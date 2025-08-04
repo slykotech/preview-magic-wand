@@ -27,7 +27,15 @@ const VENUE_TYPES = [
   'night_club',
   'restaurant',
   'cafe',
-  'park'
+  'park',
+  'shopping_mall',
+  'cultural_center',
+  'performing_arts_theater',
+  'concert_hall',
+  'stadium',
+  'convention_center',
+  'spa',
+  'casino'
 ];
 
 export async function fetchGoogleEvents(
@@ -49,7 +57,7 @@ export async function fetchGoogleEvents(
       },
       body: JSON.stringify({
         includedTypes: VENUE_TYPES,
-        maxResultCount: 10,
+        maxResultCount: 20, // Increased to get more venues
         locationRestriction: {
           circle: {
             center: {
@@ -58,7 +66,8 @@ export async function fetchGoogleEvents(
             },
             radius: radius * 1000 // Convert km to meters
           }
-        }
+        },
+        rankPreference: 'POPULARITY' // Prioritize popular venues
       })
     });
 

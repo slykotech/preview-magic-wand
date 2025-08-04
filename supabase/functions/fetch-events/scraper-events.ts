@@ -20,7 +20,7 @@ class FirecrawlService {
       throw new Error('Firecrawl API key not configured');
     }
     
-    console.log(`Firecrawl: Scraping ${url}`);
+    console.log(`Firecrawl: Scraping ${url} with enhanced extraction`);
     
     const response = await fetch('https://api.firecrawl.dev/v0/scrape', {
       method: 'POST',
@@ -46,18 +46,22 @@ class FirecrawlService {
                 items: {
                   type: 'object',
                   properties: {
-                    title: { type: 'string' },
-                    date: { type: 'string' },
-                    time: { type: 'string' },
-                    venue: { type: 'string' },
-                    price: { type: 'string' },
-                    description: { type: 'string' },
-                    category: { type: 'string' },
-                    image_url: { type: 'string' }
-                  }
+                    title: { type: 'string', description: 'Event title (required)' },
+                    date: { type: 'string', description: 'Event date in YYYY-MM-DD format (required)' },
+                    time: { type: 'string', description: 'Event time in HH:MM format (required)' },
+                    venue: { type: 'string', description: 'Venue name and address (required)' },
+                    city: { type: 'string', description: 'City where event is happening (required)' },
+                    price: { type: 'string', description: 'Ticket price or price range (required)' },
+                    description: { type: 'string', description: 'Event description (required)' },
+                    category: { type: 'string', description: 'Event category like Music, Arts, Food, etc (required)' },
+                    image_url: { type: 'string', description: 'Event image URL' },
+                    booking_url: { type: 'string', description: 'URL to book tickets' }
+                  },
+                  required: ['title', 'date', 'time', 'venue', 'city', 'price', 'description', 'category']
                 }
               }
-            }
+            },
+            required: ['events']
           }
         }
       }),
