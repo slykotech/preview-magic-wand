@@ -77,19 +77,18 @@ export const LocationSearchInput = ({
             />
           </div>
         </PopoverTrigger>
-        <PopoverContent className="w-full p-0" align="start">
+        <PopoverContent className="w-full p-0 bg-background border shadow-md z-50" align="start">
           <Command>
-            <CommandInput placeholder="Search cities..." value={searchValue} onValueChange={setSearchValue} />
-            <CommandList>
+            <CommandList className="max-h-60 overflow-y-auto">
               <CommandEmpty>No cities found.</CommandEmpty>
               {filteredCities.slice(0, 10).map((city) => (
                 <CommandItem
                   key={city}
                   value={city}
                   onSelect={() => handleLocationSelect(city)}
-                  className="cursor-pointer"
+                  className="cursor-pointer hover:bg-accent"
                 >
-                  <MapPin className="w-4 h-4 mr-2" />
+                  <MapPin className="w-4 h-4 mr-2 text-muted-foreground" />
                   {city}
                 </CommandItem>
               ))}
@@ -99,9 +98,9 @@ export const LocationSearchInput = ({
                 <CommandItem
                   value={searchValue}
                   onSelect={() => handleLocationSelect(searchValue)}
-                  className="cursor-pointer border-t"
+                  className="cursor-pointer border-t hover:bg-accent"
                 >
-                  <Search className="w-4 h-4 mr-2" />
+                  <Search className="w-4 h-4 mr-2 text-muted-foreground" />
                   Search for "{searchValue}"
                 </CommandItem>
               )}
