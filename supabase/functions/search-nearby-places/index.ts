@@ -40,19 +40,36 @@ interface GooglePlace {
 
 // Enhanced place types focused on date-appropriate venues
 const PLACE_TYPES = {
-  'Cultural & Historical': ['tourist_attraction', 'museum', 'art_gallery', 'cultural_center'],
+  'Cultural & Historical': ['tourist_attraction', 'museum', 'art_gallery', 'cultural_center', 'historical_landmark', 'monument'],
   'Religious & Spiritual': ['church', 'hindu_temple', 'mosque', 'synagogue', 'temple', 'place_of_worship'],
-  'Entertainment': ['movie_theater', 'amusement_park', 'bowling_alley', 'night_club'],
-  'Dining & Social': ['restaurant', 'cafe', 'bar', 'brewery'],
-  'Nature & Outdoor': ['park', 'zoo', 'aquarium', 'botanical_garden'],
-  'Shopping & Markets': ['shopping_mall', 'market', 'bookstore', 'jewelry_store']
+  'Entertainment': ['movie_theater', 'amusement_park', 'bowling_alley', 'night_club', 'live_music_venue', 'concert_hall'],
+  'Dining & Social': ['restaurant', 'cafe', 'bar', 'brewery', 'bakery', 'meal_takeaway'],
+  'Nature & Outdoor': ['park', 'zoo', 'aquarium', 'botanical_garden', 'lake'],
+  'Shopping & Markets': ['shopping_mall', 'market', 'bookstore', 'jewelry_store', 'department_store']
 };
 
-// Date-appropriate place types
+// Enhanced date-appropriate place types focusing on romantic and couple activities
 const DATE_APPROPRIATE_TYPES = [
-  'restaurant', 'cafe', 'bar', 'brewery', 'movie_theater', 'amusement_park',
-  'park', 'zoo', 'aquarium', 'botanical_garden', 'tourist_attraction',
-  'museum', 'art_gallery', 'shopping_mall', 'spa', 'bowling_alley'
+  // Dining - Essential for dates
+  'restaurant', 'cafe', 'bar', 'brewery', 'bakery', 'meal_takeaway',
+  
+  // Entertainment - Great for date activities
+  'movie_theater', 'amusement_park', 'bowling_alley', 'live_music_venue', 'concert_hall',
+  
+  // Cultural & Romantic - Perfect for memorable dates
+  'tourist_attraction', 'museum', 'art_gallery', 'historical_landmark', 'monument',
+  
+  // Nature & Peaceful - Romantic settings
+  'park', 'zoo', 'aquarium', 'botanical_garden', 'lake',
+  
+  // Shopping & Social - Couple activities
+  'shopping_mall', 'market', 'bookstore', 'department_store',
+  
+  // Wellness & Relaxation
+  'spa',
+  
+  // Religious & Spiritual - Cultural experiences
+  'church', 'hindu_temple', 'mosque', 'temple', 'place_of_worship'
 ];
 
 serve(async (req) => {
