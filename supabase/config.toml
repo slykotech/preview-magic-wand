@@ -82,6 +82,9 @@ verify_jwt = false
 [functions.trigger-all-scrapers]
 verify_jwt = false
 
+[functions.test-google-places]
+verify_jwt = false
+
 [auth]
 enabled = true
 port = 54329

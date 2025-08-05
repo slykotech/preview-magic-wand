@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { EventSuggestionCard } from "./EventSuggestionCard";
 import { EventScrapingTrigger } from "./EventScrapingTrigger";
+import { GooglePlacesApiTest } from "./GooglePlacesApiTest";
 import { useEventSuggestions, EventSuggestion } from "@/hooks/useEventSuggestions";
 import { useLocation } from "@/hooks/useLocation";
 import { RefreshCw, MapPin, Filter } from "lucide-react";
@@ -177,7 +178,7 @@ export const EventSuggestionsSection = ({ onEventSelect, className = "" }: Event
             </p>
           </div>
           
-          <EventScrapingTrigger />
+          <GooglePlacesApiTest />
           
           <Button onClick={refreshEvents} variant="outline">
             <RefreshCw className="w-4 h-4 mr-2" />
