@@ -39,7 +39,16 @@ export const GradientHeader = ({
       
       <div className="relative z-10">
         <div className="flex items-center gap-3 mb-4">
-          {showBackButton}
+          {showBackButton && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleBackClick}
+              className="text-white hover:bg-white/20 rounded-full h-10 w-10"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+          )}
           <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm border border-white/10">
             {icon}
           </div>
