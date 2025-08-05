@@ -61,6 +61,18 @@ verify_jwt = false
 [functions.get-revenuecat-config]
 verify_jwt = false
 
+[functions.scrape-ticketmaster]
+verify_jwt = false
+
+[functions.scrape-eventbrite]
+verify_jwt = false
+
+[functions.scrape-googleplaces]
+verify_jwt = false
+
+[functions.event-scraper-master]
+verify_jwt = false
+
 [auth]
 enabled = true
 port = 54329
