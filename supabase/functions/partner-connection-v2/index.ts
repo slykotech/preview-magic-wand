@@ -41,6 +41,12 @@ serve(async (req) => {
       }
     );
 
+    // Create admin client for admin operations (without user auth header)
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
     // Verify the user
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     if (authError || !user) {
@@ -91,7 +97,7 @@ serve(async (req) => {
         }
 
         // Check if partner user exists by looking up their profile
-        const { data: partnerUserAuth } = await supabase.auth.admin.getUserByEmail(email);
+        const { data: partnerUserAuth, error: getUserError } = await supabaseAdmin.auth.admin.getUserByEmail(email);
         const partnerUser = partnerUserAuth.user;
         
         let partnerProfile = null;
