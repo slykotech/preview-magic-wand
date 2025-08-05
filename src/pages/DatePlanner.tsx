@@ -16,6 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Calendar, MapPin, Clock, DollarSign, Heart, X, Plus, Trash2, Sparkles } from 'lucide-react';
 import { GradientHeader } from '@/components/GradientHeader';
 import { SweetSuggestions } from '@/components/SweetSuggestions';
+import { EventDiscovery } from '@/components/EventDiscovery';
 
 interface DateIdea {
   id: string;
@@ -401,10 +402,14 @@ export const DatePlanner = () => {
       <div className="flex-1 overflow-y-auto container mx-auto px-4 py-6">
         <div className="w-full">
           <Tabs defaultValue="planned" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-6">
+            <TabsList className="grid w-full grid-cols-3 mb-6">
               <TabsTrigger value="planned" className="flex items-center gap-2">
                 <Heart className="w-4 h-4" />
                 Planned Dates
+              </TabsTrigger>
+              <TabsTrigger value="events" className="flex items-center gap-2">
+                <Calendar className="w-4 h-4" />
+                Local Events
               </TabsTrigger>
               <TabsTrigger value="suggestions" className="flex items-center gap-2">
                 <Sparkles className="w-4 h-4" />
@@ -753,6 +758,14 @@ export const DatePlanner = () => {
                  ))}
                </div>
                 )}
+            </TabsContent>
+
+            <TabsContent value="events" className="space-y-6">
+              <EventDiscovery 
+                coupleId={coupleId || ''}
+                userId={user?.id || ''}
+                onAddToDatePlan={handleAddEvent}
+              />
             </TabsContent>
 
             <TabsContent value="suggestions" className="space-y-6">

@@ -583,6 +583,69 @@ export type Database = {
           },
         ]
       }
+      events: {
+        Row: {
+          category: string | null
+          created_at: string
+          description: string | null
+          end_date: string | null
+          expires_at: string
+          external_id: string
+          id: string
+          image_url: string | null
+          latitude: number | null
+          location: unknown | null
+          location_name: string | null
+          longitude: number | null
+          organizer: string | null
+          price: string | null
+          source: string
+          start_date: string
+          title: string
+          website_url: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          expires_at?: string
+          external_id: string
+          id?: string
+          image_url?: string | null
+          latitude?: number | null
+          location?: unknown | null
+          location_name?: string | null
+          longitude?: number | null
+          organizer?: string | null
+          price?: string | null
+          source: string
+          start_date: string
+          title: string
+          website_url?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          expires_at?: string
+          external_id?: string
+          id?: string
+          image_url?: string | null
+          latitude?: number | null
+          location?: unknown | null
+          location_name?: string | null
+          longitude?: number | null
+          organizer?: string | null
+          price?: string | null
+          source?: string
+          start_date?: string
+          title?: string
+          website_url?: string | null
+        }
+        Relationships: []
+      }
       game_achievements: {
         Row: {
           achievement_name: string
@@ -1798,6 +1861,45 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      user_saved_events: {
+        Row: {
+          couple_id: string | null
+          created_at: string
+          event_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          couple_id?: string | null
+          created_at?: string
+          event_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          couple_id?: string | null
+          created_at?: string
+          event_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_saved_events_couple_id_fkey"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_saved_events_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
