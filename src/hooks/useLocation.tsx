@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
 export interface LocationData {
@@ -12,6 +12,48 @@ export const useLocation = () => {
   const { toast } = useToast();
   const [location, setLocation] = useState<LocationData | null>(null);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [autoLocationAttempted, setAutoLocationAttempted] = useState(false);
+
+  // Silent location detection (no toasts on failure)
+  const getCurrentLocationSilently = useCallback(() => {
+    if (!navigator.geolocation) {
+      return;
+    }
+
+    setIsGettingLocation(true);
+    
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const locationData: LocationData = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          city: 'Current Location',
+          displayName: 'Your Current Location'
+        };
+        
+        setLocation(locationData);
+        setIsGettingLocation(false);
+      },
+      (error) => {
+        console.log('Auto location detection failed (silent):', error.message);
+        setIsGettingLocation(false);
+        // No toast for silent failures
+      },
+      {
+        enableHighAccuracy: false, // Use less accuracy for faster response
+        timeout: 5000, // Shorter timeout for auto-detection
+        maximumAge: 300000 // 5 minutes
+      }
+    );
+  }, []);
+
+  // Automatically try to get location on hook initialization
+  useEffect(() => {
+    if (!autoLocationAttempted && !location) {
+      setAutoLocationAttempted(true);
+      getCurrentLocationSilently();
+    }
+  }, [location, autoLocationAttempted, getCurrentLocationSilently]);
 
   const getCurrentLocation = useCallback(() => {
     if (!navigator.geolocation) {
