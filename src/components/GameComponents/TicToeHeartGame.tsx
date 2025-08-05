@@ -87,14 +87,14 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
   // Determine partner ID
   const partnerId = coupleData?.user1_id === user?.id ? coupleData?.user2_id : coupleData?.user1_id;
   
-  // 🎯 FIX: Consistent symbol assignment - 💖 for Rosie (user1), 💘 for Virat (user2)
+  // 🎯 FIX: Consistent symbol assignment - 💖 for user1, 💘 for user2  
   const getUserSymbol = (userId: string): CellValue => {
     if (!coupleData) return '💖';
     return coupleData.user1_id === userId ? '💖' : '💘';
   };
 
   const userSymbol = getUserSymbol(user?.id || '');
-  const partnerSymbol = getUserSymbol(partnerId || '');
+  const partnerSymbol = getUserSymbol(partnerId || ''); // This was the bug - should get partner's symbol, not user's symbol again
 
   // Playful messages based on turn state
   const getPlayfulMessage = (isUserTurn: boolean, playerName: string, symbol: CellValue) => {
