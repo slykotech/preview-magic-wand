@@ -165,22 +165,39 @@ export const PartnerConnectionFlow = () => {
   const disconnectPartner = async () => {
     if (!coupleData) return;
 
+    // Show confirmation dialog
+    const confirmed = window.confirm(
+      "Are you sure you want to disconnect from your partner? This action cannot be undone and will remove all shared data."
+    );
+    
+    if (!confirmed) return;
+
     setIsDisconnecting(true);
     try {
+      console.log('Starting disconnect process for couple:', coupleData.id);
+      
       const { error } = await supabase
         .from('couples')
         .delete()
         .eq('id', coupleData.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Database error during disconnect:', error);
+        throw error;
+      }
 
+      console.log('Successfully disconnected from partner');
+      
       toast({
         title: "Disconnected successfully",
-        description: "You have been disconnected from your partner",
+        description: "You have been disconnected from your partner. Redirecting...",
       });
 
-      // Refresh the page to update the UI
-      window.location.reload();
+      // Wait a moment for the toast to show, then navigate to dashboard
+      setTimeout(() => {
+        navigate('/dashboard', { replace: true });
+      }, 1500);
+
     } catch (error: any) {
       console.error('Error disconnecting:', error);
       toast({
