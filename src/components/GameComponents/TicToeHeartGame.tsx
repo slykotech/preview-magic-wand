@@ -125,6 +125,7 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
       if (fetchError) throw fetchError;
 
       if (existingGame) {
+        console.log('Loading existing game:', existingGame);
         setGameState({
           ...existingGame,
           board: existingGame.board as Board,
@@ -133,6 +134,7 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
         });
       } else {
         // Create new game with user as first player
+        console.log('Creating new game with user as first player:', user!.id);
         const { data: newGame, error: createError } = await supabase
           .from('tic_toe_heart_games')
           .insert({
@@ -148,6 +150,7 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
           .single();
 
         if (createError) throw createError;
+        console.log('New game created:', newGame);
         setGameState({
           ...newGame,
           board: newGame.board as Board,
@@ -362,8 +365,17 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
               </div>
               <div>
                 <p className="font-medium">You ({userSymbol})</p>
-                <p className="text-sm text-muted-foreground">
-                  {isUserTurn && !isGameOver ? 'Your turn!' : 'Waiting...'}
+                <p className={`text-sm font-medium ${
+                  isUserTurn && !isGameOver 
+                    ? 'text-green-600 animate-pulse' 
+                    : 'text-muted-foreground'
+                }`}>
+                  {isGameOver 
+                    ? 'Game Over' 
+                    : isUserTurn 
+                      ? '🟢 Your turn!' 
+                      : 'Waiting...'
+                  }
                 </p>
               </div>
             </div>
@@ -376,9 +388,17 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
             <div className="flex items-center gap-3">
               <div className="text-right">
                 <p className="font-medium">{getPartnerDisplayName()} ({partnerSymbol})</p>
-                <p className="text-sm text-muted-foreground">
-                  {!isUserTurn && !isGameOver ? 'Their turn!' : 
-                   isPartnerOnline ? 'Online' : 'Offline'}
+                <p className={`text-sm font-medium ${
+                  !isUserTurn && !isGameOver 
+                    ? 'text-green-600 animate-pulse' 
+                    : 'text-muted-foreground'
+                }`}>
+                  {isGameOver 
+                    ? 'Game Over' 
+                    : !isUserTurn 
+                      ? '🟢 Their turn!' 
+                      : isPartnerOnline ? 'Online' : 'Offline'
+                  }
                 </p>
               </div>
               <div className="relative">
