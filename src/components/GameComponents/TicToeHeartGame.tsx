@@ -198,6 +198,13 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
     try {
       setLoading(true);
       
+      console.log('🎮 INITIALIZING GAME - DEBUG INFO:', {
+        sessionId,
+        currentUserId: user?.id,
+        partnerId: partnerId,
+        coupleData: coupleData
+      });
+      
       // Check if game already exists for this session
       let { data: existingGame, error: fetchError } = await supabase
         .from('tic_toe_heart_games')
@@ -209,6 +216,12 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
 
       if (existingGame) {
         console.log('🎮 Loading existing game:', existingGame);
+        console.log('🎮 EXISTING GAME TURN CHECK:', {
+          currentPlayerFromDB: existingGame.current_player_id,
+          currentUserId: user?.id,
+          isUserTurnCalculation: existingGame.current_player_id === user?.id
+        });
+        
         setGameState({
           ...existingGame,
           board: existingGame.board as Board,
@@ -243,6 +256,12 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
 
         if (createError) throw createError;
         console.log('🎮 New game created:', newGame);
+        console.log('🎮 NEW GAME TURN CHECK:', {
+          currentPlayerFromDB: newGame.current_player_id,
+          currentUserId: user?.id,
+          isUserTurnCalculation: newGame.current_player_id === user?.id
+        });
+        
         setGameState({
           ...newGame,
           board: newGame.board as Board,
