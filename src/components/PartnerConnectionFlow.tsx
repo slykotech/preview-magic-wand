@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   Heart, 
   Users, 
-  Mail, 
   Send, 
   UserX,
   AlertTriangle,
@@ -14,49 +13,57 @@ import {
   CheckCircle,
   XCircle,
   Clock,
-  ArrowRight,
   Home,
-  UserMinus
+  UserMinus,
+  Calendar,
+  Edit3,
+  Check,
+  X,
+  Timer
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { useCoupleData } from "@/hooks/useCoupleData";
-
-type EmailCheckStatus = 'idle' | 'checking' | 'exists_available' | 'exists_unavailable' | 'not_exists';
-type ConnectionStep = 'input' | 'validation' | 'sending' | 'success';
-
-interface EmailCheckResult {
-  success: boolean;
-  exists: boolean;
-  available?: boolean;
-  status?: string;
-  message?: string;
-  error?: string;
-}
+import { usePartnerConnectionV2 } from "@/hooks/usePartnerConnectionV2";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 
 export const PartnerConnectionFlow = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { coupleData, userProfile, partnerProfile, getPartnerDisplayName, refreshCoupleData, loading } = useCoupleData();
+  
+  const {
+    connectionStatus,
+    couple,
+    incomingRequests,
+    outgoingRequests,
+    isLoading,
+    isProcessing,
+    sendPartnerRequest,
+    acceptRequest,
+    declineRequest,
+    removePartner,
+    updateRelationshipDetails
+  } = usePartnerConnectionV2();
   
   const [email, setEmail] = useState("");
-  const [emailStatus, setEmailStatus] = useState<EmailCheckStatus>('idle');
-  const [currentStep, setCurrentStep] = useState<ConnectionStep>('input');
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [emailCheckResult, setEmailCheckResult] = useState<EmailCheckResult | null>(null);
-  const [isDisconnecting, setIsDisconnecting] = useState(false);
-  
-  // Reset state when email changes
+  const [isInviting, setIsInviting] = useState(false);
+  const [lastRequestTime, setLastRequestTime] = useState(0);
+  const [countdown, setCountdown] = useState(0);
+  const [isEditing, setIsEditing] = useState(false);
+  const [relationshipStatus, setRelationshipStatus] = useState(couple?.relationship_status || 'dating');
+  const [anniversaryDate, setAnniversaryDate] = useState(couple?.anniversary_date || '');
+
+  // Rate limiting countdown
   useEffect(() => {
-    if (email.trim() === '') {
-      setEmailStatus('idle');
-      setCurrentStep('input');
-      setEmailCheckResult(null);
+    if (countdown > 0) {
+      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+      return () => clearTimeout(timer);
     }
-  }, [email]);
+  }, [countdown]);
+
+  const isRateLimited = countdown > 0;
 
   // Validate email format
   const isValidEmail = (email: string) => {
@@ -64,377 +71,94 @@ export const PartnerConnectionFlow = () => {
     return emailRegex.test(email);
   };
 
-  // Check if email exists and user's availability
-  const checkEmailAvailability = async () => {
-    if (!email.trim() || !isValidEmail(email)) {
-      toast({
-        title: "Invalid email",
-        description: "Please enter a valid email address",
-        variant: "destructive"
-      });
-      return;
-    }
+  // Handle send invitation
+  const handleSendRequest = async () => {
+    if (!email.trim() || !isValidEmail(email) || isRateLimited) return;
 
-    setEmailStatus('checking');
-    setCurrentStep('validation');
-
-    try {
-      const { data, error } = await supabase.functions.invoke('check-email-exists', {
-        body: { email: email.trim() }
-      });
-
-      if (error) throw error;
-
-      const result = data as EmailCheckResult;
-      setEmailCheckResult(result);
-
-      if (result.success) {
-        if (result.exists) {
-          if (result.available) {
-            setEmailStatus('exists_available');
-          } else {
-            setEmailStatus('exists_unavailable');
-          }
-        } else {
-          setEmailStatus('not_exists');
-        }
-      } else {
-        throw new Error(result.error || 'Failed to check email');
-      }
-    } catch (error: any) {
-      console.error('Error checking email:', error);
-      toast({
-        title: "Error checking email",
-        description: error.message || "Please try again",
-        variant: "destructive"
-      });
-      setEmailStatus('idle');
-      setCurrentStep('input');
-    }
-  };
-
-  // Send invitation based on user existence
-  const sendInvitation = async () => {
-    if (!emailCheckResult) return;
-
-    setIsProcessing(true);
-    setCurrentStep('sending');
-
-    try {
-      const { data, error } = await supabase.functions.invoke('partner-connection-v2', {
-        body: {
-          action: 'send_request',
-          email: email.trim()
-        }
-      });
-
-      if (error) throw error;
-
-      if (data.success) {
-        setCurrentStep('success');
-        toast({
-          title: "Invitation sent! 💕",
-          description: data.message,
-        });
-      } else {
-        throw new Error(data.error || 'Failed to send invitation');
-      }
-    } catch (error: any) {
-      console.error('Error sending invitation:', error);
+    setIsInviting(true);
+    
+    const result = await sendPartnerRequest(email.trim());
+    
+    if (result.success) {
+      setEmail("");
+      setLastRequestTime(Date.now());
+      setCountdown(30); // 30 second cooldown
+    } else {
       toast({
         title: "Failed to send invitation",
-        description: error.message || "Please try again",
+        description: result.error,
         variant: "destructive"
       });
-      setCurrentStep('validation');
-    } finally {
-      setIsProcessing(false);
+    }
+    
+    setIsInviting(false);
+  };
+
+  // Handle accept request
+  const handleAcceptRequest = async (requestId: string) => {
+    const result = await acceptRequest(requestId);
+    if (!result.success) {
+      toast({
+        title: "Failed to accept request",
+        description: result.error,
+        variant: "destructive"
+      });
     }
   };
 
-  // Reset flow to start over
-  const resetFlow = () => {
-    setEmail("");
-    setEmailStatus('idle');
-    setCurrentStep('input');
-    setEmailCheckResult(null);
-    setIsProcessing(false);
+  // Handle decline request
+  const handleDeclineRequest = async (requestId: string) => {
+    const result = await declineRequest(requestId);
+    if (!result.success) {
+      toast({
+        title: "Failed to decline request",
+        description: result.error,
+        variant: "destructive"
+      });
+    }
   };
 
-  // Disconnect from partner
-  const disconnectPartner = async () => {
-    if (!coupleData) return;
-
-    // Show confirmation dialog
+  // Handle remove partner
+  const handleRemovePartner = async () => {
     const confirmed = window.confirm(
       "Are you sure you want to disconnect from your partner? This action cannot be undone and will remove all shared data."
     );
     
     if (!confirmed) return;
 
-    setIsDisconnecting(true);
-    try {
-      console.log('Starting disconnect process for couple:', coupleData.id);
-      
-      const { error } = await supabase
-        .from('couples')
-        .delete()
-        .eq('id', coupleData.id);
-
-      if (error) {
-        console.error('Database error during disconnect:', error);
-        throw error;
-      }
-
-      console.log('Successfully disconnected from partner');
-      
-      // Clear the couple data immediately
-      refreshCoupleData();
-      
-      toast({
-        title: "Disconnected successfully",
-        description: "You have been disconnected from your partner. Redirecting...",
-      });
-
-      // Wait a moment for the toast to show, then navigate to dashboard
-      setTimeout(() => {
-        navigate('/dashboard', { replace: true });
-      }, 1500);
-
-    } catch (error: any) {
-      console.error('Error disconnecting:', error);
+    const result = await removePartner();
+    if (result.success) {
+      navigate('/dashboard', { replace: true });
+    } else {
       toast({
         title: "Failed to disconnect",
-        description: error.message || "Please try again",
+        description: result.error,
         variant: "destructive"
       });
-    } finally {
-      setIsDisconnecting(false);
     }
   };
 
-  // Render different states based on current step
-  const renderContent = () => {
-    switch (currentStep) {
-      case 'input':
-        return (
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="partnerEmail">Partner's Email Address</Label>
-              <Input
-                id="partnerEmail"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="partner@example.com"
-                className="mt-1"
-                disabled={emailStatus === 'checking'}
-              />
-              <p className="text-sm text-muted-foreground mt-1">
-                Enter your partner's email to check their availability
-              </p>
-            </div>
-            <Button 
-              onClick={checkEmailAvailability}
-              disabled={!email.trim() || !isValidEmail(email) || emailStatus === 'checking'}
-              className="w-full bg-gradient-secondary hover:opacity-90 text-white"
-            >
-              {emailStatus === 'checking' ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Checking email...
-                </>
-              ) : (
-                <>
-                  <UserPlus size={16} className="mr-2" />
-                  Check Email Availability
-                </>
-              )}
-            </Button>
-          </div>
-        );
-
-      case 'validation':
-        if (!emailCheckResult) return null;
-
-        return (
-          <div className="space-y-6">
-            {/* Email Status Display */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 rounded-lg border">
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    emailStatus === 'exists_available' ? 'bg-green-100' :
-                    emailStatus === 'exists_unavailable' ? 'bg-red-100' :
-                    'bg-yellow-100'
-                  }`}>
-                    {emailStatus === 'exists_available' ? (
-                      <CheckCircle className="text-green-600" size={20} />
-                    ) : emailStatus === 'exists_unavailable' ? (
-                      <XCircle className="text-red-600" size={20} />
-                    ) : (
-                      <UserPlus className="text-yellow-600" size={20} />
-                    )}
-                  </div>
-                  <div>
-                    <p className="font-medium">{email}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {emailCheckResult.message}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Condition A: Email exists and available */}
-              {emailStatus === 'exists_available' && (
-                <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
-                  <div className="flex items-center gap-3 mb-3">
-                    <CheckCircle className="text-green-600" size={20} />
-                    <h4 className="font-semibold text-green-800">✅ User is a Love Sync member</h4>
-                  </div>
-                  <p className="text-sm text-green-700 mb-4">
-                    This user is already registered on Love Sync and is available to connect. 
-                    Send them an invitation request?
-                  </p>
-                  <div className="flex gap-3">
-                    <Button
-                      onClick={sendInvitation}
-                      disabled={isProcessing}
-                      className="bg-green-600 hover:bg-green-700 text-white"
-                    >
-                      <Send size={16} className="mr-2" />
-                      Send Invitation
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={resetFlow}
-                      disabled={isProcessing}
-                    >
-                      Back
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {/* Condition A: Email exists but unavailable */}
-              {emailStatus === 'exists_unavailable' && (
-                <div className="bg-red-50 border border-red-200 p-4 rounded-lg">
-                  <div className="flex items-center gap-3 mb-3">
-                    <XCircle className="text-red-600" size={20} />
-                    <h4 className="font-semibold text-red-800">❌ User is already connected</h4>
-                  </div>
-                  <p className="text-sm text-red-700 mb-4">
-                    This user is already connected with another partner. You cannot send a connection request.
-                  </p>
-                  <Button
-                    variant="outline"
-                    onClick={resetFlow}
-                    className="w-full"
-                  >
-                    Try Different Email
-                  </Button>
-                </div>
-              )}
-
-              {/* Condition B: Email doesn't exist */}
-              {emailStatus === 'not_exists' && (
-                <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
-                  <div className="flex items-center gap-3 mb-3">
-                    <UserPlus className="text-yellow-600" size={20} />
-                    <h4 className="font-semibold text-yellow-800">⚠️ Email not registered on Love Sync</h4>
-                  </div>
-                  <p className="text-sm text-yellow-700 mb-4">
-                    This email is not registered on Love Sync. Invite them to join?
-                    They'll receive a signup link and will be automatically connected after registration.
-                  </p>
-                  <div className="flex gap-3">
-                    <Button
-                      onClick={sendInvitation}
-                      disabled={isProcessing}
-                      className="bg-yellow-600 hover:bg-yellow-700 text-white"
-                    >
-                      <Send size={16} className="mr-2" />
-                      Send Invitation
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={resetFlow}
-                      disabled={isProcessing}
-                    >
-                      Back
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        );
-
-      case 'sending':
-        return (
-          <div className="text-center py-8">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-            <h3 className="text-lg font-semibold mb-2">Sending Invitation...</h3>
-            <p className="text-muted-foreground">
-              Please wait while we send the invitation to your partner.
-            </p>
-          </div>
-        );
-
-      case 'success':
-        return (
-          <div className="text-center py-8 space-y-6">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-              <CheckCircle className="text-green-600" size={32} />
-            </div>
-            <div>
-              <h3 className="text-xl font-semibold text-green-800 mb-2">
-                🎉 Invitation Sent Successfully!
-              </h3>
-              <p className="text-green-700 mb-4">
-                {emailCheckResult?.exists
-                  ? "Your partner will receive an email with a verification link. When they click it, you'll be automatically connected!"
-                  : "Your partner will receive an email with a signup link. After they register, you'll be automatically connected!"
-                }
-              </p>
-            </div>
-            <div className="flex gap-3 justify-center">
-              <Button
-                onClick={() => navigate('/dashboard')}
-                className="bg-primary hover:bg-primary/90"
-              >
-                <Home size={16} className="mr-2" />
-                Go to Dashboard
-              </Button>
-              <Button
-                variant="outline"
-                onClick={resetFlow}
-              >
-                Send Another Invitation
-              </Button>
-            </div>
-            <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
-              <p className="text-sm text-blue-700">
-                <strong>Important:</strong> Do not auto-redirect to the dashboard. 
-                Your partner needs to complete their action first.
-              </p>
-            </div>
-          </div>
-        );
-
-      default:
-        return null;
+  // Handle save relationship details
+  const handleSaveDetails = async () => {
+    const success = await updateRelationshipDetails(relationshipStatus, anniversaryDate);
+    if (success) {
+      setIsEditing(false);
     }
   };
 
   // Show loading state
-  if (loading) {
+  if (isLoading) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Heart size={20} />
-            Partner Connection
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Heart size={20} />
+              Partner Connection
+            </div>
+            <div className="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+              💫 Loading...
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -447,40 +171,143 @@ export const PartnerConnectionFlow = () => {
     );
   }
 
-  // Show connected state if user has a partner
-  if (coupleData && partnerProfile) {
+  // Show paired state
+  if (connectionStatus === 'paired' && couple) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Heart size={20} />
-            Partner Connection
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Heart size={20} />
+              Partner Connection
+            </div>
+            <div className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+              💕 Connected
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-6">
             {/* Connected Status */}
-            <div className="bg-green-50 border border-green-200 p-6 rounded-lg">
+            <div className="bg-gradient-to-r from-pink-50 to-purple-50 border border-pink-200 p-6 rounded-lg">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                  <CheckCircle className="text-green-600" size={24} />
+                <div className="w-12 h-12 bg-pink-600 rounded-full flex items-center justify-center">
+                  <Heart className="text-white" size={24} />
                 </div>
                 <div>
-                  <h4 className="font-semibold text-green-800">💕 Successfully Connected!</h4>
-                  <p className="text-sm text-green-700">You are connected with your partner</p>
+                  <h4 className="font-semibold text-pink-800">💕 Successfully Connected!</h4>
+                  <p className="text-sm text-pink-700">You are connected with your partner</p>
                 </div>
               </div>
               
               {/* Partner Info */}
-              <div className="flex items-center gap-4 p-4 bg-white rounded-lg border">
-                <div className="w-10 h-10 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full flex items-center justify-center">
-                  <Users className="text-white" size={20} />
-                </div>
-                <div>
-                  <p className="font-medium">{getPartnerDisplayName()}</p>
-                  <p className="text-sm text-muted-foreground">Your Partner</p>
+              <div className="bg-white border border-pink-300 p-4 rounded-md">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-pink-600 rounded-full flex items-center justify-center">
+                    <Users className="text-white" size={20} />
+                  </div>
+                  <div>
+                    <p className="font-medium">Your Partner</p>
+                    <p className="text-sm text-muted-foreground">Connected & Synced</p>
+                  </div>
                 </div>
               </div>
+            </div>
+
+            {/* Relationship Details */}
+            <div className="bg-gray-50 border border-gray-200 p-4 rounded-lg">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center">
+                    <Calendar className="text-white" size={16} />
+                  </div>
+                  <h4 className="font-semibold text-gray-800">Relationship Details</h4>
+                </div>
+                {!isEditing && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsEditing(true)}
+                    className="h-8 px-3"
+                  >
+                    <Edit3 className="h-3 w-3 mr-1" />
+                    Edit
+                  </Button>
+                )}
+              </div>
+              
+              {isEditing ? (
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="status">Relationship Status</Label>
+                    <Select value={relationshipStatus} onValueChange={setRelationshipStatus}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="dating">Dating</SelectItem>
+                        <SelectItem value="engaged">Engaged</SelectItem>
+                        <SelectItem value="married">Married</SelectItem>
+                        <SelectItem value="partnered">Partnered</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="anniversary">Anniversary Date</Label>
+                    <Input
+                      id="anniversary"
+                      type="date"
+                      value={anniversaryDate}
+                      onChange={(e) => setAnniversaryDate(e.target.value)}
+                      className="mt-1"
+                    />
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={handleSaveDetails}
+                      disabled={isProcessing}
+                      className="flex-1 bg-gradient-secondary hover:opacity-90"
+                    >
+                      <Check className="h-4 w-4 mr-2" />
+                      Save Changes
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setIsEditing(false);
+                        setRelationshipStatus(couple.relationship_status);
+                        setAnniversaryDate(couple.anniversary_date || '');
+                      }}
+                      className="flex-1"
+                    >
+                      <X className="h-4 w-4 mr-2" />
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="bg-white border border-gray-300 p-3 rounded-md">
+                    <div className="flex flex-col space-y-1">
+                      <span className="text-xs font-semibold text-gray-800 uppercase tracking-wide">Status</span>
+                      <span className="text-sm text-gray-700 capitalize">{couple.relationship_status}</span>
+                    </div>
+                  </div>
+                  
+                  {couple.anniversary_date && (
+                    <div className="bg-white border border-gray-300 p-3 rounded-md">
+                      <div className="flex flex-col space-y-1">
+                        <span className="text-xs font-semibold text-gray-800 uppercase tracking-wide">Anniversary</span>
+                        <span className="text-sm text-gray-700">
+                          {new Date(couple.anniversary_date).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Actions */}
@@ -492,37 +319,26 @@ export const PartnerConnectionFlow = () => {
                 <Home size={16} className="mr-2" />
                 Go to Dashboard
               </Button>
-              
-              <Button
-                variant="outline"
-                onClick={disconnectPartner}
-                disabled={isDisconnecting}
-                className="w-full text-red-600 border-red-200 hover:bg-red-50"
-              >
-                {isDisconnecting ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600 mr-2"></div>
-                    Disconnecting...
-                  </>
-                ) : (
-                  <>
-                    <UserMinus size={16} className="mr-2" />
-                    Disconnect Partner
-                  </>
-                )}
-              </Button>
             </div>
 
-            {/* Warning */}
-            <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <AlertTriangle className="text-amber-600" size={16} />
-                <h4 className="font-semibold text-amber-800">Important</h4>
+            {/* Danger Zone */}
+            <div className="bg-red-50 border border-red-200 p-4 rounded-lg">
+              <div className="flex items-center gap-3 mb-3">
+                <AlertTriangle className="text-red-600" size={20} />
+                <h4 className="font-semibold text-red-800">Danger Zone</h4>
               </div>
-              <p className="text-sm text-amber-700">
-                Disconnecting will remove all shared data and cannot be undone. 
-                You'll need to send a new invitation to reconnect.
+              <p className="text-sm text-red-700 mb-3">
+                Disconnecting will permanently delete all shared data including memories, sync scores, and relationship insights.
               </p>
+              <Button
+                variant="outline"
+                onClick={handleRemovePartner}
+                disabled={isProcessing}
+                className="w-full text-red-600 border-red-200 hover:bg-red-50"
+              >
+                <UserX className="h-4 w-4 mr-2" />
+                Disconnect from Partner
+              </Button>
             </div>
           </div>
         </CardContent>
@@ -530,28 +346,237 @@ export const PartnerConnectionFlow = () => {
     );
   }
 
-  // Show invitation flow if not connected
+  // Show pending state
+  if (connectionStatus === 'pending') {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Heart size={20} />
+              Partner Connection
+            </div>
+            <div className="px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+              ⏳ Pending
+            </div>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-6">
+            {/* Incoming Requests */}
+            {incomingRequests.length > 0 && (
+              <div>
+                <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
+                  <UserPlus className="text-blue-600" size={20} />
+                  Incoming Invitations
+                </h3>
+                <div className="space-y-3">
+                  {incomingRequests.map((request) => (
+                    <div key={request.id} className="bg-blue-50 border border-blue-300 p-4 rounded-md">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-blue-800">
+                            Invitation from: {request.requested_email}
+                          </p>
+                          <p className="text-xs text-blue-600 mt-1 flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            Received {new Date(request.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button 
+                            size="sm"
+                            onClick={() => handleAcceptRequest(request.id)}
+                            disabled={isProcessing}
+                            className="bg-green-600 hover:bg-green-700 text-white"
+                          >
+                            <Check className="w-4 h-4 mr-1" />
+                            Accept
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleDeclineRequest(request.id)}
+                            disabled={isProcessing}
+                            className="text-red-600 border-red-200 hover:bg-red-50"
+                          >
+                            <X className="w-4 h-4 mr-1" />
+                            Decline
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Outgoing Requests */}
+            {outgoingRequests.length > 0 && (
+              <div>
+                <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
+                  <Send className="text-yellow-600" size={20} />
+                  Pending Invitations
+                </h3>
+                <div className="space-y-3">
+                  {outgoingRequests.map((request) => (
+                    <div key={request.id} className="bg-yellow-50 border border-yellow-300 p-4 rounded-md">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-yellow-800">
+                            Sent to: {request.requested_email}
+                          </p>
+                          <p className="text-xs text-yellow-600 mt-1 flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            Sent {new Date(request.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleDeclineRequest(request.id)}
+                          disabled={isProcessing}
+                          className="text-red-600 border-red-200 hover:bg-red-50"
+                        >
+                          <X className="w-4 h-4 mr-1" />
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Send New Invitation */}
+            <div>
+              <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
+                <UserPlus className="text-primary" size={20} />
+                Send New Invitation
+              </h3>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="partnerEmail">Partner's Email Address</Label>
+                  <Input
+                    id="partnerEmail"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="partner@example.com"
+                    className="mt-1"
+                    disabled={isRateLimited}
+                  />
+                </div>
+                <Button 
+                  onClick={handleSendRequest}
+                  disabled={!email.trim() || !isValidEmail(email) || isInviting || isRateLimited}
+                  className="w-full bg-gradient-secondary hover:opacity-90 text-white"
+                >
+                  {isRateLimited ? (
+                    <>
+                      <Timer size={16} className="mr-2" />
+                      Wait {countdown}s before sending another invitation
+                    </>
+                  ) : isInviting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Sending Invitation...
+                    </>
+                  ) : (
+                    <>
+                      <Send size={16} className="mr-2" />
+                      Send Partner Invitation
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Show unpaired state (invite partner)
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Heart size={20} />
-          Partner Connection
+        <CardTitle className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Heart size={20} />
+            Partner Connection
+          </div>
+          <div className="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+            💫 Ready to Connect
+          </div>
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {renderContent()}
-        
-        {/* Info Section */}
-        {currentStep === 'input' && (
-          <div className="mt-6 bg-amber-50 border border-amber-200 p-4 rounded-lg">
-            <h4 className="font-semibold text-amber-800 mb-2">📧 Email Connection Only</h4>
-            <p className="text-sm text-amber-700">
-              For security, all partner connections must be verified through email. 
-              Look for an invitation from Love Sync in your inbox (check spam folder too!).
+        <div className="space-y-6">
+          {/* Invite Partner Card */}
+          <div className="text-center py-6">
+            <div className="w-16 h-16 bg-gradient-to-r from-pink-400 to-purple-400 rounded-full flex items-center justify-center mx-auto mb-4">
+              <UserPlus className="text-white" size={24} />
+            </div>
+            <h3 className="text-xl font-semibold mb-2">Invite Your Partner</h3>
+            <p className="text-muted-foreground mb-6">
+              Connect with your partner to start tracking your relationship journey together.
             </p>
           </div>
-        )}
+
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="partnerEmail">Partner's Email Address</Label>
+              <Input
+                id="partnerEmail"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="partner@example.com"
+                className="mt-1"
+                disabled={isRateLimited}
+              />
+              <p className="text-sm text-muted-foreground mt-1">
+                We'll send them an invitation to join Love Sync
+              </p>
+            </div>
+            <Button 
+              onClick={handleSendRequest}
+              disabled={!email.trim() || !isValidEmail(email) || isInviting || isRateLimited}
+              className="w-full bg-gradient-secondary hover:opacity-90 text-white shadow-romantic"
+            >
+              {isRateLimited ? (
+                <>
+                  <Timer size={16} className="mr-2" />
+                  Wait {countdown}s before sending another invitation
+                </>
+              ) : isInviting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Sending Invitation...
+                </>
+              ) : (
+                <>
+                  <Send size={16} className="mr-2" />
+                  Send Partner Invitation
+                </>
+              )}
+            </Button>
+          </div>
+
+          {/* Info Section */}
+          <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg">
+            <h4 className="font-semibold text-amber-800 mb-2 flex items-center gap-2">
+              📧 How It Works
+            </h4>
+            <ul className="text-sm text-amber-700 space-y-1">
+              <li>• Your partner will receive an email invitation</li>
+              <li>• If they don't have an account, they can sign up with the invitation</li>
+              <li>• Once they accept, you'll be automatically connected</li>
+              <li>• Start tracking your relationship journey together!</li>
+            </ul>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );

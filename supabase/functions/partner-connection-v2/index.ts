@@ -78,13 +78,12 @@ serve(async (req) => {
           });
         }
 
-        // Check if requester already has a partner
+        // Check if requester already has a partner (exclude demo connections where user1_id = user2_id)
         const { data: existingCouple } = await supabase
           .from('couples')
           .select('*')
           .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
-          .neq('user1_id', user.id) // Exclude demo connections
-          .neq('user2_id', user.id)
+          .neq('user1_id', 'user2_id') // Exclude demo connections
           .maybeSingle();
 
         if (existingCouple) {
@@ -97,7 +96,26 @@ serve(async (req) => {
           });
         }
 
-        // Check if partner user exists by looking up profile by email lookup through auth.users
+        // Check rate limiting - 30 seconds between requests
+        const { data: recentRequests } = await supabase
+          .from('partner_requests')
+          .select('created_at')
+          .eq('requester_id', user.id)
+          .gte('created_at', new Date(Date.now() - 30000).toISOString())
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        if (recentRequests && recentRequests.length > 0) {
+          return new Response(JSON.stringify({
+            success: false,
+            error: 'Please wait 30 seconds before sending another request'
+          }), {
+            status: 429,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+
+        // Look up partner user by email
         const { data: authUsers, error: authUsersError } = await supabase.auth.admin.listUsers();
         
         if (authUsersError) {
@@ -120,14 +138,13 @@ serve(async (req) => {
 
         console.log('Partner user found:', !!partnerUser, 'for email:', email);
 
-        // Check if partner already has a connection
+        // Check if partner already has a connection (exclude demo connections)
         if (partnerUserId) {
           const { data: partnerCouple } = await supabase
             .from('couples')
             .select('*')
             .or(`user1_id.eq.${partnerUserId},user2_id.eq.${partnerUserId}`)
-            .neq('user1_id', partnerUserId) // Exclude demo connections
-            .neq('user2_id', partnerUserId)
+            .neq('user1_id', 'user2_id') // Exclude demo connections
             .maybeSingle();
 
           if (partnerCouple) {
@@ -140,6 +157,13 @@ serve(async (req) => {
             });
           }
         }
+
+        // Clean up any existing pending requests between these users
+        await supabase
+          .from('partner_requests')
+          .delete()
+          .eq('requester_id', user.id)
+          .eq('requested_email', email.toLowerCase().trim());
 
         // Create partner request
         const { data: partnerRequest, error: requestError } = await supabase
@@ -172,7 +196,7 @@ serve(async (req) => {
 
         return new Response(JSON.stringify({
           success: true,
-          message: partnerUser ? 'Connection request sent!' : 'Invitation sent!',
+          message: partnerUser ? 'Connection request sent! 💌' : 'Invitation sent! 💌',
           request_id: partnerRequest.id
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -201,24 +225,20 @@ serve(async (req) => {
           throw new Error('Unauthorized to accept this request');
         }
 
-        // Double-check both users don't already have partners
+        // Double-check both users don't already have partners (exclude demo connections)
         const { data: existingCouples } = await supabase
           .from('couples')
           .select('*')
           .or(`user1_id.eq.${partnerRequest.requester_id},user2_id.eq.${partnerRequest.requester_id},user1_id.eq.${user.id},user2_id.eq.${user.id}`)
-          .neq('user1_id', partnerRequest.requester_id) // Exclude demo connections
-          .neq('user2_id', partnerRequest.requester_id)
-          .neq('user1_id', user.id)
-          .neq('user2_id', user.id);
+          .neq('user1_id', 'user2_id'); // Exclude demo connections
 
         if (existingCouples && existingCouples.length > 0) {
-          return new Response(JSON.stringify({
-            success: false,
-            error: 'One or both users already have a partner'
-          }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          });
+          // Clean up demo connections for both users
+          await supabase
+            .from('couples')
+            .delete()
+            .or(`user1_id.eq.${partnerRequest.requester_id},user1_id.eq.${user.id}`)
+            .eq('user1_id', 'user2_id'); // Only delete demo connections
         }
 
         // Create the couple relationship
@@ -245,7 +265,7 @@ serve(async (req) => {
 
         return new Response(JSON.stringify({
           success: true,
-          message: 'Partner connection established!',
+          message: 'Partner connection established! 💕',
           couple_id: couple.id
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -261,7 +281,7 @@ serve(async (req) => {
           .from('partner_requests')
           .update({ status: 'declined' })
           .eq('id', request_id)
-          .eq('requested_user_id', user.id);
+          .or(`requested_user_id.eq.${user.id},requested_email.eq.${user.email}`);
 
         if (declineError) {
           throw new Error('Failed to decline request');
@@ -276,16 +296,43 @@ serve(async (req) => {
       }
 
       case 'remove_partner': {
-        // Find and remove the couple relationship
-        const { error: removeError } = await supabase
+        // Find and remove the couple relationship (exclude demo connections)
+        const { data: existingCouple } = await supabase
           .from('couples')
-          .delete()
+          .select('*')
           .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
-          .neq('user1_id', user.id) // Don't remove demo connections
-          .neq('user2_id', user.id);
+          .neq('user1_id', 'user2_id') // Only remove real partnerships
+          .maybeSingle();
 
-        if (removeError) {
-          throw new Error('Failed to remove partner connection');
+        if (existingCouple) {
+          const { error: removeError } = await supabase
+            .from('couples')
+            .delete()
+            .eq('id', existingCouple.id);
+
+          if (removeError) {
+            throw new Error('Failed to remove partner connection');
+          }
+
+          // Create demo connections for both users
+          try {
+            await supabase
+              .from('couples')
+              .insert([
+                {
+                  user1_id: existingCouple.user1_id,
+                  user2_id: existingCouple.user1_id,
+                  relationship_status: 'dating'
+                },
+                {
+                  user1_id: existingCouple.user2_id,
+                  user2_id: existingCouple.user2_id,
+                  relationship_status: 'dating'
+                }
+              ]);
+          } catch (error) {
+            console.log('Demo connections may already exist:', error);
+          }
         }
 
         return new Response(JSON.stringify({
@@ -298,17 +345,21 @@ serve(async (req) => {
 
       case 'check_status': {
         // Get current couple status
-        const { data: couple } = await supabase
+        const { data: couples } = await supabase
           .from('couples')
           .select('*')
           .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
-          .maybeSingle();
+          .order('created_at', { ascending: false });
+
+        // Separate demo and real connections
+        const realCouple = couples?.find(c => c.user1_id !== c.user2_id);
+        const demoCouple = couples?.find(c => c.user1_id === c.user2_id);
 
         // Get pending requests
         const { data: incomingRequests } = await supabase
           .from('partner_requests')
           .select('*')
-          .eq('requested_user_id', user.id)
+          .or(`requested_user_id.eq.${user.id},requested_email.eq.${user.email}`)
           .eq('status', 'pending');
 
         const { data: outgoingRequests } = await supabase
@@ -318,21 +369,41 @@ serve(async (req) => {
           .eq('status', 'pending');
 
         let status: 'unpaired' | 'pending' | 'paired' = 'unpaired';
+        let currentCouple = realCouple || null;
         
-        if (couple) {
-          if (couple.user1_id === couple.user2_id) {
-            status = 'unpaired'; // Demo connection
-          } else {
-            status = 'paired';
-          }
+        if (realCouple) {
+          status = 'paired';
         } else if ((incomingRequests && incomingRequests.length > 0) || (outgoingRequests && outgoingRequests.length > 0)) {
           status = 'pending';
+        } else {
+          status = 'unpaired';
+          
+          // Auto-create demo connection if none exists
+          if (!demoCouple) {
+            try {
+              const { data: newDemo } = await supabase
+                .from('couples')
+                .insert({
+                  user1_id: user.id,
+                  user2_id: user.id,
+                  relationship_status: 'dating'
+                })
+                .select()
+                .single();
+              
+              currentCouple = newDemo;
+            } catch (error) {
+              console.log('Demo connection already exists or error creating:', error);
+            }
+          } else {
+            currentCouple = demoCouple;
+          }
         }
 
         return new Response(JSON.stringify({
           success: true,
           status,
-          couple,
+          couple: currentCouple,
           incoming_requests: incomingRequests || [],
           outgoing_requests: outgoingRequests || []
         }), {
@@ -373,47 +444,74 @@ async function sendInvitationEmail(email: string, inviter: any, type: 'connect' 
   let html: string;
   
   if (type === 'connect') {
-    subject = `${inviterName} wants to connect with you on Love Sync!`;
+    subject = `${inviterName} wants to connect with you on Love Sync! 💕`;
     html = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h1 style="color: #e91e63;">💕 Love Sync Connection Request</h1>
-        <p>Hi there!</p>
-        <p><strong>${inviterName}</strong> has sent you a partner connection request on Love Sync!</p>
-        <p>Love Sync is a relationship app that helps couples stay connected, plan amazing dates, and strengthen their bond.</p>
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="${baseUrl}/profile" 
-             style="background-color: #e91e63; color: white; padding: 12px 24px; 
-                    text-decoration: none; border-radius: 6px; display: inline-block;">
-            Accept Connection Request
-          </a>
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: linear-gradient(135deg, #ff6b9d, #c44569); padding: 2px; border-radius: 12px;">
+        <div style="background: white; padding: 30px; border-radius: 10px;">
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #e91e63; margin: 0; font-size: 28px;">💕 Love Sync</h1>
+            <p style="color: #666; margin: 5px 0;">Connection Request</p>
+          </div>
+          
+          <div style="background: linear-gradient(135deg, #ff6b9d10, #c4456910); padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h2 style="color: #e91e63; margin: 0 0 15px 0;">Hi there! 👋</h2>
+            <p style="color: #333; line-height: 1.6; margin: 15px 0;"><strong>${inviterName}</strong> has sent you a partner connection request on Love Sync!</p>
+            <p style="color: #333; line-height: 1.6; margin: 15px 0;">Love Sync is a relationship app that helps couples stay connected, plan amazing dates, and strengthen their bond.</p>
+          </div>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${baseUrl}/profile" 
+               style="background: linear-gradient(135deg, #ff6b9d, #e91e63); color: white; padding: 15px 30px; 
+                      text-decoration: none; border-radius: 25px; display: inline-block; font-weight: bold; box-shadow: 0 4px 15px rgba(233, 30, 99, 0.3);">
+              💕 Accept Connection Request
+            </a>
+          </div>
+          
+          <div style="border-top: 1px solid #eee; padding-top: 20px; margin-top: 30px;">
+            <p style="color: #666; font-size: 14px; line-height: 1.6;">Log in to your Love Sync account to accept or decline this connection request.</p>
+            <p style="color: #666; font-size: 14px; margin-top: 20px;">With love,<br>The Love Sync Team 💝</p>
+          </div>
         </div>
-        <p>Log in to your Love Sync account to accept or decline this connection request.</p>
-        <p>With love,<br>The Love Sync Team 💝</p>
       </div>
     `;
   } else {
-    subject = `${inviterName} invited you to join Love Sync!`;
+    subject = `${inviterName} invited you to join Love Sync! 💕`;
     html = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h1 style="color: #e91e63;">💕 You're Invited to Love Sync!</h1>
-        <p>Hi there!</p>
-        <p><strong>${inviterName}</strong> has invited you to join Love Sync - the app for couples who want to strengthen their relationship!</p>
-        <p>Love Sync helps you and your partner:</p>
-        <ul>
-          <li>🎯 Set and track relationship goals together</li>
-          <li>📅 Plan amazing dates and activities</li>
-          <li>💭 Share daily check-ins and stay connected</li>
-          <li>📈 Build stronger communication habits</li>
-        </ul>
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="${baseUrl}/signup" 
-             style="background-color: #e91e63; color: white; padding: 12px 24px; 
-                    text-decoration: none; border-radius: 6px; display: inline-block;">
-            Join Love Sync
-          </a>
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: linear-gradient(135deg, #ff6b9d, #c44569); padding: 2px; border-radius: 12px;">
+        <div style="background: white; padding: 30px; border-radius: 10px;">
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #e91e63; margin: 0; font-size: 28px;">💕 You're Invited to Love Sync!</h1>
+          </div>
+          
+          <div style="background: linear-gradient(135deg, #ff6b9d10, #c4456910); padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h2 style="color: #e91e63; margin: 0 0 15px 0;">Hi there! 👋</h2>
+            <p style="color: #333; line-height: 1.6; margin: 15px 0;"><strong>${inviterName}</strong> has invited you to join Love Sync - the app for couples who want to strengthen their relationship!</p>
+          </div>
+          
+          <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="color: #e91e63; margin: 0 0 15px 0;">Love Sync helps you and your partner:</h3>
+            <ul style="color: #333; line-height: 1.8; padding-left: 20px;">
+              <li>🎯 Set and track relationship goals together</li>
+              <li>📅 Plan amazing dates and activities</li>
+              <li>💭 Share daily check-ins and stay connected</li>
+              <li>📈 Build stronger communication habits</li>
+              <li>💕 Track your relationship sync score</li>
+            </ul>
+          </div>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${baseUrl}/signup" 
+               style="background: linear-gradient(135deg, #ff6b9d, #e91e63); color: white; padding: 15px 30px; 
+                      text-decoration: none; border-radius: 25px; display: inline-block; font-weight: bold; box-shadow: 0 4px 15px rgba(233, 30, 99, 0.3);">
+              🚀 Join Love Sync
+            </a>
+          </div>
+          
+          <div style="border-top: 1px solid #eee; padding-top: 20px; margin-top: 30px;">
+            <p style="color: #666; font-size: 14px; line-height: 1.6;">Sign up now and you'll automatically be connected with ${inviterName}!</p>
+            <p style="color: #666; font-size: 14px; margin-top: 20px;">With love,<br>The Love Sync Team 💝</p>
+          </div>
         </div>
-        <p>Sign up now and you'll automatically be connected with ${inviterName}!</p>
-        <p>With love,<br>The Love Sync Team 💝</p>
       </div>
     `;
   }
