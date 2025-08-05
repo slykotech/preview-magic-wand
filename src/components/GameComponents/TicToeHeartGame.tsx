@@ -126,7 +126,7 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
 
   // Real-time subscription for game updates with improved sync
   useEffect(() => {
-    if (!gameState?.id || !user?.id) return;
+    if (!gameState?.id) return;
 
     console.log('🎮 Setting up real-time subscription for game:', gameState.id);
 
@@ -142,11 +142,8 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
         },
         (payload) => {
           console.log('🎮 Real-time game update received:', payload);
-          
           if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
             const updatedState = payload.new as any;
-            console.log('🎮 Database state after update:', updatedState);
-            
             const newGameState = {
               ...updatedState,
               board: updatedState.board as Board,
@@ -154,21 +151,12 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
               last_move_at: updatedState.last_move_at || new Date().toISOString()
             };
             
-            console.log('🎮 NEW GAME STATE APPLIED:', {
-              gameId: newGameState.id,
-              currentPlayerFromDB: newGameState.current_player_id,
-              currentUserId: user?.id,
-              isUserTurnNow: newGameState.current_player_id === user?.id,
-              board: newGameState.board,
-              movesCount: newGameState.moves_count
-            });
+            console.log('🎮 Setting new game state:', newGameState);
+            console.log('🎮 Current turn belongs to:', newGameState.current_player_id);
+            console.log('🎮 Current user ID:', user?.id);
+            console.log('🎮 Is user turn?:', newGameState.current_player_id === user?.id);
             
-            // Force state update with new game state
-            setGameState(prevState => {
-              console.log('🎮 PREVIOUS STATE:', prevState);
-              console.log('🎮 UPDATING TO NEW STATE:', newGameState);
-              return newGameState;
-            });
+            setGameState(newGameState);
             
             // Update playful message based on new turn
             const isUserTurn = newGameState.current_player_id === user?.id;
@@ -177,9 +165,9 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
             setPlayfulMessage(getPlayfulMessage(isUserTurn, currentPlayerName || 'Player', currentSymbol));
             
             // Check for game end
-            if (updatedState.game_status !== 'playing') {
+            if (payload.new.game_status !== 'playing') {
               setShowCelebration(true);
-              if (updatedState.winner_id === user?.id) {
+              if (payload.new.winner_id === user?.id) {
                 setTimeout(() => setShowLoveGrant(true), 2000);
               }
             }
@@ -210,13 +198,6 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
     try {
       setLoading(true);
       
-      console.log('🎮 INITIALIZING GAME - DEBUG INFO:', {
-        sessionId,
-        currentUserId: user?.id,
-        partnerId: partnerId,
-        coupleData: coupleData
-      });
-      
       // Check if game already exists for this session
       let { data: existingGame, error: fetchError } = await supabase
         .from('tic_toe_heart_games')
@@ -228,12 +209,6 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
 
       if (existingGame) {
         console.log('🎮 Loading existing game:', existingGame);
-        console.log('🎮 EXISTING GAME TURN CHECK:', {
-          currentPlayerFromDB: existingGame.current_player_id,
-          currentUserId: user?.id,
-          isUserTurnCalculation: existingGame.current_player_id === user?.id
-        });
-        
         setGameState({
           ...existingGame,
           board: existingGame.board as Board,
@@ -268,12 +243,6 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
 
         if (createError) throw createError;
         console.log('🎮 New game created:', newGame);
-        console.log('🎮 NEW GAME TURN CHECK:', {
-          currentPlayerFromDB: newGame.current_player_id,
-          currentUserId: user?.id,
-          isUserTurnCalculation: newGame.current_player_id === user?.id
-        });
-        
         setGameState({
           ...newGame,
           board: newGame.board as Board,
