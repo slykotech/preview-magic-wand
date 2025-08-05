@@ -235,8 +235,9 @@ async function fetchEventbriteEvents(lat: number, lng: number, radiusKm: number)
     return [];
   }
 
-  // Updated Eventbrite API endpoint with correct parameters
-  const url = `https://www.eventbriteapi.com/v3/events/search/?location.latitude=${lat}&location.longitude=${lng}&location.within=${radiusKm}km&start_date.range_start=${new Date().toISOString()}&expand=venue,organizer,category&sort_by=date&page_size=50&status=live`;
+  // Test with a simpler endpoint first - just events search without location
+  // The correct Eventbrite API endpoint format based on their current documentation
+  const url = `https://www.eventbriteapi.com/v3/events/search/?q=&location.address=${lat},${lng}&location.within=${radiusKm}km&start_date.range_start=${new Date().toISOString()}&expand=venue,organizer,category&sort_by=date&page_size=50`;
   
   console.log(`Fetching from Eventbrite: ${url}`);
   
