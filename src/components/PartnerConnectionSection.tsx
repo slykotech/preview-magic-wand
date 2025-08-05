@@ -188,14 +188,6 @@ export const PartnerConnectionSection = () => {
     }));
 
     try {
-      const { data, error } = await supabase.functions.invoke('check-email-exists', {
-        body: {},
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-
       // Use direct fetch since invoke doesn't support query params well
       const session = await supabase.auth.getSession();
       const response = await fetch(`https://kdbgwmtihgmialrmaecn.supabase.co/functions/v1/check-email-exists?email=${encodeURIComponent(email)}`, {
@@ -398,34 +390,34 @@ export const PartnerConnectionSection = () => {
                       }`}
                     />
                     {emailValidation.isChecking && (
-                      <p className="text-xs text-muted-foreground mt-1 flex items-center">
+                      <div className="text-xs text-muted-foreground mt-1 flex items-center">
                         <div className="animate-spin rounded-full h-3 w-3 border-b border-primary mr-1"></div>
                         Validating email...
-                      </p>
+                      </div>
                     )}
                     {partnerEmail && !emailValidation.isChecking && !emailValidation.isValid && emailValidation.message && (
-                      <p className="text-xs text-red-600 mt-1 flex items-center">
+                      <div className="text-xs text-red-600 mt-1 flex items-center">
                         <AlertCircle className="w-3 h-3 mr-1" />
                         {emailValidation.message}
-                      </p>
+                      </div>
                     )}
                     {partnerEmail && emailValidation.isValid && emailValidation.exists && emailValidation.available && emailValidation.message && (
-                      <p className="text-xs text-green-600 mt-1 flex items-center">
+                      <div className="text-xs text-green-600 mt-1 flex items-center">
                         <Check className="w-3 h-3 mr-1" />
                         {emailValidation.message}
-                      </p>
+                      </div>
                     )}
                     {partnerEmail && emailValidation.isValid && emailValidation.exists && !emailValidation.available && emailValidation.message && (
-                      <p className="text-xs text-yellow-600 mt-1 flex items-center">
+                      <div className="text-xs text-yellow-600 mt-1 flex items-center">
                         <AlertTriangle className="w-3 h-3 mr-1" />
                         {emailValidation.message}
-                      </p>
+                      </div>
                     )}
                     {partnerEmail && emailValidation.isValid && !emailValidation.exists && emailValidation.message && (
-                      <p className="text-xs text-yellow-600 mt-1 flex items-center">
+                      <div className="text-xs text-yellow-600 mt-1 flex items-center">
                         <AlertTriangle className="w-3 h-3 mr-1" />
                         {emailValidation.message}
-                      </p>
+                      </div>
                     )}
                     {emailValidation.showInviteToJoin && (
                       <button
