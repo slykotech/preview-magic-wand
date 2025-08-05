@@ -43,7 +43,7 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    const { latitude, longitude, radiusKm = 25, city, sources = ['meetup'] }: FetchEventsRequest = await req.json();
+    const { latitude, longitude, radiusKm = 25, city, sources = ['eventbrite'] }: FetchEventsRequest = await req.json();
 
     console.log(`Fetching events for location: ${latitude}, ${longitude}, radius: ${radiusKm}km`);
 
@@ -122,9 +122,15 @@ serve(async (req) => {
     // Fetch events from multiple sources
     const allEvents: EventData[] = [];
 
-    // Eventbrite API was deprecated in 2020 - no longer available for public use
+    // Eventbrite API  
     if (sources.includes('eventbrite')) {
-      console.log('Eventbrite API is no longer available for public use (deprecated in 2020)');
+      try {
+        const eventbriteEvents = await fetchEventbriteEvents(latitude, longitude, radiusKm);
+        allEvents.push(...eventbriteEvents);
+        console.log(`Fetched ${eventbriteEvents.length} events from Eventbrite`);
+      } catch (error) {
+        console.error('Eventbrite fetch error:', error);
+      }
     }
 
     // Meetup API  
@@ -223,22 +229,21 @@ serve(async (req) => {
 });
 
 async function fetchEventbriteEvents(lat: number, lng: number, radiusKm: number): Promise<EventData[]> {
-  const apiKey = Deno.env.get('EVENTBRITE_API_KEY');
-  console.log(`API Key status: ${apiKey ? 'CONFIGURED' : 'NOT CONFIGURED'}`);
-  if (!apiKey) {
-    console.log('Eventbrite API key not configured');
+  const apiToken = Deno.env.get('EVENTBRITE_API_TOKEN');
+  console.log(`API Token status: ${apiToken ? 'CONFIGURED' : 'NOT CONFIGURED'}`);
+  if (!apiToken) {
+    console.log('Eventbrite API token not configured');
     return [];
   }
 
-  // Correct Eventbrite API endpoint (no trailing slash, proper parameter format)
-  const url = `https://www.eventbriteapi.com/v3/events/search?location.latitude=${lat}&location.longitude=${lng}&location.within=${radiusKm}km&start_date.range_start=${new Date().toISOString()}&page_size=20`;
+  // Eventbrite API endpoint with token parameter
+  const url = `https://www.eventbriteapi.com/v3/events/search/?location.latitude=${lat}&location.longitude=${lng}&location.within=${radiusKm}km&start_date.range_start=${new Date().toISOString()}&page_size=20&token=${apiToken}`;
   
   console.log(`Fetching from Eventbrite: ${url}`);
   
   try {
     const response = await fetch(url, {
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json'
       }
     });
@@ -247,7 +252,7 @@ async function fetchEventbriteEvents(lat: number, lng: number, radiusKm: number)
       const errorText = await response.text();
       console.error(`Eventbrite API error ${response.status}: ${errorText}`);
       console.error(`Request URL: ${url}`);
-      console.error(`API Key configured: ${apiKey ? 'Yes' : 'No'}`);
+      console.error(`API Token configured: ${apiToken ? 'Yes' : 'No'}`);
       return []; // Return empty array instead of throwing error
     }
 
