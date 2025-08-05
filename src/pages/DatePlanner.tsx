@@ -9,12 +9,13 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { BottomNavigation } from '@/components/BottomNavigation';
 import { useToast } from '@/hooks/use-toast';
-import { Calendar, MapPin, Clock, DollarSign, Heart, X, Plus, Trash2 } from 'lucide-react';
+import { Calendar, MapPin, Clock, DollarSign, Heart, X, Plus, Trash2, Sparkles } from 'lucide-react';
 import { GradientHeader } from '@/components/GradientHeader';
+import { SweetSuggestions } from '@/components/SweetSuggestions';
 
 interface DateIdea {
   id: string;
@@ -158,8 +159,10 @@ export const DatePlanner = () => {
     }
   };
 
-  const handleAddEvent = async () => {
-    if (!formData.title || !coupleData || !user) {
+  const handleAddEvent = async (dateData?: any) => {
+    const dataToAdd = dateData || formData;
+    
+    if (!dataToAdd.title || !coupleData || !user) {
       toast({
         title: "Missing Information",
         description: "Please fill in the required fields."
@@ -173,7 +176,7 @@ export const DatePlanner = () => {
         .insert({
           couple_id: coupleData.id,
           created_by: user.id,
-          ...formData
+          ...dataToAdd
         })
         .select()
         .single();
@@ -181,22 +184,26 @@ export const DatePlanner = () => {
       if (error) throw error;
 
       setPlannedDates(prev => [data, ...prev]);
-      setFormData({
-        title: '',
-        description: '',
-        category: 'romantic',
-        scheduled_date: '',
-        scheduled_time: '',
-        location: '',
-        estimated_cost: '',
-        estimated_duration: '',
-        notes: ''
-      });
-      setShowAddForm(false);
+      
+      if (!dateData) {
+        // Only reset form if this was from the manual form
+        setFormData({
+          title: '',
+          description: '',
+          category: 'romantic',
+          scheduled_date: '',
+          scheduled_time: '',
+          location: '',
+          estimated_cost: '',
+          estimated_duration: '',
+          notes: ''
+        });
+        setShowAddForm(false);
+      }
 
       toast({
         title: "Date added! 💕",
-        description: `${formData.title} has been added to your planner.`
+        description: `${dataToAdd.title} has been added to your planner.`
       });
     } catch (error) {
       console.error('Error adding date:', error);
@@ -393,19 +400,26 @@ export const DatePlanner = () => {
 
       <div className="flex-1 overflow-y-auto container mx-auto px-4 py-6">
         <div className="w-full">
-          <div className="flex items-center gap-2 mb-6">
-            <Heart className="w-4 h-4" />
-            <h2 className="text-xl font-semibold">Planned Dates</h2>
-          </div>
+          <Tabs defaultValue="planned" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsTrigger value="planned" className="flex items-center gap-2">
+                <Heart className="w-4 h-4" />
+                Planned Dates
+              </TabsTrigger>
+              <TabsTrigger value="suggestions" className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4" />
+                Sweet Suggestions
+              </TabsTrigger>
+            </TabsList>
 
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold">Your Planned Dates</h3>
-              <Button onClick={() => setShowAddForm(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add New Date
-              </Button>
-            </div>
+            <TabsContent value="planned" className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-semibold">Your Planned Dates</h3>
+                <Button onClick={() => setShowAddForm(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add New Date
+                </Button>
+              </div>
 
             {/* Add Form */}
             {showAddForm && (
@@ -738,10 +752,19 @@ export const DatePlanner = () => {
                    </div>
                  ))}
                </div>
-               )}
-            </div>
-          </div>
+                )}
+            </TabsContent>
+
+            <TabsContent value="suggestions" className="space-y-6">
+              <SweetSuggestions 
+                coupleId={coupleId || ''}
+                userId={user?.id || ''}
+                onAddToDatePlan={handleAddEvent}
+              />
+            </TabsContent>
+          </Tabs>
         </div>
+      </div>
 
         {/* Delete Confirmation Dialog */}
        <AlertDialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
