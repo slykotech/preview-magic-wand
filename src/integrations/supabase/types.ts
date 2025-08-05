@@ -2112,6 +2112,28 @@ export type Database = {
         }
         Returns: string
       }
+      find_nearby_events: {
+        Args: { lat: number; lng: number; radius_km?: number }
+        Returns: {
+          id: string
+          title: string
+          description: string
+          start_date: string
+          end_date: string
+          location_name: string
+          latitude: number
+          longitude: number
+          price: string
+          organizer: string
+          category: string
+          website_url: string
+          image_url: string
+          source: string
+          external_id: string
+          distance_km: number
+          created_at: string
+        }[]
+      }
       find_nearby_places: {
         Args:
           | {
