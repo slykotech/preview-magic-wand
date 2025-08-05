@@ -43,7 +43,7 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    const { latitude, longitude, radiusKm = 25, city, sources = ['eventbrite', 'meetup'] }: FetchEventsRequest = await req.json();
+    const { latitude, longitude, radiusKm = 25, city, sources = ['eventbrite'] }: FetchEventsRequest = await req.json();
 
     console.log(`Fetching events for location: ${latitude}, ${longitude}, radius: ${radiusKm}km`);
 
@@ -235,9 +235,8 @@ async function fetchEventbriteEvents(lat: number, lng: number, radiusKm: number)
     return [];
   }
 
-  // Test with a simpler endpoint first - just events search without location
-  // The correct Eventbrite API endpoint format based on their current documentation
-  const url = `https://www.eventbriteapi.com/v3/events/search/?q=&location.address=${lat},${lng}&location.within=${radiusKm}km&start_date.range_start=${new Date().toISOString()}&expand=venue,organizer,category&sort_by=date&page_size=50`;
+  // Updated Eventbrite API endpoint - using coordinates directly
+  const url = `https://www.eventbriteapi.com/v3/events/search/?location.latitude=${lat}&location.longitude=${lng}&location.within=${radiusKm}km&start_date.range_start=${new Date().toISOString()}&expand=venue,organizer&page_size=50`;
   
   console.log(`Fetching from Eventbrite: ${url}`);
   
@@ -252,7 +251,9 @@ async function fetchEventbriteEvents(lat: number, lng: number, radiusKm: number)
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`Eventbrite API error ${response.status}: ${errorText}`);
-      throw new Error(`Eventbrite API error: ${response.status}`);
+      console.error(`Request URL: ${url}`);
+      console.error(`API Key configured: ${apiKey ? 'Yes' : 'No'}`);
+      return []; // Return empty array instead of throwing error
     }
 
     const data = await response.json();
