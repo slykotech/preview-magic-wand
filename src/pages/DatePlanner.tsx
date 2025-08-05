@@ -498,243 +498,305 @@ export const DatePlanner = () => {
                         onChange={(e) => setFormData({ ...formData, estimated_cost: e.target.value })}
                         placeholder="$50"
                       />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Description</label>
-                    <Textarea
-                      value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      placeholder="Describe your date idea..."
-                      rows={3}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Notes</label>
-                    <Textarea
-                      value={formData.notes}
-                      onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                      placeholder="Additional notes..."
-                      rows={2}
-                    />
-                  </div>
-                  <div className="flex gap-2 justify-end">
-                    <Button variant="outline" onClick={() => setShowAddForm(false)}>
-                      Cancel
-                    </Button>
-                    <Button onClick={handleAddEvent}>
-                      Add Date
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+                     </div>
+                     <div>
+                       <label className="text-sm font-medium">Duration</label>
+                       <Input
+                         value={formData.estimated_duration}
+                         onChange={(e) => setFormData({ ...formData, estimated_duration: e.target.value })}
+                         placeholder="2 hours"
+                       />
+                     </div>
+                   </div>
+                   <div>
+                     <label className="text-sm font-medium">Description</label>
+                     <Textarea
+                       value={formData.description}
+                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                       placeholder="Describe your date idea..."
+                       className="min-h-[80px]"
+                     />
+                   </div>
+                   <div>
+                     <label className="text-sm font-medium">Notes</label>
+                     <Textarea
+                       value={formData.notes}
+                       onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                       placeholder="Any special notes or reminders..."
+                       className="min-h-[60px]"
+                     />
+                   </div>
+                   <div className="flex gap-2">
+                     <Button onClick={handleAddEvent} className="flex-1">
+                       <Plus className="h-4 w-4 mr-2" />
+                       Add Date
+                     </Button>
+                     <Button variant="outline" onClick={() => setShowAddForm(false)}>
+                       Cancel
+                     </Button>
+                   </div>
+                 </CardContent>
+               </Card>
+             )}
 
-            {/* Dates List */}
-            {plannedDates.length === 0 ? (
-              <Card className="text-center py-12">
-                <CardContent>
-                  <Heart className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                  <h3 className="font-semibold text-lg mb-2">No planned dates yet</h3>
-                  <p className="text-muted-foreground mb-4">Start planning your perfect dates together!</p>
-                  <Button onClick={() => setShowAddForm(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Plan Your First Date
-                  </Button>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-4">
-                {Object.entries(getDatesByCategory()).map(([category, dates]) => (
-                  <div key={category} className="space-y-3">
-                    <h4 className="font-medium text-lg flex items-center gap-2">
-                      {category.charAt(0).toUpperCase() + category.slice(1)}
-                      <Badge variant="secondary">{dates.length}</Badge>
-                    </h4>
-                    <div className="grid gap-3">
-                      {dates.map((date) => (
-                        <Card key={date.id}>
-                          <CardContent className="p-4">
-                            <div className="flex justify-between items-start mb-3">
-                              <div className="flex-1">
-                                <h5 className="font-medium text-lg">{date.title}</h5>
-                                {date.description && (
-                                  <p className="text-muted-foreground text-sm mt-1">{date.description}</p>
-                                )}
-                              </div>
-                              <div className="flex gap-2">
-                                <Button variant="ghost" size="sm" onClick={() => handleEditDate(date)}>
-                                  Edit
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleDeleteDate(date.id)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </div>
+             {/* Edit Form */}
+             {editingDate && (
+               <Card>
+                 <CardHeader>
+                   <div className="flex justify-between items-center">
+                     <CardTitle>Edit Date</CardTitle>
+                     <Button variant="ghost" size="sm" onClick={() => setEditingDate(null)}>
+                       <X className="h-4 w-4" />
+                     </Button>
+                   </div>
+                 </CardHeader>
+                 <CardContent className="space-y-4">
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                     <div>
+                       <label className="text-sm font-medium">Title *</label>
+                       <Input
+                         value={editFormData.title}
+                         onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
+                         placeholder="Dinner at..."
+                       />
+                     </div>
+                     <div>
+                       <label className="text-sm font-medium">Category</label>
+                       <Select value={editFormData.category} onValueChange={(value) => setEditFormData({ ...editFormData, category: value })}>
+                         <SelectTrigger>
+                           <SelectValue />
+                         </SelectTrigger>
+                         <SelectContent className="bg-background border z-50">
+                           {categories.map(cat => (
+                             <SelectItem key={cat} value={cat}>
+                               {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                             </SelectItem>
+                           ))}
+                         </SelectContent>
+                       </Select>
+                     </div>
+                     <div>
+                       <label className="text-sm font-medium">Date</label>
+                       <Input
+                         type="date"
+                         value={editFormData.scheduled_date}
+                         onChange={(e) => setEditFormData({ ...editFormData, scheduled_date: e.target.value })}
+                       />
+                     </div>
+                     <div>
+                       <label className="text-sm font-medium">Time</label>
+                       <Input
+                         type="time"
+                         value={editFormData.scheduled_time}
+                         onChange={(e) => setEditFormData({ ...editFormData, scheduled_time: e.target.value })}
+                       />
+                     </div>
+                     <div>
+                       <label className="text-sm font-medium">Location</label>
+                       <Input
+                         value={editFormData.location}
+                         onChange={(e) => setEditFormData({ ...editFormData, location: e.target.value })}
+                         placeholder="Restaurant, park, etc."
+                       />
+                     </div>
+                     <div>
+                       <label className="text-sm font-medium">Estimated Cost</label>
+                       <Input
+                         value={editFormData.estimated_cost}
+                         onChange={(e) => setEditFormData({ ...editFormData, estimated_cost: e.target.value })}
+                         placeholder="$50"
+                       />
+                     </div>
+                     <div>
+                       <label className="text-sm font-medium">Duration</label>
+                       <Input
+                         value={editFormData.estimated_duration}
+                         onChange={(e) => setEditFormData({ ...editFormData, estimated_duration: e.target.value })}
+                         placeholder="2 hours"
+                       />
+                     </div>
+                   </div>
+                   <div>
+                     <label className="text-sm font-medium">Description</label>
+                     <Textarea
+                       value={editFormData.description}
+                       onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
+                       placeholder="Describe your date idea..."
+                       className="min-h-[80px]"
+                     />
+                   </div>
+                   <div>
+                     <label className="text-sm font-medium">Notes</label>
+                     <Textarea
+                       value={editFormData.notes}
+                       onChange={(e) => setEditFormData({ ...editFormData, notes: e.target.value })}
+                       placeholder="Any special notes or reminders..."
+                       className="min-h-[60px]"
+                     />
+                   </div>
+                   <div className="flex gap-2">
+                     <Button onClick={handleUpdateEvent} className="flex-1">
+                       Update Date
+                     </Button>
+                     <Button variant="outline" onClick={() => setEditingDate(null)}>
+                       Cancel
+                     </Button>
+                   </div>
+                 </CardContent>
+               </Card>
+             )}
 
-                            <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mb-4">
-                              {date.scheduled_date && (
-                                <div className="flex items-center gap-1">
-                                  <Calendar className="h-4 w-4" />
-                                  {new Date(date.scheduled_date).toLocaleDateString()}
-                                </div>
-                              )}
-                              {date.scheduled_time && (
-                                <div className="flex items-center gap-1">
-                                  <Clock className="h-4 w-4" />
-                                  {date.scheduled_time}
-                                </div>
-                              )}
-                              {date.location && (
-                                <div className="flex items-center gap-1">
-                                  <MapPin className="h-4 w-4" />
-                                  {date.location}
-                                </div>
-                              )}
-                              {date.estimated_cost && (
-                                <div className="flex items-center gap-1">
-                                  <DollarSign className="h-4 w-4" />
-                                  {date.estimated_cost}
-                                </div>
-                              )}
-                            </div>
+             {/* Planned Dates List */}
+             {plannedDates.length === 0 ? (
+               <Card>
+                 <CardContent className="text-center py-12">
+                   <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                   <h3 className="text-lg font-semibold mb-2">No dates planned yet</h3>
+                   <p className="text-muted-foreground mb-4">
+                     Start planning your perfect dates together! Add your first date idea above or explore event suggestions.
+                   </p>
+                 </CardContent>
+               </Card>
+             ) : (
+               <div className="grid gap-4">
+                 {Object.entries(getDatesByCategory()).map(([category, dates]) => (
+                   <div key={category} className="space-y-3">
+                     <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
+                       {category.charAt(0).toUpperCase() + category.slice(1)} ({dates.length})
+                     </h4>
+                     {dates.map(date => (
+                       <Card key={date.id} className="group hover:shadow-md transition-shadow">
+                         <CardContent className="p-4">
+                           <div className="flex justify-between items-start mb-3">
+                             <div>
+                               <h3 className="font-semibold text-lg mb-1">{date.title}</h3>
+                               <Badge variant="outline" className="text-xs">
+                                 {date.category?.charAt(0).toUpperCase() + date.category?.slice(1)}
+                               </Badge>
+                             </div>
+                             <div className="flex gap-1">
+                               <Button 
+                                 variant="ghost" 
+                                 size="sm" 
+                                 onClick={() => handleEditDate(date)}
+                                 className="h-8 w-8 p-0"
+                               >
+                                 ✏️
+                               </Button>
+                               <Button 
+                                 variant="ghost" 
+                                 size="sm" 
+                                 onClick={() => setDeleteConfirm(date.id)}
+                                 className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                               >
+                                 <Trash2 className="h-4 w-4" />
+                               </Button>
+                             </div>
+                           </div>
 
-                            <div className="flex gap-2">
-                              <Button
-                                size="sm"
-                                onClick={() => handleDateFeedback(date.id, true)}
-                                className="flex items-center gap-1"
-                              >
-                                <Heart className="h-4 w-4" />
-                                Mark as Done
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleDateFeedback(date.id, false)}
-                              >
-                                Didn't happen
-                              </Button>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </TabsContent>
+                           {date.description && (
+                             <p className="text-muted-foreground mb-3 text-sm">{date.description}</p>
+                           )}
 
-          {/* Event Suggestions Tab */}
-          <TabsContent value="suggestions" className="space-y-6">
-            <EventSuggestionsSection onEventSelect={handleEventSuggestionSelect} />
-          </TabsContent>
-        </Tabs>
+                           <div className="grid grid-cols-2 gap-3 text-sm">
+                             {date.scheduled_date && (
+                               <div className="flex items-center gap-2">
+                                 <Calendar className="h-4 w-4 text-muted-foreground" />
+                                 <span>{new Date(date.scheduled_date).toLocaleDateString()}</span>
+                                 {date.scheduled_time && (
+                                   <span className="text-muted-foreground">at {date.scheduled_time}</span>
+                                 )}
+                               </div>
+                             )}
+                             
+                             {date.location && (
+                               <div className="flex items-center gap-2">
+                                 <MapPin className="h-4 w-4 text-muted-foreground" />
+                                 <span className="truncate">{date.location}</span>
+                               </div>
+                             )}
+                             
+                             {date.estimated_cost && (
+                               <div className="flex items-center gap-2">
+                                 <DollarSign className="h-4 w-4 text-muted-foreground" />
+                                 <span>{date.estimated_cost}</span>
+                               </div>
+                             )}
+                             
+                             {date.estimated_duration && (
+                               <div className="flex items-center gap-2">
+                                 <Clock className="h-4 w-4 text-muted-foreground" />
+                                 <span>{date.estimated_duration}</span>
+                               </div>
+                             )}
+                           </div>
 
-        {/* Edit Form Modal */}
-        {editingDate && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-            <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto">
-              <CardHeader>
-                <div className="flex justify-between items-center">
-                  <CardTitle>Edit Date</CardTitle>
-                  <Button variant="ghost" size="sm" onClick={() => setEditingDate(null)}>
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium">Title *</label>
-                  <Input
-                    value={editFormData.title}
-                    onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Category</label>
-                  <Select value={editFormData.category} onValueChange={(value) => setEditFormData({ ...editFormData, category: value })}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map(cat => (
-                        <SelectItem key={cat} value={cat}>
-                          {cat.charAt(0).toUpperCase() + cat.slice(1)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Date</label>
-                  <Input
-                    type="date"
-                    value={editFormData.scheduled_date}
-                    onChange={(e) => setEditFormData({ ...editFormData, scheduled_date: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Time</label>
-                  <Input
-                    type="time"
-                    value={editFormData.scheduled_time}
-                    onChange={(e) => setEditFormData({ ...editFormData, scheduled_time: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Location</label>
-                  <Input
-                    value={editFormData.location}
-                    onChange={(e) => setEditFormData({ ...editFormData, location: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Description</label>
-                  <Textarea
-                    value={editFormData.description}
-                    onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
-                    rows={3}
-                  />
-                </div>
-                <div className="flex gap-2 justify-end">
-                  <Button variant="outline" onClick={() => setEditingDate(null)}>
-                    Cancel
-                  </Button>
-                  <Button onClick={handleUpdateEvent}>
-                    Update Date
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
+                           {date.notes && (
+                             <div className="mt-3 p-2 bg-muted/50 rounded-lg">
+                               <p className="text-sm text-muted-foreground">{date.notes}</p>
+                             </div>
+                           )}
 
-        {/* Delete Confirmation */}
-        {deleteConfirm && (
-          <AlertDialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Delete Date</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Are you sure you want to delete this date? This action cannot be undone.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel onClick={() => setDeleteConfirm(null)}>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={() => handleDeleteDate(deleteConfirm)}>Delete</AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        )}
-      </div>
+                           {/* Date Action Buttons */}
+                           <div className="flex gap-2 mt-4">
+                             <Button 
+                               size="sm" 
+                               variant="outline"
+                               onClick={() => handleDateFeedback(date.id, true)}
+                               className="flex-1"
+                             >
+                               ✅ We did this!
+                             </Button>
+                             <Button 
+                               size="sm" 
+                               variant="outline"
+                               onClick={() => handleDateFeedback(date.id, false)}
+                               className="flex-1"
+                             >
+                               ❌ Skip this
+                             </Button>
+                           </div>
+                         </CardContent>
+                       </Card>
+                     ))}
+                   </div>
+                 ))}
+               </div>
+             )}
+           </TabsContent>
 
-      <BottomNavigation />
-    </div>
-  );
-};
+           {/* Suggestions Tab */}
+           <TabsContent value="suggestions" className="space-y-6">
+             <EventSuggestionsSection 
+               onEventSelect={handleEventSuggestionSelect}
+               className="w-full"
+             />
+           </TabsContent>
+         </Tabs>
+       </div>
+
+       {/* Delete Confirmation Dialog */}
+       <AlertDialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
+         <AlertDialogContent>
+           <AlertDialogHeader>
+             <AlertDialogTitle>Remove Date Plan</AlertDialogTitle>
+             <AlertDialogDescription>
+               Are you sure you want to remove this date from your planner? This action cannot be undone.
+             </AlertDialogDescription>
+           </AlertDialogHeader>
+           <AlertDialogFooter>
+             <AlertDialogCancel>Cancel</AlertDialogCancel>
+             <AlertDialogAction 
+               onClick={() => deleteConfirm && handleDeleteDate(deleteConfirm)}
+               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+             >
+               Remove Date
+             </AlertDialogAction>
+           </AlertDialogFooter>
+         </AlertDialogContent>
+       </AlertDialog>
+
+       <BottomNavigation />
+     </div>
+   );
+ };
