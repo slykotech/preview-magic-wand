@@ -9,7 +9,6 @@ import { PlaceCard } from './PlaceCard';
 import { CitySearchInput } from './CitySearchInput';
 import { supabase } from '@/integrations/supabase/client';
 import { MapPin, Loader2, Search } from 'lucide-react';
-
 interface Place {
   id: string;
   name: string;
@@ -23,34 +22,50 @@ interface Place {
   isOpen?: boolean;
   distance: number;
 }
-
 interface SweetSuggestionsProps {
   coupleId: string;
   userId: string;
   onAddToDatePlan: (placeData: any) => void;
 }
-
 export const SweetSuggestions: React.FC<SweetSuggestionsProps> = ({
   coupleId,
   userId,
   onAddToDatePlan
 }) => {
-  const { toast } = useToast();
-  const { location, isGettingLocation, getCurrentLocation, setManualLocation } = useLocation();
-  
+  const {
+    toast
+  } = useToast();
+  const {
+    location,
+    isGettingLocation,
+    getCurrentLocation,
+    setManualLocation
+  } = useLocation();
   const [places, setPlaces] = useState<Place[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-
-  const categories = [
-    { value: 'all', label: 'All Places' },
-    { value: 'Cultural & Historical', label: 'Cultural & Historical' },
-    { value: 'Religious & Spiritual', label: 'Religious & Spiritual' },
-    { value: 'Entertainment', label: 'Entertainment' },
-    { value: 'Dining & Social', label: 'Dining & Social' },
-    { value: 'Nature & Outdoor', label: 'Nature & Outdoor' },
-    { value: 'Shopping & Markets', label: 'Shopping & Markets' }
-  ];
+  const categories = [{
+    value: 'all',
+    label: 'All Places'
+  }, {
+    value: 'Cultural & Historical',
+    label: 'Cultural & Historical'
+  }, {
+    value: 'Religious & Spiritual',
+    label: 'Religious & Spiritual'
+  }, {
+    value: 'Entertainment',
+    label: 'Entertainment'
+  }, {
+    value: 'Dining & Social',
+    label: 'Dining & Social'
+  }, {
+    value: 'Nature & Outdoor',
+    label: 'Nature & Outdoor'
+  }, {
+    value: 'Shopping & Markets',
+    label: 'Shopping & Markets'
+  }];
 
   // Auto-detect location and search on component mount
   useEffect(() => {
@@ -58,28 +73,26 @@ export const SweetSuggestions: React.FC<SweetSuggestionsProps> = ({
       getCurrentLocation();
     }
   }, []);
-
   useEffect(() => {
     if (location) {
       searchPlaces();
     }
   }, [location, selectedCategory]);
-
   const searchPlaces = async () => {
     if (!location) return;
-
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('search-nearby-places', {
+      const {
+        data,
+        error
+      } = await supabase.functions.invoke('search-nearby-places', {
         body: {
           latitude: location.latitude,
           longitude: location.longitude,
           category: selectedCategory === 'all' ? undefined : selectedCategory
         }
       });
-
       if (error) throw error;
-
       if (data.success) {
         setPlaces(data.places || []);
         toast({
@@ -101,7 +114,6 @@ export const SweetSuggestions: React.FC<SweetSuggestionsProps> = ({
       setLoading(false);
     }
   };
-
   const handleLocationSet = (locationData: any) => {
     setManualLocation(locationData.name, {
       lat: locationData.lat,
@@ -109,7 +121,6 @@ export const SweetSuggestions: React.FC<SweetSuggestionsProps> = ({
       displayName: locationData.displayName || locationData.name
     });
   };
-
   const handleAddToDatePlan = (place: Place) => {
     const dateData = {
       title: `Visit ${place.name}`,
@@ -120,17 +131,16 @@ export const SweetSuggestions: React.FC<SweetSuggestionsProps> = ({
       estimated_duration: '2 hours',
       notes: `Rating: ${place.rating}/5 ⭐${place.distance ? ` • ${place.distance}km away` : ''}`
     };
-
     onAddToDatePlan(dateData);
-    
     toast({
       title: "Added to Date Plan! 💕",
       description: `${place.name} has been added to your planned dates`
     });
   };
-
   const getCategoryFromTypes = (types: string[]) => {
-    const categoryMap: { [key: string]: string } = {
+    const categoryMap: {
+      [key: string]: string;
+    } = {
       'restaurant': 'Dining',
       'food': 'Food',
       'bar': 'Nightlife',
@@ -144,7 +154,6 @@ export const SweetSuggestions: React.FC<SweetSuggestionsProps> = ({
       'spa': 'Relaxation',
       'gym': 'Sports'
     };
-
     for (const type of types) {
       if (categoryMap[type]) {
         return categoryMap[type];
@@ -152,9 +161,10 @@ export const SweetSuggestions: React.FC<SweetSuggestionsProps> = ({
     }
     return 'Other';
   };
-
   const mapPlaceTypesToDateCategory = (types: string[]) => {
-    const categoryMap: { [key: string]: string } = {
+    const categoryMap: {
+      [key: string]: string;
+    } = {
       'restaurant': 'food',
       'food': 'food',
       'bar': 'entertainment',
@@ -168,7 +178,6 @@ export const SweetSuggestions: React.FC<SweetSuggestionsProps> = ({
       'spa': 'relaxation',
       'gym': 'sports'
     };
-
     for (const type of types) {
       if (categoryMap[type]) {
         return categoryMap[type];
@@ -176,129 +185,56 @@ export const SweetSuggestions: React.FC<SweetSuggestionsProps> = ({
     }
     return 'romantic';
   };
-
-  return (
-    <div className="space-y-6">
+  return <div className="space-y-6">
       {/* Location Selection */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <MapPin className="h-5 w-5" />
-            Location
-          </CardTitle>
-        </CardHeader>
+        
         <CardContent className="space-y-4">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
-              <CitySearchInput
-                onLocationSet={handleLocationSet}
-                onCurrentLocation={getCurrentLocation}
-                className="w-full"
-              />
+              <CitySearchInput onLocationSet={handleLocationSet} onCurrentLocation={getCurrentLocation} className="w-full" />
             </div>
-            <Button
-              onClick={getCurrentLocation}
-              disabled={isGettingLocation}
-              variant="outline"
-              className="shrink-0"
-            >
-              {isGettingLocation ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              ) : (
-                <MapPin className="h-4 w-4 mr-2" />
-              )}
-              Use Current Location
-            </Button>
+            
           </div>
           
-          {location && (
-            <div className="text-sm text-muted-foreground">
+          {location && <div className="text-sm text-muted-foreground">
               📍 Searching near: {location.displayName}
-            </div>
-          )}
+            </div>}
         </CardContent>
       </Card>
 
       {/* Filters */}
-      {location && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Search className="h-5 w-5" />
-              Category Filter
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div>
-              <label className="text-sm font-medium mb-2 block">Category</label>
-              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-background border z-50">
-                  {categories.map(category => (
-                    <SelectItem key={category.value} value={category.value}>
-                      {category.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="text-xs text-muted-foreground mt-2">
-              💡 Places are automatically searched within 100km radius
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {location}
 
       {/* Results */}
-      {location && (
-        <div>
+      {location && <div>
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-semibold">
               Sweet Suggestions
-              {places.length > 0 && (
-                <Badge variant="secondary" className="ml-2">
+              {places.length > 0 && <Badge variant="secondary" className="ml-2">
                   {places.length} found
-                </Badge>
-              )}
+                </Badge>}
             </h3>
           </div>
 
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
+          {loading ? <div className="flex items-center justify-center py-12">
               <Loader2 className="h-8 w-8 animate-spin" />
               <span className="ml-2">Finding amazing places nearby...</span>
-            </div>
-          ) : places.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {places.map((place) => (
-                <PlaceCard
-                  key={place.id}
-                  place={place}
-                  onAddToDatePlan={handleAddToDatePlan}
-                />
-              ))}
-            </div>
-          ) : location ? (
-            <Card>
+            </div> : places.length > 0 ? <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {places.map(place => <PlaceCard key={place.id} place={place} onAddToDatePlan={handleAddToDatePlan} />)}
+            </div> : location ? <Card>
               <CardContent className="text-center py-12">
                 <p className="text-muted-foreground">
                   No places found in this area. Try changing the category filter above.
                 </p>
               </CardContent>
-            </Card>
-          ) : (
-            <Card>
+            </Card> : <Card>
               <CardContent className="text-center py-12">
                 <p className="text-muted-foreground">
                   Please set your location to see sweet suggestions nearby! 📍
                 </p>
               </CardContent>
-            </Card>
-          )}
-        </div>
-      )}
-    </div>
-  );
+            </Card>}
+        </div>}
+    </div>;
 };
