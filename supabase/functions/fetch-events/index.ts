@@ -49,11 +49,11 @@ serve(async (req) => {
 
     // Check if we have recent events cached for this location
     const { data: cachedEvents, error: cacheError } = await supabase
-      .rpc('find_nearby_events', {
-        lat: latitude,
-        lng: longitude,
-        radius_km: radiusKm
-      });
+      .from('events')
+      .select('*')
+      .gte('expires_at', new Date().toISOString())
+      .order('created_at', { ascending: false })
+      .limit(50);
 
     if (cacheError) {
       console.error('Error checking cached events:', cacheError);
@@ -76,14 +76,13 @@ serve(async (req) => {
     }
 
     // Check if there's an active fetch job for this location to prevent duplicate fetching
-    const locationKey = `${Math.round(latitude * 100) / 100}_${Math.round(longitude * 100) / 100}`;
-    
     const { data: activeJob } = await supabase
       .from('event_fetch_jobs')
       .select('*')
-      .eq('location_key', locationKey)
+      .eq('location_lat', latitude)
+      .eq('location_lng', longitude)
       .eq('status', 'running')
-      .single();
+      .maybeSingle();
 
     if (activeJob) {
       console.log('Fetch job already running for this location');
@@ -104,11 +103,9 @@ serve(async (req) => {
     const { data: newJob, error: jobError } = await supabase
       .from('event_fetch_jobs')
       .insert({
-        location_key: locationKey,
-        latitude,
-        longitude,
+        location_lat: latitude,
+        location_lng: longitude,
         radius_km: radiusKm,
-        city: city || `${latitude}, ${longitude}`,
         sources,
         status: 'running'
       })
@@ -187,18 +184,18 @@ serve(async (req) => {
       .from('event_fetch_jobs')
       .update({
         status: 'completed',
-        events_fetched: allEvents.length,
+        events_found: allEvents.length,
         completed_at: new Date().toISOString()
       })
       .eq('id', newJob.id);
 
     // Get final events list (including any existing cached events)
     const { data: finalEvents } = await supabase
-      .rpc('find_nearby_events', {
-        lat: latitude,
-        lng: longitude,
-        radius_km: radiusKm
-      });
+      .from('events')
+      .select('*')
+      .gte('expires_at', new Date().toISOString())
+      .order('start_date', { ascending: true })
+      .limit(100);
 
     console.log(`Successfully fetched and stored ${allEvents.length} new events`);
 
