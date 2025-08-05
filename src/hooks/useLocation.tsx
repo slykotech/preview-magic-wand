@@ -111,13 +111,21 @@ export const useLocation = () => {
     );
   }, [toast]);
 
-  const setManualLocation = useCallback(async (cityName: string) => {
+  const setManualLocation = useCallback(async (cityName: string, coordinates?: { lat: number; lng: number; displayName: string }) => {
     if (!cityName.trim()) {
-      toast({
-        title: "Invalid location",
-        description: "Please enter a valid city or location name",
-        variant: "destructive"
-      });
+      setLocation(null);
+      return;
+    }
+
+    if (coordinates) {
+      // Use provided coordinates directly
+      const locationData: LocationData = {
+        latitude: coordinates.lat,
+        longitude: coordinates.lng,
+        city: cityName,
+        displayName: coordinates.displayName
+      };
+      setLocation(locationData);
       return;
     }
 

@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { EventSuggestionCard } from "./EventSuggestionCard";
 import { EventScrapingTrigger } from "./EventScrapingTrigger";
 import { GooglePlacesApiTest } from "./GooglePlacesApiTest";
+import { CitySearchInput } from "./CitySearchInput";
 import { useEventSuggestions, EventSuggestion } from "@/hooks/useEventSuggestions";
 import { useLocation } from "@/hooks/useLocation";
 import { RefreshCw, MapPin, Filter } from "lucide-react";
@@ -22,7 +23,15 @@ const categories = [
   { value: 'food', label: 'Food & Dining' },
   { value: 'sports', label: 'Sports & Fitness' },
   { value: 'cultural', label: 'Arts & Culture' },
-  { value: 'romantic', label: 'Romantic' }
+  { value: 'romantic', label: 'Romantic' },
+  { value: 'technology', label: 'Tech & Networking' },
+  { value: 'networking', label: 'Professional' }
+];
+
+const radiusOptions = [
+  { value: 25, label: '25 km' },
+  { value: 50, label: '50 km' },
+  { value: 100, label: '100 km' }
 ];
 
 export const EventSuggestionsSection = ({ onEventSelect, className = "" }: EventSuggestionsSectionProps) => {
@@ -33,7 +42,7 @@ export const EventSuggestionsSection = ({ onEventSelect, className = "" }: Event
   console.log('EventSuggestionsSection render - location:', location, 'events count:', events.length, 'isLoading:', isLoading);
   
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [locationInput, setLocationInput] = useState('');
+  const [selectedRadius, setSelectedRadius] = useState(100);
   const [filteredEvents, setFilteredEvents] = useState<EventSuggestion[]>([]);
 
   // Apply filters whenever events or category changes
@@ -62,11 +71,8 @@ export const EventSuggestionsSection = ({ onEventSelect, className = "" }: Event
     // Could open a modal or navigate to detail view
   };
 
-  const handleLocationSet = () => {
-    if (locationInput.trim()) {
-      setManualLocation(locationInput.trim());
-      setLocationInput('');
-    }
+  const handleLocationSet = (cityName: string, coordinates: { lat: number; lng: number; displayName: string }) => {
+    setManualLocation(cityName, coordinates);
   };
 
   const refreshEvents = () => {
@@ -76,30 +82,11 @@ export const EventSuggestionsSection = ({ onEventSelect, className = "" }: Event
   if (!location) {
     return (
       <div className={`space-y-4 ${className}`}>
-        <div className="text-center py-8 space-y-4">
-          <MapPin className="w-12 h-12 mx-auto text-muted-foreground" />
-          <h3 className="text-lg font-semibold">Discover Events Near You</h3>
-          <p className="text-muted-foreground max-w-md mx-auto">
-            Set your location to find amazing events and activities for your next date
-          </p>
-          
-          <div className="flex gap-2 max-w-md mx-auto">
-            <Input
-              placeholder="Enter city or location"
-              value={locationInput}
-              onChange={(e) => setLocationInput(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleLocationSet()}
-            />
-            <Button onClick={handleLocationSet} disabled={!locationInput.trim()}>
-              Set Location
-            </Button>
-          </div>
-          
-          <Button variant="outline" onClick={getCurrentLocation}>
-            <MapPin className="w-4 h-4 mr-2" />
-            Use Current Location
-          </Button>
-        </div>
+        <CitySearchInput 
+          onLocationSet={handleLocationSet}
+          onCurrentLocation={getCurrentLocation}
+          className="py-8"
+        />
       </div>
     );
   }
@@ -126,8 +113,9 @@ export const EventSuggestionsSection = ({ onEventSelect, className = "" }: Event
         </Button>
       </div>
 
-      {/* Category Filter */}
-      <div className="flex justify-center">
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+        {/* Category Filter */}
         <Select value={selectedCategory} onValueChange={setSelectedCategory}>
           <SelectTrigger className="w-full sm:w-64">
             <Filter className="w-4 h-4 mr-2" />
@@ -141,6 +129,30 @@ export const EventSuggestionsSection = ({ onEventSelect, className = "" }: Event
             ))}
           </SelectContent>
         </Select>
+
+        {/* Radius Filter */}
+        <Select value={selectedRadius.toString()} onValueChange={(value) => setSelectedRadius(parseInt(value))}>
+          <SelectTrigger className="w-full sm:w-48">
+            <MapPin className="w-4 h-4 mr-2" />
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {radiusOptions.map((option) => (
+              <SelectItem key={option.value} value={option.value.toString()}>
+                Within {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {/* Change Location Button */}
+        <Button 
+          variant="outline" 
+          onClick={() => setManualLocation('')}
+        >
+          <MapPin className="w-4 h-4 mr-2" />
+          Change Location
+        </Button>
       </div>
 
       {/* Loading state */}

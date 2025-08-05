@@ -127,13 +127,17 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { latitude, longitude, radius = 25 } = await req.json();
+    const { latitude, longitude, radius = 100 } = await req.json();
     
     if (!latitude || !longitude) {
       throw new Error('Latitude and longitude are required');
     }
 
-    console.log(`Fetching events for: ${latitude}, ${longitude} within ${radius}km`);
+    console.log(`Fetching events for: ${latitude}, ${longitude} within ${radius}km (increased default radius)`);
+
+    // Enhanced filtering to exclude conventions/caterings and focus on experiences
+    const excludeKeywords = ['convention', 'catering', 'corporate', 'conference', 'seminar', 'workshop']; 
+    const includeKeywords = ['restaurant', 'dining', 'entertainment', 'music', 'food', 'experience', 'activity'];
 
     // Fetch events from multiple sources: database + Google Places API
     console.log(`Fetching events from database for location: ${latitude}, ${longitude} with radius: ${radius}km`);
