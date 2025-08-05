@@ -7,59 +7,37 @@ import { useCardGames } from "@/hooks/useCardGames";
 
 const gameTypes = [
   {
-    id: "truth_or_love",  // Updated to match database
-    title: "Truth or Love",
-    subtitle: "Deep Talk",
+    id: "couples_cards",
+    title: "Card Deck Game",
+    subtitle: "Deep Connection",
     icon: Heart,
     secondaryIcon: MessageCircle,
     gradient: "from-pink-400 to-red-400",
     bgGradient: "from-pink-50 to-red-50",
     darkBgGradient: "from-pink-950/30 to-red-950/30",
-    description: "Honest conversations that deepen your connection"
+    description: "500+ meaningful questions to spark intimate conversations and laughter"
   },
   {
-    id: "this_or_that",  // Updated to match database
-    title: "This or That",
-    subtitle: "Fun",
-    icon: Lightbulb,
-    secondaryIcon: HelpCircle,
-    gradient: "from-yellow-400 to-orange-400",
-    bgGradient: "from-yellow-50 to-orange-50", 
-    darkBgGradient: "from-yellow-950/30 to-orange-950/30",
-    description: "Fun choices that reveal your preferences"
-  },
-  {
-    id: "memory_match",  // Updated to match database
-    title: "Memory Match", 
-    subtitle: "Bonding",
-    icon: Brain,
-    secondaryIcon: Heart,
+    id: "tic_toe_heart",
+    title: "Tic Toe Heart",
+    subtitle: "Playful Competition",
+    icon: Heart,
+    secondaryIcon: Users,
     gradient: "from-purple-400 to-pink-400",
     bgGradient: "from-purple-50 to-pink-50",
-    darkBgGradient: "from-purple-950/30 to-pink-950/30", 
-    description: "Test how well you know each other"
+    darkBgGradient: "from-purple-950/30 to-pink-950/30",
+    description: "Romantic twist on classic Tic-Tac-Toe with winner rewards and heart animations"
   },
   {
-    id: "love_coupons",  // Updated to match database
-    title: "Love Coupons",
-    subtitle: "Romantic", 
-    icon: Ticket,
-    secondaryIcon: Heart,
-    gradient: "from-pink-400 to-rose-400",
-    bgGradient: "from-pink-50 to-rose-50",
-    darkBgGradient: "from-pink-950/30 to-rose-950/30",
-    description: "Create romantic gestures for each other"
-  },
-  {
-    id: "couple_quiz",  // Updated to match database
-    title: "Couple Quiz",
-    subtitle: "Knowledge",
-    icon: Users, 
+    id: "truth_or_dare_couples",
+    title: "Truth or Dare",
+    subtitle: "Spicy & Sweet",
+    icon: Lightbulb,
     secondaryIcon: HelpCircle,
-    gradient: "from-blue-400 to-indigo-400",
-    bgGradient: "from-blue-50 to-indigo-50",
-    darkBgGradient: "from-blue-950/30 to-indigo-950/30",
-    description: "Test your knowledge about each other"
+    gradient: "from-rose-400 to-orange-400",
+    bgGradient: "from-rose-50 to-orange-50",
+    darkBgGradient: "from-rose-950/30 to-orange-950/30",
+    description: "Flirty truths and cute dares designed to build trust and create fun memories"
   }
 ];
 
