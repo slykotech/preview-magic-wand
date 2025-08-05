@@ -142,7 +142,7 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
         },
         (payload) => {
           console.log('🎮 Real-time game update received:', payload);
-          if (payload.eventType === 'UPDATE') {
+          if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
             const updatedState = payload.new as any;
             const newGameState = {
               ...updatedState,
@@ -152,6 +152,10 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
             };
             
             console.log('🎮 Setting new game state:', newGameState);
+            console.log('🎮 Current turn belongs to:', newGameState.current_player_id);
+            console.log('🎮 Current user ID:', user?.id);
+            console.log('🎮 Is user turn?:', newGameState.current_player_id === user?.id);
+            
             setGameState(newGameState);
             
             // Update playful message based on new turn
