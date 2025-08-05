@@ -140,12 +140,31 @@ export const useEventSuggestions = () => {
     }
   }, []);
 
-  // Auto-fetch when location changes
+  // Auto-fetch when location changes or component mounts
   useEffect(() => {
     if (location?.latitude && location?.longitude) {
-      fetchEvents();
+      // Only fetch if we don't have recent data or location changed significantly
+      const shouldFetch = !lastFetched || 
+                         Date.now() - lastFetched.getTime() > 15 * 60 * 1000; // 15 minutes
+      
+      if (shouldFetch) {
+        fetchEvents();
+      }
     }
-  }, [location?.latitude, location?.longitude, fetchEvents]);
+  }, [location?.latitude, location?.longitude]);
+
+  // Auto-refresh every 30 minutes if user is active
+  useEffect(() => {
+    if (!location?.latitude || !location?.longitude) return;
+
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible' && lastFetched) {
+        fetchEvents();
+      }
+    }, 30 * 60 * 1000); // 30 minutes
+
+    return () => clearInterval(interval);
+  }, [location?.latitude, location?.longitude, lastFetched, fetchEvents]);
 
   return {
     events,
