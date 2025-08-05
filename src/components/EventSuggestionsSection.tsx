@@ -28,6 +28,8 @@ export const EventSuggestionsSection = ({ onEventSelect, className = "" }: Event
   const { location, getCurrentLocation, setManualLocation } = useLocation();
   const { events, isLoading, fetchEvents, getEventsByCategory, searchEvents, trackEventInteraction } = useEventSuggestions();
   
+  console.log('EventSuggestionsSection render - location:', location, 'events count:', events.length, 'isLoading:', isLoading);
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [locationInput, setLocationInput] = useState('');

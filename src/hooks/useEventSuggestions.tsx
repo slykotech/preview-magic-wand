@@ -30,7 +30,10 @@ export const useEventSuggestions = () => {
   const [lastFetched, setLastFetched] = useState<Date | null>(null);
 
   const fetchEvents = useCallback(async (forceRefresh = false) => {
+    console.log('fetchEvents called with location:', location, 'forceRefresh:', forceRefresh);
+    
     if (!location?.latitude || !location?.longitude) {
+      console.log('No location available, cannot fetch events');
       // Don't show error toast for auto-fetch attempts, only for manual refresh
       if (forceRefresh) {
         toast({
