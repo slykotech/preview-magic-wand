@@ -232,6 +232,15 @@ export const GameSession = () => {
             onMove={(row, col) => console.log('Move:', row, col)}
             onRematch={() => console.log('Rematch')}
             onExit={() => navigate('/games')}
+            gameState={{
+              board: [
+                [null, null, null],
+                [null, null, null],
+                [null, null, null]
+              ],
+              status: 'playing', // Start the game immediately when both partners are online
+              moves: 0
+            }}
           />
         )}
         
