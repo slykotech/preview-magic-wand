@@ -172,7 +172,9 @@ async function performRegionalScraping(country: string, region?: string, city?: 
   const startTime = Date.now();
   
   // Call each scraping function with appropriate delays and analytics
-  const scrapingFunctions = ['scrape-ticketmaster', 'scrape-eventbrite', 'scrape-googleplaces', 'scrape-events-firecrawl'];
+  const scrapingFunctions = country === 'IN' 
+    ? ['scrape-india-events', 'scrape-ticketmaster', 'scrape-eventbrite', 'scrape-googleplaces']
+    : ['scrape-ticketmaster', 'scrape-eventbrite', 'scrape-googleplaces', 'scrape-events-firecrawl'];
   
   for (const functionName of scrapingFunctions) {
     const funcStartTime = Date.now();
