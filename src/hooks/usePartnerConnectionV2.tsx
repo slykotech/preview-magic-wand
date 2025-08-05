@@ -66,6 +66,39 @@ export const usePartnerConnectionV2 = (): UsePartnerConnectionV2 => {
 
   const isDemo = couple?.user1_id === couple?.user2_id;
 
+  // Fetch user and partner profiles
+  const fetchProfiles = useCallback(async (coupleData: Couple | null) => {
+    if (!user || !coupleData) return;
+
+    try {
+      // Fetch current user profile
+      const { data: userProfileData } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      setUserProfile(userProfileData);
+
+      // If not demo mode, fetch partner profile
+      if (coupleData.user1_id !== coupleData.user2_id) {
+        const partnerId = coupleData.user1_id === user.id ? coupleData.user2_id : coupleData.user1_id;
+        
+        const { data: partnerProfileData } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', partnerId)
+          .maybeSingle();
+
+        setPartnerProfile(partnerProfileData);
+      } else {
+        setPartnerProfile(null);
+      }
+    } catch (error) {
+      console.error('Error fetching profiles:', error);
+    }
+  }, [user]);
+
   // Rate limiting helper
   const checkRateLimit = () => {
     const now = Date.now();
@@ -104,13 +137,16 @@ export const usePartnerConnectionV2 = (): UsePartnerConnectionV2 => {
         setCouple(data.couple);
         setIncomingRequests(data.incoming_requests || []);
         setOutgoingRequests(data.outgoing_requests || []);
+
+        // Fetch user profiles
+        await fetchProfiles(data.couple);
       }
     } catch (error) {
       console.error('Error refreshing status:', error);
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, [user, fetchProfiles]);
 
   // Send partner request
   const sendPartnerRequest = useCallback(async (email: string): Promise<{ success: boolean; error?: string }> => {
@@ -165,7 +201,7 @@ export const usePartnerConnectionV2 = (): UsePartnerConnectionV2 => {
       console.error('Error sending partner request:', error);
       return { success: false, error: 'Network error occurred' };
     }
-  }, [user, toast, refreshStatus, lastRequestTime]);
+  }, [user, toast, refreshStatus, checkRateLimit]);
 
   // Accept partner request
   const acceptRequest = useCallback(async (requestId: string): Promise<{ success: boolean; error?: string }> => {

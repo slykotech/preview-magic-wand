@@ -72,13 +72,13 @@ serve(async (req) => {
         }
 
         // Check if requester already has a partner
-        const { data: existingCouple } = await supabase
+        const { data: existingCouples } = await supabase
           .from('couples')
           .select('*')
-          .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
-          .neq('user1_id', user.id) // Exclude demo connections
-          .neq('user2_id', user.id)
-          .maybeSingle();
+          .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`);
+
+        // Filter out demo connections (where user1_id === user2_id)
+        const existingCouple = existingCouples?.find(c => c.user1_id !== c.user2_id);
 
         if (existingCouple) {
           return new Response(JSON.stringify({
@@ -90,26 +90,33 @@ serve(async (req) => {
           });
         }
 
-        // Check if partner user exists
-        const { data: partnerUser } = await supabase
-          .from('profiles')
-          .select('user_id')
-          .eq('user_id', (await supabase.auth.admin.getUserByEmail(email)).data.user?.id)
-          .maybeSingle();
+        // Check if partner user exists by looking up their profile
+        const { data: partnerUserAuth } = await supabase.auth.admin.getUserByEmail(email);
+        const partnerUser = partnerUserAuth.user;
+        
+        let partnerProfile = null;
+        if (partnerUser) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('user_id', partnerUser.id)
+            .maybeSingle();
+          partnerProfile = profile;
+        }
 
         console.log('Partner user found:', !!partnerUser, 'for email:', email);
 
         // Check if partner already has a connection
         if (partnerUser) {
-          const { data: partnerCouple } = await supabase
+          const { data: partnerCouples } = await supabase
             .from('couples')
             .select('*')
-            .or(`user1_id.eq.${partnerUser.user_id},user2_id.eq.${partnerUser.user_id}`)
-            .neq('user1_id', partnerUser.user_id) // Exclude demo connections
-            .neq('user2_id', partnerUser.user_id)
-            .maybeSingle();
+            .or(`user1_id.eq.${partnerUser.id},user2_id.eq.${partnerUser.id}`);
 
-          if (partnerCouple) {
+          // Filter out demo connections (where user1_id === user2_id)
+          const realPartnership = partnerCouples?.find(c => c.user1_id !== c.user2_id);
+
+          if (realPartnership) {
             return new Response(JSON.stringify({
               success: false,
               error: 'This user already has a partner'
@@ -126,7 +133,7 @@ serve(async (req) => {
           .insert({
             requester_id: user.id,
             requested_email: email,
-            requested_user_id: partnerUser?.user_id || null,
+            requested_user_id: partnerUser?.id || null,
             status: 'pending'
           })
           .select()
@@ -176,14 +183,13 @@ serve(async (req) => {
         }
 
         // Double-check both users don't already have partners
-        const { data: existingCouples } = await supabase
+        const { data: allCouples } = await supabase
           .from('couples')
           .select('*')
-          .or(`user1_id.eq.${partnerRequest.requester_id},user2_id.eq.${partnerRequest.requester_id},user1_id.eq.${user.id},user2_id.eq.${user.id}`)
-          .neq('user1_id', partnerRequest.requester_id) // Exclude demo connections
-          .neq('user2_id', partnerRequest.requester_id)
-          .neq('user1_id', user.id)
-          .neq('user2_id', user.id);
+          .or(`user1_id.eq.${partnerRequest.requester_id},user2_id.eq.${partnerRequest.requester_id},user1_id.eq.${user.id},user2_id.eq.${user.id}`);
+
+        // Filter out demo connections (where user1_id === user2_id)
+        const existingCouples = allCouples?.filter(c => c.user1_id !== c.user2_id);
 
         if (existingCouples && existingCouples.length > 0) {
           return new Response(JSON.stringify({
@@ -250,13 +256,30 @@ serve(async (req) => {
       }
 
       case 'remove_partner': {
-        // Find and remove the couple relationship
+        // Find real partner connections (not demo)
+        const { data: couples } = await supabase
+          .from('couples')
+          .select('*')
+          .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`);
+
+        // Filter to only real partnerships (not demo mode)
+        const realPartnership = couples?.find(c => c.user1_id !== c.user2_id);
+
+        if (!realPartnership) {
+          return new Response(JSON.stringify({
+            success: false,
+            error: 'No partner connection found'
+          }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+
+        // Remove the real partnership
         const { error: removeError } = await supabase
           .from('couples')
           .delete()
-          .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
-          .neq('user1_id', user.id) // Don't remove demo connections
-          .neq('user2_id', user.id);
+          .eq('id', realPartnership.id);
 
         if (removeError) {
           throw new Error('Failed to remove partner connection');
