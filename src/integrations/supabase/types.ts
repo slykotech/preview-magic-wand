@@ -1134,6 +1134,90 @@ export type Database = {
         }
         Relationships: []
       }
+      place_categories: {
+        Row: {
+          category_name: string
+          created_at: string
+          display_order: number | null
+          google_place_types: string[]
+          id: string
+        }
+        Insert: {
+          category_name: string
+          created_at?: string
+          display_order?: number | null
+          google_place_types: string[]
+          id?: string
+        }
+        Update: {
+          category_name?: string
+          created_at?: string
+          display_order?: number | null
+          google_place_types?: string[]
+          id?: string
+        }
+        Relationships: []
+      }
+      places: {
+        Row: {
+          address: string | null
+          created_at: string
+          google_data: Json | null
+          google_place_id: string
+          id: string
+          is_open: boolean | null
+          last_updated: string
+          latitude: number
+          longitude: number
+          name: string
+          opening_hours: Json | null
+          phone: string | null
+          photo_references: string[] | null
+          place_types: string[]
+          price_level: number | null
+          rating: number | null
+          website: string | null
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          google_data?: Json | null
+          google_place_id: string
+          id?: string
+          is_open?: boolean | null
+          last_updated?: string
+          latitude: number
+          longitude: number
+          name: string
+          opening_hours?: Json | null
+          phone?: string | null
+          photo_references?: string[] | null
+          place_types?: string[]
+          price_level?: number | null
+          rating?: number | null
+          website?: string | null
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          google_data?: Json | null
+          google_place_id?: string
+          id?: string
+          is_open?: boolean | null
+          last_updated?: string
+          latitude?: number
+          longitude?: number
+          name?: string
+          opening_hours?: Json | null
+          phone?: string | null
+          photo_references?: string[] | null
+          place_types?: string[]
+          price_level?: number | null
+          rating?: number | null
+          website?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -2024,6 +2108,31 @@ export type Database = {
           p_organizer?: string
         }
         Returns: string
+      }
+      find_nearby_places: {
+        Args: {
+          user_lat: number
+          user_lng: number
+          radius_km?: number
+          category_filter?: string
+        }
+        Returns: {
+          id: string
+          google_place_id: string
+          name: string
+          address: string
+          latitude: number
+          longitude: number
+          place_types: string[]
+          rating: number
+          price_level: number
+          photo_references: string[]
+          phone: string
+          website: string
+          opening_hours: Json
+          is_open: boolean
+          distance_km: number
+        }[]
       }
       generate_cache_key: {
         Args: { p_country: string; p_region?: string; p_city?: string }
