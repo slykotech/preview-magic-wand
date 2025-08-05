@@ -115,12 +115,10 @@ export const SweetSuggestions: React.FC<SweetSuggestionsProps> = ({
       setLoading(false);
     }
   };
-  
   const extractCityFromDisplayName = (displayName: string): string => {
     // Extract city name from display name (e.g., "Chennai, Tamil Nadu, India" -> "Chennai")
     return displayName.split(',')[0].trim();
   };
-
   const extractCityStateCountry = (displayName: string): string => {
     // Extract and format as "City, State, Country" from display name
     const parts = displayName.split(',').map(part => part.trim());
@@ -131,9 +129,15 @@ export const SweetSuggestions: React.FC<SweetSuggestionsProps> = ({
     }
     return parts[0];
   };
-  
-  const handleLocationSet = (cityName: string, coordinates: { lat: number; lng: number; displayName: string }) => {
-    console.log('Setting location:', { cityName, coordinates });
+  const handleLocationSet = (cityName: string, coordinates: {
+    lat: number;
+    lng: number;
+    displayName: string;
+  }) => {
+    console.log('Setting location:', {
+      cityName,
+      coordinates
+    });
     // Clear existing places when location changes
     setPlaces([]);
     setManualLocation(cityName, coordinates);
@@ -221,24 +225,7 @@ export const SweetSuggestions: React.FC<SweetSuggestionsProps> = ({
       </Card>
 
       {/* Filters */}
-      {location && (
-        <Card>
-          <CardContent className="pt-6">
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger>
-                <SelectValue placeholder="Filter by category" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map(category => (
-                  <SelectItem key={category.value} value={category.value}>
-                    {category.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </CardContent>
-        </Card>
-      )}
+      {location}
 
       {/* Results */}
       {location && <div>
