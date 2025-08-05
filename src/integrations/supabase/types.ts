@@ -1236,42 +1236,6 @@ export type Database = {
         }
         Relationships: []
       }
-      security_audit_log: {
-        Row: {
-          action_type: string
-          created_at: string
-          details: Json | null
-          id: string
-          ip_address: unknown | null
-          resource_id: string | null
-          resource_type: string | null
-          user_agent: string | null
-          user_id: string | null
-        }
-        Insert: {
-          action_type: string
-          created_at?: string
-          details?: Json | null
-          id?: string
-          ip_address?: unknown | null
-          resource_id?: string | null
-          resource_type?: string | null
-          user_agent?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          action_type?: string
-          created_at?: string
-          details?: Json | null
-          id?: string
-          ip_address?: unknown | null
-          resource_id?: string | null
-          resource_type?: string | null
-          user_agent?: string | null
-          user_id?: string | null
-        }
-        Relationships: []
-      }
       signup_invitations: {
         Row: {
           accepted_at: string | null
@@ -2346,10 +2310,6 @@ export type Database = {
         Args: { "": unknown }
         Returns: unknown
       }
-      hash_password: {
-        Args: { password: string }
-        Returns: string
-      }
       json: {
         Args: { "": unknown }
         Returns: Json
@@ -2365,16 +2325,6 @@ export type Database = {
           p_activity_type: string
           p_activity_data?: Json
           p_points_awarded?: number
-        }
-        Returns: undefined
-      }
-      log_security_event: {
-        Args: {
-          p_user_id?: string
-          p_action_type?: string
-          p_resource_type?: string
-          p_resource_id?: string
-          p_details?: Json
         }
         Returns: undefined
       }
@@ -3697,10 +3647,6 @@ export type Database = {
       }
       user_has_partner: {
         Args: { p_user_id: string }
-        Returns: boolean
-      }
-      verify_password: {
-        Args: { password: string; hash: string }
         Returns: boolean
       }
     }
