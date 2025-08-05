@@ -236,8 +236,8 @@ async function fetchEventbriteEvents(lat: number, lng: number, radiusKm: number)
     return [];
   }
 
-  // Updated Eventbrite API endpoint - using coordinates directly
-  const url = `https://www.eventbriteapi.com/v3/events/search/?location.latitude=${lat}&location.longitude=${lng}&location.within=${radiusKm}km&start_date.range_start=${new Date().toISOString()}&expand=venue,organizer&page_size=50`;
+  // Test with a very simple Eventbrite API call - just basic search
+  const url = `https://www.eventbriteapi.com/v3/events/search/?location.latitude=${lat}&location.longitude=${lng}&location.within=${radiusKm}km&expand=venue&page_size=10`;
   
   console.log(`Fetching from Eventbrite: ${url}`);
   
