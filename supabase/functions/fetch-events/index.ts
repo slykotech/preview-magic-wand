@@ -211,49 +211,49 @@ serve(async (req) => {
       }
     }
 
-    // Generate fallback events when database is empty
+    // Generate location-specific fallback events with cultural context
     function generateFallbackEvents(lat: number, lng: number, count: number = 15) {
+      // Detect region based on coordinates for culturally appropriate events
+      const region = detectRegion(lat, lng);
+      
+      const locationData = getLocationData(region);
       const categories = ['entertainment', 'music', 'food', 'sports', 'cultural', 'romantic'];
-      const venues = ['City Center', 'Downtown Plaza', 'Community Hall', 'Park Pavilion', 'Arts Center', 'Cultural Complex', 'Sports Club', 'Garden Restaurant'];
       const events = [];
+      
+      // Use location-specific seed for consistent but varied events
+      const locationSeed = Math.floor((Math.abs(lat) + Math.abs(lng)) * 1000) % 1000;
       
       for (let i = 0; i < count; i++) {
         const date = new Date();
-        date.setDate(date.getDate() + Math.floor(Math.random() * 21) + 1); // 1-21 days from now
+        date.setDate(date.getDate() + Math.floor(((locationSeed + i) % 21) + 1)); // 1-21 days from now
         
-        const category = categories[Math.floor(Math.random() * categories.length)];
-        const venue = venues[Math.floor(Math.random() * venues.length)];
+        const categoryIndex = (locationSeed + i) % categories.length;
+        const category = categories[categoryIndex];
+        const venueIndex = (locationSeed + i * 2) % locationData.venues.length;
+        const venue = locationData.venues[venueIndex];
         
-        const eventTitles = {
-          entertainment: ['Live Comedy Show', 'Theater Performance', 'Movie Night', 'Stand-up Comedy'],
-          music: ['Live Concert', 'Jazz Evening', 'Acoustic Session', 'Music Festival'],
-          food: ['Wine Tasting', 'Cooking Class', 'Food Festival', 'Dinner & Dance'],
-          sports: ['Cricket Match', 'Tennis Tournament', 'Marathon', 'Yoga Session'],
-          cultural: ['Art Exhibition', 'Cultural Festival', 'Dance Performance', 'Poetry Reading'],
-          romantic: ['Couples Dance Class', 'Romantic Dinner', 'Sunset Viewing', 'Candlelight Concert']
-        };
-        
-        const titles = eventTitles[category as keyof typeof eventTitles] || ['Special Event'];
-        const title = titles[Math.floor(Math.random() * titles.length)];
+        const titles = locationData.eventTitles[category as keyof typeof locationData.eventTitles] || ['Special Event'];
+        const titleIndex = (locationSeed + i * 3) % titles.length;
+        const title = titles[titleIndex];
         
         events.push({
-          id: `fallback_${Date.now()}_${i}`,
+          id: `fallback_${locationSeed}_${i}`,
           title: `${title} at ${venue}`,
-          description: `Join us for an amazing ${category} experience. Perfect for couples looking for memorable activities together!`,
+          description: `Join us for an amazing ${category} experience at ${venue}. Perfect for couples looking for memorable activities together!`,
           event_date: date.toISOString().split('T')[0],
-          event_time: `${Math.floor(Math.random() * 5) + 17}:00:00`, // 5-9 PM
+          event_time: `${Math.floor(((locationSeed + i) % 5)) + 17}:00:00`, // 5-9 PM
           location_name: venue,
-          location_address: `${Math.floor(Math.random() * 999) + 1} Main Street, City Center`,
-          latitude: lat + (Math.random() - 0.5) * 0.05, // Within ~5km
-          longitude: lng + (Math.random() - 0.5) * 0.05,
+          location_address: `${Math.floor(((locationSeed + i) % 999)) + 1} ${locationData.addressFormat}, ${locationData.cityName}`,
+          latitude: lat + (((locationSeed + i) % 100 - 50) / 1000), // Within ~5km
+          longitude: lng + (((locationSeed + i * 2) % 100 - 50) / 1000),
           category,
-          price_range: Math.random() > 0.4 ? `₹${Math.floor(Math.random() * 1000 + 200)}` : 'Free',
-          organizer: 'Local Events',
+          price_range: ((locationSeed + i) % 10) > 3 ? `${locationData.currency}${Math.floor(((locationSeed + i) % 1000) + 200)}` : 'Free',
+          organizer: locationData.organizerName,
           source_url: '',
           source_platform: 'fallback',
           image_url: null,
-          tags: [category, 'couples', 'date', 'local'],
-          distance: Math.round((Math.random() * radius * 0.8) * 10) / 10, // Within 80% of radius
+          tags: [category, 'couples', 'date', 'local', region],
+          distance: Math.round((((locationSeed + i) % (radius * 8)) / 10) * 10) / 10, // Within 80% of radius
           is_today: false,
           is_weekend: date.getDay() === 0 || date.getDay() === 6,
           days_from_now: Math.ceil((date.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
@@ -261,6 +261,87 @@ serve(async (req) => {
       }
       
       return events.sort((a, b) => a.distance - b.distance);
+    }
+
+    // Detect region based on coordinates
+    function detectRegion(lat: number, lng: number): string {
+      if (lat >= 8 && lat <= 37 && lng >= 68 && lng <= 97) return 'india';
+      if (lat >= 25 && lat <= 49 && lng >= -125 && lng <= -66) return 'usa';
+      if (lat >= 50 && lat <= 60 && lng >= -8 && lng <= 2) return 'uk';
+      if (lat >= -44 && lat <= -10 && lng >= 113 && lng <= 154) return 'australia';
+      if (lat >= 41 && lat <= 51 && lng >= -5 && lng <= 10) return 'france';
+      if (lat >= 47 && lat <= 55 && lng >= 5 && lng <= 15) return 'germany';
+      if (lat >= 36 && lat <= 44 && lng >= -9 && lng <= 4) return 'spain';
+      if (lat >= 35 && lat <= 47 && lng >= 6 && lng <= 19) return 'italy';
+      return 'international';
+    }
+
+    // Get location-specific data for culturally appropriate events
+    function getLocationData(region: string) {
+      const locationDataMap = {
+        india: {
+          venues: ['Cultural Center', 'Community Hall', 'Garden Restaurant', 'Amphitheater', 'Arts Complex', 'Heritage Center', 'Park Pavilion'],
+          currency: '₹',
+          addressFormat: 'Main Road',
+          cityName: 'City Center',
+          organizerName: 'Local Events',
+          eventTitles: {
+            entertainment: ['Bollywood Night', 'Comedy Show', 'Theater Performance', 'Cultural Evening'],
+            music: ['Classical Concert', 'Fusion Music', 'Live Performance', 'Musical Evening'],
+            food: ['Food Festival', 'Culinary Workshop', 'Street Food Fair', 'Cooking Class'],
+            sports: ['Cricket Match', 'Badminton Tournament', 'Yoga Session', 'Sports Meet'],
+            cultural: ['Art Exhibition', 'Cultural Festival', 'Dance Performance', 'Heritage Walk'],
+            romantic: ['Couples Dance', 'Romantic Dinner', 'Sunset Viewing', 'Candlelight Evening']
+          }
+        },
+        usa: {
+          venues: ['Downtown Theater', 'Community Center', 'Sports Complex', 'Art Gallery', 'Conference Hall', 'Outdoor Plaza'],
+          currency: '$',
+          addressFormat: 'Main Street',
+          cityName: 'Downtown',
+          organizerName: 'City Events',
+          eventTitles: {
+            entertainment: ['Comedy Show', 'Theater Performance', 'Movie Night', 'Live Show'],
+            music: ['Live Concert', 'Jazz Evening', 'Rock Performance', 'Music Festival'],
+            food: ['Wine Tasting', 'Food Truck Festival', 'Cooking Class', 'Dinner Event'],
+            sports: ['Baseball Game', 'Basketball Match', 'Marathon', 'Fitness Class'],
+            cultural: ['Art Exhibition', 'Museum Night', 'Cultural Festival', 'Book Reading'],
+            romantic: ['Date Night', 'Romantic Dinner', 'Couples Workshop', 'Wine & Paint']
+          }
+        },
+        uk: {
+          venues: ['Town Hall', 'Community Centre', 'Arts Centre', 'Local Pub', 'Garden Venue', 'Historic Hall'],
+          currency: '£',
+          addressFormat: 'High Street',
+          cityName: 'City Centre',
+          organizerName: 'Local Council',
+          eventTitles: {
+            entertainment: ['Comedy Night', 'Theatre Show', 'Quiz Night', 'Entertainment Evening'],
+            music: ['Live Music', 'Folk Evening', 'Acoustic Session', 'Music Night'],
+            food: ['Food Market', 'Cooking Workshop', 'Wine Tasting', 'Sunday Roast'],
+            sports: ['Football Match', 'Cricket Game', 'Running Club', 'Sports Day'],
+            cultural: ['Art Exhibition', 'Heritage Tour', 'Literary Evening', 'Cultural Fair'],
+            romantic: ['Date Night', 'Romantic Meal', 'Couples Class', 'Evening Stroll']
+          }
+        },
+        international: {
+          venues: ['City Center', 'Downtown Plaza', 'Community Hall', 'Park Pavilion', 'Arts Center', 'Cultural Complex'],
+          currency: '$',
+          addressFormat: 'Main Street',
+          cityName: 'City Center',
+          organizerName: 'Local Events',
+          eventTitles: {
+            entertainment: ['Live Show', 'Theater Performance', 'Comedy Night', 'Entertainment'],
+            music: ['Live Concert', 'Music Evening', 'Acoustic Session', 'Music Festival'],
+            food: ['Food Festival', 'Cooking Class', 'Wine Tasting', 'Dinner Event'],
+            sports: ['Sports Match', 'Tournament', 'Fitness Class', 'Sports Day'],
+            cultural: ['Art Exhibition', 'Cultural Festival', 'Performance', 'Cultural Event'],
+            romantic: ['Date Night', 'Romantic Dinner', 'Couples Event', 'Evening Out']
+          }
+        }
+      };
+      
+      return locationDataMap[region] || locationDataMap.international;
     }
     
     // Enhance event data with additional metadata
