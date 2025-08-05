@@ -12,28 +12,34 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Get the Authorization header
-    const authHeader = req.headers.get('Authorization')
-    
-    if (!authHeader) {
-      throw new Error('Missing Authorization header')
-    }
-
-    // Extract JWT token from Bearer token
-    const token = authHeader.replace('Bearer ', '')
-
-    // Create supabase client with service role for admin operations
+    // Create supabase client with anon key for user operations
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: {
+          headers: {
+            Authorization: req.headers.get('Authorization') ?? '',
+          },
+        },
+      }
     )
 
-    // Verify the JWT token and get user
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    // Get the current user from the request
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
 
     if (authError || !user) {
       console.error('Auth error:', authError)
-      throw new Error(`Authentication failed: ${authError?.message || 'Auth session missing!'}`)
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Authentication required' 
+        }),
+        { 
+          status: 401, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
     }
 
     // Get email from query parameters or request body
@@ -90,8 +96,14 @@ Deno.serve(async (req) => {
       )
     }
 
+    // Create service role client for admin operations
+    const serviceSupabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
+
     // Check if email exists in auth system - get all users and filter manually for reliability
-    const { data: allUsers, error: authUsersError } = await supabase.auth.admin.listUsers()
+    const { data: allUsers, error: authUsersError } = await serviceSupabase.auth.admin.listUsers()
     
     if (authUsersError) {
       console.error('Error fetching users:', authUsersError)
@@ -115,7 +127,7 @@ Deno.serve(async (req) => {
     }
 
     // Check if the user is already in a couple (excluding demo mode)
-    const { data: existingCouple, error: coupleError } = await supabase
+    const { data: existingCouple, error: coupleError } = await serviceSupabase
       .from('couples')
       .select('*')
       .or(`user1_id.eq.${userExists.id},user2_id.eq.${userExists.id}`)
