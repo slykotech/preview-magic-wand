@@ -5,118 +5,53 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-interface EmailCheckRequest {
-  email: string;
-}
-
-interface EmailCheckResponse {
-  success: boolean;
-  exists?: boolean;
-  available?: boolean;
-  status?: string;
-  message?: string;
-  error?: string;
-}
-
 Deno.serve(async (req) => {
-  console.log('🚀 check-email-exists function called:', req.method)
-  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Get the authorization header
+    // Get the Authorization header
     const authHeader = req.headers.get('Authorization')
-    console.log('🔐 Auth header check:', { 
-      present: !!authHeader, 
-      startsWithBearer: authHeader?.startsWith('Bearer '),
-      length: authHeader?.length 
-    })
     
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.log('❌ Invalid authorization header')
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: 'Invalid authorization header' 
-        } as EmailCheckResponse),
-        { 
-          status: 401, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      )
+    if (!authHeader) {
+      throw new Error('Missing Authorization header')
     }
 
-    // Extract the JWT token
-    const jwt = authHeader.replace('Bearer ', '')
-    console.log('🎫 JWT token length:', jwt.length)
+    // Extract JWT token from Bearer token
+    const token = authHeader.replace('Bearer ', '')
 
-    // Create supabase client with the user's auth token
+    // Create supabase client with service role for admin operations
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: {
-            Authorization: authHeader,
-          },
-        },
-      }
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     )
 
-    // Verify the user with the JWT token
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    
-    console.log('👤 User verification:', { 
-      hasUser: !!user,
-      userId: user?.id,
-      userEmail: user?.email,
-      authError: authError?.message 
-    })
+    // Verify the JWT token and get user
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
 
     if (authError || !user) {
-      console.log('❌ Authentication failed:', authError?.message)
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: `Authentication failed: ${authError?.message || 'Invalid session'}` 
-        } as EmailCheckResponse),
-        { 
-          status: 401, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      )
+      console.error('Auth error:', authError)
+      throw new Error(`Authentication failed: ${authError?.message || 'Auth session missing!'}`)
     }
 
-    // Parse the request body
-    let requestBody: EmailCheckRequest
-    try {
-      requestBody = await req.json()
-    } catch (e) {
-      console.log('❌ Failed to parse request body:', e)
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: 'Invalid request body' 
-        } as EmailCheckResponse),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      )
+    // Get email from query parameters or request body
+    let email;
+    if (req.method === 'GET') {
+      const url = new URL(req.url)
+      email = url.searchParams.get('email')
+    } else {
+      const body = await req.json()
+      email = body.email
     }
-
-    const { email } = requestBody
-    console.log('📧 Checking email:', email)
 
     if (!email) {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: 'Email is required' 
-        } as EmailCheckResponse),
+          error: 'Email parameter is required' 
+        }),
         { 
           status: 400, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -130,8 +65,9 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           success: false, 
+          exists: false,
           error: 'Invalid email format' 
-        } as EmailCheckResponse),
+        }),
         { 
           status: 400, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -140,12 +76,13 @@ Deno.serve(async (req) => {
     }
 
     // Prevent checking self
-    if (user.email === email.toLowerCase()) {
+    if (user.email === email) {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: 'You cannot connect with yourself' 
-        } as EmailCheckResponse),
+          exists: false,
+          error: 'You cannot invite yourself' 
+        }),
         { 
           status: 400, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -153,42 +90,23 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Create service role client for admin operations
-    const serviceSupabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
-
-    console.log('🔍 Searching for user in auth system...')
-
-    // Check if email exists in auth system
-    const { data: allUsers, error: authUsersError } = await serviceSupabase.auth.admin.listUsers()
+    // Check if email exists in auth system - get all users and filter manually for reliability
+    const { data: allUsers, error: authUsersError } = await supabase.auth.admin.listUsers()
     
     if (authUsersError) {
-      console.log('❌ Error fetching users:', authUsersError)
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: 'Failed to check user existence' 
-        } as EmailCheckResponse),
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      )
+      console.error('Error fetching users:', authUsersError)
+      throw new Error('Failed to search for user')
     }
 
-    const targetUser = allUsers.users.find((u: any) => u.email?.toLowerCase() === email.toLowerCase())
-    console.log('🎯 Target user found:', !!targetUser)
+    const userExists = allUsers.users.find((user: any) => user.email === email)
     
-    if (!targetUser) {
-      console.log('✅ User does not exist - can send signup invitation')
+    if (!userExists) {
       return new Response(
         JSON.stringify({ 
           success: true, 
           exists: false,
-          message: 'This email is not registered. You can send them a signup invitation.' 
-        } as EmailCheckResponse),
+          message: 'This email is not registered with Love Sync.' 
+        }),
         { 
           status: 200, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -196,46 +114,33 @@ Deno.serve(async (req) => {
       )
     }
 
-    console.log('👥 Checking couple status for user:', targetUser.id)
-
-    // Check if the target user is already in a couple
-    const { data: existingCouple, error: coupleError } = await serviceSupabase
+    // Check if the user is already in a couple (excluding demo mode)
+    const { data: existingCouple, error: coupleError } = await supabase
       .from('couples')
       .select('*')
-      .or(`user1_id.eq.${targetUser.id},user2_id.eq.${targetUser.id}`)
+      .or(`user1_id.eq.${userExists.id},user2_id.eq.${userExists.id}`)
+      .neq('user1_id', userExists.id) // Exclude demo mode couples
       .maybeSingle()
 
     if (coupleError) {
-      console.log('❌ Error checking couple status:', coupleError)
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: 'Failed to check couple status' 
-        } as EmailCheckResponse),
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      )
+      console.error('Error checking couple status:', coupleError)
+      throw new Error('Failed to check user status')
     }
 
-    const isAlreadyInCouple = !!existingCouple
-    console.log('💑 User already in couple:', isAlreadyInCouple)
-
-    const result: EmailCheckResponse = {
-      success: true,
-      exists: true,
-      available: !isAlreadyInCouple,
-      status: isAlreadyInCouple ? 'already_paired' : 'available',
-      message: isAlreadyInCouple 
-        ? 'This user is already in a couple relationship' 
-        : 'Ready to send connection request'
-    }
-
-    console.log('✅ Returning result:', result)
+    const isAvailable = !existingCouple
+    const status = isAvailable ? 'available' : 'already_paired'
+    const message = isAvailable 
+      ? 'Ready to invite this user' 
+      : 'This user is already in a couple relationship'
 
     return new Response(
-      JSON.stringify(result),
+      JSON.stringify({ 
+        success: true, 
+        exists: true,
+        available: isAvailable,
+        status,
+        message
+      }),
       { 
         status: 200, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -243,12 +148,12 @@ Deno.serve(async (req) => {
     )
 
   } catch (error) {
-    console.error('💥 Edge function error:', error)
+    console.error('Edge function error:', error)
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: `Internal server error: ${error.message}` 
-      } as EmailCheckResponse),
+        error: error.message || 'An unexpected error occurred' 
+      }),
       { 
         status: 500, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 

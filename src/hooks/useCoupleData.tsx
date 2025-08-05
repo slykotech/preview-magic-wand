@@ -31,7 +31,6 @@ interface UseCoupleDataReturn {
   getUserDisplayName: () => string;
   getPartnerDisplayName: () => string;
   updateNicknames: (userNickname: string, partnerNickname: string) => Promise<void>;
-  refreshCoupleData: () => void;
   loading: boolean;
 }
 
@@ -48,40 +47,6 @@ export const useCoupleData = (): UseCoupleDataReturn => {
     if (user?.id) {
       fetchCoupleData();
     }
-  }, [user?.id]);
-
-  // Set up real-time subscription for couple changes
-  useEffect(() => {
-    if (!user?.id) return;
-
-    const channel = supabase
-      .channel('couple-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'couples',
-          filter: `user1_id=eq.${user.id},user2_id=eq.${user.id}`
-        },
-        (payload) => {
-          console.log('Couple data changed:', payload);
-          if (payload.eventType === 'DELETE') {
-            // Clear couple data immediately when deleted
-            setCoupleData(null);
-            setUserProfile(null);
-            setPartnerProfile(null);
-          } else {
-            // Refetch data for other changes
-            fetchCoupleData();
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, [user?.id]);
 
   // Add timeout fallback for loading state
@@ -144,10 +109,6 @@ export const useCoupleData = (): UseCoupleDataReturn => {
           setUserProfile(currentUserProfile || null);
           setPartnerProfile(partnerProfile || null);
         }
-      } else {
-        // Clear partner profile if no couple data
-        setUserProfile(null);
-        setPartnerProfile(null);
       }
     } catch (error) {
       console.error('Error fetching couple data:', error);
@@ -198,11 +159,6 @@ export const useCoupleData = (): UseCoupleDataReturn => {
     await fetchCoupleData();
   };
 
-  // Add a manual refresh function
-  const refreshCoupleData = () => {
-    fetchCoupleData();
-  };
-
   return {
     coupleData,
     userProfile,
@@ -211,7 +167,6 @@ export const useCoupleData = (): UseCoupleDataReturn => {
     getUserDisplayName,
     getPartnerDisplayName,
     updateNicknames,
-    refreshCoupleData,
     loading
   };
 };

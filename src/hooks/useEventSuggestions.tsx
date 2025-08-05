@@ -32,8 +32,9 @@ export const useEventSuggestions = () => {
   const fetchEvents = useCallback(async (forceRefresh = false) => {
     console.log('fetchEvents called with location:', location, 'forceRefresh:', forceRefresh);
     
-    if (!location) {
+    if (!location?.latitude || !location?.longitude) {
       console.log('No location available, cannot fetch events');
+      // Don't show error toast for auto-fetch attempts, only for manual refresh
       if (forceRefresh) {
         toast({
           title: "Location needed",
@@ -44,139 +45,68 @@ export const useEventSuggestions = () => {
       return;
     }
 
-    // Check if we have valid coordinates
-    if (!location.latitude || !location.longitude || (location.latitude === 0 && location.longitude === 0)) {
-      console.log('Invalid coordinates, waiting for geocoding to complete');
-      // If we have a location but invalid coordinates, wait a bit for geocoding
-      if (location.city && forceRefresh) {
-        toast({
-          title: "Getting location coordinates...",
-          description: "Please wait while we find the exact location for your city",
-        });
-      }
-      return;
-    }
-
     // Don't fetch if we already have recent data (unless forced)
-    if (!forceRefresh && lastFetched && Date.now() - lastFetched.getTime() < 3 * 60 * 1000) {
-      console.log('Skipping fetch - recent data available');
+    if (!forceRefresh && lastFetched && Date.now() - lastFetched.getTime() < 5 * 60 * 1000) {
       return;
     }
 
     setIsLoading(true);
     try {
-      // Use location radius or default to 100km as requested
-      const searchRadius = location.radius || 100;
-      
-      console.log('About to invoke fetch-events function with:', {
-        latitude: location.latitude,
-        longitude: location.longitude,
-        radius: searchRadius
-      });
+      console.log('Fetching events for location:', location);
 
       const { data, error } = await supabase.functions.invoke('fetch-events', {
         body: {
           latitude: location.latitude,
           longitude: location.longitude,
-          radius: searchRadius
+          radius: 25 // 25km radius
         }
       });
 
-      console.log('fetch-events response:', { data, error });
-
       if (error) {
-        console.error('Edge function error:', error);
         throw error;
       }
 
       const fetchedEvents = data?.events || [];
-      console.log('Events fetched:', fetchedEvents.length);
-      
       setEvents(fetchedEvents);
       setLastFetched(new Date());
 
-      if (forceRefresh) {
-        if (fetchedEvents.length > 0) {
-          toast({
-            title: "Events loaded! 📍",
-            description: `Found ${fetchedEvents.length} events within ${searchRadius}km`,
-          });
-        } else {
-          toast({
-            title: "No events found 🔍",
-            description: `No events found within ${searchRadius}km. Try expanding your search area.`,
-          });
-        }
+      if (data?.newEvents > 0) {
+        toast({
+          title: "Events updated! 🎉",
+          description: `Found ${data.newEvents} new events near you`,
+        });
+      } else if (data?.cached) {
+        toast({
+          title: "Events loaded 📍",
+          description: `Found ${fetchedEvents.length} events in your area`,
+        });
       }
 
     } catch (error) {
       console.error('Error fetching events:', error);
-      
-      // Enhanced fallback strategy
+      toast({
+        title: "Could not fetch events",
+        description: "We'll try to load cached events instead",
+        variant: "destructive"
+      });
+
+      // Fallback to cached events from database
       try {
-        console.log('Attempting enhanced fallback to cached events...');
-        
-        // Try to get events from broader area if specific location fails
         const { data: cachedEvents } = await supabase
           .from('events')
           .select('*')
           .gte('event_date', new Date().toISOString().split('T')[0])
           .order('event_date', { ascending: true })
-          .limit(50);
+          .limit(20);
 
-        let fallbackEvents = cachedEvents || [];
-        
-        // If we have location, try to sort by distance
-        if (location.latitude && location.longitude && fallbackEvents.length > 0) {
-          fallbackEvents = fallbackEvents
-            .map(event => {
-              const distance = event.latitude && event.longitude 
-                ? calculateDistance(
-                    location.latitude, location.longitude,
-                    event.latitude, event.longitude
-                  )
-                : 999999;
-              return { ...event, distance };
-            })
-            .sort((a, b) => a.distance - b.distance)
-            .slice(0, 20);
-        }
-
-        console.log('Fallback events:', fallbackEvents?.length || 0);
-        setEvents(fallbackEvents);
-        
-        if (forceRefresh) {
-          toast({
-            title: "Showing cached events",
-            description: `Found ${fallbackEvents.length} events from cache`,
-          });
-        }
+        setEvents(cachedEvents || []);
       } catch (cacheError) {
         console.error('Failed to load cached events:', cacheError);
-        if (forceRefresh) {
-          toast({
-            title: "Could not fetch events",
-            description: "Please check your internet connection and try again",
-            variant: "destructive"
-          });
-        }
       }
     } finally {
       setIsLoading(false);
     }
   }, [location, toast, lastFetched]);
-
-  // Helper function to calculate distance between two points
-  const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
-    const R = 6371; // Earth's radius in kilometers
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLng = (lng2 - lng1) * Math.PI / 180;
-    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-              Math.sin(dLng/2) * Math.sin(dLng/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    return R * c;
-  };
 
   const getEventsByCategory = useCallback((category?: string) => {
     if (!category) return events;
@@ -216,35 +146,22 @@ export const useEventSuggestions = () => {
     }
   }, []);
 
-  // Auto-fetch events when location changes and has valid coordinates
+  // Auto-fetch when location changes or component mounts
   useEffect(() => {
-    const shouldFetch = location && 
-                       location.latitude && 
-                       location.longitude && 
-                       location.latitude !== 0 && 
-                       location.longitude !== 0;
-    
-    console.log('Location effect triggered:', { shouldFetch, location });
-    
-    if (shouldFetch) {
-      console.log('Location changed with valid coordinates, fetching events');
-      // Small delay to allow for any additional location updates
-      const timer = setTimeout(() => {
-        fetchEvents();
-      }, 500);
+    if (location?.latitude && location?.longitude) {
+      // Only fetch if we don't have recent data or location changed significantly
+      const shouldFetch = !lastFetched || 
+                         Date.now() - lastFetched.getTime() > 15 * 60 * 1000; // 15 minutes
       
-      return () => clearTimeout(timer);
+      if (shouldFetch) {
+        fetchEvents();
+      }
     }
-  }, [location?.latitude, location?.longitude, location?.radius]); // Added radius to dependencies
-
-  // Reset events when location is cleared
-  useEffect(() => {
-    if (!location) {
-      console.log('Location cleared, resetting events');
+    // Reset events when location is cleared
+    else if (location === null) {
       setEvents([]);
-      setLastFetched(null);
     }
-  }, [location]);
+  }, [location?.latitude, location?.longitude, location, fetchEvents]);
 
   // Auto-refresh every 30 minutes if user is active and has location
   useEffect(() => {
@@ -252,13 +169,12 @@ export const useEventSuggestions = () => {
 
     const interval = setInterval(() => {
       if (document.visibilityState === 'visible' && lastFetched) {
-        console.log('Auto-refreshing events...');
         fetchEvents();
       }
     }, 30 * 60 * 1000); // 30 minutes
 
     return () => clearInterval(interval);
-  }, [location?.latitude, location?.longitude, lastFetched]); // Removed fetchEvents from dependencies
+  }, [location?.latitude, location?.longitude, lastFetched, fetchEvents]);
 
   return {
     events,

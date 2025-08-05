@@ -55,13 +55,6 @@ export const CoupleSetup = () => {
       if (profile) {
         setUserProfile(profile);
         setDisplayName(profile.display_name || '');
-      } else {
-        // If no profile exists, try to get name from user metadata or auth
-        const userMetadata = user?.user_metadata;
-        const firstName = userMetadata?.firstName || userMetadata?.first_name || '';
-        const lastName = userMetadata?.lastName || userMetadata?.last_name || '';
-        const fullName = [firstName, lastName].filter(Boolean).join(' ');
-        setDisplayName(fullName);
       }
 
       // Check if user is in a couple - prioritize real partnerships over demo mode

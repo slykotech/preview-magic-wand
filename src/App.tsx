@@ -36,7 +36,6 @@ import { Signup } from "./pages/Signup";
 import { VerifyEmail } from "./pages/VerifyEmail";
 import SignupResolver from "./pages/SignupResolver";
 import CompleteSignup from "./pages/CompleteSignup";
-import { EventManagement } from "./pages/EventManagement";
 
 const queryClient = new QueryClient();
 
@@ -81,7 +80,6 @@ const App = () => {
             <Route path="/important-dates" element={<ImportantDates />} />
                 <Route path="/insights" element={<RelationshipInsights />} />
                 <Route path="/app-settings" element={<AppSettings />} />
-                <Route path="/event-management" element={<EventManagement />} />
                 <Route path="/motto" element={<AppMottoPage onNext={() => {}} onBack={() => {}} />} />
                 <Route path="/onboarding" element={<OnboardingFlow />} />
         <Route path="/signup" element={<Signup />} />

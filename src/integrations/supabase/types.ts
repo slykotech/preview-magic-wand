@@ -1814,10 +1814,6 @@ export type Database = {
         Args: { p_user_id: string; p_estimated_cost?: number }
         Returns: Json
       }
-      cleanup_demo_connection: {
-        Args: { p_user_id: string }
-        Returns: undefined
-      }
       cleanup_expired_events: {
         Args: Record<PropertyKey, never>
         Returns: number
@@ -1931,10 +1927,6 @@ export type Database = {
       update_user_quota_usage: {
         Args: { p_user_id: string; p_cost_increase: number }
         Returns: undefined
-      }
-      user_has_partner: {
-        Args: { p_user_id: string }
-        Returns: boolean
       }
     }
     Enums: {

@@ -1,9 +1,6 @@
 import { useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Check, MapPin } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { usePermissions } from "@/hooks/usePermissions";
-import { useLocation } from "@/hooks/useLocation";
+import { Check } from "lucide-react";
 
 interface SignupPermissionsFlowProps {
   isOpen: boolean;
@@ -11,30 +8,13 @@ interface SignupPermissionsFlowProps {
 }
 
 export const SignupPermissionsFlow = ({ isOpen, onComplete }: SignupPermissionsFlowProps) => {
-  const { requestPermission } = usePermissions();
-  const { getCurrentLocation } = useLocation();
-
   useEffect(() => {
     if (isOpen) {
-      handleAutoLocationRequest();
-    }
-  }, [isOpen, onComplete]);
-
-  const handleAutoLocationRequest = async () => {
-    try {
-      // Automatically request location permission and get current location
-      const locationGranted = await requestPermission('location');
-      if (locationGranted) {
-        getCurrentLocation();
-      }
-    } catch (error) {
-      console.log('Auto location request failed:', error);
-    } finally {
-      // Complete the flow regardless of permission result
+      // Complete immediately without permission flow
       localStorage.setItem('permissions_flow_completed', 'true');
       onComplete();
     }
-  };
+  }, [isOpen, onComplete]);
 
   return (
     <Dialog open={isOpen} onOpenChange={() => {}}>
