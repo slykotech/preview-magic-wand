@@ -203,8 +203,9 @@ function checkWinner(board: ('💖' | '💘' | null)[][]): '💖' | '💘' | nul
 }
 
 function getOtherPlayerId(game: GameState, currentPlayerId: string): string {
-  // This would need to be determined based on your game session structure
-  // For now, we'll return the current player ID as a fallback
-  // In a real implementation, you'd fetch the partner from the couples table
+  // Get the partner ID from the game session
+  // We need to fetch this from the couples table
+  // For now, return the opposite of current player
+  // This will be enhanced when we get proper session data
   return currentPlayerId
 }

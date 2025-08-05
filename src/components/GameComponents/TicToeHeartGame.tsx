@@ -155,36 +155,46 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
     }
   }, [sessionId, user?.id, partnerId]);
 
-  // Real-time subscription for game updates with improved sync
+  // Real-time subscription for game updates with enhanced sync
   useEffect(() => {
     if (!sessionId || !user?.id) {
       setConnectionStatus('disconnected');
       return;
     }
 
-    console.log('🎮 Setting up real-time subscription for session:', sessionId);
+    console.log('🎮 Setting up enhanced real-time subscription for session:', sessionId);
     setConnectionStatus('connecting');
 
     const channel = supabase
-      .channel(`tic-toe-${sessionId}`) // Use consistent channel naming
+      .channel(`tic-toe-game-${sessionId}`) // Simplified consistent channel name
       .on(
         'postgres_changes',
         {
-          event: 'UPDATE', // Listen specifically for updates
+          event: '*', // Listen to all events
           schema: 'public',
           table: 'tic_toe_heart_games',
           filter: `session_id=eq.${sessionId}`
         },
         (payload) => {
-          console.group('🎮 Game Update Received');
+          console.group('🎮 Real-time Game Update Received');
           console.log('Event Type:', payload.eventType);
           console.log('Table:', payload.table);
+          console.log('Session ID Filter:', sessionId);
+          console.log('Payload:', payload);
           console.log('New Data:', payload.new);
+          console.log('Old Data:', payload.old);
           console.log('Timestamp:', new Date().toISOString());
           console.groupEnd();
 
           if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
             const updatedState = payload.new as any;
+            
+            // Validate we have the right session
+            if (updatedState.session_id !== sessionId) {
+              console.warn('🎮 Received update for wrong session:', updatedState.session_id, 'Expected:', sessionId);
+              return;
+            }
+
             const newGameState = {
               ...updatedState,
               board: updatedState.board as Board,
@@ -192,21 +202,14 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
               last_move_at: updatedState.last_move_at || new Date().toISOString()
             };
             
-            console.log('🎮 Setting new game state:', newGameState);
-            console.log('🎮 Current turn belongs to:', newGameState.current_player_id);
+            console.log('🎮 ✅ Applying game state update:', newGameState);
+            console.log('🎮 Current turn now belongs to:', newGameState.current_player_id);
             console.log('🎮 Current user ID:', user?.id);
             console.log('🎮 Is user turn?:', newGameState.current_player_id === user?.id);
             
             // Force update game state immediately
             setGameState(newGameState);
-            
-            // Update connection status
             setConnectionStatus('connected');
-            
-            // Debug the new turn state immediately
-            setTimeout(() => {
-              debugTurnState();
-            }, 100);
             
             // Update playful message based on new turn
             const isUserTurn = newGameState.current_player_id === user?.id;
@@ -221,59 +224,44 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
                 setTimeout(() => setShowLoveGrant(true), 2000);
               }
             }
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'tic_toe_heart_games',
-          filter: `session_id=eq.${sessionId}`
-        },
-        (payload) => {
-          console.log('🎮 New game created:', payload);
-          // Handle new game creation
-          if (payload.new) {
-            const newGameState = {
-              ...payload.new as any,
-              board: (payload.new as any).board as Board,
-              game_status: (payload.new as any).game_status as GameStatus,
-              last_move_at: (payload.new as any).last_move_at || new Date().toISOString()
-            };
-            setGameState(newGameState);
-            setConnectionStatus('connected');
+
+            // Force re-render by updating a timestamp
+            console.log('🎮 State updated successfully at:', new Date().toISOString());
           }
         }
       )
       .subscribe((status) => {
-        console.log('🎮 Subscription status:', status);
+        console.log('🎮 Enhanced Subscription status:', status);
         
         if (status === 'SUBSCRIBED') {
-          console.log('🎮 Successfully subscribed to game updates');
+          console.log('🎮 ✅ Successfully subscribed to game updates');
           setConnectionStatus('connected');
+          
           // Force refresh game state when subscription is established
           setTimeout(() => {
+            console.log('🎮 Refreshing game state after subscription...');
             initializeGame();
-          }, 100);
+          }, 500);
         } else if (status === 'CHANNEL_ERROR') {
-          console.error('🎮 Channel error - falling back to polling');
+          console.error('🎮 ❌ Channel error - connection failed');
+          setConnectionStatus('disconnected');
+        } else if (status === 'CLOSED') {
+          console.warn('🎮 ⚠️ Channel closed');
           setConnectionStatus('disconnected');
         }
       });
 
     return () => {
-      console.log('🎮 Cleaning up real-time subscription');
+      console.log('🎮 🧹 Cleaning up enhanced real-time subscription');
       supabase.removeChannel(channel);
       setConnectionStatus('disconnected');
     };
-  }, [sessionId, user?.id]);
+  }, [sessionId, user?.id, userSymbol, partnerSymbol]);
 
-  // Polling fallback when real-time fails
+  // Enhanced polling fallback when real-time fails
   useEffect(() => {
-    if (connectionStatus !== 'connected' && sessionId && user?.id) {
-      console.log('🎮 Starting polling fallback...');
+    if (connectionStatus !== 'connected' && sessionId && user?.id && gameState) {
+      console.log('🎮 🔄 Starting enhanced polling fallback...');
       const pollInterval = setInterval(async () => {
         try {
           const { data, error } = await supabase
@@ -290,19 +278,32 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
               last_move_at: data.last_move_at || new Date().toISOString()
             };
             
-            // Only update if the state has actually changed
-            if (JSON.stringify(polledGameState) !== JSON.stringify(gameState)) {
-              console.log('🎮 Polling update detected:', polledGameState);
+            // Only update if there's actually a change
+            const hasChanged = (
+              JSON.stringify(polledGameState.board) !== JSON.stringify(gameState.board) ||
+              polledGameState.current_player_id !== gameState.current_player_id ||
+              polledGameState.moves_count !== gameState.moves_count ||
+              polledGameState.game_status !== gameState.game_status
+            );
+
+            if (hasChanged) {
+              console.log('🎮 📊 Polling detected changes:', polledGameState);
               setGameState(polledGameState);
+              
+              // Update UI accordingly
+              const isUserTurn = polledGameState.current_player_id === user?.id;
+              const currentPlayerName = isUserTurn ? getUserDisplayName() : getPartnerDisplayName();
+              const currentSymbol = isUserTurn ? userSymbol : partnerSymbol;
+              setPlayfulMessage(getPlayfulMessage(isUserTurn, currentPlayerName || 'Player', currentSymbol));
             }
           }
         } catch (error) {
-          console.error('🎮 Polling error:', error);
+          console.error('🎮 ❌ Polling error:', error);
         }
-      }, 2000); // Poll every 2 seconds
+      }, 3000); // Poll every 3 seconds
 
       return () => {
-        console.log('🎮 Cleaning up polling fallback');
+        console.log('🎮 🧹 Cleaning up enhanced polling fallback');
         clearInterval(pollInterval);
       };
     }
@@ -310,11 +311,12 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
 
   // Connection health monitoring
   useEffect(() => {
-    const checkConnection = supabase.getChannels();
-    console.log('🎮 Active channels:', checkConnection);
+    const channels = supabase.getChannels();
+    console.log('🎮 📡 Active channels:', channels);
     
     // Monitor auth state for connection issues
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('🎮 🔐 Auth state changed:', event, !!session);
       if (event === 'SIGNED_OUT') {
         setConnectionStatus('disconnected');
       }
@@ -557,11 +559,13 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
       return;
     }
 
-    console.group('🎮 Making Move');
+    console.group('🎮 Enhanced Move Processing');
     console.log('Player:', user?.id);
     console.log('Current Turn:', gameState?.current_player_id);
     console.log('Position:', { row, col });
     console.log('Session ID:', sessionId);
+    console.log('User Symbol:', userSymbol);
+    console.log('Partner ID:', partnerId);
 
     if (!gameState || !user?.id) {
       console.error('❌ No game state or user ID');
@@ -592,34 +596,92 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
 
     try {
       setIsProcessingMove(true);
-      console.log('🎮 ✅ Making valid move at:', row, col);
+      console.log('🎮 ✅ Processing valid move at:', row, col);
 
-      // Use enhanced server-side validation
-      const response = await supabase.functions.invoke('validate-tic-toe-move', {
-        body: {
-          sessionId,
-          playerId: user.id,
-          row,
-          col,
-          symbol: userSymbol
+      // Create optimistic board update
+      const newBoard = gameState.board.map((r, rowIndex) =>
+        r.map((c, colIndex) => 
+          rowIndex === row && colIndex === col ? userSymbol : c
+        )
+      );
+
+      // Check for winner
+      const winner = checkWinner(newBoard);
+      const isFull = isBoardFull(newBoard);
+      
+      let newStatus: GameStatus = 'playing';
+      let winnerId: string | null = null;
+
+      if (winner) {
+        newStatus = 'won';
+        winnerId = winner === userSymbol ? user.id : partnerId;
+        console.log('🎮 🏆 Winner detected:', winnerId);
+      } else if (isFull) {
+        newStatus = 'draw';
+        console.log('🎮 🤝 Draw detected');
+      }
+
+      // Determine next player - switch turns if game is still playing
+      const nextPlayerId = newStatus === 'playing' ? partnerId : gameState.current_player_id;
+      
+      console.log('🎮 📤 Updating database with move...');
+      
+      // Update the database with comprehensive error handling
+      const { data: updatedGame, error: updateError } = await supabase
+        .from('tic_toe_heart_games')
+        .update({
+          board: newBoard,
+          current_player_id: nextPlayerId,
+          game_status: newStatus,
+          winner_id: winnerId,
+          moves_count: gameState.moves_count + 1,
+          last_move_at: new Date().toISOString()
+        })
+        .eq('session_id', sessionId)
+        .select()
+        .single();
+
+      if (updateError) {
+        console.error('❌ Database update error:', updateError);
+        toast.error('Failed to make move');
+        console.groupEnd();
+        return;
+      }
+
+      console.log('🎮 ✅ Database update successful:', updatedGame);
+      
+      // Record move in history
+      if (gameState.id) {
+        const { error: moveError } = await supabase
+          .from('tic_toe_moves')
+          .insert({
+            game_id: gameState.id,
+            player_id: user.id,
+            position_row: row,
+            position_col: col,
+            symbol: userSymbol,
+            move_number: gameState.moves_count + 1
+          });
+
+        if (moveError) {
+          console.warn('⚠️ Failed to record move in history:', moveError);
+          // Don't fail the move for history errors
+        } else {
+          console.log('📝 Move recorded in history');
         }
-      });
-
-      if (response.error) {
-        throw new Error(response.error.message || 'Failed to validate move');
       }
 
-      const { data } = response;
-      if (!data.success) {
-        throw new Error(data.error || 'Move validation failed');
-      }
-
-      console.log('🎮 ✅ Move validated and processed:', data);
-      console.log('Move completed');
+      console.log('Move completed successfully');
       console.groupEnd();
 
       // Real-time subscription will handle UI updates
       toast.success("Move made successfully!");
+
+      if (newStatus !== 'playing') {
+        if (winnerId === user.id) {
+          setTimeout(() => setShowLoveGrant(true), 2000);
+        }
+      }
 
     } catch (error) {
       console.error('❌ Error making move:', error);
