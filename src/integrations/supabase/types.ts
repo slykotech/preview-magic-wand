@@ -1109,6 +1109,63 @@ export type Database = {
         }
         Relationships: []
       }
+      love_grants: {
+        Row: {
+          couple_id: string
+          created_at: string
+          game_session_id: string | null
+          id: string
+          request_text: string
+          response_text: string | null
+          status: string
+          updated_at: string
+          winner_name: string
+          winner_symbol: string
+          winner_user_id: string
+        }
+        Insert: {
+          couple_id: string
+          created_at?: string
+          game_session_id?: string | null
+          id?: string
+          request_text: string
+          response_text?: string | null
+          status?: string
+          updated_at?: string
+          winner_name: string
+          winner_symbol: string
+          winner_user_id: string
+        }
+        Update: {
+          couple_id?: string
+          created_at?: string
+          game_session_id?: string | null
+          id?: string
+          request_text?: string
+          response_text?: string | null
+          status?: string
+          updated_at?: string
+          winner_name?: string
+          winner_symbol?: string
+          winner_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "love_grants_couple_id_fkey"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "love_grants_game_session_id_fkey"
+            columns: ["game_session_id"]
+            isOneToOne: false
+            referencedRelation: "game_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       memories: {
         Row: {
           couple_id: string

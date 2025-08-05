@@ -34,10 +34,15 @@ interface TicToeGameState {
 
 interface LoveGrant {
   id: string;
+  couple_id: string;
+  winner_user_id: string;
   winner_name: string;
   winner_symbol: CellValue;
-  request: string;
-  game_date: string;
+  request_text: string;
+  game_session_id: string | null;
+  status: 'pending' | 'acknowledged' | 'fulfilled';
+  response_text?: string;
+  created_at: string;
 }
 
 // Confetti effect component
@@ -245,24 +250,52 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
 
   const loadLoveGrants = async () => {
     try {
-      // For now, load from localStorage (in a real app, you'd use the database)
-      const grants = localStorage.getItem(`love-grants-${coupleData?.id}`);
-      if (grants) {
-        setLoveGrants(JSON.parse(grants));
-      }
+      if (!coupleData?.id) return;
+      
+      const { data: grants, error } = await supabase
+        .from('love_grants')
+        .select('*')
+        .eq('couple_id', coupleData.id)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+      setLoveGrants((grants || []).map(g => ({
+        ...g,
+        winner_symbol: g.winner_symbol as CellValue,
+        status: g.status as 'pending' | 'acknowledged' | 'fulfilled'
+      })));
     } catch (error) {
       console.error('❌ Error loading love grants:', error);
     }
   };
 
-  const saveLoveGrant = async (grant: LoveGrant) => {
+  const saveLoveGrant = async (grant: Omit<LoveGrant, 'id' | 'created_at'>) => {
     try {
-      const updatedGrants = [...loveGrants, grant];
-      setLoveGrants(updatedGrants);
-      localStorage.setItem(`love-grants-${coupleData?.id}`, JSON.stringify(updatedGrants));
+      if (!coupleData?.id || !user?.id) throw new Error('Missing required data');
+
+      const { data, error } = await supabase
+        .from('love_grants')
+        .insert({
+          couple_id: coupleData.id,
+          winner_user_id: user.id,
+          winner_name: grant.winner_name,
+          winner_symbol: grant.winner_symbol,
+          request_text: grant.request_text,
+          game_session_id: sessionId,
+          status: 'pending'
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
       
-      // In a real app, you'd also save to database:
-      // await supabase.from('love_grants').insert(grant);
+      // Add to local state
+      setLoveGrants(prev => [{
+        ...data,
+        winner_symbol: data.winner_symbol as CellValue,
+        status: data.status as 'pending' | 'acknowledged' | 'fulfilled'
+      }, ...prev]);
       
       toast.success('💌 Love Grant sent to your partner!');
     } catch (error) {
@@ -381,14 +414,16 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
   };
 
   const handleLoveGrantSubmit = async () => {
-    if (!winnerReward.trim() || !gameState || !user?.id) return;
+    if (!winnerReward.trim() || !gameState || !user?.id || !coupleData?.id) return;
 
-    const loveGrant: LoveGrant = {
-      id: `${Date.now()}-${Math.random()}`,
+    const loveGrant: Omit<LoveGrant, 'id' | 'created_at'> = {
+      couple_id: coupleData.id,
+      winner_user_id: user.id,
       winner_name: getUserDisplayName() || 'You',
       winner_symbol: userSymbol,
-      request: winnerReward.trim(),
-      game_date: new Date().toLocaleDateString()
+      request_text: winnerReward.trim(),
+      game_session_id: sessionId,
+      status: 'pending'
     };
 
     await saveLoveGrant(loveGrant);
@@ -716,7 +751,7 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
           </CardHeader>
           <CardContent>
             <div className="space-y-2 max-h-40 overflow-y-auto">
-              {loveGrants.slice(-3).reverse().map((grant) => (
+              {loveGrants.slice(0, 3).map((grant) => (
                 <div key={grant.id} className="p-3 bg-white/50 rounded-lg border">
                   <div className="flex items-center gap-2 mb-1">
                     <Crown className="h-4 w-4 text-yellow-500" />
@@ -724,12 +759,17 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
                       {grant.winner_name} {grant.winner_symbol}
                     </span>
                     <span className="text-xs text-muted-foreground ml-auto">
-                      {grant.game_date}
+                      {new Date(grant.created_at).toLocaleDateString()}
                     </span>
                   </div>
                   <p className="text-sm text-gray-700 dark:text-gray-300">
-                    "{grant.request}"
+                    "{grant.request_text}"
                   </p>
+                  {grant.status === 'pending' && (
+                    <Badge className="mt-2 bg-yellow-100 text-yellow-800 text-xs">
+                      💌 Awaiting response
+                    </Badge>
+                  )}
                 </div>
               ))}
             </div>
