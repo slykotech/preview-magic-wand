@@ -48,32 +48,40 @@ const PLACE_TYPES = {
   'Shopping & Markets': ['shopping_mall', 'market', 'bookstore', 'jewelry_store', 'department_store']
 };
 
-// Enhanced date-appropriate place types focusing on romantic and couple activities
-const DATE_APPROPRIATE_TYPES = [
-  // Dining - Essential for dates
-  'restaurant', 'cafe', 'bar', 'brewery', 'bakery', 'meal_takeaway',
+// Enhanced date-appropriate place types with priority order
+const PRIORITY_PLACE_TYPES = [
+  // Priority 1: Historical & Heritage (highest priority)
+  'historical_landmark', 'monument', 'tourist_attraction', 'museum',
   
-  // Entertainment - Great for date activities
-  'movie_theater', 'amusement_park', 'bowling_alley', 'live_music_venue', 'concert_hall',
+  // Priority 2: Cultural & Religious
+  'art_gallery', 'church', 'hindu_temple', 'mosque', 'temple', 'place_of_worship',
   
-  // Cultural & Romantic - Perfect for memorable dates
-  'tourist_attraction', 'museum', 'art_gallery', 'historical_landmark', 'monument',
+  // Priority 3: Entertainment & Social
+  'live_music_venue', 'concert_hall', 'cafe', 'restaurant',
   
-  // Historical & Heritage - Important historical places
-  'establishment', 'point_of_interest', 'premise', 'subpremise',
+  // Priority 4: Nature & Recreation
+  'park', 'botanical_garden', 'zoo', 'aquarium', 'lake', 'beach',
   
-  // Nature & Peaceful - Romantic settings
-  'park', 'zoo', 'aquarium', 'botanical_garden', 'lake',
-  
-  // Shopping & Social - Couple activities
-  'shopping_mall', 'market', 'bookstore', 'department_store',
-  
-  // Wellness & Relaxation
-  'spa',
-  
-  // Religious & Spiritual - Cultural experiences
-  'church', 'hindu_temple', 'mosque', 'temple', 'place_of_worship'
+  // Priority 5: Other date-appropriate places
+  'movie_theater', 'amusement_park', 'bowling_alley', 'bar', 'brewery', 'bakery', 
+  'meal_takeaway', 'shopping_mall', 'market', 'bookstore', 'department_store', 'spa'
 ];
+
+// Function to get place priority (lower number = higher priority)
+function getPlacePriority(placeTypes: string[]): number {
+  for (let i = 0; i < PRIORITY_PLACE_TYPES.length; i++) {
+    if (placeTypes.some(type => PRIORITY_PLACE_TYPES[i] === type)) {
+      if (i < 4) return 1; // Historical & Heritage
+      if (i < 10) return 2; // Cultural & Religious
+      if (i < 14) return 3; // Entertainment & Social
+      if (i < 20) return 4; // Nature & Recreation
+      return 5; // Other
+    }
+  }
+  return 6; // No matching priority type
+}
+
+const DATE_APPROPRIATE_TYPES = PRIORITY_PLACE_TYPES;
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -254,12 +262,23 @@ serve(async (req) => {
       }
     }
 
-    // Remove duplicates and sort by distance
+    // Remove duplicates and sort by priority first, then by distance
     const uniquePlaces = allPlaces
       .filter((place, index, self) => 
         index === self.findIndex(p => p.id === place.id)
       )
-      .sort((a, b) => a.distance - b.distance)
+      .sort((a, b) => {
+        const priorityA = getPlacePriority(a.types);
+        const priorityB = getPlacePriority(b.types);
+        
+        // Sort by priority first (lower number = higher priority)
+        if (priorityA !== priorityB) {
+          return priorityA - priorityB;
+        }
+        
+        // If same priority, sort by distance
+        return a.distance - b.distance;
+      })
       .slice(0, 50);
 
     console.log(`Found ${uniquePlaces.length} places from Google Places API`);
