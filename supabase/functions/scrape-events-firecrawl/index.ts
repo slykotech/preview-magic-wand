@@ -51,6 +51,34 @@ const WEBSITE_CONFIGS: Record<string, EventWebsite[]> = {
         link: 'a'
       },
       dateFormat: 'DD/MM/YYYY'
+    },
+    {
+      name: 'Paytm Insider',
+      baseUrl: 'https://insider.in/city',
+      selectors: {
+        eventContainer: '.event-card, .event-item',
+        title: '.event-title, h3, h4',
+        date: '.event-date, .date-time',
+        location: '.venue-details, .location',
+        price: '.price-range, .price',
+        image: 'img',
+        link: 'a'
+      },
+      dateFormat: 'DD MMM YYYY'
+    },
+    {
+      name: 'MeraEvents',
+      baseUrl: 'https://meraevents.com/events',
+      selectors: {
+        eventContainer: '.event-listing, .event-box',
+        title: '.event-name, .title',
+        date: '.event-date, .date',
+        location: '.venue-name, .location',
+        price: '.ticket-price, .price',
+        image: 'img',
+        link: 'a'
+      },
+      dateFormat: 'DD/MM/YYYY'
     }
   ],
   'US': [
@@ -75,9 +103,10 @@ async function crawlEventWebsite(
   firecrawl: FirecrawlApp,
   website: EventWebsite,
   country: string,
-  city?: string
+  city?: string,
+  retryCount = 0
 ): Promise<any[]> {
-  console.log(`Crawling ${website.name} for ${country}${city ? `, ${city}` : ''}`);
+  console.log(`Crawling ${website.name} for ${country}${city ? `, ${city}` : ''} (attempt ${retryCount + 1})`);
   
   try {
     // Build URL with city-specific path if available
@@ -86,21 +115,36 @@ async function crawlEventWebsite(
       targetUrl = `https://in.bookmyshow.com/${city.toLowerCase()}/events`;
     } else if (city && website.name === 'Insider.in') {
       targetUrl = `https://insider.in/${city.toLowerCase()}`;
+    } else if (city && website.name === 'Paytm Insider') {
+      targetUrl = `https://insider.in/${city.toLowerCase()}`;
+    } else if (city && website.name === 'MeraEvents') {
+      targetUrl = `https://meraevents.com/${city.toLowerCase()}/events`;
     }
 
     console.log(`Crawling URL: ${targetUrl}`);
 
     const crawlResult = await firecrawl.crawlUrl(targetUrl, {
-      limit: 10,
+      limit: 5,
       scrapeOptions: {
         formats: ['markdown', 'html'],
-        waitFor: 2000,
-        timeout: 15000
+        waitFor: 3000,
+        timeout: 20000,
+        onlyMainContent: true
       }
     });
 
     if (!crawlResult.success) {
-      console.error(`Failed to crawl ${website.name}:`, crawlResult.error);
+      const error = crawlResult.error;
+      console.error(`Failed to crawl ${website.name}:`, error);
+      
+      // Handle rate limiting with exponential backoff
+      if (error && error.includes('429') && retryCount < 3) {
+        const delay = Math.pow(2, retryCount) * 5000; // 5s, 10s, 20s
+        console.log(`Rate limited. Retrying ${website.name} in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return crawlEventWebsite(firecrawl, website, country, city, retryCount + 1);
+      }
+      
       return [];
     }
 
@@ -109,18 +153,14 @@ async function crawlEventWebsite(
     // Process crawled data
     for (const page of crawlResult.data || []) {
       console.log(`Processing page: ${page.url || 'unknown'}`);
-      console.log(`HTML length: ${page.html ? page.html.length : 0}`);
-      console.log(`Markdown length: ${page.markdown ? page.markdown.length : 0}`);
       
       if (page.html) {
-        console.log(`First 500 chars of HTML: ${page.html.substring(0, 500)}`);
         const extractedEvents = extractEventsFromHtml(page.html, website, targetUrl, country, city);
         console.log(`Extracted ${extractedEvents.length} events from HTML`);
         events.push(...extractedEvents);
       }
       
       if (page.markdown) {
-        console.log(`First 500 chars of Markdown: ${page.markdown.substring(0, 500)}`);
         const extractedEvents = extractEventsFromMarkdown(page.markdown, website, targetUrl, country, city);
         console.log(`Extracted ${extractedEvents.length} events from Markdown`);
         events.push(...extractedEvents);
@@ -132,6 +172,15 @@ async function crawlEventWebsite(
 
   } catch (error) {
     console.error(`Error crawling ${website.name}:`, error);
+    
+    // Handle rate limiting with exponential backoff
+    if (error.message && error.message.includes('429') && retryCount < 3) {
+      const delay = Math.pow(2, retryCount) * 5000;
+      console.log(`Rate limited. Retrying ${website.name} in ${delay}ms...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+      return crawlEventWebsite(firecrawl, website, country, city, retryCount + 1);
+    }
+    
     return [];
   }
 }
@@ -142,120 +191,176 @@ function extractEventsFromHtml(html: string, website: EventWebsite, sourceUrl: s
   try {
     console.log(`Analyzing HTML content for ${website.name}...`);
     
-    // For now, let's create some mock events if we find any event-related content
-    const hasEventContent = html.toLowerCase().includes('event') || 
-                           html.toLowerCase().includes('show') || 
-                           html.toLowerCase().includes('concert') ||
-                           html.toLowerCase().includes('movie') ||
-                           html.toLowerCase().includes('performance');
+    // Remove script and style tags
+    const cleanHtml = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+                         .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
     
-    if (hasEventContent && website.name === 'BookMyShow') {
-      // Create mock BookMyShow events for Hyderabad
-      events.push(
-        {
-          title: 'Live Comedy Show - Stand Up Special',
-          description: 'Comedy night featuring local comedians from Hyderabad',
-          event_date: '2025-08-10',
-          event_time: '20:00:00',
-          location_name: 'Phoenix Arena, Hyderabad',
-          location_address: 'Madhapur, Hyderabad',
-          city: city || 'Hyderabad',
-          region: 'Telangana',
-          country: country,
-          latitude: 17.4485,
-          longitude: 78.3908,
-          category: 'entertainment',
-          price_range: '₹500 - ₹1500',
-          source_platform: website.name,
-          source_url: sourceUrl,
-          organizer: 'BookMyShow',
-          image_url: null,
-          tags: ['comedy', 'entertainment', 'hyderabad'],
-          venue_details: { type: 'auditorium' },
-          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-        },
-        {
-          title: 'Bollywood Dance Workshop',
-          description: 'Learn Bollywood dance moves from professional choreographers',
-          event_date: '2025-08-12',
-          event_time: '18:00:00',
-          location_name: 'Dance Academy, Banjara Hills',
-          location_address: 'Banjara Hills, Hyderabad',
-          city: city || 'Hyderabad',
-          region: 'Telangana',
-          country: country,
-          latitude: 17.4123,
-          longitude: 78.4493,
-          category: 'workshop',
-          price_range: '₹800',
-          source_platform: website.name,
-          source_url: sourceUrl,
-          organizer: 'BookMyShow',
-          image_url: null,
-          tags: ['dance', 'workshop', 'bollywood'],
-          venue_details: { type: 'studio' },
-          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+    // Extract potential event data using regex patterns
+    const eventPatterns = [
+      // Match event titles in headings or specific classes
+      /<h[1-6][^>]*class="[^"]*(?:event|title|name)[^"]*"[^>]*>([^<]+)<\/h[1-6]>/gi,
+      /<div[^>]*class="[^"]*(?:event|title|name)[^"]*"[^>]*>([^<]+)<\/div>/gi,
+      /<span[^>]*class="[^"]*(?:event|title|name)[^"]*"[^>]*>([^<]+)<\/span>/gi,
+      
+      // Match price patterns
+      /[₹$€£]\s*\d+(?:[,.\d]*)?(?:\s*-\s*[₹$€£]?\s*\d+(?:[,.\d]*)?)?/g,
+      
+      // Match date patterns
+      /\b(?:\d{1,2}[\s\-\/](?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|\d{1,2})[\s\-\/]\d{2,4})\b/gi,
+      
+      // Match time patterns
+      /\b\d{1,2}:\d{2}\s*(?:am|pm)?\b/gi
+    ];
+    
+    // Look for structured event data in JSON-LD
+    const jsonLdMatches = cleanHtml.match(/<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/gi);
+    if (jsonLdMatches) {
+      for (const match of jsonLdMatches) {
+        try {
+          const jsonContent = match.replace(/<script[^>]*>/i, '').replace(/<\/script>/i, '');
+          const data = JSON.parse(jsonContent);
+          
+          if (data['@type'] === 'Event' || (Array.isArray(data) && data.some(item => item['@type'] === 'Event'))) {
+            const eventData = Array.isArray(data) ? data.filter(item => item['@type'] === 'Event') : [data];
+            
+            for (const event of eventData) {
+              const extractedEvent = {
+                title: event.name || 'Untitled Event',
+                description: event.description || `Event from ${website.name}`,
+                event_date: event.startDate ? parseEventDate(event.startDate) : null,
+                event_time: event.startDate ? extractTimeFromDate(event.startDate) : null,
+                location_name: event.location?.name || event.location?.address?.addressLocality || city || 'Unknown',
+                location_address: event.location?.address?.streetAddress || null,
+                city: event.location?.address?.addressLocality || city || null,
+                region: getRegionForCountry(country),
+                country: country,
+                latitude: event.location?.geo?.latitude || null,
+                longitude: event.location?.geo?.longitude || null,
+                category: event.category || getCategoryFromText(event.name || ''),
+                price_range: event.offers?.price ? `${event.offers.priceCurrency || '₹'}${event.offers.price}` : null,
+                source_platform: website.name,
+                source_url: event.url || sourceUrl,
+                organizer: event.organizer?.name || website.name,
+                image_url: event.image || null,
+                tags: extractTagsFromText(event.name || ''),
+                venue_details: { type: event.location?.['@type'] || 'venue' },
+                expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+              };
+              
+              if (extractedEvent.title && extractedEvent.title !== 'Untitled Event') {
+                events.push(extractedEvent);
+              }
+            }
+          }
+        } catch (e) {
+          console.log('Failed to parse JSON-LD:', e);
         }
-      );
+      }
     }
     
-    if (hasEventContent && website.name === 'Insider.in') {
-      // Create mock Insider.in events for Hyderabad
-      events.push(
-        {
-          title: 'Tech Meetup: AI & Machine Learning',
-          description: 'Discussion on latest trends in AI and ML technologies',
-          event_date: '2025-08-15',
-          event_time: '19:00:00',
-          location_name: 'T-Hub, HITEC City',
-          location_address: 'HITEC City, Hyderabad',
-          city: city || 'Hyderabad',
-          region: 'Telangana',
-          country: country,
-          latitude: 17.4475,
-          longitude: 78.3984,
-          category: 'technology',
-          price_range: 'Free',
-          source_platform: website.name,
-          source_url: sourceUrl,
-          organizer: 'Insider.in',
-          image_url: null,
-          tags: ['tech', 'ai', 'meetup'],
-          venue_details: { type: 'office space' },
-          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-        },
-        {
-          title: 'Food Festival - Street Food Carnival',
-          description: 'Taste authentic Hyderabadi street food and delicacies',
-          event_date: '2025-08-18',
-          event_time: '17:00:00',
-          location_name: 'Shilparamam',
-          location_address: 'Madhapur, Hyderabad',
-          city: city || 'Hyderabad',
-          region: 'Telangana',
-          country: country,
-          latitude: 17.4504,
-          longitude: 78.3808,
-          category: 'food',
-          price_range: '₹200 - ₹500',
-          source_platform: website.name,
-          source_url: sourceUrl,
-          organizer: 'Insider.in',
-          image_url: null,
-          tags: ['food', 'festival', 'hyderabadi'],
-          venue_details: { type: 'outdoor venue' },
-          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+    // If no structured data found, try to extract from HTML patterns
+    if (events.length === 0) {
+      const titleMatches = cleanHtml.match(eventPatterns[0]) || 
+                          cleanHtml.match(eventPatterns[1]) || 
+                          cleanHtml.match(eventPatterns[2]);
+      
+      if (titleMatches) {
+        for (const match of titleMatches.slice(0, 10)) { // Limit to 10 events
+          const title = match.replace(/<[^>]*>/g, '').trim();
+          
+          if (title.length > 5 && isLikelyEventTitle(title)) {
+            events.push({
+              title: title,
+              description: `Event from ${website.name}`,
+              event_date: null,
+              event_time: null,
+              location_name: city || 'Unknown',
+              location_address: null,
+              city: city || null,
+              region: getRegionForCountry(country),
+              country: country,
+              latitude: null,
+              longitude: null,
+              category: getCategoryFromText(title),
+              price_range: null,
+              source_platform: website.name,
+              source_url: sourceUrl,
+              organizer: website.name,
+              image_url: null,
+              tags: extractTagsFromText(title),
+              venue_details: {},
+              expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+            });
+          }
         }
-      );
+      }
     }
     
-    console.log(`Generated ${events.length} mock events for ${website.name}`);
+    console.log(`Extracted ${events.length} real events from ${website.name} HTML`);
     
   } catch (error) {
     console.error('Error extracting events from HTML:', error);
   }
   
   return events;
+}
+
+function isLikelyEventTitle(title: string): boolean {
+  const eventKeywords = [
+    'show', 'concert', 'festival', 'workshop', 'seminar', 'conference', 
+    'meetup', 'exhibition', 'performance', 'comedy', 'theatre', 'movie',
+    'screening', 'launch', 'celebration', 'party', 'night', 'live'
+  ];
+  
+  const lowerTitle = title.toLowerCase();
+  return eventKeywords.some(keyword => lowerTitle.includes(keyword)) ||
+         /\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\b/i.test(title) ||
+         /\d{1,2}:\d{2}/.test(title);
+}
+
+function getCategoryFromText(text: string): string {
+  const lowerText = text.toLowerCase();
+  
+  if (lowerText.includes('music') || lowerText.includes('concert') || lowerText.includes('band')) return 'music';
+  if (lowerText.includes('comedy') || lowerText.includes('stand up')) return 'comedy';
+  if (lowerText.includes('food') || lowerText.includes('restaurant') || lowerText.includes('dining')) return 'food';
+  if (lowerText.includes('tech') || lowerText.includes('startup') || lowerText.includes('ai')) return 'technology';
+  if (lowerText.includes('art') || lowerText.includes('exhibition') || lowerText.includes('gallery')) return 'art';
+  if (lowerText.includes('dance') || lowerText.includes('workshop') || lowerText.includes('class')) return 'workshop';
+  if (lowerText.includes('movie') || lowerText.includes('film') || lowerText.includes('cinema')) return 'cinema';
+  if (lowerText.includes('sport') || lowerText.includes('game') || lowerText.includes('match')) return 'sports';
+  
+  return 'entertainment';
+}
+
+function extractTagsFromText(text: string): string[] {
+  const lowerText = text.toLowerCase();
+  const tags: string[] = [];
+  
+  const tagKeywords = [
+    'live', 'comedy', 'music', 'dance', 'food', 'tech', 'art', 'workshop',
+    'free', 'paid', 'outdoor', 'indoor', 'family', 'kids', 'adult'
+  ];
+  
+  tagKeywords.forEach(keyword => {
+    if (lowerText.includes(keyword)) {
+      tags.push(keyword);
+    }
+  });
+  
+  return tags.length > 0 ? tags : ['event'];
+}
+
+function extractTimeFromDate(dateString: string): string | null {
+  try {
+    const date = new Date(dateString);
+    if (!isNaN(date.getTime())) {
+      return date.toTimeString().slice(0, 8); // HH:MM:SS format
+    }
+  } catch (e) {
+    // Ignore parsing errors
+  }
+  return null;
 }
 
 function extractEventsFromMarkdown(markdown: string, website: EventWebsite, sourceUrl: string, country: string, city?: string): any[] {
@@ -432,11 +537,14 @@ async function scrapeEventsWithFirecrawl(
       const events = await crawlEventWebsite(firecrawl, website, country, city);
       allEvents.push(...events);
       
-      // Add delay between websites to be respectful
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Add progressive delay between websites to avoid rate limiting
+      const delay = Math.min(5000 + (websites.indexOf(website) * 2000), 15000);
+      console.log(`Waiting ${delay}ms before next website...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
       
     } catch (error) {
       console.error(`Error scraping ${website.name}:`, error);
+      // Continue with next website even if one fails
     }
   }
   
