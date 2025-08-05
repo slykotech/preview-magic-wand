@@ -76,6 +76,9 @@ verify_jwt = false
 [functions.trigger-india-scraper]
 verify_jwt = false
 
+[functions.trigger-master-scraper]
+verify_jwt = false
+
 [auth]
 enabled = true
 port = 54329
