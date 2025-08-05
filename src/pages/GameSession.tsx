@@ -228,8 +228,6 @@ export const GameSession = () => {
         {session.card_games.game_type === 'tic_toe_heart' && (
           <TicToeHeartGame
             sessionId={sessionId!}
-            isUserTurn={session.player_turn === user?.id}
-            onMove={(row, col) => console.log('Move:', row, col)}
             onRematch={() => console.log('Rematch')}
             onExit={() => navigate('/games')}
           />

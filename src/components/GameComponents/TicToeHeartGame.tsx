@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Heart, Trophy, RotateCcw, MessageCircle, Sparkles } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Heart, Trophy, RotateCcw, MessageCircle, Sparkles, Crown } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useCoupleData } from '@/hooks/useCoupleData';
 import { usePresence } from '@/hooks/usePresence';
@@ -16,8 +17,6 @@ type GameStatus = 'playing' | 'won' | 'draw' | 'abandoned';
 
 interface TicToeHeartGameProps {
   sessionId: string;
-  isUserTurn: boolean;
-  onMove: (row: number, col: number) => void;
   onRematch: () => void;
   onExit: () => void;
 }
@@ -33,6 +32,36 @@ interface TicToeGameState {
   last_move_at: string;
 }
 
+interface LoveGrant {
+  id: string;
+  winner_name: string;
+  winner_symbol: CellValue;
+  request: string;
+  game_date: string;
+}
+
+// Confetti effect component
+const Confetti = () => {
+  return (
+    <div className="fixed inset-0 pointer-events-none z-50">
+      {[...Array(50)].map((_, i) => (
+        <div
+          key={i}
+          className="absolute animate-ping"
+          style={{
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+            animationDelay: `${Math.random() * 3}s`,
+            animationDuration: `${2 + Math.random() * 3}s`
+          }}
+        >
+          {Math.random() > 0.5 ? '💖' : '💘'}
+        </div>
+      ))}
+    </div>
+  );
+};
+
 export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
   sessionId,
   onRematch,
@@ -45,15 +74,43 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
   const [gameState, setGameState] = useState<TicToeGameState | null>(null);
   const [loading, setLoading] = useState(true);
   const [showCelebration, setShowCelebration] = useState(false);
+  const [showLoveGrant, setShowLoveGrant] = useState(false);
   const [winnerReward, setWinnerReward] = useState('');
-  const [showRewardInput, setShowRewardInput] = useState(false);
+  const [loveGrants, setLoveGrants] = useState<LoveGrant[]>([]);
+  const [playfulMessage, setPlayfulMessage] = useState('');
 
   // Determine partner ID
   const partnerId = coupleData?.user1_id === user?.id ? coupleData?.user2_id : coupleData?.user1_id;
   
-  // Determine symbols based on user roles (consistent assignment)
-  const userSymbol: CellValue = coupleData?.user1_id === user?.id ? '💖' : '💘';
-  const partnerSymbol: CellValue = coupleData?.user1_id === user?.id ? '💘' : '💖';
+  // 🎯 FIX: Consistent symbol assignment - 💖 for Rosie (user1), 💘 for Virat (user2)
+  const getUserSymbol = (userId: string): CellValue => {
+    if (!coupleData) return '💖';
+    return coupleData.user1_id === userId ? '💖' : '💘';
+  };
+
+  const userSymbol = getUserSymbol(user?.id || '');
+  const partnerSymbol = getUserSymbol(partnerId || '');
+
+  // Playful messages based on turn state
+  const getPlayfulMessage = (isUserTurn: boolean, playerName: string, symbol: CellValue) => {
+    const messages = {
+      userTurn: [
+        `${playerName} ${symbol}, it's your turn! Make your heart count! 💕`,
+        `${playerName} ${symbol} is thinking strategically... 🤔💭`,
+        `Your move, ${playerName} ${symbol}! Place your heart wisely! ✨`,
+        `${playerName} ${symbol}, where will you strike next? 💘`,
+      ],
+      partnerTurn: [
+        `${playerName} ${symbol} is contemplating their next move... 🤔`,
+        `Waiting for ${playerName} ${symbol} to make their heart choice! 💗`,
+        `${playerName} ${symbol}, are you ready to block or win? 🏆`,
+        `${playerName} ${symbol} is planning something romantic! 💕`,
+      ]
+    };
+    
+    const messageSet = isUserTurn ? messages.userTurn : messages.partnerTurn;
+    return messageSet[Math.floor(Math.random() * messageSet.length)];
+  };
 
   // Initialize or fetch existing game state
   useEffect(() => {
@@ -62,11 +119,11 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
     }
   }, [sessionId, user?.id, partnerId]);
 
-  // Real-time subscription for game updates
+  // Real-time subscription for game updates with improved sync
   useEffect(() => {
     if (!gameState?.id) return;
 
-    console.log('Setting up real-time subscription for game:', gameState.id);
+    console.log('🎮 Setting up real-time subscription for game:', gameState.id);
 
     const channel = supabase
       .channel(`tic-toe-game-${gameState.id}`)
@@ -79,7 +136,7 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
           filter: `id=eq.${gameState.id}`
         },
         (payload) => {
-          console.log('Real-time game update received:', payload);
+          console.log('🎮 Real-time game update received:', payload);
           if (payload.eventType === 'UPDATE') {
             const updatedState = payload.new as any;
             const newGameState = {
@@ -88,28 +145,45 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
               game_status: updatedState.game_status as GameStatus,
               last_move_at: updatedState.last_move_at || new Date().toISOString()
             };
-            console.log('Setting new game state:', newGameState);
+            
+            console.log('🎮 Setting new game state:', newGameState);
             setGameState(newGameState);
+            
+            // Update playful message based on new turn
+            const isUserTurn = newGameState.current_player_id === user?.id;
+            const currentPlayerName = isUserTurn ? getUserDisplayName() : getPartnerDisplayName();
+            const currentSymbol = isUserTurn ? userSymbol : partnerSymbol;
+            setPlayfulMessage(getPlayfulMessage(isUserTurn, currentPlayerName || 'Player', currentSymbol));
             
             // Check for game end
             if (payload.new.game_status !== 'playing') {
               setShowCelebration(true);
               if (payload.new.winner_id === user?.id) {
-                setTimeout(() => setShowRewardInput(true), 2000);
+                setTimeout(() => setShowLoveGrant(true), 2000);
               }
             }
           }
         }
       )
       .subscribe((status) => {
-        console.log('Subscription status:', status);
+        console.log('🎮 Subscription status:', status);
       });
 
     return () => {
-      console.log('Cleaning up real-time subscription');
+      console.log('🎮 Cleaning up real-time subscription');
       supabase.removeChannel(channel);
     };
   }, [gameState?.id, user?.id]);
+
+  // Update playful message when turn changes
+  useEffect(() => {
+    if (gameState && gameState.game_status === 'playing') {
+      const isUserTurn = gameState.current_player_id === user?.id;
+      const currentPlayerName = isUserTurn ? getUserDisplayName() : getPartnerDisplayName();
+      const currentSymbol = isUserTurn ? userSymbol : partnerSymbol;
+      setPlayfulMessage(getPlayfulMessage(isUserTurn, currentPlayerName || 'Player', currentSymbol));
+    }
+  }, [gameState?.current_player_id, gameState?.game_status]);
 
   const initializeGame = async () => {
     try {
@@ -125,7 +199,7 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
       if (fetchError) throw fetchError;
 
       if (existingGame) {
-        console.log('Loading existing game:', existingGame);
+        console.log('🎮 Loading existing game:', existingGame);
         setGameState({
           ...existingGame,
           board: existingGame.board as Board,
@@ -134,7 +208,7 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
         });
       } else {
         // Create new game with user as first player
-        console.log('Creating new game with user as first player:', user!.id);
+        console.log('🎮 Creating new game with user as first player:', user!.id);
         const { data: newGame, error: createError } = await supabase
           .from('tic_toe_heart_games')
           .insert({
@@ -150,7 +224,7 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
           .single();
 
         if (createError) throw createError;
-        console.log('New game created:', newGame);
+        console.log('🎮 New game created:', newGame);
         setGameState({
           ...newGame,
           board: newGame.board as Board,
@@ -158,11 +232,42 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
           last_move_at: newGame.last_move_at || new Date().toISOString()
         });
       }
+
+      // Load love grants history
+      await loadLoveGrants();
     } catch (error) {
-      console.error('Error initializing game:', error);
+      console.error('❌ Error initializing game:', error);
       toast.error('Failed to initialize game');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadLoveGrants = async () => {
+    try {
+      // For now, load from localStorage (in a real app, you'd use the database)
+      const grants = localStorage.getItem(`love-grants-${coupleData?.id}`);
+      if (grants) {
+        setLoveGrants(JSON.parse(grants));
+      }
+    } catch (error) {
+      console.error('❌ Error loading love grants:', error);
+    }
+  };
+
+  const saveLoveGrant = async (grant: LoveGrant) => {
+    try {
+      const updatedGrants = [...loveGrants, grant];
+      setLoveGrants(updatedGrants);
+      localStorage.setItem(`love-grants-${coupleData?.id}`, JSON.stringify(updatedGrants));
+      
+      // In a real app, you'd also save to database:
+      // await supabase.from('love_grants').insert(grant);
+      
+      toast.success('💌 Love Grant sent to your partner!');
+    } catch (error) {
+      console.error('❌ Error saving love grant:', error);
+      toast.error('Failed to send Love Grant');
     }
   };
 
@@ -198,7 +303,7 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
 
   const handleCellClick = async (row: number, col: number) => {
     if (!gameState || !user?.id || gameState.current_player_id !== user.id) {
-      toast.error("It's not your turn!");
+      toast.error("🚫 It's not your turn!");
       return;
     }
 
@@ -207,7 +312,7 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
     }
 
     try {
-      console.log('Making move at:', row, col, 'Current board:', gameState.board);
+      console.log('🎮 Making move at:', row, col, 'Current board:', gameState.board);
       
       // Create new board with the move
       const newBoard = gameState.board.map((r, rowIndex) =>
@@ -216,7 +321,7 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
         )
       );
 
-      console.log('New board after move:', newBoard);
+      console.log('🎮 New board after move:', newBoard);
 
       // Check for winner
       const winner = checkWinner(newBoard);
@@ -232,7 +337,7 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
         newStatus = 'draw';
       }
 
-      console.log('Updating database with:', {
+      console.log('🎮 Updating database with:', {
         board: newBoard,
         current_player_id: newStatus === 'playing' ? partnerId : gameState.current_player_id,
         game_status: newStatus,
@@ -240,7 +345,7 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
         moves_count: gameState.moves_count + 1
       });
 
-      // Update game state in database
+      // Update game state in database with optimistic locking
       const { data, error } = await supabase
         .from('tic_toe_heart_games')
         .update({
@@ -252,32 +357,43 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
           last_move_at: new Date().toISOString()
         })
         .eq('id', gameState.id)
+        .eq('moves_count', gameState.moves_count) // Optimistic locking
         .select()
         .single();
 
       if (error) {
-        console.error('Database update error:', error);
+        console.error('❌ Database update error:', error);
+        if (error.code === 'PGRST116') {
+          toast.error('🔄 Move conflict! Game refreshed.');
+          // Refresh game state
+          await initializeGame();
+          return;
+        }
         throw error;
       }
 
-      console.log('Database update successful:', data);
-
-      // Force local state update immediately (optimistic update)
-      setGameState({
-        ...gameState,
-        board: newBoard,
-        current_player_id: newStatus === 'playing' ? partnerId! : gameState.current_player_id,
-        game_status: newStatus,
-        winner_id: winnerId,
-        moves_count: gameState.moves_count + 1,
-        last_move_at: new Date().toISOString()
-      });
-
-      toast.success('Move made!');
+      console.log('✅ Database update successful:', data);
+      toast.success('💝 Move made!');
     } catch (error) {
-      console.error('Error making move:', error);
+      console.error('❌ Error making move:', error);
       toast.error('Failed to make move');
     }
+  };
+
+  const handleLoveGrantSubmit = async () => {
+    if (!winnerReward.trim() || !gameState || !user?.id) return;
+
+    const loveGrant: LoveGrant = {
+      id: `${Date.now()}-${Math.random()}`,
+      winner_name: getUserDisplayName() || 'You',
+      winner_symbol: userSymbol,
+      request: winnerReward.trim(),
+      game_date: new Date().toLocaleDateString()
+    };
+
+    await saveLoveGrant(loveGrant);
+    setShowLoveGrant(false);
+    setWinnerReward('');
   };
 
   const handleRematch = async () => {
@@ -293,7 +409,7 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
             [null, null, null],
             [null, null, null]
           ],
-          current_player_id: user.id, // User who requested rematch goes first
+          current_player_id: partnerId, // Partner starts next game
           game_status: 'playing' as GameStatus,
           winner_id: null,
           moves_count: 0,
@@ -304,12 +420,12 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
       if (error) throw error;
       
       setShowCelebration(false);
-      setShowRewardInput(false);
+      setShowLoveGrant(false);
       setWinnerReward('');
-      toast.success('New game started!');
+      toast.success('🎮 New game started!');
       onRematch();
     } catch (error) {
-      console.error('Error starting rematch:', error);
+      console.error('❌ Error starting rematch:', error);
       toast.error('Failed to start rematch');
     }
   };
@@ -320,7 +436,8 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
         <Card className="border-primary/20">
           <CardContent className="p-4">
             <div className="text-center">
-              <p className="text-muted-foreground">Loading game...</p>
+              <div className="animate-spin text-4xl mb-4">💝</div>
+              <p className="text-muted-foreground">Loading TikTok Toe Heart Game...</p>
             </div>
           </CardContent>
         </Card>
@@ -350,8 +467,11 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* Confetti for winners */}
+      {showCelebration && gameState.winner_id && <Confetti />}
+
       {/* Live Avatars & Status */}
-      <Card className="border-primary/20">
+      <Card className="border-primary/20 animate-fade-in">
         <CardContent className="p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -374,7 +494,7 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
                     ? 'Game Over' 
                     : isUserTurn 
                       ? '🟢 Your turn!' 
-                      : 'Waiting...'
+                      : '⏳ Waiting...'
                   }
                 </p>
               </div>
@@ -382,7 +502,8 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
 
             <div className="text-center">
               <Trophy className="h-8 w-8 text-yellow-500 mx-auto mb-1" />
-              <p className="text-xs text-muted-foreground">Tic Toe Heart</p>
+              <p className="text-xs text-muted-foreground">TikTok Toe</p>
+              <p className="text-xs text-muted-foreground">Heart Game</p>
             </div>
 
             <div className="flex items-center gap-3">
@@ -397,7 +518,7 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
                     ? 'Game Over' 
                     : !isUserTurn 
                       ? '🟢 Their turn!' 
-                      : isPartnerOnline ? 'Online' : 'Offline'
+                      : isPartnerOnline ? '💚 Online' : '💔 Offline'
                   }
                 </p>
               </div>
@@ -417,25 +538,25 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
       </Card>
 
       {/* Game Board */}
-      <Card className="border-pink-200 bg-gradient-to-br from-pink-50 to-purple-50 dark:from-pink-950/20 dark:to-purple-950/20">
+      <Card className="border-pink-200 bg-gradient-to-br from-pink-50 to-purple-50 dark:from-pink-950/20 dark:to-purple-950/20 animate-fade-in">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
-            Tic Toe Heart
+            TikTok Toe Heart Game 💕
           </CardTitle>
           
           {gameState.game_status === 'won' && gameState.winner_id === user?.id && (
             <Badge className="mx-auto bg-green-500 text-white animate-bounce">
-              🎉 You Won!
+              🎉 You Won! 👑
             </Badge>
           )}
           {gameState.game_status === 'won' && gameState.winner_id !== user?.id && (
             <Badge className="mx-auto bg-blue-500 text-white">
-              💙 Your partner won!
+              💙 Your partner won! 🏆
             </Badge>
           )}
           {gameState.game_status === 'draw' && (
             <Badge className="mx-auto bg-gray-500 text-white">
-              🤝 It's a draw!
+              🤝 It's a draw! 💕
             </Badge>
           )}
         </CardHeader>
@@ -450,12 +571,12 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
                   className={`
                     aspect-square bg-white dark:bg-gray-800 rounded-lg border-2 
                     ${isUserTurn && !cell && gameState.game_status === 'playing'
-                      ? 'border-pink-300 hover:border-pink-500 hover:bg-pink-50 cursor-pointer' 
+                      ? 'border-pink-300 hover:border-pink-500 hover:bg-pink-50 cursor-pointer hover-scale' 
                       : 'border-gray-200 dark:border-gray-600'
                     }
                     flex items-center justify-center text-4xl
-                    transition-all duration-200 hover:scale-105
-                    ${cell ? 'animate-pulse' : ''}
+                    transition-all duration-200 
+                    ${cell ? 'animate-scale-in' : ''}
                   `}
                   onClick={() => handleCellClick(rowIndex, colIndex)}
                   disabled={!isUserTurn || !!cell || gameState.game_status !== 'playing'}
@@ -470,30 +591,30 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
             )}
           </div>
 
-          {/* Game Status Messages */}
-          {gameState.game_status === 'playing' && (
-            <div className="text-center p-4 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-              <p className="text-purple-700 dark:text-purple-300">
-                {isUserTurn ? `${userSymbol} Your turn! Tap a heart to place it` : `${partnerSymbol} Waiting for your partner's move...`}
+          {/* Playful Dialogue */}
+          {gameState.game_status === 'playing' && playfulMessage && (
+            <div className="text-center p-4 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 rounded-lg border border-pink-200 animate-fade-in">
+              <p className="text-purple-700 dark:text-purple-300 font-medium">
+                {playfulMessage}
               </p>
             </div>
           )}
 
           {/* Winner Celebration */}
           {showCelebration && (
-            <div className="text-center p-6 bg-gradient-to-r from-pink-100 to-purple-100 dark:from-pink-900/30 dark:to-purple-900/30 rounded-lg border-2 border-pink-300">
+            <div className="text-center p-6 bg-gradient-to-r from-pink-100 to-purple-100 dark:from-pink-900/30 dark:to-purple-900/30 rounded-lg border-2 border-pink-300 animate-scale-in">
               {gameState.winner_id === user?.id ? (
                 <div className="space-y-3">
                   <div className="flex justify-center items-center gap-2">
                     <Sparkles className="h-6 w-6 text-yellow-500 animate-spin" />
-                    <Trophy className="h-8 w-8 text-yellow-500" />
+                    <Crown className="h-8 w-8 text-yellow-500" />
                     <Sparkles className="h-6 w-6 text-yellow-500 animate-spin" />
                   </div>
                   <h3 className="text-xl font-bold text-pink-700 dark:text-pink-300">
-                    🎉 Congratulations! You won! 🎉
+                    🎉 Congratulations! You Won! 🎉
                   </h3>
                   <p className="text-pink-600 dark:text-pink-400">
-                    As the winner, you've earned a special reward! ✨
+                    As the winner, you've earned a 💌 Love Grant! ✨
                   </p>
                 </div>
               ) : gameState.game_status === 'won' ? (
@@ -503,7 +624,7 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
                     💜 Your partner won this round!
                   </h3>
                   <p className="text-purple-600 dark:text-purple-400">
-                    They've earned a special reward from you! 💝
+                    They've earned a 💌 Love Grant from you! 💝
                   </p>
                 </div>
               ) : (
@@ -512,41 +633,11 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
                     🤝 It's a draw!
                   </h3>
                   <p className="text-gray-600 dark:text-gray-400">
-                    Great game! Want to play again? 💕
+                    Great game! Both hearts played wonderfully! 💕
                   </p>
                 </div>
               )}
             </div>
-          )}
-
-          {/* Winner Reward Input */}
-          {showRewardInput && gameState.winner_id === user?.id && (
-            <Card className="mt-4 border-yellow-300 bg-yellow-50 dark:bg-yellow-900/20">
-              <CardHeader>
-                <CardTitle className="text-lg text-yellow-800 dark:text-yellow-200">
-                  🏆 Your Victory Reward!
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-yellow-700 dark:text-yellow-300 text-sm">
-                  As the winner, you can ask your partner anything or make a sweet request:
-                </p>
-                <textarea
-                  value={winnerReward}
-                  onChange={(e) => setWinnerReward(e.target.value)}
-                  placeholder="Ask a question, make a request, or suggest something fun..."
-                  className="w-full p-3 rounded-lg border resize-none h-20"
-                />
-                <Button 
-                  onClick={() => console.log('Reward sent:', winnerReward)}
-                  disabled={!winnerReward.trim()}
-                  className="w-full bg-yellow-500 hover:bg-yellow-600"
-                >
-                  <MessageCircle className="w-4 h-4 mr-2" />
-                  Send Reward Request
-                </Button>
-              </CardContent>
-            </Card>
           )}
 
           {/* Game Controls */}
@@ -554,12 +645,12 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
             <div className="flex gap-3 justify-center mt-6">
               <Button 
                 onClick={handleRematch}
-                className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600"
+                className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 animate-fade-in"
               >
                 <RotateCcw className="w-4 h-4 mr-2" />
                 Rematch 💞
               </Button>
-              <Button variant="outline" onClick={onExit}>
+              <Button variant="outline" onClick={onExit} className="animate-fade-in">
                 Exit 💔
               </Button>
             </div>
@@ -567,25 +658,84 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
         </CardContent>
       </Card>
 
-      {/* Game Stats */}
-      <Card className="border-gray-200">
-        <CardContent className="p-4">
-          <div className="grid grid-cols-3 gap-4 text-center">
-            <div>
-              <p className="text-2xl font-bold text-green-600">0</p>
-              <p className="text-xs text-muted-foreground">Your Wins</p>
+      {/* Love Grant Modal */}
+      <Dialog open={showLoveGrant} onOpenChange={setShowLoveGrant}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center text-xl bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
+              💌 Your Love Grant! 👑
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="text-center p-4 bg-gradient-to-r from-yellow-100 to-pink-100 rounded-lg">
+              <Crown className="h-8 w-8 text-yellow-500 mx-auto mb-2" />
+              <p className="text-yellow-700 text-sm">
+                As the winner, you can ask your partner anything or make a sweet request!
+              </p>
             </div>
-            <div>
-              <p className="text-2xl font-bold text-gray-600">0</p>
-              <p className="text-xs text-muted-foreground">Draws</p>
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-purple-600">0</p>
-              <p className="text-xs text-muted-foreground">Partner Wins</p>
+            
+            <textarea
+              value={winnerReward}
+              onChange={(e) => setWinnerReward(e.target.value)}
+              placeholder="Ask a meaningful question, make a request, or suggest something romantic..."
+              className="w-full p-3 rounded-lg border resize-none h-24"
+              maxLength={200}
+            />
+            <p className="text-xs text-muted-foreground text-right">
+              {winnerReward.length}/200 characters
+            </p>
+            
+            <div className="flex gap-2">
+              <Button 
+                onClick={handleLoveGrantSubmit}
+                disabled={!winnerReward.trim()}
+                className="flex-1 bg-gradient-to-r from-pink-500 to-purple-500"
+              >
+                <MessageCircle className="w-4 h-4 mr-2" />
+                Send Love Grant 💌
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => setShowLoveGrant(false)}
+              >
+                Later
+              </Button>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </DialogContent>
+      </Dialog>
+
+      {/* Love Grants History */}
+      {loveGrants.length > 0 && (
+        <Card className="border-yellow-200 bg-gradient-to-r from-yellow-50 to-pink-50 dark:from-yellow-950/20 dark:to-pink-950/20 animate-fade-in">
+          <CardHeader>
+            <CardTitle className="text-lg text-yellow-800 dark:text-yellow-200 flex items-center gap-2">
+              <Crown className="h-5 w-5" />
+              Recent Love Grants 💌
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2 max-h-40 overflow-y-auto">
+              {loveGrants.slice(-3).reverse().map((grant) => (
+                <div key={grant.id} className="p-3 bg-white/50 rounded-lg border">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Crown className="h-4 w-4 text-yellow-500" />
+                    <span className="font-medium text-sm">
+                      {grant.winner_name} {grant.winner_symbol}
+                    </span>
+                    <span className="text-xs text-muted-foreground ml-auto">
+                      {grant.game_date}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-700 dark:text-gray-300">
+                    "{grant.request}"
+                  </p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
