@@ -225,7 +225,28 @@ export const SweetSuggestions: React.FC<SweetSuggestionsProps> = ({
       </Card>
 
       {/* Filters */}
-      {location}
+      <Card>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Filter by Category</label>
+            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <SelectTrigger>
+                <SelectValue placeholder="All categories" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                <SelectItem value="restaurant">Restaurants</SelectItem>
+                <SelectItem value="tourist_attraction">Tourist Attractions</SelectItem>
+                <SelectItem value="park">Parks & Recreation</SelectItem>
+                <SelectItem value="museum">Museums</SelectItem>
+                <SelectItem value="cafe">Cafes</SelectItem>
+                <SelectItem value="shopping_mall">Shopping</SelectItem>
+                <SelectItem value="entertainment">Entertainment</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Results */}
       {location && <div>
