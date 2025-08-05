@@ -8,7 +8,7 @@ import { useLocation } from '@/hooks/useLocation';
 import { PlaceCard } from './PlaceCard';
 import { CitySearchInput } from './CitySearchInput';
 import { supabase } from '@/integrations/supabase/client';
-import { MapPin, Loader2, Search, RefreshCw } from 'lucide-react';
+import { MapPin, Loader2, Search } from 'lucide-react';
 
 interface Place {
   id: string;
@@ -41,49 +41,40 @@ export const SweetSuggestions: React.FC<SweetSuggestionsProps> = ({
   const [places, setPlaces] = useState<Place[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [searchRadius, setSearchRadius] = useState<number>(5000);
 
   const categories = [
-    { value: 'all', label: 'All Places', type: '' },
-    { value: 'restaurant', label: 'Restaurants', type: 'restaurant' },
-    { value: 'bar', label: 'Bars & Nightlife', type: 'bar' },
-    { value: 'cafe', label: 'Cafes', type: 'cafe' },
-    { value: 'tourist_attraction', label: 'Attractions', type: 'tourist_attraction' },
-    { value: 'museum', label: 'Museums', type: 'museum' },
-    { value: 'park', label: 'Parks & Outdoor', type: 'park' },
-    { value: 'shopping_mall', label: 'Shopping', type: 'shopping_mall' },
-    { value: 'movie_theater', label: 'Entertainment', type: 'movie_theater' },
-    { value: 'spa', label: 'Spa & Wellness', type: 'spa' }
+    { value: 'all', label: 'All Places' },
+    { value: 'Cultural & Historical', label: 'Cultural & Historical' },
+    { value: 'Religious & Spiritual', label: 'Religious & Spiritual' },
+    { value: 'Entertainment', label: 'Entertainment' },
+    { value: 'Dining & Social', label: 'Dining & Social' },
+    { value: 'Nature & Outdoor', label: 'Nature & Outdoor' },
+    { value: 'Shopping & Markets', label: 'Shopping & Markets' }
   ];
 
-  const radiusOptions = [
-    { value: 1000, label: '1 km' },
-    { value: 2500, label: '2.5 km' },
-    { value: 5000, label: '5 km' },
-    { value: 10000, label: '10 km' },
-    { value: 25000, label: '25 km' }
-  ];
+  // Auto-detect location and search on component mount
+  useEffect(() => {
+    if (!location && !isGettingLocation) {
+      getCurrentLocation();
+    }
+  }, []);
 
   useEffect(() => {
     if (location) {
       searchPlaces();
     }
-  }, [location, selectedCategory, searchRadius]);
+  }, [location, selectedCategory]);
 
   const searchPlaces = async () => {
     if (!location) return;
 
     setLoading(true);
     try {
-      const selectedCategoryData = categories.find(cat => cat.value === selectedCategory);
-      
       const { data, error } = await supabase.functions.invoke('search-nearby-places', {
         body: {
           latitude: location.latitude,
           longitude: location.longitude,
-          radius: searchRadius,
-          type: selectedCategoryData?.type || '',
-          keyword: selectedCategory === 'all' ? 'restaurant OR attraction OR entertainment' : ''
+          category: selectedCategory === 'all' ? undefined : selectedCategory
         }
       });
 
@@ -93,7 +84,7 @@ export const SweetSuggestions: React.FC<SweetSuggestionsProps> = ({
         setPlaces(data.places || []);
         toast({
           title: `Found ${data.places?.length || 0} places! 📍`,
-          description: `Discovered great options near ${location.displayName}`
+          description: `Discovered great options near ${location.displayName} ${data.source === 'database' ? '(cached)' : '(fresh)'}`
         });
       } else {
         throw new Error(data.error || 'Failed to search places');
@@ -234,57 +225,28 @@ export const SweetSuggestions: React.FC<SweetSuggestionsProps> = ({
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Search className="h-5 w-5" />
-              Filters
+              Category Filter
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium mb-2 block">Category</label>
-                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-background border z-50">
-                    {categories.map(category => (
-                      <SelectItem key={category.value} value={category.value}>
-                        {category.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div>
-                <label className="text-sm font-medium mb-2 block">Search Radius</label>
-                <Select value={searchRadius.toString()} onValueChange={(value) => setSearchRadius(parseInt(value))}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-background border z-50">
-                    {radiusOptions.map(radius => (
-                      <SelectItem key={radius.value} value={radius.value.toString()}>
-                        {radius.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+          <CardContent>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Category</label>
+              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-background border z-50">
+                  {categories.map(category => (
+                    <SelectItem key={category.value} value={category.value}>
+                      {category.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            
-            <Button
-              onClick={searchPlaces}
-              disabled={loading || !location}
-              variant="outline"
-              className="w-full"
-            >
-              {loading ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              ) : (
-                <RefreshCw className="h-4 w-4 mr-2" />
-              )}
-              Refresh Results
-            </Button>
+            <div className="text-xs text-muted-foreground mt-2">
+              💡 Places are automatically searched within 100km radius
+            </div>
           </CardContent>
         </Card>
       )}
@@ -322,7 +284,7 @@ export const SweetSuggestions: React.FC<SweetSuggestionsProps> = ({
             <Card>
               <CardContent className="text-center py-12">
                 <p className="text-muted-foreground">
-                  No places found in this area. Try expanding your search radius or changing the category.
+                  No places found in this area. Try changing the category filter above.
                 </p>
               </CardContent>
             </Card>

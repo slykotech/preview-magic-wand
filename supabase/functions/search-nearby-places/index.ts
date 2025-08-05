@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -8,9 +9,7 @@ const corsHeaders = {
 interface PlaceSearchParams {
   latitude: number;
   longitude: number;
-  radius?: number;
-  type?: string;
-  keyword?: string;
+  category?: string;
 }
 
 interface GooglePlace {
@@ -34,7 +33,19 @@ interface GooglePlace {
   opening_hours?: {
     open_now: boolean;
   };
+  formatted_phone_number?: string;
+  website?: string;
 }
+
+// Comprehensive place types for cultural and historical places
+const PLACE_TYPES = {
+  'Cultural & Historical': ['tourist_attraction', 'museum', 'art_gallery', 'cultural_center'],
+  'Religious & Spiritual': ['church', 'hindu_temple', 'mosque', 'synagogue', 'temple', 'place_of_worship'],
+  'Entertainment': ['movie_theater', 'amusement_park', 'bowling_alley', 'casino', 'night_club'],
+  'Dining & Social': ['restaurant', 'cafe', 'bar', 'brewery'],
+  'Nature & Outdoor': ['park', 'zoo', 'aquarium', 'botanical_garden'],
+  'Shopping & Markets': ['shopping_mall', 'market', 'bookstore', 'jewelry_store']
+};
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -42,6 +53,10 @@ serve(async (req) => {
   }
 
   try {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    
     const apiKey = Deno.env.get('GOOGLE_PLACES_API_KEY');
     
     if (!apiKey) {
@@ -54,7 +69,7 @@ serve(async (req) => {
       });
     }
 
-    const { latitude, longitude, radius = 5000, type, keyword }: PlaceSearchParams = await req.json();
+    const { latitude, longitude, category }: PlaceSearchParams = await req.json();
 
     if (!latitude || !longitude) {
       return new Response(JSON.stringify({ 
@@ -66,71 +81,129 @@ serve(async (req) => {
       });
     }
 
-    console.log(`Searching for places near ${latitude}, ${longitude} with radius ${radius}m`);
+    console.log(`Searching for places near ${latitude}, ${longitude} with 100km radius`);
 
-    // Build search parameters
-    const params = new URLSearchParams({
-      key: apiKey,
-      location: `${latitude},${longitude}`,
-      radius: radius.toString(),
+    // First, check database for existing places in the area
+    const { data: existingPlaces, error: dbError } = await supabase.rpc('find_nearby_places', {
+      user_lat: latitude,
+      user_lng: longitude,
+      radius_km: 100,
+      category_filter: category || null
     });
 
-    // Add type filter if specified
-    if (type && type !== 'all') {
-      params.append('type', type);
+    if (dbError) {
+      console.error('Database query error:', dbError);
     }
 
-    // Add keyword if specified
-    if (keyword) {
-      params.append('keyword', keyword);
-    }
-
-    const searchUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?${params}`;
-    console.log('Making request to Google Places API...');
-    
-    const response = await fetch(searchUrl);
-    const data = await response.json();
-    
-    console.log('Google Places API Response Status:', data.status);
-
-    if (data.status !== 'OK') {
-      console.error('Google Places API Error:', data);
+    // If we have enough recent places from database, return them
+    if (existingPlaces && existingPlaces.length >= 10) {
+      console.log(`Found ${existingPlaces.length} places from database`);
       return new Response(JSON.stringify({ 
-        success: false,
-        error: `Google Places API error: ${data.status}`,
-        message: data.error_message || 'Unknown error'
+        success: true,
+        places: existingPlaces.map((place: any) => ({
+          id: place.google_place_id,
+          name: place.name,
+          address: place.address,
+          rating: parseFloat(place.rating) || 0,
+          priceLevel: place.price_level,
+          latitude: place.latitude,
+          longitude: place.longitude,
+          types: place.place_types,
+          photoReference: place.photo_references?.[0],
+          isOpen: place.is_open,
+          distance: parseFloat(place.distance_km)
+        })),
+        total: existingPlaces.length,
+        source: 'database'
       }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    // Transform and filter places
-    const places = data.results
-      .filter((place: GooglePlace) => place.name && place.rating >= 3.0) // Only show places with good ratings
-      .slice(0, 20) // Limit to 20 results
-      .map((place: GooglePlace) => ({
-        id: place.place_id,
-        name: place.name,
-        address: place.vicinity,
-        rating: place.rating || 0,
-        priceLevel: place.price_level,
-        latitude: place.geometry.location.lat,
-        longitude: place.geometry.location.lng,
-        types: place.types,
-        photoReference: place.photos?.[0]?.photo_reference,
-        isOpen: place.opening_hours?.open_now,
-        // Calculate distance (approximate)
-        distance: calculateDistance(latitude, longitude, place.geometry.location.lat, place.geometry.location.lng)
-      }))
-      .sort((a, b) => a.distance - b.distance); // Sort by distance
+    // If not enough places in database, fetch from Google Places API
+    console.log('Fetching from Google Places API...');
+    
+    // Get place types for the category
+    const placeTypes = category && PLACE_TYPES[category as keyof typeof PLACE_TYPES] 
+      ? PLACE_TYPES[category as keyof typeof PLACE_TYPES] 
+      : ['tourist_attraction', 'museum', 'restaurant', 'park', 'shopping_mall'];
 
-    console.log(`Found ${places.length} places`);
+    const allPlaces: any[] = [];
+
+    // Search for multiple place types to get comprehensive results
+    for (const placeType of placeTypes) {
+      const params = new URLSearchParams({
+        key: apiKey,
+        location: `${latitude},${longitude}`,
+        radius: '100000', // 100km fixed radius
+        type: placeType
+      });
+
+      const searchUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?${params}`;
+      
+      try {
+        const response = await fetch(searchUrl);
+        const data = await response.json();
+        
+        if (data.status === 'OK' && data.results) {
+          for (const place of data.results) {
+            // Store place in database
+            await supabase.from('places').upsert({
+              google_place_id: place.place_id,
+              name: place.name,
+              address: place.vicinity || place.formatted_address,
+              latitude: place.geometry.location.lat,
+              longitude: place.geometry.location.lng,
+              place_types: place.types,
+              rating: place.rating,
+              price_level: place.price_level,
+              photo_references: place.photos?.map((p: any) => p.photo_reference) || [],
+              phone: place.formatted_phone_number,
+              website: place.website,
+              opening_hours: place.opening_hours ? { open_now: place.opening_hours.open_now } : null,
+              is_open: place.opening_hours?.open_now,
+              google_data: place,
+              last_updated: new Date().toISOString()
+            }, { onConflict: 'google_place_id' });
+
+            // Add to results if meets criteria
+            if (place.name && (place.rating || 0) >= 3.0) {
+              allPlaces.push({
+                id: place.place_id,
+                name: place.name,
+                address: place.vicinity || place.formatted_address,
+                rating: place.rating || 0,
+                priceLevel: place.price_level,
+                latitude: place.geometry.location.lat,
+                longitude: place.geometry.location.lng,
+                types: place.types,
+                photoReference: place.photos?.[0]?.photo_reference,
+                isOpen: place.opening_hours?.open_now,
+                distance: calculateDistance(latitude, longitude, place.geometry.location.lat, place.geometry.location.lng)
+              });
+            }
+          }
+        }
+      } catch (error) {
+        console.error(`Error fetching ${placeType}:`, error);
+      }
+    }
+
+    // Remove duplicates and sort by distance
+    const uniquePlaces = allPlaces
+      .filter((place, index, self) => 
+        index === self.findIndex(p => p.id === place.id)
+      )
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, 50);
+
+    console.log(`Found ${uniquePlaces.length} places from Google Places API`);
 
     return new Response(JSON.stringify({ 
       success: true,
-      places,
-      total: places.length
+      places: uniquePlaces,
+      total: uniquePlaces.length,
+      source: 'google_api'
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
