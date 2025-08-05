@@ -135,48 +135,97 @@ serve(async (req) => {
 
     console.log(`Fetching events for: ${latitude}, ${longitude} within ${radius}km`);
 
-    // Fetch events directly from the database instead of external APIs
-    // Events are now populated by the master scraper every 4 hours
+    // Enhanced event fetching with multiple fallback strategies
     console.log(`Fetching events from database for location: ${latitude}, ${longitude} with radius: ${radius}km`);
     
-    const { data: events, error: eventsError } = await supabaseClient
+    // First try to get events within the specified radius
+    const { data: nearbyEvents, error: nearbyError } = await supabaseClient
       .from('events')
       .select('*')
-      .gte('event_date', new Date().toISOString().split('T')[0]) // Only future events
+      .gte('event_date', new Date().toISOString().split('T')[0])
       .order('event_date', { ascending: true })
-      .limit(100);
+      .limit(200); // Get more events to filter from
     
-    if (eventsError) {
-      console.error('Error fetching events from database:', eventsError);
+    if (nearbyError) {
+      console.error('Error fetching events from database:', nearbyError);
       throw new Error('Failed to fetch events from database');
     }
     
-    // Filter events by location if coordinates are provided
-    let filteredEvents = events || [];
-    if (latitude && longitude && radius) {
-      filteredEvents = (events || []).filter(event => {
-        if (!event.latitude || !event.longitude) return true; // Include events without coordinates
+    // Enhanced distance calculation and filtering
+    let filteredEvents = nearbyEvents || [];
+    const eventsWithDistance = [];
+    
+    if (latitude && longitude && filteredEvents.length > 0) {
+      for (const event of filteredEvents) {
+        let distance = 999999; // Default high distance for events without coordinates
         
-        // Calculate distance using Haversine formula
-        const R = 6371; // Earth's radius in kilometers
-        const dLat = (event.latitude - latitude) * Math.PI / 180;
-        const dLng = (event.longitude - longitude) * Math.PI / 180;
-        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                  Math.cos(latitude * Math.PI / 180) * Math.cos(event.latitude * Math.PI / 180) *
-                  Math.sin(dLng/2) * Math.sin(dLng/2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-        const distance = R * c;
+        if (event.latitude && event.longitude) {
+          // Calculate distance using Haversine formula
+          const R = 6371; // Earth's radius in kilometers
+          const dLat = (event.latitude - latitude) * Math.PI / 180;
+          const dLng = (event.longitude - longitude) * Math.PI / 180;
+          const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                    Math.cos(latitude * Math.PI / 180) * Math.cos(event.latitude * Math.PI / 180) *
+                    Math.sin(dLng/2) * Math.sin(dLng/2);
+          const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+          distance = R * c;
+        }
         
-        return distance <= radius;
-      });
+        eventsWithDistance.push({
+          ...event,
+          distance: Math.round(distance * 10) / 10 // Round to 1 decimal place
+        });
+      }
+      
+      // Filter by radius and sort by distance
+      filteredEvents = eventsWithDistance
+        .filter(event => event.distance <= radius)
+        .sort((a, b) => a.distance - b.distance)
+        .slice(0, 50); // Limit to 50 closest events
+      
+      console.log(`Found ${filteredEvents.length} events within ${radius}km radius`);
+      
+      // If no events found within radius, try expanding search
+      if (filteredEvents.length === 0 && radius < 200) {
+        const expandedRadius = Math.min(radius * 2, 200);
+        console.log(`No events found within ${radius}km, expanding search to ${expandedRadius}km`);
+        
+        filteredEvents = eventsWithDistance
+          .filter(event => event.distance <= expandedRadius)
+          .sort((a, b) => a.distance - b.distance)
+          .slice(0, 30);
+        
+        console.log(`Found ${filteredEvents.length} events within expanded ${expandedRadius}km radius`);
+      }
+      
+      // If still no events, show some general events without location filter
+      if (filteredEvents.length === 0) {
+        console.log('No nearby events found, showing general events');
+        filteredEvents = (nearbyEvents || [])
+          .slice(0, 20)
+          .map(event => ({ ...event, distance: null }));
+      }
+    } else {
+      // No location provided, return recent events
+      filteredEvents = (nearbyEvents || []).slice(0, 30);
     }
     
-    console.log(`Found ${filteredEvents.length} events in database within ${radius}km radius`);
+    // Enhance event data with additional metadata
+    const enhancedEvents = filteredEvents.map(event => ({
+      ...event,
+      // Add computed fields
+      is_today: event.event_date === new Date().toISOString().split('T')[0],
+      is_weekend: new Date(event.event_date).getDay() === 0 || new Date(event.event_date).getDay() === 6,
+      days_from_now: Math.ceil((new Date(event.event_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+    }));
     
     return new Response(JSON.stringify({ 
-      events: filteredEvents,
+      events: enhancedEvents,
       source: 'database',
-      totalFound: filteredEvents.length
+      totalFound: enhancedEvents.length,
+      searchRadius: radius,
+      location: { latitude, longitude },
+      hasNearbyEvents: enhancedEvents.some(e => e.distance && e.distance <= radius)
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

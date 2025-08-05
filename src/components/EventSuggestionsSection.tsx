@@ -38,14 +38,12 @@ export const EventSuggestionsSection = ({ onEventSelect, className = "" }: Event
   const [showLocationSearch, setShowLocationSearch] = useState(false);
   const [filteredEvents, setFilteredEvents] = useState<EventSuggestion[]>([]);
 
-  // Auto-detect location on component mount
+  // Auto-detect location on component mount - removed since it's now handled by useLocation hook
   useEffect(() => {
     console.log('EventSuggestionsSection mount effect - location:', location, 'isGettingLocation:', isGettingLocation);
-    if (!location && !isGettingLocation) {
-      console.log('No location detected, starting auto-detection...');
-      handleAutoLocationDetection();
-    }
-  }, []);
+    // Location auto-detection is now handled automatically by the useLocation hook
+    // This ensures consistent behavior across the app
+  }, [location, isGettingLocation]);
 
   const handleAutoLocationDetection = async () => {
     console.log('Starting auto location detection...');
@@ -194,7 +192,7 @@ export const EventSuggestionsSection = ({ onEventSelect, className = "" }: Event
           <h2 className="text-2xl font-bold">Event Suggestions</h2>
           <div className="flex items-center gap-2 text-muted-foreground">
             <MapPin className="w-4 h-4" />
-            <span>Events near {location.city}{location.city && ', '}{location.displayName}</span>
+            <span>Events within {location.radius || 100}km of {location.city}</span>
             <Button 
               variant="ghost" 
               size="sm"

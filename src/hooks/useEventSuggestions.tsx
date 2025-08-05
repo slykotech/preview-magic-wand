@@ -58,24 +58,27 @@ export const useEventSuggestions = () => {
     }
 
     // Don't fetch if we already have recent data (unless forced)
-    if (!forceRefresh && lastFetched && Date.now() - lastFetched.getTime() < 5 * 60 * 1000) {
+    if (!forceRefresh && lastFetched && Date.now() - lastFetched.getTime() < 3 * 60 * 1000) {
       console.log('Skipping fetch - recent data available');
       return;
     }
 
     setIsLoading(true);
     try {
+      // Use location radius or default to 100km as requested
+      const searchRadius = location.radius || 100;
+      
       console.log('About to invoke fetch-events function with:', {
         latitude: location.latitude,
         longitude: location.longitude,
-        radius: 25
+        radius: searchRadius
       });
 
       const { data, error } = await supabase.functions.invoke('fetch-events', {
         body: {
           latitude: location.latitude,
           longitude: location.longitude,
-          radius: 25 // 25km radius
+          radius: searchRadius
         }
       });
 
@@ -92,40 +95,88 @@ export const useEventSuggestions = () => {
       setEvents(fetchedEvents);
       setLastFetched(new Date());
 
-      if (forceRefresh && fetchedEvents.length > 0) {
-        toast({
-          title: "Events loaded! 📍",
-          description: `Found ${fetchedEvents.length} events in your area`,
-        });
+      if (forceRefresh) {
+        if (fetchedEvents.length > 0) {
+          toast({
+            title: "Events loaded! 📍",
+            description: `Found ${fetchedEvents.length} events within ${searchRadius}km`,
+          });
+        } else {
+          toast({
+            title: "No events found 🔍",
+            description: `No events found within ${searchRadius}km. Try expanding your search area.`,
+          });
+        }
       }
 
     } catch (error) {
       console.error('Error fetching events:', error);
-      toast({
-        title: "Could not fetch events",
-        description: "We'll try to load cached events instead",
-        variant: "destructive"
-      });
-
-      // Fallback to cached events from database
+      
+      // Enhanced fallback strategy
       try {
-        console.log('Attempting fallback to cached events...');
+        console.log('Attempting enhanced fallback to cached events...');
+        
+        // Try to get events from broader area if specific location fails
         const { data: cachedEvents } = await supabase
           .from('events')
           .select('*')
           .gte('event_date', new Date().toISOString().split('T')[0])
           .order('event_date', { ascending: true })
-          .limit(20);
+          .limit(50);
 
-        console.log('Cached events:', cachedEvents?.length || 0);
-        setEvents(cachedEvents || []);
+        let fallbackEvents = cachedEvents || [];
+        
+        // If we have location, try to sort by distance
+        if (location.latitude && location.longitude && fallbackEvents.length > 0) {
+          fallbackEvents = fallbackEvents
+            .map(event => {
+              const distance = event.latitude && event.longitude 
+                ? calculateDistance(
+                    location.latitude, location.longitude,
+                    event.latitude, event.longitude
+                  )
+                : 999999;
+              return { ...event, distance };
+            })
+            .sort((a, b) => a.distance - b.distance)
+            .slice(0, 20);
+        }
+
+        console.log('Fallback events:', fallbackEvents?.length || 0);
+        setEvents(fallbackEvents);
+        
+        if (forceRefresh) {
+          toast({
+            title: "Showing cached events",
+            description: `Found ${fallbackEvents.length} events from cache`,
+          });
+        }
       } catch (cacheError) {
         console.error('Failed to load cached events:', cacheError);
+        if (forceRefresh) {
+          toast({
+            title: "Could not fetch events",
+            description: "Please check your internet connection and try again",
+            variant: "destructive"
+          });
+        }
       }
     } finally {
       setIsLoading(false);
     }
   }, [location, toast, lastFetched]);
+
+  // Helper function to calculate distance between two points
+  const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+    const R = 6371; // Earth's radius in kilometers
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLng/2) * Math.sin(dLng/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+  };
 
   const getEventsByCategory = useCallback((category?: string) => {
     if (!category) return events;
@@ -177,9 +228,14 @@ export const useEventSuggestions = () => {
     
     if (shouldFetch) {
       console.log('Location changed with valid coordinates, fetching events');
-      fetchEvents();
+      // Small delay to allow for any additional location updates
+      const timer = setTimeout(() => {
+        fetchEvents();
+      }, 500);
+      
+      return () => clearTimeout(timer);
     }
-  }, [location?.latitude, location?.longitude]); // Removed fetchEvents from dependencies to prevent infinite loop
+  }, [location?.latitude, location?.longitude, location?.radius]); // Added radius to dependencies
 
   // Reset events when location is cleared
   useEffect(() => {
