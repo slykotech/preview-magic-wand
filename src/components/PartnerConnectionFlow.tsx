@@ -40,7 +40,7 @@ export const PartnerConnectionFlow = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { coupleData, userProfile, partnerProfile, getPartnerDisplayName, loading } = useCoupleData();
+  const { coupleData, userProfile, partnerProfile, getPartnerDisplayName, refreshCoupleData, loading } = useCoupleData();
   
   const [email, setEmail] = useState("");
   const [emailStatus, setEmailStatus] = useState<EmailCheckStatus>('idle');
@@ -187,6 +187,9 @@ export const PartnerConnectionFlow = () => {
       }
 
       console.log('Successfully disconnected from partner');
+      
+      // Clear the couple data immediately
+      refreshCoupleData();
       
       toast({
         title: "Disconnected successfully",
