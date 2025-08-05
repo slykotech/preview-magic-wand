@@ -56,6 +56,13 @@ export const EventSuggestionsSection = ({ onEventSelect, className = "" }: Event
     setFilteredEvents(filtered);
   }, [events, selectedCategory, getEventsByCategory]);
 
+  // Fetch events when radius changes
+  useEffect(() => {
+    if (location?.latitude && location?.longitude) {
+      fetchEvents(false, selectedRadius);
+    }
+  }, [selectedRadius, location?.latitude, location?.longitude, fetchEvents]);
+
   const handleEventSave = async (event: EventSuggestion) => {
     await trackEventInteraction(event.id, 'saved');
     onEventSelect(event);
@@ -76,7 +83,7 @@ export const EventSuggestionsSection = ({ onEventSelect, className = "" }: Event
   };
 
   const refreshEvents = () => {
-    fetchEvents(true); // Force refresh
+    fetchEvents(true, selectedRadius); // Force refresh with current radius
   };
 
   if (!location) {

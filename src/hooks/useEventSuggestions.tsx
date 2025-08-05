@@ -29,8 +29,8 @@ export const useEventSuggestions = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [lastFetched, setLastFetched] = useState<Date | null>(null);
 
-  const fetchEvents = useCallback(async (forceRefresh = false) => {
-    console.log('fetchEvents called with location:', location, 'forceRefresh:', forceRefresh);
+  const fetchEvents = useCallback(async (forceRefresh = false, radius = 100) => {
+    console.log('fetchEvents called with location:', location, 'forceRefresh:', forceRefresh, 'radius:', radius);
     
     if (!location?.latitude || !location?.longitude) {
       console.log('No location available, cannot fetch events');
@@ -47,35 +47,39 @@ export const useEventSuggestions = () => {
 
     // Don't fetch if we already have recent data (unless forced)
     if (!forceRefresh && lastFetched && Date.now() - lastFetched.getTime() < 5 * 60 * 1000) {
+      console.log('Skipping fetch - recent data available');
       return;
     }
 
     setIsLoading(true);
     try {
-      console.log('Fetching events for location:', location);
+      console.log(`Fetching events for location: ${location.displayName} (${location.latitude}, ${location.longitude}) within ${radius}km`);
 
       const { data, error } = await supabase.functions.invoke('fetch-events', {
         body: {
           latitude: location.latitude,
           longitude: location.longitude,
-          radius: 25 // 25km radius
+          radius: radius // Use provided radius
         }
       });
 
       if (error) {
+        console.error('Supabase function error:', error);
         throw error;
       }
 
+      console.log('Fetch events response:', data);
       const fetchedEvents = data?.events || [];
       setEvents(fetchedEvents);
       setLastFetched(new Date());
 
-      if (data?.newEvents > 0) {
+      // Show appropriate success message
+      if (forceRefresh) {
         toast({
-          title: "Events updated! 🎉",
-          description: `Found ${data.newEvents} new events near you`,
+          title: "Events refreshed! 🎉",
+          description: `Found ${fetchedEvents.length} events within ${radius}km of ${location.displayName}`,
         });
-      } else if (data?.cached) {
+      } else if (fetchedEvents.length > 0) {
         toast({
           title: "Events loaded 📍",
           description: `Found ${fetchedEvents.length} events in your area`,
@@ -84,24 +88,67 @@ export const useEventSuggestions = () => {
 
     } catch (error) {
       console.error('Error fetching events:', error);
+      
+      // More specific error handling
+      const errorMessage = error.message || 'Unknown error occurred';
+      console.error('Detailed error:', errorMessage);
+      
       toast({
         title: "Could not fetch events",
-        description: "We'll try to load cached events instead",
+        description: `Error: ${errorMessage}. Trying cached events...`,
         variant: "destructive"
       });
 
-      // Fallback to cached events from database
+      // Fallback to cached events from database with location filtering
       try {
-        const { data: cachedEvents } = await supabase
+        console.log('Attempting to load cached events from database...');
+        const { data: cachedEvents, error: cacheError } = await supabase
           .from('events')
           .select('*')
           .gte('event_date', new Date().toISOString().split('T')[0])
+          .not('latitude', 'is', null)
+          .not('longitude', 'is', null)
           .order('event_date', { ascending: true })
-          .limit(20);
+          .limit(100);
 
-        setEvents(cachedEvents || []);
+        if (cacheError) {
+          console.error('Cache error:', cacheError);
+          throw cacheError;
+        }
+
+        // Filter cached events by distance
+        const filteredCachedEvents = (cachedEvents || []).filter(event => {
+          if (!event.latitude || !event.longitude) return false;
+          
+          // Calculate distance using Haversine formula
+          const R = 6371; // Earth's radius in kilometers
+          const dLat = (event.latitude - location.latitude) * Math.PI / 180;
+          const dLng = (event.longitude - location.longitude) * Math.PI / 180;
+          const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                    Math.cos(location.latitude * Math.PI / 180) * Math.cos(event.latitude * Math.PI / 180) *
+                    Math.sin(dLng/2) * Math.sin(dLng/2);
+          const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+          const distance = R * c;
+          
+          return distance <= radius;
+        });
+
+        console.log(`Loaded ${filteredCachedEvents.length} cached events within ${radius}km`);
+        setEvents(filteredCachedEvents);
+        
+        if (filteredCachedEvents.length > 0) {
+          toast({
+            title: "Cached events loaded",
+            description: `Found ${filteredCachedEvents.length} cached events in your area`,
+          });
+        }
       } catch (cacheError) {
         console.error('Failed to load cached events:', cacheError);
+        toast({
+          title: "No events available",
+          description: "Unable to load events. Please check your connection and try again.",
+          variant: "destructive"
+        });
       }
     } finally {
       setIsLoading(false);
