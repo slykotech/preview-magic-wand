@@ -98,41 +98,21 @@ serve(async (req) => {
         }
 
         // Check if partner user exists by looking up their profile
-        const { data: partnerUserAuth, error: getUserError } = await supabaseAdmin.auth.admin.getUserByEmail(email);
-        const partnerUser = partnerUserAuth.user;
+        console.log('Looking up user by email:', email);
         
-        let partnerProfile = null;
-        if (partnerUser) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('user_id', partnerUser.id)
-            .maybeSingle();
-          partnerProfile = profile;
+        // Simple email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+          return new Response(JSON.stringify({
+            success: false,
+            error: 'Invalid email format'
+          }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
         }
 
-        console.log('Partner user found:', !!partnerUser, 'for email:', email);
-
-        // Check if partner already has a connection
-        if (partnerUser) {
-          const { data: partnerCouples } = await supabase
-            .from('couples')
-            .select('*')
-            .or(`user1_id.eq.${partnerUser.id},user2_id.eq.${partnerUser.id}`);
-
-          // Filter out demo connections (where user1_id === user2_id)
-          const realPartnership = partnerCouples?.find(c => c.user1_id !== c.user2_id);
-
-          if (realPartnership) {
-            return new Response(JSON.stringify({
-              success: false,
-              error: 'This user already has a partner'
-            }), {
-              status: 400,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
-          }
-        }
+        console.log('Email format is valid, proceeding with request creation');
 
         // Create partner request
         const { data: partnerRequest, error: requestError } = await supabase
@@ -140,7 +120,7 @@ serve(async (req) => {
           .insert({
             requester_id: user.id,
             requested_email: email,
-            requested_user_id: partnerUser?.id || null,
+            requested_user_id: null, // We don't know the user ID yet
             status: 'pending'
           })
           .select()
@@ -155,12 +135,12 @@ serve(async (req) => {
 
         // Send email invitation
         console.log('Sending invite email to', email);
-        await sendInvitationEmail(email, user, partnerUser ? 'connect' : 'invite');
+        await sendInvitationEmail(email, user, 'invite'); // Always treat as invite since we don't check user existence
         console.log('Invitation email sent successfully');
 
         return new Response(JSON.stringify({
           success: true,
-          message: partnerUser ? 'Connection request sent!' : 'Invitation sent!',
+          message: 'Invitation sent!',
           request_id: partnerRequest.id
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
