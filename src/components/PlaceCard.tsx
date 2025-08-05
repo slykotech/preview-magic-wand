@@ -58,38 +58,21 @@ export const PlaceCard: React.FC<PlaceCardProps> = ({ place, onAddToDatePlan }) 
     return `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${photoReference}&key=${import.meta.env.VITE_GOOGLE_PLACES_API_KEY}`;
   };
 
+  const handleGetDirections = () => {
+    const address = encodeURIComponent(place.address || place.name);
+    const url = `https://www.google.com/maps/search/?api=1&query=${address}`;
+    window.open(url, '_blank');
+  };
+
   return (
     <Card className="hover:shadow-lg transition-shadow duration-200">
-      <CardHeader className="pb-2">
-        <div className="flex justify-between items-start">
-          <CardTitle className="text-lg line-clamp-1">{place.name}</CardTitle>
-          <Button
-            onClick={() => onAddToDatePlan(place)}
-            size="sm"
-            className="ml-2 shrink-0"
-          >
-            <Plus className="h-4 w-4 mr-1" />
-            Add
-          </Button>
+      <CardContent className="p-4 space-y-3">
+        {/* Title */}
+        <div>
+          <CardTitle className="text-lg font-semibold line-clamp-2">{place.name}</CardTitle>
         </div>
-      </CardHeader>
-      
-      <CardContent className="space-y-3">
-        {/* Image */}
-        {place.photoReference && (
-          <div className="w-full h-32 rounded-md overflow-hidden bg-muted">
-            <img
-              src={getPhotoUrl(place.photoReference)}
-              alt={place.name}
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                e.currentTarget.src = '/placeholder.svg';
-              }}
-            />
-          </div>
-        )}
 
-        {/* Address and Distance */}
+        {/* Location */}
         <div className="flex items-start gap-2 text-sm text-muted-foreground">
           <MapPin className="h-4 w-4 mt-0.5 shrink-0" />
           <div>
@@ -98,37 +81,33 @@ export const PlaceCard: React.FC<PlaceCardProps> = ({ place, onAddToDatePlan }) 
           </div>
         </div>
 
-        {/* Rating and Price */}
-        <div className="flex items-center gap-4 text-sm">
-          {place.rating > 0 && (
-            <div className="flex items-center gap-1">
-              <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-              <span className="font-medium">{place.rating}</span>
-            </div>
-          )}
-          
-          {place.priceLevel && (
-            <div className="flex items-center gap-1">
-              <DollarSign className="h-4 w-4 text-green-600" />
-              <span className="font-medium">{getPriceLevelText(place.priceLevel)}</span>
-            </div>
-          )}
+        {/* Rating */}
+        {place.rating > 0 && (
+          <div className="flex items-center gap-1">
+            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+            <span className="font-medium">{place.rating} rating</span>
+          </div>
+        )}
 
-          {place.isOpen !== undefined && (
-            <div className="flex items-center gap-1">
-              <Clock className="h-4 w-4" />
-              <span className={`text-sm font-medium ${place.isOpen ? 'text-green-600' : 'text-red-600'}`}>
-                {place.isOpen ? 'Open' : 'Closed'}
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* Category Badge */}
-        <div>
-          <Badge variant="secondary">
-            {getCategoryFromTypes(place.types)}
-          </Badge>
+        {/* Action Buttons */}
+        <div className="flex gap-2 pt-2">
+          <Button
+            onClick={handleGetDirections}
+            variant="outline"
+            size="sm"
+            className="flex-1"
+          >
+            <MapPin className="h-4 w-4 mr-1" />
+            Get Directions
+          </Button>
+          <Button
+            onClick={() => onAddToDatePlan(place)}
+            size="sm"
+            className="flex-1"
+          >
+            <Plus className="h-4 w-4 mr-1" />
+            Add to Dates
+          </Button>
         </div>
       </CardContent>
     </Card>
