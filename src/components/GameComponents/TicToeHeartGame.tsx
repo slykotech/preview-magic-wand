@@ -370,12 +370,17 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
         newStatus = 'draw';
       }
 
+      // Determine next player - switch turns if game is still playing
+      const nextPlayerId = newStatus === 'playing' ? partnerId : gameState.current_player_id;
+      
       console.log('🎮 Updating database with:', {
         board: newBoard,
-        current_player_id: newStatus === 'playing' ? partnerId : gameState.current_player_id,
+        current_player_id: nextPlayerId,
         game_status: newStatus,
         winner_id: winnerId,
-        moves_count: gameState.moves_count + 1
+        moves_count: gameState.moves_count + 1,
+        current_user: user?.id,
+        partner: partnerId
       });
 
       // Update game state in database with optimistic locking
@@ -383,7 +388,7 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
         .from('tic_toe_heart_games')
         .update({
           board: newBoard,
-          current_player_id: newStatus === 'playing' ? partnerId : gameState.current_player_id,
+          current_player_id: nextPlayerId,
           game_status: newStatus,
           winner_id: winnerId,
           moves_count: gameState.moves_count + 1,
