@@ -59,6 +59,9 @@ const DATE_APPROPRIATE_TYPES = [
   // Cultural & Romantic - Perfect for memorable dates
   'tourist_attraction', 'museum', 'art_gallery', 'historical_landmark', 'monument',
   
+  // Historical & Heritage - Important historical places
+  'establishment', 'point_of_interest', 'premise', 'subpremise',
+  
   // Nature & Peaceful - Romantic settings
   'park', 'zoo', 'aquarium', 'botanical_garden', 'lake',
   
