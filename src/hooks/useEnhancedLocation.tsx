@@ -130,21 +130,11 @@ export const useEnhancedLocation = () => {
             description: `Using ${enhancedLocation.displayName}`,
           });
         } else {
-          // Fallback with basic data
-          const fallbackLocation: EnhancedLocationData = {
-            latitude: 0,
-            longitude: 0,
-            city: cityName,
-            country: country || '',
-            displayName: country ? `${cityName}, ${country}` : cityName,
-            searchRadius: 100
-          };
-          
-          setLocation(fallbackLocation);
-          
+          // No results found
           toast({
-            title: "Location set! 📍", 
-            description: `Using ${fallbackLocation.displayName} (manual search)`,
+            title: "Location not found",
+            description: "Could not find this location. Please try a more specific city name.",
+            variant: "destructive"
           });
         }
       } else {
@@ -153,22 +143,13 @@ export const useEnhancedLocation = () => {
     } catch (error) {
       console.error('Manual location error:', error);
       
-      // Fallback location
-      const fallbackLocation: EnhancedLocationData = {
-        latitude: 0,
-        longitude: 0,
-        city: cityName,
-        country: country || '',
-        displayName: country ? `${cityName}, ${country}` : cityName,
-        searchRadius: 100
-      };
-      
-      setLocation(fallbackLocation);
-      
+      // Show error and don't set location with invalid coordinates
       toast({
-        title: "Location set! 📍",
-        description: `Using ${fallbackLocation.displayName} (manual)`,
+        title: "Location error",
+        description: "Could not find coordinates for this location. Please try a different city name.",
+        variant: "destructive"
       });
+      return;
     } finally {
       setIsGettingLocation(false);
     }
