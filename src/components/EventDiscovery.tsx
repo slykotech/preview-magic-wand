@@ -106,11 +106,8 @@ export const EventDiscovery: React.FC<EventDiscoveryProps> = ({
     }
   }, [location, toast]);
 
-  const handleLocationSet = useCallback((locationData: any) => {
-    setManualLocation(
-      locationData.city,
-      locationData.coordinates
-    );
+  const handleLocationSet = useCallback((cityName: string, coordinates: {lat: number, lng: number, displayName: string}) => {
+    setManualLocation(cityName, coordinates);
   }, [setManualLocation]);
 
   const handleSaveEvent = useCallback(async (event: Event) => {
