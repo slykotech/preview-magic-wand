@@ -31,11 +31,14 @@ export const useEventSuggestions = () => {
 
   const fetchEvents = useCallback(async (forceRefresh = false) => {
     if (!location?.latitude || !location?.longitude) {
-      toast({
-        title: "Location needed",
-        description: "Please set your location to discover events nearby",
-        variant: "destructive"
-      });
+      // Don't show error toast for auto-fetch attempts, only for manual refresh
+      if (forceRefresh) {
+        toast({
+          title: "Location needed",
+          description: "Please set your location to discover events nearby",
+          variant: "destructive"
+        });
+      }
       return;
     }
 
