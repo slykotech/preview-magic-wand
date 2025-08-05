@@ -126,19 +126,19 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
 
   // Real-time subscription for game updates with improved sync
   useEffect(() => {
-    if (!gameState?.id) return;
+    if (!sessionId || !user?.id) return;
 
-    console.log('🎮 Setting up real-time subscription for game:', gameState.id);
+    console.log('🎮 Setting up real-time subscription for session:', sessionId);
 
     const channel = supabase
-      .channel(`tic-toe-game-${gameState.id}`)
+      .channel(`tic-toe-session-${sessionId}`)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
           table: 'tic_toe_heart_games',
-          filter: `id=eq.${gameState.id}`
+          filter: `session_id=eq.${sessionId}`
         },
         (payload) => {
           console.log('🎮 Real-time game update received:', payload);
@@ -156,7 +156,13 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
             console.log('🎮 Current user ID:', user?.id);
             console.log('🎮 Is user turn?:', newGameState.current_player_id === user?.id);
             
-            setGameState(newGameState);
+            // Only update if this is actually a newer state
+            setGameState(prevState => {
+              if (!prevState || newGameState.moves_count >= prevState.moves_count) {
+                return newGameState;
+              }
+              return prevState;
+            });
             
             // Update playful message based on new turn
             const isUserTurn = newGameState.current_player_id === user?.id;
@@ -165,9 +171,9 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
             setPlayfulMessage(getPlayfulMessage(isUserTurn, currentPlayerName || 'Player', currentSymbol));
             
             // Check for game end
-            if (payload.new.game_status !== 'playing') {
+            if (newGameState.game_status !== 'playing') {
               setShowCelebration(true);
-              if (payload.new.winner_id === user?.id) {
+              if (newGameState.winner_id === user?.id) {
                 setTimeout(() => setShowLoveGrant(true), 2000);
               }
             }
@@ -182,7 +188,7 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
       console.log('🎮 Cleaning up real-time subscription');
       supabase.removeChannel(channel);
     };
-  }, [gameState?.id, user?.id]);
+  }, [sessionId, user?.id]);
 
   // Update playful message when turn changes
   useEffect(() => {
