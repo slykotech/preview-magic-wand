@@ -11,6 +11,18 @@ import { usePresence } from '@/hooks/usePresence';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
+// Enhanced move interface for tracking
+interface GameMove {
+  id: string;
+  game_id: string;
+  player_id: string;
+  position_row: number;
+  position_col: number;
+  symbol: CellValue;
+  move_number: number;
+  created_at: string;
+}
+
 type CellValue = '💖' | '💘' | null;
 type Board = CellValue[][];
 type GameStatus = 'playing' | 'won' | 'draw' | 'abandoned';
@@ -84,6 +96,8 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
   const [loveGrants, setLoveGrants] = useState<LoveGrant[]>([]);
   const [playfulMessage, setPlayfulMessage] = useState('');
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
+  const [moveHistory, setMoveHistory] = useState<GameMove[]>([]);
+  const [isProcessingMove, setIsProcessingMove] = useState(false);
 
   // Determine partner ID
   const partnerId = coupleData?.user1_id === user?.id ? coupleData?.user2_id : coupleData?.user1_id;
@@ -420,11 +434,34 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
 
       // Load love grants history
       await loadLoveGrants();
+      
+      // Load move history
+      await loadMoveHistory();
     } catch (error) {
       console.error('❌ Error initializing game:', error);
       toast.error('Failed to initialize game');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadMoveHistory = async () => {
+    try {
+      if (!gameState?.id) return;
+      
+      const { data: moves, error } = await supabase
+        .from('tic_toe_moves')
+        .select('*')
+        .eq('game_id', gameState.id)
+        .order('move_number', { ascending: true });
+
+      if (error) throw error;
+      setMoveHistory((moves || []).map(move => ({
+        ...move,
+        symbol: move.symbol as CellValue
+      })));
+    } catch (error) {
+      console.error('❌ Error loading move history:', error);
     }
   };
 
@@ -515,142 +552,81 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
   };
 
   const handleCellClick = async (row: number, col: number) => {
+    if (isProcessingMove) {
+      console.log('❌ Move already in progress');
+      return;
+    }
+
     console.group('🎮 Making Move');
     console.log('Player:', user?.id);
     console.log('Current Turn:', gameState?.current_player_id);
     console.log('Position:', { row, col });
     console.log('Session ID:', sessionId);
-    console.log('Game State:', gameState ? {
-      id: gameState.id,
-      current_player_id: gameState.current_player_id,
-      moves_count: gameState.moves_count,
-      game_status: gameState.game_status
-    } : null);
-    console.log('User ID:', user?.id);
-    console.log('Is User Turn:', gameState?.current_player_id === user?.id);
-    console.log('Cell Value:', gameState?.board[row]?.[col]);
 
     if (!gameState || !user?.id) {
       console.error('❌ No game state or user ID');
       toast.error("Game not ready!");
+      console.groupEnd();
       return;
     }
 
     if (gameState.current_player_id !== user.id) {
       console.log('❌ Not user turn - Current player:', gameState.current_player_id, 'User:', user.id);
       toast.error("🚫 It's not your turn!");
+      console.groupEnd();
       return;
     }
 
     if (gameState.board[row][col] !== null) {
       console.log('❌ Cell already occupied:', gameState.board[row][col]);
+      toast.error("Cell already taken!");
+      console.groupEnd();
       return;
     }
 
     if (gameState.game_status !== 'playing') {
       console.log('❌ Game not in playing state:', gameState.game_status);
+      console.groupEnd();
       return;
     }
 
     try {
+      setIsProcessingMove(true);
       console.log('🎮 ✅ Making valid move at:', row, col);
-      console.log('🎮 Current board state:', JSON.stringify(gameState.board));
-      
-      // Create new board with the move
-      const newBoard = gameState.board.map((r, rowIndex) =>
-        r.map((c, colIndex) => 
-          rowIndex === row && colIndex === col ? userSymbol : c
-        )
-      );
 
-      console.log('🎮 New board after move:', JSON.stringify(newBoard));
-
-      // Check for winner
-      const winner = checkWinner(newBoard);
-      const isFull = isBoardFull(newBoard);
-      
-      let newStatus: GameStatus = 'playing';
-      let winnerId: string | null = null;
-
-      if (winner) {
-        newStatus = 'won';
-        winnerId = winner;
-        console.log('🎮 🏆 Winner detected:', winner);
-      } else if (isFull) {
-        newStatus = 'draw';
-        console.log('🎮 🤝 Draw detected');
-      }
-
-      // Determine next player - switch turns if game is still playing
-      const nextPlayerId = newStatus === 'playing' ? partnerId : gameState.current_player_id;
-      
-      const updateData = {
-        board: newBoard,
-        current_player_id: nextPlayerId,
-        game_status: newStatus,
-        winner_id: winnerId,
-        moves_count: gameState.moves_count + 1,
-        last_move_at: new Date().toISOString()
-      };
-
-      console.log('🎮 📤 Sending database update:', {
-        ...updateData,
-        gameId: gameState.id,
-        currentMovesCount: gameState.moves_count,
-        userSymbol,
-        partnerSymbol
-      });
-
-      // Update game state in database with optimistic locking
-      const { data, error } = await supabase
-        .from('tic_toe_heart_games')
-        .update(updateData)
-        .eq('id', gameState.id)
-        .eq('moves_count', gameState.moves_count) // Optimistic locking
-        .select()
-        .single();
-
-      if (error) {
-        console.error('❌ Database update error:', error);
-        console.error('❌ Error details:', {
-          code: error.code,
-          message: error.message,
-          details: error.details,
-          hint: error.hint
-        });
-        
-        if (error.code === 'PGRST116') {
-          console.log('🔄 Optimistic lock conflict - refreshing game state');
-          toast.error('🔄 Move conflict! Game refreshed.');
-          // Refresh game state
-          await initializeGame();
-          return;
+      // Use enhanced server-side validation
+      const response = await supabase.functions.invoke('validate-tic-toe-move', {
+        body: {
+          sessionId,
+          playerId: user.id,
+          row,
+          col,
+          symbol: userSymbol
         }
-        throw error;
-      }
-
-      if (!data) {
-        console.error('❌ No data returned from database update');
-        toast.error('Failed to update game');
-        return;
-      }
-
-      console.log('✅ Database update successful:', {
-        id: data.id,
-        moves_count: data.moves_count,
-        current_player_id: data.current_player_id,
-        board: JSON.stringify(data.board)
       });
-      
-      toast.success('💝 Move made!');
-      
-      // Don't update local state here - let real-time subscription handle it
-      console.log('🎮 Waiting for real-time update to reflect changes...');
-      
+
+      if (response.error) {
+        throw new Error(response.error.message || 'Failed to validate move');
+      }
+
+      const { data } = response;
+      if (!data.success) {
+        throw new Error(data.error || 'Move validation failed');
+      }
+
+      console.log('🎮 ✅ Move validated and processed:', data);
+      console.log('Move completed');
+      console.groupEnd();
+
+      // Real-time subscription will handle UI updates
+      toast.success("Move made successfully!");
+
     } catch (error) {
       console.error('❌ Error making move:', error);
-      console.error('❌ Full error object:', JSON.stringify(error, null, 2));
-      toast.error('Failed to make move: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      toast.error(`Failed to make move: ${error.message}`);
+      console.groupEnd();
+    } finally {
+      setIsProcessingMove(false);
     }
   };
 

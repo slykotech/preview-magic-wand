@@ -1718,6 +1718,47 @@ export type Database = {
           },
         ]
       }
+      tic_toe_moves: {
+        Row: {
+          created_at: string
+          game_id: string
+          id: string
+          move_number: number
+          player_id: string
+          position_col: number
+          position_row: number
+          symbol: string
+        }
+        Insert: {
+          created_at?: string
+          game_id: string
+          id?: string
+          move_number: number
+          player_id: string
+          position_col: number
+          position_row: number
+          symbol: string
+        }
+        Update: {
+          created_at?: string
+          game_id?: string
+          id?: string
+          move_number?: number
+          player_id?: string
+          position_col?: number
+          position_row?: number
+          symbol?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tic_toe_moves_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "tic_toe_heart_games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_api_quotas: {
         Row: {
           created_at: string | null
