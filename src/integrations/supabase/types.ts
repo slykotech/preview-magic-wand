@@ -2121,6 +2121,13 @@ export type Database = {
               category_filter?: string
             }
           | {
+              search_lat: number
+              search_lng: number
+              radius_km?: number
+              category_filter?: string
+              city_name?: string
+            }
+          | {
               user_lat: number
               user_lng: number
               radius_km?: number

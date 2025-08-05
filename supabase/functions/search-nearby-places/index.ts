@@ -10,6 +10,7 @@ interface PlaceSearchParams {
   latitude: number;
   longitude: number;
   category?: string;
+  cityName?: string;
 }
 
 interface GooglePlace {
@@ -37,15 +38,22 @@ interface GooglePlace {
   website?: string;
 }
 
-// Comprehensive place types for cultural and historical places
+// Enhanced place types focused on date-appropriate venues
 const PLACE_TYPES = {
   'Cultural & Historical': ['tourist_attraction', 'museum', 'art_gallery', 'cultural_center'],
   'Religious & Spiritual': ['church', 'hindu_temple', 'mosque', 'synagogue', 'temple', 'place_of_worship'],
-  'Entertainment': ['movie_theater', 'amusement_park', 'bowling_alley', 'casino', 'night_club'],
+  'Entertainment': ['movie_theater', 'amusement_park', 'bowling_alley', 'night_club'],
   'Dining & Social': ['restaurant', 'cafe', 'bar', 'brewery'],
   'Nature & Outdoor': ['park', 'zoo', 'aquarium', 'botanical_garden'],
   'Shopping & Markets': ['shopping_mall', 'market', 'bookstore', 'jewelry_store']
 };
+
+// Date-appropriate place types
+const DATE_APPROPRIATE_TYPES = [
+  'restaurant', 'cafe', 'bar', 'brewery', 'movie_theater', 'amusement_park',
+  'park', 'zoo', 'aquarium', 'botanical_garden', 'tourist_attraction',
+  'museum', 'art_gallery', 'shopping_mall', 'spa', 'bowling_alley'
+];
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -69,7 +77,7 @@ serve(async (req) => {
       });
     }
 
-    const { latitude, longitude, category }: PlaceSearchParams = await req.json();
+    const { latitude, longitude, category, cityName }: PlaceSearchParams = await req.json();
 
     if (!latitude || !longitude) {
       return new Response(JSON.stringify({ 
@@ -83,32 +91,35 @@ serve(async (req) => {
 
     console.log(`Searching for places near ${latitude}, ${longitude} with 100km radius`);
 
-    // First, check database for existing places in the area
+    // First, check database for existing places in the area with city filtering
     const { data: existingPlaces, error: dbError } = await supabase.rpc('find_nearby_places', {
       search_lat: latitude,
       search_lng: longitude,
-      radius_km: 100,
-      category_filter: category || null
+      radius_km: 50,
+      category_filter: category || null,
+      city_name: cityName || null
     });
 
     if (dbError) {
       console.error('Database query error:', dbError);
     }
 
-    // Verify distances for database results to ensure they're actually nearby
     let validPlaces = [];
     if (existingPlaces && existingPlaces.length > 0) {
       validPlaces = existingPlaces.filter((place: any) => {
         const actualDistance = calculateDistance(latitude, longitude, place.latitude, place.longitude);
-        return actualDistance <= 100;
+        return actualDistance <= 50; // Reduced to 50km for more relevant results
       });
       
-      console.log(`Found ${existingPlaces.length} places from database, ${validPlaces.length} are valid`);
+      console.log(`Found ${existingPlaces.length} places from database, ${validPlaces.length} are valid for ${cityName || 'this location'}`);
     }
 
-    // If we have enough valid places from database, return them
-    if (validPlaces && validPlaces.length >= 10) {
-      console.log(`Returning ${validPlaces.length} places from database`);
+    // If we have enough valid places from database AND they're from the right city, return them
+    if (validPlaces && validPlaces.length >= 10 && (!cityName || validPlaces.some((p: any) => 
+      p.location_context?.city?.toLowerCase().includes(cityName.toLowerCase()) ||
+      p.address?.toLowerCase().includes(cityName.toLowerCase())
+    ))) {
+      console.log(`Returning ${validPlaces.length} places from database for ${cityName || 'this location'}`);
       return new Response(JSON.stringify({ 
         success: true,
         places: validPlaces.map((place: any) => ({
@@ -131,13 +142,13 @@ serve(async (req) => {
       });
     }
 
-    // If not enough places in database, fetch from Google Places API
-    console.log('Fetching from Google Places API...');
+    // If not enough places in database or wrong city, fetch from Google Places API
+    console.log(`Fetching from Google Places API for ${cityName || 'this location'}...`);
     
-    // Get place types for the category
+    // Get place types for the category, filtered for date-appropriate venues
     const placeTypes = category && PLACE_TYPES[category as keyof typeof PLACE_TYPES] 
       ? PLACE_TYPES[category as keyof typeof PLACE_TYPES] 
-      : ['tourist_attraction', 'museum', 'restaurant', 'park', 'shopping_mall'];
+      : DATE_APPROPRIATE_TYPES.slice(0, 5); // Limit to first 5 for API efficiency
 
     const allPlaces: any[] = [];
 
@@ -146,7 +157,7 @@ serve(async (req) => {
       const params = new URLSearchParams({
         key: apiKey,
         location: `${latitude},${longitude}`,
-        radius: '100000', // 100km fixed radius
+        radius: '50000', // 50km for more focused results
         type: placeType
       });
 
@@ -158,7 +169,17 @@ serve(async (req) => {
         
         if (data.status === 'OK' && data.results) {
           for (const place of data.results) {
-            // Store place in database
+            // Extract city information from place details
+            let cityInfo = '';
+            let regionInfo = '';
+            
+            if (place.vicinity) {
+              const locationParts = place.vicinity.split(',').map((s: string) => s.trim());
+              cityInfo = locationParts[locationParts.length - 1] || '';
+              regionInfo = locationParts.length > 1 ? locationParts[locationParts.length - 2] : '';
+            }
+
+            // Store place in database with location context
             await supabase.from('places').upsert({
               google_place_id: place.place_id,
               name: place.name,
@@ -173,12 +194,19 @@ serve(async (req) => {
               website: place.website,
               opening_hours: place.opening_hours ? { open_now: place.opening_hours.open_now } : null,
               is_open: place.opening_hours?.open_now,
+              location_context: {
+                city: cityInfo || cityName,
+                region: regionInfo,
+                search_city: cityName,
+                coordinates: { lat: latitude, lng: longitude }
+              },
               google_data: place,
               last_updated: new Date().toISOString()
             }, { onConflict: 'google_place_id' });
 
-            // Add to results if meets criteria
-            if (place.name && (place.rating || 0) >= 3.0) {
+            // Add to results if meets criteria and is date-appropriate
+            if (place.name && (place.rating || 0) >= 3.0 && 
+                place.types.some((type: string) => DATE_APPROPRIATE_TYPES.includes(type))) {
               allPlaces.push({
                 id: place.place_id,
                 name: place.name,

@@ -89,7 +89,8 @@ export const SweetSuggestions: React.FC<SweetSuggestionsProps> = ({
         body: {
           latitude: location.latitude,
           longitude: location.longitude,
-          category: selectedCategory === 'all' ? undefined : selectedCategory
+          category: selectedCategory === 'all' ? undefined : selectedCategory,
+          cityName: location.city || extractCityFromDisplayName(location.displayName)
         }
       });
       if (error) throw error;
@@ -114,7 +115,15 @@ export const SweetSuggestions: React.FC<SweetSuggestionsProps> = ({
       setLoading(false);
     }
   };
+  
+  const extractCityFromDisplayName = (displayName: string): string => {
+    // Extract city name from display name (e.g., "Chennai, Tamil Nadu, India" -> "Chennai")
+    return displayName.split(',')[0].trim();
+  };
+  
   const handleLocationSet = (locationData: any) => {
+    // Clear existing places when location changes
+    setPlaces([]);
     setManualLocation(locationData.name, {
       lat: locationData.lat,
       lng: locationData.lng,
