@@ -73,7 +73,7 @@ verify_jwt = false
 [functions.event-scraper-master]
 verify_jwt = false
 
-[functions.scrape-india-events]
+[functions.trigger-india-scraper]
 verify_jwt = false
 
 [auth]
