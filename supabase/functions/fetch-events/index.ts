@@ -115,31 +115,51 @@ async function fetchGooglePlacesEvents(lat: number, lng: number, radius: number)
 }
 
 // Mock event generators for development
-function generateMockEvents(lat: number, lng: number, count: number = 10) {
+function generateMockEvents(lat: number, lng: number, count: number = 15) {
+  console.log(`Generating ${count} enhanced mock events for coordinates: ${lat}, ${lng}`);
+  
+  const eventData = [
+    { title: 'Wine & Paint Date Night', category: 'romantic', price: '$65-$95', time: '19:00', venue: 'Art Studio Downtown' },
+    { title: 'Jazz & Cocktails Evening', category: 'music', price: '$35-$55', time: '20:00', venue: 'Blue Note Lounge' },
+    { title: 'Couples Cooking Class', category: 'food', price: '$120-$150', time: '18:30', venue: 'Culinary Institute' },
+    { title: 'Sunset Harbor Cruise', category: 'romantic', price: '$85-$120', time: '17:30', venue: 'Marina Pier' },
+    { title: 'Comedy Night for Two', category: 'entertainment', price: '$25-$45', time: '21:00', venue: 'Laugh Track Club' },
+    { title: 'Art Gallery Opening', category: 'cultural', price: 'Free-$15', time: '18:00', venue: 'Modern Art Gallery' },
+    { title: 'Live Acoustic Sessions', category: 'music', price: '$20-$35', time: '19:30', venue: 'Coffee House Stage' },
+    { title: 'Food Truck Festival', category: 'food', price: '$15-$30', time: '17:00', venue: 'Central Park' },
+    { title: 'Stargazing & Wine', category: 'romantic', price: '$40-$70', time: '20:30', venue: 'Observatory Hill' },
+    { title: 'Local Theater Show', category: 'cultural', price: '$30-$65', time: '19:00', venue: 'Historic Playhouse' },
+    { title: 'Salsa Dancing Class', category: 'entertainment', price: '$25-$40', time: '20:00', venue: 'Dance Studio' },
+    { title: 'Craft Beer Tasting', category: 'food', price: '$35-$60', time: '18:00', venue: 'Local Brewery' },
+    { title: 'Poetry & Music Night', category: 'cultural', price: '$10-$20', time: '19:30', venue: 'Literary Cafe' },
+    { title: 'Rooftop Movie Night', category: 'entertainment', price: '$15-$25', time: '20:00', venue: 'Sky Lounge' },
+    { title: 'Weekend Farmers Market', category: 'food', price: 'Free-$20', time: '09:00', venue: 'Town Square' }
+  ];
+  
   const events = [];
-  const categories = ['entertainment', 'music', 'food', 'sports', 'cultural', 'romantic'];
-  const eventTypes = ['Concert', 'Comedy Show', 'Art Exhibition', 'Food Festival', 'Sports Event', 'Theatre'];
+  const today = new Date();
   
   for (let i = 0; i < count; i++) {
-    const futureDate = new Date();
-    futureDate.setDate(futureDate.getDate() + Math.floor(Math.random() * 30) + 1);
+    const eventInfo = eventData[i % eventData.length];
+    // Generate events 1-14 days in the future
+    const futureDate = new Date(today.getTime() + (Math.random() * 14 + 1) * 24 * 60 * 60 * 1000);
     
     events.push({
-      title: `${eventTypes[Math.floor(Math.random() * eventTypes.length)]} ${i + 1}`,
-      description: `Exciting ${eventTypes[Math.floor(Math.random() * eventTypes.length)].toLowerCase()} in your area`,
+      title: eventInfo.title,
+      description: `Join us for an unforgettable ${eventInfo.title.toLowerCase()} experience. Perfect for couples looking to create lasting memories together.`,
       event_date: futureDate.toISOString().split('T')[0],
-      event_time: `${Math.floor(Math.random() * 12) + 8}:00:00`,
-      location_name: `Venue ${i + 1}`,
-      location_address: `${Math.floor(Math.random() * 999) + 1} Main St`,
-      latitude: lat + (Math.random() - 0.5) * 0.1,
-      longitude: lng + (Math.random() - 0.5) * 0.1,
-      category: categories[Math.floor(Math.random() * categories.length)],
-      price_range: Math.random() > 0.3 ? `$${(Math.random() * 50 + 10).toFixed(0)}` : 'Free',
-      organizer: `Organizer ${i + 1}`,
-      source_url: '',
-      source_platform: 'mock_data',
+      event_time: eventInfo.time + ':00',
+      location_name: eventInfo.venue,
+      location_address: `${Math.floor(Math.random() * 999) + 1} ${['Main St', 'Broadway', 'Park Ave', 'Oak St', 'River Rd'][Math.floor(Math.random() * 5)]}`,
+      latitude: lat + (Math.random() - 0.5) * 0.05, // Within ~2.5km radius
+      longitude: lng + (Math.random() - 0.5) * 0.05,
+      category: eventInfo.category,
+      price_range: eventInfo.price,
+      organizer: ['City Events Co', 'Local Arts Society', 'Community Partners', 'Entertainment Plus'][Math.floor(Math.random() * 4)],
+      source_url: `https://example.com/event-${Date.now()}-${i}`,
+      source_platform: 'enhanced_mock',
       image_url: null,
-      tags: [categories[Math.floor(Math.random() * categories.length)]]
+      tags: [eventInfo.category, 'couples', 'date-night', 'local-events']
     });
   }
   
