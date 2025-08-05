@@ -25,7 +25,6 @@ serve(async (req) => {
     console.log('Auth header received:', authHeader ? 'Present' : 'Missing');
     
     if (!authHeader) {
-      console.log('Missing authorization header');
       throw new Error('No authorization header');
     }
 
@@ -34,18 +33,12 @@ serve(async (req) => {
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       { 
         global: { 
           headers: { Authorization: authHeader } 
         } 
       }
-    );
-
-    // Create admin client for admin operations (without user auth header)
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
     // Verify the user
@@ -79,13 +72,13 @@ serve(async (req) => {
         }
 
         // Check if requester already has a partner
-        const { data: existingCouples } = await supabase
+        const { data: existingCouple } = await supabase
           .from('couples')
           .select('*')
-          .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`);
-
-        // Filter out demo connections (where user1_id === user2_id)
-        const existingCouple = existingCouples?.find(c => c.user1_id !== c.user2_id);
+          .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
+          .neq('user1_id', user.id) // Exclude demo connections
+          .neq('user2_id', user.id)
+          .maybeSingle();
 
         if (existingCouple) {
           return new Response(JSON.stringify({
@@ -97,22 +90,35 @@ serve(async (req) => {
           });
         }
 
-        // Check if partner user exists by looking up their profile
-        console.log('Looking up user by email:', email);
-        
-        // Simple email validation
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email)) {
-          return new Response(JSON.stringify({
-            success: false,
-            error: 'Invalid email format'
-          }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          });
-        }
+        // Check if partner user exists
+        const { data: partnerUser } = await supabase
+          .from('profiles')
+          .select('user_id')
+          .eq('user_id', (await supabase.auth.admin.getUserByEmail(email)).data.user?.id)
+          .maybeSingle();
 
-        console.log('Email format is valid, proceeding with request creation');
+        console.log('Partner user found:', !!partnerUser, 'for email:', email);
+
+        // Check if partner already has a connection
+        if (partnerUser) {
+          const { data: partnerCouple } = await supabase
+            .from('couples')
+            .select('*')
+            .or(`user1_id.eq.${partnerUser.user_id},user2_id.eq.${partnerUser.user_id}`)
+            .neq('user1_id', partnerUser.user_id) // Exclude demo connections
+            .neq('user2_id', partnerUser.user_id)
+            .maybeSingle();
+
+          if (partnerCouple) {
+            return new Response(JSON.stringify({
+              success: false,
+              error: 'This user already has a partner'
+            }), {
+              status: 400,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+          }
+        }
 
         // Create partner request
         const { data: partnerRequest, error: requestError } = await supabase
@@ -120,7 +126,7 @@ serve(async (req) => {
           .insert({
             requester_id: user.id,
             requested_email: email,
-            requested_user_id: null, // We don't know the user ID yet
+            requested_user_id: partnerUser?.user_id || null,
             status: 'pending'
           })
           .select()
@@ -135,12 +141,12 @@ serve(async (req) => {
 
         // Send email invitation
         console.log('Sending invite email to', email);
-        await sendInvitationEmail(email, user, 'invite'); // Always treat as invite since we don't check user existence
+        await sendInvitationEmail(email, user, partnerUser ? 'connect' : 'invite');
         console.log('Invitation email sent successfully');
 
         return new Response(JSON.stringify({
           success: true,
-          message: 'Invitation sent!',
+          message: partnerUser ? 'Connection request sent!' : 'Invitation sent!',
           request_id: partnerRequest.id
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -170,13 +176,14 @@ serve(async (req) => {
         }
 
         // Double-check both users don't already have partners
-        const { data: allCouples } = await supabase
+        const { data: existingCouples } = await supabase
           .from('couples')
           .select('*')
-          .or(`user1_id.eq.${partnerRequest.requester_id},user2_id.eq.${partnerRequest.requester_id},user1_id.eq.${user.id},user2_id.eq.${user.id}`);
-
-        // Filter out demo connections (where user1_id === user2_id)
-        const existingCouples = allCouples?.filter(c => c.user1_id !== c.user2_id);
+          .or(`user1_id.eq.${partnerRequest.requester_id},user2_id.eq.${partnerRequest.requester_id},user1_id.eq.${user.id},user2_id.eq.${user.id}`)
+          .neq('user1_id', partnerRequest.requester_id) // Exclude demo connections
+          .neq('user2_id', partnerRequest.requester_id)
+          .neq('user1_id', user.id)
+          .neq('user2_id', user.id);
 
         if (existingCouples && existingCouples.length > 0) {
           return new Response(JSON.stringify({
@@ -243,30 +250,13 @@ serve(async (req) => {
       }
 
       case 'remove_partner': {
-        // Find real partner connections (not demo)
-        const { data: couples } = await supabase
-          .from('couples')
-          .select('*')
-          .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`);
-
-        // Filter to only real partnerships (not demo mode)
-        const realPartnership = couples?.find(c => c.user1_id !== c.user2_id);
-
-        if (!realPartnership) {
-          return new Response(JSON.stringify({
-            success: false,
-            error: 'No partner connection found'
-          }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          });
-        }
-
-        // Remove the real partnership
+        // Find and remove the couple relationship
         const { error: removeError } = await supabase
           .from('couples')
           .delete()
-          .eq('id', realPartnership.id);
+          .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
+          .neq('user1_id', user.id) // Don't remove demo connections
+          .neq('user2_id', user.id);
 
         if (removeError) {
           throw new Error('Failed to remove partner connection');

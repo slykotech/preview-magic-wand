@@ -22,7 +22,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { usePartnerConnectionV2 } from "@/hooks/usePartnerConnectionV2";
+import { useCoupleData } from "@/hooks/useCoupleData";
 
 type EmailCheckStatus = 'idle' | 'checking' | 'exists_available' | 'exists_unavailable' | 'not_exists';
 type ConnectionStep = 'input' | 'validation' | 'sending' | 'success';
@@ -40,17 +40,7 @@ export const PartnerConnectionFlow = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { 
-    couple: coupleData, 
-    userProfile, 
-    partnerProfile, 
-    isLoading: loading,
-    isDemo,
-    connectionStatus,
-    sendPartnerRequest,
-    refreshStatus: refreshCoupleData,
-    disconnectFromPartner
-  } = usePartnerConnectionV2();
+  const { coupleData, userProfile, partnerProfile, getPartnerDisplayName, refreshCoupleData, loading } = useCoupleData();
   
   const [email, setEmail] = useState("");
   const [emailStatus, setEmailStatus] = useState<EmailCheckStatus>('idle');
@@ -131,13 +121,23 @@ export const PartnerConnectionFlow = () => {
     setCurrentStep('sending');
 
     try {
-      const result = await sendPartnerRequest(email.trim());
+      const { data, error } = await supabase.functions.invoke('manage-partner-connection', {
+        body: {
+          action: 'send_request',
+          partnerEmail: email.trim()
+        }
+      });
 
-      if (result.success) {
+      if (error) throw error;
+
+      if (data.success) {
         setCurrentStep('success');
-        // Toast is already shown by the hook
+        toast({
+          title: "Invitation sent! 💕",
+          description: data.message,
+        });
       } else {
-        throw new Error(result.error || 'Failed to send invitation');
+        throw new Error(data.error || 'Failed to send invitation');
       }
     } catch (error: any) {
       console.error('Error sending invitation:', error);
@@ -174,14 +174,33 @@ export const PartnerConnectionFlow = () => {
 
     setIsDisconnecting(true);
     try {
-      const success = await disconnectFromPartner();
+      console.log('Starting disconnect process for couple:', coupleData.id);
       
-      if (success) {
-        // Wait a moment for the toast to show, then navigate to dashboard
-        setTimeout(() => {
-          navigate('/dashboard', { replace: true });
-        }, 1500);
+      const { error } = await supabase
+        .from('couples')
+        .delete()
+        .eq('id', coupleData.id);
+
+      if (error) {
+        console.error('Database error during disconnect:', error);
+        throw error;
       }
+
+      console.log('Successfully disconnected from partner');
+      
+      // Clear the couple data immediately
+      refreshCoupleData();
+      
+      toast({
+        title: "Disconnected successfully",
+        description: "You have been disconnected from your partner. Redirecting...",
+      });
+
+      // Wait a moment for the toast to show, then navigate to dashboard
+      setTimeout(() => {
+        navigate('/dashboard', { replace: true });
+      }, 1500);
+
     } catch (error: any) {
       console.error('Error disconnecting:', error);
       toast({
@@ -429,7 +448,7 @@ export const PartnerConnectionFlow = () => {
   }
 
   // Show connected state if user has a partner
-  if (coupleData && !isDemo && partnerProfile) {
+  if (coupleData && partnerProfile) {
     return (
       <Card>
         <CardHeader>
@@ -458,7 +477,7 @@ export const PartnerConnectionFlow = () => {
                   <Users className="text-white" size={20} />
                 </div>
                 <div>
-                  <p className="font-medium">{partnerProfile?.display_name || 'Partner'}</p>
+                  <p className="font-medium">{getPartnerDisplayName()}</p>
                   <p className="text-sm text-muted-foreground">Your Partner</p>
                 </div>
               </div>
