@@ -172,6 +172,50 @@ export type Database = {
         }
         Relationships: []
       }
+      api_usage_tracking: {
+        Row: {
+          api_source_id: string | null
+          created_at: string | null
+          endpoint: string
+          error_count: number | null
+          id: string
+          last_request_at: string | null
+          requests_count: number | null
+          success_count: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          api_source_id?: string | null
+          created_at?: string | null
+          endpoint: string
+          error_count?: number | null
+          id?: string
+          last_request_at?: string | null
+          requests_count?: number | null
+          success_count?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          api_source_id?: string | null
+          created_at?: string | null
+          endpoint?: string
+          error_count?: number | null
+          id?: string
+          last_request_at?: string | null
+          requests_count?: number | null
+          success_count?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_usage_tracking_api_source_id_fkey"
+            columns: ["api_source_id"]
+            isOneToOne: false
+            referencedRelation: "event_api_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       card_games: {
         Row: {
           created_at: string
@@ -549,8 +593,10 @@ export type Database = {
       }
       event_api_sources: {
         Row: {
+          api_key_name: string | null
           api_type: string
           avg_response_time_ms: number | null
+          base_url: string | null
           cost_per_request: number | null
           created_at: string
           current_daily_usage: number | null
@@ -558,16 +604,21 @@ export type Database = {
           daily_quota: number | null
           id: string
           is_active: boolean | null
+          last_error_at: string | null
+          last_error_message: string | null
           last_used_at: string | null
           monthly_quota: number | null
           platform_name: string
           priority: number | null
+          regions_covered: Json | null
           success_rate: number | null
           supported_regions: string[] | null
         }
         Insert: {
+          api_key_name?: string | null
           api_type: string
           avg_response_time_ms?: number | null
+          base_url?: string | null
           cost_per_request?: number | null
           created_at?: string
           current_daily_usage?: number | null
@@ -575,16 +626,21 @@ export type Database = {
           daily_quota?: number | null
           id?: string
           is_active?: boolean | null
+          last_error_at?: string | null
+          last_error_message?: string | null
           last_used_at?: string | null
           monthly_quota?: number | null
           platform_name: string
           priority?: number | null
+          regions_covered?: Json | null
           success_rate?: number | null
           supported_regions?: string[] | null
         }
         Update: {
+          api_key_name?: string | null
           api_type?: string
           avg_response_time_ms?: number | null
+          base_url?: string | null
           cost_per_request?: number | null
           created_at?: string
           current_daily_usage?: number | null
@@ -592,81 +648,189 @@ export type Database = {
           daily_quota?: number | null
           id?: string
           is_active?: boolean | null
+          last_error_at?: string | null
+          last_error_message?: string | null
           last_used_at?: string | null
           monthly_quota?: number | null
           platform_name?: string
           priority?: number | null
+          regions_covered?: Json | null
           success_rate?: number | null
           supported_regions?: string[] | null
         }
         Relationships: []
       }
+      event_duplicates: {
+        Row: {
+          created_at: string | null
+          detection_method: string | null
+          duplicate_event_id: string | null
+          id: string
+          master_event_id: string | null
+          similarity_score: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          detection_method?: string | null
+          duplicate_event_id?: string | null
+          id?: string
+          master_event_id?: string | null
+          similarity_score?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          detection_method?: string | null
+          duplicate_event_id?: string | null
+          id?: string
+          master_event_id?: string | null
+          similarity_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_duplicates_duplicate_event_id_fkey"
+            columns: ["duplicate_event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_duplicates_master_event_id_fkey"
+            columns: ["master_event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       events: {
         Row: {
+          api_source_id: string | null
           category: string | null
+          city: string | null
+          country: string | null
           created_at: string
           description: string | null
           event_date: string
           event_time: string | null
           expires_at: string
+          external_event_id: string | null
           id: string
           image_url: string | null
+          last_updated: string | null
           latitude: number | null
           location_address: string | null
           location_name: string
           longitude: number | null
           organizer: string | null
           price_range: string | null
+          region: string | null
           source_platform: string
           source_url: string | null
           tags: string[] | null
+          ticket_url: string | null
           title: string
           unique_hash: string
           updated_at: string
+          venue_details: Json | null
         }
         Insert: {
+          api_source_id?: string | null
           category?: string | null
+          city?: string | null
+          country?: string | null
           created_at?: string
           description?: string | null
           event_date: string
           event_time?: string | null
           expires_at?: string
+          external_event_id?: string | null
           id?: string
           image_url?: string | null
+          last_updated?: string | null
           latitude?: number | null
           location_address?: string | null
           location_name: string
           longitude?: number | null
           organizer?: string | null
           price_range?: string | null
+          region?: string | null
           source_platform: string
           source_url?: string | null
           tags?: string[] | null
+          ticket_url?: string | null
           title: string
           unique_hash: string
           updated_at?: string
+          venue_details?: Json | null
         }
         Update: {
+          api_source_id?: string | null
           category?: string | null
+          city?: string | null
+          country?: string | null
           created_at?: string
           description?: string | null
           event_date?: string
           event_time?: string | null
           expires_at?: string
+          external_event_id?: string | null
           id?: string
           image_url?: string | null
+          last_updated?: string | null
           latitude?: number | null
           location_address?: string | null
           location_name?: string
           longitude?: number | null
           organizer?: string | null
           price_range?: string | null
+          region?: string | null
           source_platform?: string
           source_url?: string | null
           tags?: string[] | null
+          ticket_url?: string | null
           title?: string
           unique_hash?: string
           updated_at?: string
+          venue_details?: Json | null
+        }
+        Relationships: []
+      }
+      events_regional_cache: {
+        Row: {
+          cache_key: string
+          city: string | null
+          country: string
+          created_at: string | null
+          event_count: number | null
+          id: string
+          last_scraped_at: string | null
+          next_scrape_at: string | null
+          region: string | null
+          scraping_status: string | null
+        }
+        Insert: {
+          cache_key: string
+          city?: string | null
+          country: string
+          created_at?: string | null
+          event_count?: number | null
+          id?: string
+          last_scraped_at?: string | null
+          next_scrape_at?: string | null
+          region?: string | null
+          scraping_status?: string | null
+        }
+        Update: {
+          cache_key?: string
+          city?: string | null
+          country?: string
+          created_at?: string | null
+          event_count?: number | null
+          id?: string
+          last_scraped_at?: string | null
+          next_scrape_at?: string | null
+          region?: string | null
+          scraping_status?: string | null
         }
         Relationships: []
       }
@@ -1677,6 +1841,10 @@ export type Database = {
         }
         Returns: string
       }
+      generate_cache_key: {
+        Args: { p_country: string; p_region?: string; p_city?: string }
+        Returns: string
+      }
       generate_event_hash: {
         Args: {
           p_title: string
@@ -1739,6 +1907,10 @@ export type Database = {
       set_limit: {
         Args: { "": number }
         Returns: number
+      }
+      should_scrape_region: {
+        Args: { p_country: string; p_region?: string; p_city?: string }
+        Returns: boolean
       }
       show_limit: {
         Args: Record<PropertyKey, never>
