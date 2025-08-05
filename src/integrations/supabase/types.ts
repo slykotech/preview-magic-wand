@@ -583,6 +583,48 @@ export type Database = {
           },
         ]
       }
+      event_fetch_jobs: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          events_found: number | null
+          id: string
+          location_lat: number
+          location_lng: number
+          radius_km: number
+          sources: string[]
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          events_found?: number | null
+          id?: string
+          location_lat: number
+          location_lng: number
+          radius_km?: number
+          sources?: string[]
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          events_found?: number | null
+          id?: string
+          location_lat?: number
+          location_lng?: number
+          radius_km?: number
+          sources?: string[]
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       events: {
         Row: {
           category: string | null
