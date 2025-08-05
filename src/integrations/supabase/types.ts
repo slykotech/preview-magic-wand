@@ -547,6 +547,129 @@ export type Database = {
           },
         ]
       }
+      event_api_sources: {
+        Row: {
+          api_type: string
+          avg_response_time_ms: number | null
+          cost_per_request: number | null
+          created_at: string
+          current_daily_usage: number | null
+          current_monthly_usage: number | null
+          daily_quota: number | null
+          id: string
+          is_active: boolean | null
+          last_used_at: string | null
+          monthly_quota: number | null
+          platform_name: string
+          priority: number | null
+          success_rate: number | null
+          supported_regions: string[] | null
+        }
+        Insert: {
+          api_type: string
+          avg_response_time_ms?: number | null
+          cost_per_request?: number | null
+          created_at?: string
+          current_daily_usage?: number | null
+          current_monthly_usage?: number | null
+          daily_quota?: number | null
+          id?: string
+          is_active?: boolean | null
+          last_used_at?: string | null
+          monthly_quota?: number | null
+          platform_name: string
+          priority?: number | null
+          success_rate?: number | null
+          supported_regions?: string[] | null
+        }
+        Update: {
+          api_type?: string
+          avg_response_time_ms?: number | null
+          cost_per_request?: number | null
+          created_at?: string
+          current_daily_usage?: number | null
+          current_monthly_usage?: number | null
+          daily_quota?: number | null
+          id?: string
+          is_active?: boolean | null
+          last_used_at?: string | null
+          monthly_quota?: number | null
+          platform_name?: string
+          priority?: number | null
+          success_rate?: number | null
+          supported_regions?: string[] | null
+        }
+        Relationships: []
+      }
+      events: {
+        Row: {
+          category: string | null
+          created_at: string
+          description: string | null
+          event_date: string
+          event_time: string | null
+          expires_at: string
+          id: string
+          image_url: string | null
+          latitude: number | null
+          location_address: string | null
+          location_name: string
+          longitude: number | null
+          organizer: string | null
+          price_range: string | null
+          source_platform: string
+          source_url: string | null
+          tags: string[] | null
+          title: string
+          unique_hash: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          event_date: string
+          event_time?: string | null
+          expires_at?: string
+          id?: string
+          image_url?: string | null
+          latitude?: number | null
+          location_address?: string | null
+          location_name: string
+          longitude?: number | null
+          organizer?: string | null
+          price_range?: string | null
+          source_platform: string
+          source_url?: string | null
+          tags?: string[] | null
+          title: string
+          unique_hash: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          event_date?: string
+          event_time?: string | null
+          expires_at?: string
+          id?: string
+          image_url?: string | null
+          latitude?: number | null
+          location_address?: string | null
+          location_name?: string
+          longitude?: number | null
+          organizer?: string | null
+          price_range?: string | null
+          source_platform?: string
+          source_url?: string | null
+          tags?: string[] | null
+          title?: string
+          unique_hash?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       game_achievements: {
         Row: {
           achievement_name: string
@@ -780,6 +903,45 @@ export type Database = {
           id?: string
           title?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      location_event_cache: {
+        Row: {
+          created_at: string
+          event_count: number | null
+          id: string
+          last_fetched_at: string
+          latitude: number
+          location_hash: string
+          longitude: number
+          next_fetch_at: string
+          search_radius: number
+          source_platforms: string[] | null
+        }
+        Insert: {
+          created_at?: string
+          event_count?: number | null
+          id?: string
+          last_fetched_at?: string
+          latitude: number
+          location_hash: string
+          longitude: number
+          next_fetch_at?: string
+          search_radius?: number
+          source_platforms?: string[] | null
+        }
+        Update: {
+          created_at?: string
+          event_count?: number | null
+          id?: string
+          last_fetched_at?: string
+          latitude?: number
+          location_hash?: string
+          longitude?: number
+          next_fetch_at?: string
+          search_radius?: number
+          source_platforms?: string[] | null
         }
         Relationships: []
       }
@@ -1351,6 +1513,77 @@ export type Database = {
         }
         Relationships: []
       }
+      user_event_interactions: {
+        Row: {
+          created_at: string
+          event_id: string | null
+          id: string
+          interaction_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_id?: string | null
+          id?: string
+          interaction_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string | null
+          id?: string
+          interaction_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_event_interactions_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_event_preferences: {
+        Row: {
+          blacklisted_venues: string[] | null
+          created_at: string
+          id: string
+          max_distance_km: number | null
+          notification_enabled: boolean | null
+          preferred_categories: string[] | null
+          preferred_price_range: string | null
+          preferred_times: string[] | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          blacklisted_venues?: string[] | null
+          created_at?: string
+          id?: string
+          max_distance_km?: number | null
+          notification_enabled?: boolean | null
+          preferred_categories?: string[] | null
+          preferred_price_range?: string | null
+          preferred_times?: string[] | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          blacklisted_venues?: string[] | null
+          created_at?: string
+          id?: string
+          max_distance_km?: number | null
+          notification_enabled?: boolean | null
+          preferred_categories?: string[] | null
+          preferred_price_range?: string | null
+          preferred_times?: string[] | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_location_cache: {
         Row: {
           city: string | null
@@ -1417,6 +1650,10 @@ export type Database = {
         Args: { p_user_id: string; p_estimated_cost?: number }
         Returns: Json
       }
+      cleanup_expired_events: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
       cleanup_expired_verifications: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -1429,6 +1666,26 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      find_duplicate_event: {
+        Args: {
+          p_title: string
+          p_event_date: string
+          p_location_name: string
+          p_latitude?: number
+          p_longitude?: number
+          p_organizer?: string
+        }
+        Returns: string
+      }
+      generate_event_hash: {
+        Args: {
+          p_title: string
+          p_event_date: string
+          p_location_name: string
+          p_organizer?: string
+        }
+        Returns: string
+      }
       generate_invitation_token: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -1436,6 +1693,26 @@ export type Database = {
       generate_relationship_insights: {
         Args: { p_couple_id: string }
         Returns: undefined
+      }
+      gtrgm_compress: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      gtrgm_decompress: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      gtrgm_in: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      gtrgm_options: {
+        Args: { "": unknown }
+        Returns: undefined
+      }
+      gtrgm_out: {
+        Args: { "": unknown }
+        Returns: unknown
       }
       log_couple_activity: {
         Args: {
@@ -1458,6 +1735,18 @@ export type Database = {
       reset_monthly_quotas: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      set_limit: {
+        Args: { "": number }
+        Returns: number
+      }
+      show_limit: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      show_trgm: {
+        Args: { "": string }
+        Returns: string[]
       }
       update_couple_streaks: {
         Args: { p_couple_id: string }
