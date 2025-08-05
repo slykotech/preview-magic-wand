@@ -203,24 +203,18 @@ export const PartnerConnectionSection = () => {
         return;
       }
 
-      const response = await fetch(`https://kdbgwmtihgmialrmaecn.supabase.co/functions/v1/check-email-exists?email=${encodeURIComponent(email)}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${session.data.session.access_token}`,
-          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkYmd3bXRpaGdtaWFscm1hZWNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM3MjA0MzAsImV4cCI6MjA2OTI5NjQzMH0.9tugXDyBuaIaf8fAS0z6cyb-y8Rtykl2zrPxd8bnnOw',
-          'Content-Type': 'application/json'
-        }
+      // Use Supabase client to invoke the edge function
+      const { data: result, error: functionError } = await supabase.functions.invoke('check-email-exists', {
+        body: { email }
       });
 
-      const result = await response.json();
-
-      // Handle authentication errors specifically
-      if (response.status === 403 || response.status === 401) {
+      if (functionError) {
+        console.error('Function error:', functionError);
         setEmailValidation({
           isValid: true,
           exists: false,
           available: false,
-          message: "Session expired. Please refresh the page and log in again.",
+          message: "Unable to validate email. Please try refreshing the page.",
           isChecking: false,
           showInviteToJoin: false
         });

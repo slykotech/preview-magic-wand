@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
     if (req.method === 'GET') {
       const url = new URL(req.url)
       email = url.searchParams.get('email')
-    } else {
+    } else if (req.method === 'POST') {
       const body = await req.json()
       email = body.email
     }
