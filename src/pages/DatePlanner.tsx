@@ -9,14 +9,12 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { BottomNavigation } from '@/components/BottomNavigation';
 import { useToast } from '@/hooks/use-toast';
-import { Calendar, MapPin, Clock, DollarSign, Heart, X, Plus, Trash2, Lightbulb } from 'lucide-react';
+import { Calendar, MapPin, Clock, DollarSign, Heart, X, Plus, Trash2 } from 'lucide-react';
 import { GradientHeader } from '@/components/GradientHeader';
-import { EventSuggestionsSection } from '@/components/EventSuggestionsSection';
-import { EventSuggestion } from '@/hooks/useEventSuggestions';
 
 interface DateIdea {
   id: string;
@@ -374,21 +372,6 @@ export const DatePlanner = () => {
 
   const categories = ['romantic', 'adventure', 'cultural', 'food', 'sports', 'entertainment', 'outdoor', 'relaxation'];
 
-  // Handler for when user selects an event suggestion
-  const handleEventSuggestionSelect = (event: EventSuggestion) => {
-    setFormData({
-      title: event.title,
-      description: event.description || '',
-      category: event.category || 'entertainment',
-      scheduled_date: event.event_date,
-      scheduled_time: event.event_time || '',
-      location: event.location_name,
-      estimated_cost: event.price_range || '',
-      estimated_duration: '',
-      notes: `${event.organizer ? `Organized by: ${event.organizer}` : ''}${event.source_url ? `\nMore info: ${event.source_url}` : ''}`
-    });
-    setShowAddForm(true);
-  };
 
   if (loading) {
     return (
@@ -409,20 +392,13 @@ export const DatePlanner = () => {
       />
 
       <div className="flex-1 overflow-y-auto container mx-auto px-4 py-6">
-        <Tabs defaultValue="planned" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-6">
-            <TabsTrigger value="planned" className="flex items-center gap-2">
-              <Heart className="w-4 h-4" />
-              Planned Dates
-            </TabsTrigger>
-            <TabsTrigger value="suggestions" className="flex items-center gap-2">
-              <Lightbulb className="w-4 h-4" />
-              Sweet Suggestions
-            </TabsTrigger>
-          </TabsList>
+        <div className="w-full">
+          <div className="flex items-center gap-2 mb-6">
+            <Heart className="w-4 h-4" />
+            <h2 className="text-xl font-semibold">Planned Dates</h2>
+          </div>
 
-          {/* Planned Dates Tab */}
-          <TabsContent value="planned" className="space-y-6">
+          <div className="space-y-6">
             <div className="flex justify-between items-center">
               <h3 className="text-lg font-semibold">Your Planned Dates</h3>
               <Button onClick={() => setShowAddForm(true)}>
@@ -762,20 +738,12 @@ export const DatePlanner = () => {
                    </div>
                  ))}
                </div>
-             )}
-           </TabsContent>
+               )}
+            </div>
+          </div>
+        </div>
 
-           {/* Suggestions Tab */}
-           <TabsContent value="suggestions" className="space-y-6">
-             <EventSuggestionsSection 
-               onEventSelect={handleEventSuggestionSelect}
-               className="w-full"
-             />
-           </TabsContent>
-         </Tabs>
-       </div>
-
-       {/* Delete Confirmation Dialog */}
+        {/* Delete Confirmation Dialog */}
        <AlertDialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
          <AlertDialogContent>
            <AlertDialogHeader>
