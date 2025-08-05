@@ -154,9 +154,13 @@ export const useEventSuggestions = () => {
         fetchEvents();
       }
     }
-  }, [location?.latitude, location?.longitude]);
+    // Reset events when location is cleared
+    else if (location === null) {
+      setEvents([]);
+    }
+  }, [location?.latitude, location?.longitude, location, fetchEvents]);
 
-  // Auto-refresh every 30 minutes if user is active
+  // Auto-refresh every 30 minutes if user is active and has location
   useEffect(() => {
     if (!location?.latitude || !location?.longitude) return;
 
