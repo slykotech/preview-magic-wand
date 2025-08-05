@@ -236,14 +236,15 @@ async function fetchEventbriteEvents(lat: number, lng: number, radiusKm: number)
     return [];
   }
 
-  // Eventbrite API endpoint with token parameter
-  const url = `https://www.eventbriteapi.com/v3/events/search/?location.latitude=${lat}&location.longitude=${lng}&location.within=${radiusKm}km&start_date.range_start=${new Date().toISOString()}&page_size=20&token=${apiToken}`;
+  // Eventbrite API endpoint - no token in URL
+  const url = `https://www.eventbriteapi.com/v3/events/search/?location.latitude=${lat}&location.longitude=${lng}&location.within=${radiusKm}km&start_date.range_start=${new Date().toISOString()}&page_size=20`;
   
   console.log(`Fetching from Eventbrite: ${url}`);
   
   try {
     const response = await fetch(url, {
       headers: {
+        'Authorization': `Bearer ${apiToken}`,
         'Content-Type': 'application/json'
       }
     });
