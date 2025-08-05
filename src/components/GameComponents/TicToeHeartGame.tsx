@@ -126,7 +126,7 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
 
   // Real-time subscription for game updates with improved sync
   useEffect(() => {
-    if (!gameState?.id) return;
+    if (!gameState?.id || !user?.id) return;
 
     console.log('🎮 Setting up real-time subscription for game:', gameState.id);
 
@@ -142,8 +142,11 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
         },
         (payload) => {
           console.log('🎮 Real-time game update received:', payload);
+          
           if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
             const updatedState = payload.new as any;
+            console.log('🎮 Database state after update:', updatedState);
+            
             const newGameState = {
               ...updatedState,
               board: updatedState.board as Board,
@@ -151,12 +154,21 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
               last_move_at: updatedState.last_move_at || new Date().toISOString()
             };
             
-            console.log('🎮 Setting new game state:', newGameState);
-            console.log('🎮 Current turn belongs to:', newGameState.current_player_id);
-            console.log('🎮 Current user ID:', user?.id);
-            console.log('🎮 Is user turn?:', newGameState.current_player_id === user?.id);
+            console.log('🎮 NEW GAME STATE APPLIED:', {
+              gameId: newGameState.id,
+              currentPlayerFromDB: newGameState.current_player_id,
+              currentUserId: user?.id,
+              isUserTurnNow: newGameState.current_player_id === user?.id,
+              board: newGameState.board,
+              movesCount: newGameState.moves_count
+            });
             
-            setGameState(newGameState);
+            // Force state update with new game state
+            setGameState(prevState => {
+              console.log('🎮 PREVIOUS STATE:', prevState);
+              console.log('🎮 UPDATING TO NEW STATE:', newGameState);
+              return newGameState;
+            });
             
             // Update playful message based on new turn
             const isUserTurn = newGameState.current_player_id === user?.id;
@@ -165,9 +177,9 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
             setPlayfulMessage(getPlayfulMessage(isUserTurn, currentPlayerName || 'Player', currentSymbol));
             
             // Check for game end
-            if (payload.new.game_status !== 'playing') {
+            if (updatedState.game_status !== 'playing') {
               setShowCelebration(true);
-              if (payload.new.winner_id === user?.id) {
+              if (updatedState.winner_id === user?.id) {
                 setTimeout(() => setShowLoveGrant(true), 2000);
               }
             }
