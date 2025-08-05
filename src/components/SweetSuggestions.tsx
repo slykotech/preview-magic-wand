@@ -120,6 +120,17 @@ export const SweetSuggestions: React.FC<SweetSuggestionsProps> = ({
     // Extract city name from display name (e.g., "Chennai, Tamil Nadu, India" -> "Chennai")
     return displayName.split(',')[0].trim();
   };
+
+  const extractCityStateCountry = (displayName: string): string => {
+    // Extract and format as "City, State, Country" from display name
+    const parts = displayName.split(',').map(part => part.trim());
+    if (parts.length >= 3) {
+      return `${parts[0]}, ${parts[1]}, ${parts[2]}`;
+    } else if (parts.length === 2) {
+      return `${parts[0]}, ${parts[1]}`;
+    }
+    return parts[0];
+  };
   
   const handleLocationSet = (cityName: string, coordinates: { lat: number; lng: number; displayName: string }) => {
     console.log('Setting location:', { cityName, coordinates });
@@ -204,7 +215,7 @@ export const SweetSuggestions: React.FC<SweetSuggestionsProps> = ({
           </div>
           
           {location && <div className="text-sm text-muted-foreground">
-              📍 Searching near: {location.displayName}
+              📍 Searching near: {extractCityStateCountry(location.displayName)}
             </div>}
         </CardContent>
       </Card>
