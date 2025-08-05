@@ -230,6 +230,7 @@ serve(async (req) => {
 
 async function fetchEventbriteEvents(lat: number, lng: number, radiusKm: number): Promise<EventData[]> {
   const apiKey = Deno.env.get('EVENTBRITE_API_KEY');
+  console.log(`API Key status: ${apiKey ? 'CONFIGURED' : 'NOT CONFIGURED'}`);
   if (!apiKey) {
     console.log('Eventbrite API key not configured');
     return [];
@@ -257,10 +258,12 @@ async function fetchEventbriteEvents(lat: number, lng: number, radiusKm: number)
     }
 
     const data = await response.json();
-    console.log(`Eventbrite response: ${JSON.stringify(data)}`);
+    console.log(`Eventbrite response status: ${response.status}`);
+    console.log(`Eventbrite response headers:`, Object.fromEntries(response.headers.entries()));
+    console.log(`Eventbrite response data:`, JSON.stringify(data, null, 2));
     
     if (!data.events || data.events.length === 0) {
-      console.log('No events found in Eventbrite response');
+      console.log('No events found in Eventbrite response. Response structure:', Object.keys(data));
       return [];
     }
     
