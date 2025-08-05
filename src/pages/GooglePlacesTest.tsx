@@ -1,6 +1,6 @@
 import { GooglePlacesApiTest } from '@/components/GooglePlacesApiTest';
 
-const GooglePlacesTest = () => {
+const GooglePlacesTestPage = () => {
   return (
     <div className="container mx-auto px-4 py-6 max-w-2xl">
       <div className="space-y-6">
@@ -14,9 +14,18 @@ const GooglePlacesTest = () => {
         </div>
         
         <GooglePlacesApiTest />
+        
+        <div className="text-center">
+          <a 
+            href="/dashboard" 
+            className="text-primary hover:underline"
+          >
+            ← Back to Dashboard
+          </a>
+        </div>
       </div>
     </div>
   );
 };
 
-export default GooglePlacesTest;
+export default GooglePlacesTestPage;
