@@ -18,7 +18,20 @@ export const usePermissions = () => {
   useEffect(() => {
     loadPermissions();
     checkIfFirstLaunch();
+    autoRequestLocationIfNeeded();
   }, []);
+
+  const autoRequestLocationIfNeeded = async () => {
+    const hasRequestedLocation = localStorage.getItem('location_auto_requested');
+    if (!hasRequestedLocation && !permissions.location) {
+      try {
+        await requestPermission('location');
+        localStorage.setItem('location_auto_requested', 'true');
+      } catch (error) {
+        console.log('Auto location request failed:', error);
+      }
+    }
+  };
 
   const loadPermissions = () => {
     const savedPermissions = localStorage.getItem('app_permissions');
