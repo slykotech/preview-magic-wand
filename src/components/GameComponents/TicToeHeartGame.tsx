@@ -156,13 +156,8 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
             console.log('🎮 Current user ID:', user?.id);
             console.log('🎮 Is user turn?:', newGameState.current_player_id === user?.id);
             
-            // Only update if this is actually a newer state
-            setGameState(prevState => {
-              if (!prevState || newGameState.moves_count >= prevState.moves_count) {
-                return newGameState;
-              }
-              return prevState;
-            });
+            // Force update game state immediately
+            setGameState(newGameState);
             
             // Update playful message based on new turn
             const isUserTurn = newGameState.current_player_id === user?.id;
@@ -182,6 +177,12 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
       )
       .subscribe((status) => {
         console.log('🎮 Subscription status:', status);
+        
+        // Force refresh game state when subscription is established
+        if (status === 'SUBSCRIBED') {
+          console.log('🎮 Subscription established, refreshing game state...');
+          initializeGame();
+        }
       });
 
     return () => {
