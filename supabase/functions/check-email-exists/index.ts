@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
     )
 
     // Verify the user with the JWT token
-    const { data: { user }, error: authError } = await supabase.auth.getUser(jwt)
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
     
     console.log('👤 User verification:', { 
       hasUser: !!user,
