@@ -169,14 +169,32 @@ async function performRegionalScraping(country: string, region?: string, city?: 
   const results: ScrapingResult[] = [];
   let totalEventsFound = 0;
   let totalEventsInserted = 0;
+  const startTime = Date.now();
   
-  // Call each scraping function with appropriate delays
+  // Call each scraping function with appropriate delays and analytics
   const scrapingFunctions = ['scrape-ticketmaster', 'scrape-eventbrite', 'scrape-googleplaces', 'scrape-events-firecrawl'];
   
   for (const functionName of scrapingFunctions) {
+    const funcStartTime = Date.now();
     try {
       const result = await callScrapingFunction(functionName, country, region, city);
       results.push(result);
+      
+      const responseTime = Date.now() - funcStartTime;
+      
+      // Log analytics for this scraping function
+      await logScrapingAnalytics(
+        supabase,
+        functionName.replace('scrape-', ''),
+        country,
+        city,
+        result.totalFound,
+        result.newEventsInserted,
+        1, // api_calls_made
+        result.success,
+        responseTime,
+        result.error
+      );
       
       if (result.success) {
         totalEventsFound += result.totalFound;
@@ -188,7 +206,23 @@ async function performRegionalScraping(country: string, region?: string, city?: 
       await new Promise(resolve => setTimeout(resolve, delay));
       
     } catch (error) {
+      const responseTime = Date.now() - funcStartTime;
       console.error(`Error with ${functionName}:`, error);
+      
+      // Log error analytics
+      await logScrapingAnalytics(
+        supabase,
+        functionName.replace('scrape-', ''),
+        country,
+        city,
+        0,
+        0,
+        1,
+        false,
+        responseTime,
+        error.message
+      );
+      
       results.push({
         success: false,
         source: functionName,
@@ -205,7 +239,8 @@ async function performRegionalScraping(country: string, region?: string, city?: 
   // Update scraping cache
   await updateScrapingCache(supabase, country, totalEventsFound, region, city);
   
-  console.log(`Completed scraping for ${country}${region ? `, ${region}` : ''}${city ? `, ${city}` : ''}: ${totalEventsInserted} new events from ${totalEventsFound} found`);
+  const totalTime = Date.now() - startTime;
+  console.log(`Completed scraping for ${country}${region ? `, ${region}` : ''}${city ? `, ${city}` : ''}: ${totalEventsInserted} new events from ${totalEventsFound} found in ${totalTime}ms`);
   
   return {
     success: true,
@@ -214,8 +249,39 @@ async function performRegionalScraping(country: string, region?: string, city?: 
     city,
     totalEventsFound,
     totalEventsInserted,
-    sources: results
+    sources: results,
+    totalTime
   };
+}
+
+// Helper function to log scraping analytics
+async function logScrapingAnalytics(
+  supabase: any,
+  sourcePlatform: string,
+  country: string,
+  city?: string,
+  eventsScraped: number = 0,
+  eventsInserted: number = 0,
+  apiCallsMade: number = 1,
+  success: boolean = true,
+  responseTimeMs: number = 0,
+  errorMessage?: string
+) {
+  try {
+    await supabase.rpc('log_scraping_analytics', {
+      p_source_platform: sourcePlatform,
+      p_country: country,
+      p_city: city,
+      p_events_scraped: eventsScraped,
+      p_events_inserted: eventsInserted,
+      p_api_calls_made: apiCallsMade,
+      p_success: success,
+      p_response_time_ms: responseTimeMs,
+      p_error_message: errorMessage
+    });
+  } catch (error) {
+    console.error('Failed to log analytics:', error);
+  }
 }
 
 Deno.serve(async (req) => {

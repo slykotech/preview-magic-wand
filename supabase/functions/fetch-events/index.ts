@@ -139,12 +139,15 @@ serve(async (req) => {
     // Events are now populated by the master scraper every 4 hours
     console.log(`Fetching events from database for location: ${latitude}, ${longitude} with radius: ${radius}km`);
     
+    // Use optimized query with indexes
     const { data: events, error: eventsError } = await supabaseClient
       .from('events')
       .select('*')
       .gte('event_date', new Date().toISOString().split('T')[0]) // Only future events
+      .not('latitude', 'is', null)
+      .not('longitude', 'is', null)
       .order('event_date', { ascending: true })
-      .limit(100);
+      .limit(200); // Increased limit for better filtering
     
     if (eventsError) {
       console.error('Error fetching events from database:', eventsError);

@@ -1866,6 +1866,35 @@ export type Database = {
         Args: { p_couple_id: string }
         Returns: undefined
       }
+      get_personalized_events: {
+        Args: {
+          p_user_id: string
+          p_latitude: number
+          p_longitude: number
+          p_radius?: number
+          p_limit?: number
+        }
+        Returns: {
+          id: string
+          title: string
+          description: string
+          event_date: string
+          event_time: string
+          location_name: string
+          location_address: string
+          latitude: number
+          longitude: number
+          category: string
+          price_range: string
+          organizer: string
+          source_url: string
+          source_platform: string
+          image_url: string
+          tags: string[]
+          distance_km: number
+          relevance_score: number
+        }[]
+      }
       gtrgm_compress: {
         Args: { "": unknown }
         Returns: unknown
