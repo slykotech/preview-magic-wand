@@ -32,14 +32,26 @@ export const useEventSuggestions = () => {
   const fetchEvents = useCallback(async (forceRefresh = false) => {
     console.log('fetchEvents called with location:', location, 'forceRefresh:', forceRefresh);
     
-    if (!location?.latitude || !location?.longitude) {
+    if (!location) {
       console.log('No location available, cannot fetch events');
-      // Don't show error toast for auto-fetch attempts, only for manual refresh
       if (forceRefresh) {
         toast({
           title: "Location needed",
           description: "Please set your location to discover events nearby",
           variant: "destructive"
+        });
+      }
+      return;
+    }
+
+    // Check if we have valid coordinates
+    if (!location.latitude || !location.longitude || (location.latitude === 0 && location.longitude === 0)) {
+      console.log('Invalid coordinates, waiting for geocoding to complete');
+      // If we have a location but invalid coordinates, wait a bit for geocoding
+      if (location.city && forceRefresh) {
+        toast({
+          title: "Getting location coordinates...",
+          description: "Please wait while we find the exact location for your city",
         });
       }
       return;
@@ -146,22 +158,21 @@ export const useEventSuggestions = () => {
     }
   }, []);
 
-  // Auto-fetch when location changes or component mounts
+  // Auto-fetch events when location changes and has valid coordinates
   useEffect(() => {
-    if (location?.latitude && location?.longitude) {
-      // Only fetch if we don't have recent data or location changed significantly
-      const shouldFetch = !lastFetched || 
-                         Date.now() - lastFetched.getTime() > 15 * 60 * 1000; // 15 minutes
-      
-      if (shouldFetch) {
-        fetchEvents();
-      }
+    if (location && location.latitude && location.longitude && location.latitude !== 0 && location.longitude !== 0) {
+      console.log('Location changed with valid coordinates, fetching events');
+      fetchEvents();
     }
-    // Reset events when location is cleared
-    else if (location === null) {
+  }, [location?.latitude, location?.longitude, fetchEvents]);
+
+  // Reset events when location is cleared
+  useEffect(() => {
+    if (!location) {
       setEvents([]);
+      setLastFetched(null);
     }
-  }, [location?.latitude, location?.longitude, location, fetchEvents]);
+  }, [location]);
 
   // Auto-refresh every 30 minutes if user is active and has location
   useEffect(() => {
