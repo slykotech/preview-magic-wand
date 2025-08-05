@@ -135,11 +135,10 @@ serve(async (req) => {
 
     console.log(`Fetching events for: ${latitude}, ${longitude} within ${radius}km`);
 
-    // Fetch events directly from the database instead of external APIs
-    // Events are now populated by the master scraper every 4 hours
+    // Fetch events from multiple sources: database + Google Places API
     console.log(`Fetching events from database for location: ${latitude}, ${longitude} with radius: ${radius}km`);
     
-    // Use optimized query with indexes
+    // 1. Fetch from database (scraped events)
     const { data: events, error: eventsError } = await supabaseClient
       .from('events')
       .select('*')
@@ -151,13 +150,22 @@ serve(async (req) => {
     
     if (eventsError) {
       console.error('Error fetching events from database:', eventsError);
-      throw new Error('Failed to fetch events from database');
     }
     
+    // 2. Fetch from Google Places API for real-time venue events
+    const googlePlacesEvents = await fetchGooglePlacesEvents(latitude, longitude, radius);
+    console.log(`Found ${googlePlacesEvents.length} events from Google Places API`);
+    
+    // 3. Combine all events
+    const allEvents = [
+      ...(events || []),
+      ...googlePlacesEvents
+    ];
+    
     // Filter events by location if coordinates are provided
-    let filteredEvents = events || [];
+    let filteredEvents = allEvents;
     if (latitude && longitude && radius) {
-      filteredEvents = (events || []).filter(event => {
+      filteredEvents = allEvents.filter(event => {
         if (!event.latitude || !event.longitude) return true; // Include events without coordinates
         
         // Calculate distance using Haversine formula
@@ -174,7 +182,7 @@ serve(async (req) => {
       });
     }
     
-    console.log(`Found ${filteredEvents.length} events in database within ${radius}km radius`);
+    console.log(`Found ${filteredEvents.length} total events within ${radius}km radius (${(events || []).length} from database, ${googlePlacesEvents.length} from Google Places)`);
     
     return new Response(JSON.stringify({ 
       events: filteredEvents,
