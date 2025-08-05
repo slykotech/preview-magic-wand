@@ -73,28 +73,30 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
       .on(
         'postgres_changes',
         {
-          event: 'UPDATE',
+          event: '*',
           schema: 'public',
           table: 'tic_toe_heart_games',
           filter: `id=eq.${gameState.id}`
         },
         (payload) => {
           console.log('Real-time game update received:', payload);
-          const updatedState = payload.new as any;
-          const newGameState = {
-            ...updatedState,
-            board: updatedState.board as Board,
-            game_status: updatedState.game_status as GameStatus,
-            last_move_at: updatedState.last_move_at || new Date().toISOString()
-          };
-          console.log('Setting new game state:', newGameState);
-          setGameState(newGameState);
-          
-          // Check for game end
-          if (payload.new.game_status !== 'playing') {
-            setShowCelebration(true);
-            if (payload.new.winner_id === user?.id) {
-              setTimeout(() => setShowRewardInput(true), 2000);
+          if (payload.eventType === 'UPDATE') {
+            const updatedState = payload.new as any;
+            const newGameState = {
+              ...updatedState,
+              board: updatedState.board as Board,
+              game_status: updatedState.game_status as GameStatus,
+              last_move_at: updatedState.last_move_at || new Date().toISOString()
+            };
+            console.log('Setting new game state:', newGameState);
+            setGameState(newGameState);
+            
+            // Check for game end
+            if (payload.new.game_status !== 'playing') {
+              setShowCelebration(true);
+              if (payload.new.winner_id === user?.id) {
+                setTimeout(() => setShowRewardInput(true), 2000);
+              }
             }
           }
         }
