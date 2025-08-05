@@ -188,18 +188,44 @@ export const PartnerConnectionSection = () => {
     }));
 
     try {
-      // Use direct fetch since invoke doesn't support query params well
+      // Check if user is authenticated first
       const session = await supabase.auth.getSession();
+      
+      if (!session.data.session || !session.data.session.access_token) {
+        setEmailValidation({
+          isValid: true,
+          exists: false,
+          available: false,
+          message: "Please log in again to validate email addresses",
+          isChecking: false,
+          showInviteToJoin: false
+        });
+        return;
+      }
+
       const response = await fetch(`https://kdbgwmtihgmialrmaecn.supabase.co/functions/v1/check-email-exists?email=${encodeURIComponent(email)}`, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${session.data.session?.access_token}`,
+          'Authorization': `Bearer ${session.data.session.access_token}`,
           'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkYmd3bXRpaGdtaWFscm1hZWNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM3MjA0MzAsImV4cCI6MjA2OTI5NjQzMH0.9tugXDyBuaIaf8fAS0z6cyb-y8Rtykl2zrPxd8bnnOw',
           'Content-Type': 'application/json'
         }
       });
 
       const result = await response.json();
+
+      // Handle authentication errors specifically
+      if (response.status === 403 || response.status === 401) {
+        setEmailValidation({
+          isValid: true,
+          exists: false,
+          available: false,
+          message: "Session expired. Please refresh the page and log in again.",
+          isChecking: false,
+          showInviteToJoin: false
+        });
+        return;
+      }
 
       if (!result.success) {
         setEmailValidation({
@@ -253,7 +279,7 @@ export const PartnerConnectionSection = () => {
         isValid: true,
         exists: false,
         available: false,
-        message: "Error checking user existence",
+        message: "Unable to validate email. Please try refreshing the page.",
         isChecking: false,
         showInviteToJoin: false
       });
