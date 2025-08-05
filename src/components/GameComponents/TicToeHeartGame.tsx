@@ -262,9 +262,10 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
           playerName: randomFirstPlayer === user!.id ? getUserDisplayName() : getPartnerDisplayName()
         });
         
+        // Use upsert to prevent duplicates if both players try to create simultaneously
         const { data: newGame, error: createError } = await supabase
           .from('tic_toe_heart_games')
-          .insert({
+          .upsert({
             session_id: sessionId,
             current_player_id: randomFirstPlayer,
             board: [
@@ -272,19 +273,42 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
               [null, null, null],
               [null, null, null]
             ]
+          }, {
+            onConflict: 'session_id',
+            ignoreDuplicates: false
           })
           .select()
           .single();
 
-        if (createError) throw createError;
-        console.log('🎮 New game created:', newGame);
-        const newGameState = {
-          ...newGame,
-          board: newGame.board as Board,
-          game_status: newGame.game_status as GameStatus,
-          last_move_at: newGame.last_move_at || new Date().toISOString()
-        };
-        setGameState(newGameState);
+        if (createError) {
+          console.error('❌ Create game error:', createError);
+          // If creation failed due to conflict, try to fetch the existing game
+          const { data: conflictGame, error: conflictError } = await supabase
+            .from('tic_toe_heart_games')
+            .select('*')
+            .eq('session_id', sessionId)
+            .single();
+          
+          if (conflictError) throw createError; // Throw original error if fetch also fails
+          
+          console.log('🎮 Game already exists due to conflict, using existing:', conflictGame);
+          const conflictState = {
+            ...conflictGame,
+            board: conflictGame.board as Board,
+            game_status: conflictGame.game_status as GameStatus,
+            last_move_at: conflictGame.last_move_at || new Date().toISOString()
+          };
+          setGameState(conflictState);
+        } else {
+          console.log('🎮 New game created:', newGame);
+          const newGameState = {
+            ...newGame,
+            board: newGame.board as Board,
+            game_status: newGame.game_status as GameStatus,
+            last_move_at: newGame.last_move_at || new Date().toISOString()
+          };
+          setGameState(newGameState);
+        }
         
         // Debug turn state after creating new game
         setTimeout(() => debugTurnState(), 100);

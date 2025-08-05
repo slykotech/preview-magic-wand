@@ -1712,7 +1712,7 @@ export type Database = {
           {
             foreignKeyName: "tic_toe_heart_games_session_id_fkey"
             columns: ["session_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "game_sessions"
             referencedColumns: ["id"]
           },
