@@ -59,12 +59,17 @@ export const useEventSuggestions = () => {
 
     // Don't fetch if we already have recent data (unless forced)
     if (!forceRefresh && lastFetched && Date.now() - lastFetched.getTime() < 5 * 60 * 1000) {
+      console.log('Skipping fetch - recent data available');
       return;
     }
 
     setIsLoading(true);
     try {
-      console.log('Fetching events for location:', location);
+      console.log('About to invoke fetch-events function with:', {
+        latitude: location.latitude,
+        longitude: location.longitude,
+        radius: 25
+      });
 
       const { data, error } = await supabase.functions.invoke('fetch-events', {
         body: {
@@ -74,22 +79,22 @@ export const useEventSuggestions = () => {
         }
       });
 
+      console.log('fetch-events response:', { data, error });
+
       if (error) {
+        console.error('Edge function error:', error);
         throw error;
       }
 
       const fetchedEvents = data?.events || [];
+      console.log('Events fetched:', fetchedEvents.length);
+      
       setEvents(fetchedEvents);
       setLastFetched(new Date());
 
-      if (data?.newEvents > 0) {
+      if (forceRefresh && fetchedEvents.length > 0) {
         toast({
-          title: "Events updated! 🎉",
-          description: `Found ${data.newEvents} new events near you`,
-        });
-      } else if (data?.cached) {
-        toast({
-          title: "Events loaded 📍",
+          title: "Events loaded! 📍",
           description: `Found ${fetchedEvents.length} events in your area`,
         });
       }
@@ -104,6 +109,7 @@ export const useEventSuggestions = () => {
 
       // Fallback to cached events from database
       try {
+        console.log('Attempting fallback to cached events...');
         const { data: cachedEvents } = await supabase
           .from('events')
           .select('*')
@@ -111,6 +117,7 @@ export const useEventSuggestions = () => {
           .order('event_date', { ascending: true })
           .limit(20);
 
+        console.log('Cached events:', cachedEvents?.length || 0);
         setEvents(cachedEvents || []);
       } catch (cacheError) {
         console.error('Failed to load cached events:', cacheError);
