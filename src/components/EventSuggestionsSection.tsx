@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { EventSuggestionCard } from "./EventSuggestionCard";
+import { EventScrapingTrigger } from "./EventScrapingTrigger";
 import { useEventSuggestions, EventSuggestion } from "@/hooks/useEventSuggestions";
 import { useLocation } from "@/hooks/useLocation";
 import { RefreshCw, MapPin, Filter } from "lucide-react";
@@ -163,19 +164,24 @@ export const EventSuggestionsSection = ({ onEventSelect, className = "" }: Event
         </div>
       )}
 
-      {/* Empty state */}
+      {/* Empty state with scraping trigger */}
       {!isLoading && filteredEvents.length === 0 && events.length === 0 && (
-        <div className="text-center py-8 space-y-4">
+        <div className="text-center py-8 space-y-6">
           <div className="w-16 h-16 mx-auto bg-muted rounded-full flex items-center justify-center">
             <Filter className="w-8 h-8 text-muted-foreground" />
           </div>
-          <h3 className="text-lg font-semibold">No events found</h3>
-          <p className="text-muted-foreground max-w-md mx-auto">
-            We couldn't find any events in your area right now. Try refreshing or adjusting your location.
-          </p>
+          <div>
+            <h3 className="text-lg font-semibold">No events found</h3>
+            <p className="text-muted-foreground max-w-md mx-auto">
+              The database may need to be populated with events for your area. Try triggering the scraping process below.
+            </p>
+          </div>
+          
+          <EventScrapingTrigger />
+          
           <Button onClick={refreshEvents} variant="outline">
             <RefreshCw className="w-4 h-4 mr-2" />
-            Try Again
+            Check Again
           </Button>
         </div>
       )}
