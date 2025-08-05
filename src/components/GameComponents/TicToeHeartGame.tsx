@@ -509,6 +509,18 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
   const isUserTurn = gameState.current_player_id === user?.id;
   const isGameOver = gameState.game_status !== 'playing';
 
+  // 🔍 DEBUG: Add comprehensive turn debugging
+  console.log('🎮 TURN DEBUG:', {
+    gameStateCurrentPlayer: gameState.current_player_id,
+    currentUserId: user?.id,
+    partnerId: partnerId,
+    isUserTurn: isUserTurn,
+    userSymbol: userSymbol,
+    partnerSymbol: partnerSymbol,
+    gameStatus: gameState.game_status,
+    movesCount: gameState.moves_count
+  });
+
   return (
     <div className="space-y-6">
       {/* Confetti for winners */}
