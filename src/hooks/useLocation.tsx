@@ -69,7 +69,7 @@ export const useLocation = () => {
     );
   }, [toast]);
 
-  const setManualLocation = useCallback((cityName: string) => {
+  const setManualLocation = useCallback(async (cityName: string) => {
     if (!cityName.trim()) {
       toast({
         title: "Invalid location",
@@ -79,19 +79,55 @@ export const useLocation = () => {
       return;
     }
 
-    const locationData: LocationData = {
-      latitude: 0, // Will be geocoded by backend
-      longitude: 0, // Will be geocoded by backend
-      city: cityName.trim(),
-      displayName: cityName.trim()
-    };
-
-    setLocation(locationData);
+    setIsGettingLocation(true);
     
-    toast({
-      title: "Location set! 📍",
-      description: `Looking for events near ${cityName}`,
-    });
+    try {
+      // Use OpenStreetMap Nominatim API for geocoding (free and no API key required)
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(cityName.trim())}&limit=1`
+      );
+      
+      if (!response.ok) {
+        throw new Error('Geocoding service unavailable');
+      }
+      
+      const results = await response.json();
+      
+      if (!results || results.length === 0) {
+        throw new Error('Location not found');
+      }
+      
+      const result = results[0];
+      const latitude = parseFloat(result.lat);
+      const longitude = parseFloat(result.lon);
+      
+      if (isNaN(latitude) || isNaN(longitude)) {
+        throw new Error('Invalid coordinates received');
+      }
+
+      const locationData: LocationData = {
+        latitude,
+        longitude,
+        city: cityName.trim(),
+        displayName: result.display_name || cityName.trim()
+      };
+
+      setLocation(locationData);
+      
+      toast({
+        title: "Location set! 📍",
+        description: `Found ${result.display_name || cityName}`,
+      });
+    } catch (error) {
+      console.error('Geocoding error:', error);
+      toast({
+        title: "Location not found",
+        description: "Could not find the specified location. Please try a different city name.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsGettingLocation(false);
+    }
   }, [toast]);
 
   const clearLocation = useCallback(() => {
