@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { EventSuggestionCard } from "./EventSuggestionCard";
 import { useEventSuggestions, EventSuggestion } from "@/hooks/useEventSuggestions";
 import { useLocation } from "@/hooks/useLocation";
-import { RefreshCw, Search, MapPin, Filter } from "lucide-react";
+import { RefreshCw, MapPin, Filter } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface EventSuggestionsSectionProps {
@@ -26,16 +26,15 @@ const categories = [
 export const EventSuggestionsSection = ({ onEventSelect, className = "" }: EventSuggestionsSectionProps) => {
   const { toast } = useToast();
   const { location, getCurrentLocation, setManualLocation } = useLocation();
-  const { events, isLoading, fetchEvents, getEventsByCategory, searchEvents, trackEventInteraction } = useEventSuggestions();
+  const { events, isLoading, fetchEvents, getEventsByCategory, trackEventInteraction } = useEventSuggestions();
   
   console.log('EventSuggestionsSection render - location:', location, 'events count:', events.length, 'isLoading:', isLoading);
   
-  const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [locationInput, setLocationInput] = useState('');
   const [filteredEvents, setFilteredEvents] = useState<EventSuggestion[]>([]);
 
-  // Apply filters whenever events, search, or category changes
+  // Apply filters whenever events or category changes
   useEffect(() => {
     let filtered = events;
     
@@ -43,12 +42,8 @@ export const EventSuggestionsSection = ({ onEventSelect, className = "" }: Event
       filtered = getEventsByCategory(selectedCategory);
     }
     
-    if (searchQuery.trim()) {
-      filtered = searchEvents(searchQuery);
-    }
-    
     setFilteredEvents(filtered);
-  }, [events, selectedCategory, searchQuery, getEventsByCategory, searchEvents]);
+  }, [events, selectedCategory, getEventsByCategory]);
 
   const handleEventSave = async (event: EventSuggestion) => {
     await trackEventInteraction(event.id, 'saved');
@@ -129,20 +124,10 @@ export const EventSuggestionsSection = ({ onEventSelect, className = "" }: Event
         </Button>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Search events..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        
+      {/* Category Filter */}
+      <div className="flex justify-center">
         <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-          <SelectTrigger className="w-full sm:w-48">
+          <SelectTrigger className="w-full sm:w-64">
             <Filter className="w-4 h-4 mr-2" />
             <SelectValue />
           </SelectTrigger>
@@ -182,7 +167,7 @@ export const EventSuggestionsSection = ({ onEventSelect, className = "" }: Event
       {!isLoading && filteredEvents.length === 0 && events.length === 0 && (
         <div className="text-center py-8 space-y-4">
           <div className="w-16 h-16 mx-auto bg-muted rounded-full flex items-center justify-center">
-            <Search className="w-8 h-8 text-muted-foreground" />
+            <Filter className="w-8 h-8 text-muted-foreground" />
           </div>
           <h3 className="text-lg font-semibold">No events found</h3>
           <p className="text-muted-foreground max-w-md mx-auto">
@@ -203,22 +188,14 @@ export const EventSuggestionsSection = ({ onEventSelect, className = "" }: Event
           </div>
           <h3 className="text-lg font-semibold">No matching events</h3>
           <p className="text-muted-foreground">
-            Try adjusting your search or category filter to see more events.
+            Try adjusting your category filter to see more events.
           </p>
-          <div className="flex gap-2 justify-center">
-            <Button 
-              variant="outline" 
-              onClick={() => setSearchQuery('')}
-            >
-              Clear Search
-            </Button>
-            <Button 
-              variant="outline" 
-              onClick={() => setSelectedCategory('all')}
-            >
-              Show All Categories
-            </Button>
-          </div>
+          <Button 
+            variant="outline" 
+            onClick={() => setSelectedCategory('all')}
+          >
+            Show All Categories
+          </Button>
         </div>
       )}
     </div>
