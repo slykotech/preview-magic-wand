@@ -102,43 +102,80 @@ export const useEnhancedLocation = () => {
     setIsGettingLocation(true);
     
     try {
-      // Enhanced geocoding with country support
+      // Try multiple geocoding services for better reliability
       const searchQuery = country ? `${cityName}, ${country}` : cityName;
-      const response = await fetch(
-        `https://api.bigdatacloud.net/data/forward-geocode-client?query=${encodeURIComponent(searchQuery)}&localityLanguage=en`
-      );
+      let enhancedLocation: EnhancedLocationData | null = null;
       
-      if (response.ok) {
-        const data = await response.json();
+      // First try: OpenStreetMap Nominatim (free and reliable)
+      try {
+        const nominatimResponse = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=1&addressdetails=1`
+        );
         
-        if (data.results && data.results.length > 0) {
-          const result = data.results[0];
-          const enhancedLocation: EnhancedLocationData = {
-            latitude: result.latitude,
-            longitude: result.longitude,
-            city: result.city || result.locality || cityName,
-            state: result.adminArea1 || result.region || '',
-            country: result.countryName || country || '',
-            displayName: `${result.city || result.locality}, ${result.adminArea1 || result.region}`,
-            searchRadius: 50
-          };
+        if (nominatimResponse.ok) {
+          const nominatimData = await nominatimResponse.json();
           
-          setLocation(enhancedLocation);
-          
-          toast({
-            title: "Location set! 📍",
-            description: `Using ${enhancedLocation.displayName}`,
-          });
-        } else {
-          // No results found
-          toast({
-            title: "Location not found",
-            description: "Could not find this location. Please try a more specific city name.",
-            variant: "destructive"
-          });
+          if (nominatimData && nominatimData.length > 0) {
+            const result = nominatimData[0];
+            const address = result.address || {};
+            
+            enhancedLocation = {
+              latitude: parseFloat(result.lat),
+              longitude: parseFloat(result.lon),
+              city: address.city || address.town || address.village || address.municipality || cityName,
+              state: address.state || address.region || '',
+              country: address.country || country || '',
+              displayName: result.display_name,
+              searchRadius: 50
+            };
+          }
         }
+      } catch (nominatimError) {
+        console.log('Nominatim geocoding failed, trying fallback:', nominatimError);
+      }
+      
+      // Fallback: BigDataCloud
+      if (!enhancedLocation) {
+        try {
+          const response = await fetch(
+            `https://api.bigdatacloud.net/data/forward-geocode-client?query=${encodeURIComponent(searchQuery)}&localityLanguage=en`
+          );
+          
+          if (response.ok) {
+            const data = await response.json();
+            
+            if (data.results && data.results.length > 0) {
+              const result = data.results[0];
+              enhancedLocation = {
+                latitude: result.latitude,
+                longitude: result.longitude,
+                city: result.city || result.locality || cityName,
+                state: result.adminArea1 || result.region || '',
+                country: result.countryName || country || '',
+                displayName: `${result.city || result.locality}, ${result.adminArea1 || result.region}`,
+                searchRadius: 50
+              };
+            }
+          }
+        } catch (bigDataError) {
+          console.log('BigDataCloud geocoding failed:', bigDataError);
+        }
+      }
+      
+      if (enhancedLocation) {
+        setLocation(enhancedLocation);
+        
+        toast({
+          title: "Location set! 📍",
+          description: `Using ${enhancedLocation.displayName}`,
+        });
       } else {
-        throw new Error('Geocoding service unavailable');
+        // No results found from any service
+        toast({
+          title: "Location not found",
+          description: "Could not find this location. Please try a more specific city name.",
+          variant: "destructive"
+        });
       }
     } catch (error) {
       console.error('Manual location error:', error);
