@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { EventSuggestionCard } from "./EventSuggestionCard";
 import { useEventSuggestions, EventSuggestion } from "@/hooks/useEventSuggestions";
 import { useLocation } from "@/hooks/useLocation";
-import { LocationSearchInput } from "./LocationSearchInput";
+import { WorldwideLocationSearch } from "./WorldwideLocationSearch";
 import { RefreshCw, Search, MapPin, Filter, Navigation } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -153,9 +153,9 @@ export const EventSuggestionsSection = ({ onEventSelect, className = "" }: Event
               
               {showLocationSearch && (
                 <div className="max-w-md mx-auto space-y-3">
-                  <LocationSearchInput
+                  <WorldwideLocationSearch
                     onLocationSelect={handleLocationSelect}
-                    placeholder="Search for your city..."
+                    placeholder="Search for any city worldwide..."
                   />
                   <div className="text-sm text-muted-foreground">or</div>
                 </div>
@@ -207,9 +207,9 @@ export const EventSuggestionsSection = ({ onEventSelect, className = "" }: Event
           
           {showLocationSearch && (
             <div className="mt-3 max-w-md">
-              <LocationSearchInput
+              <WorldwideLocationSearch
                 onLocationSelect={handleLocationSelect}
-                placeholder="Search for a different city..."
+                placeholder="Search for any city worldwide..."
               />
             </div>
           )}
