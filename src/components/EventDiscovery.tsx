@@ -107,7 +107,11 @@ export const EventDiscovery: React.FC<EventDiscoveryProps> = ({
   }, [location, toast]);
 
   const handleLocationSet = useCallback((cityName: string, coordinates: {lat: number, lng: number, displayName: string}) => {
-    setManualLocation(cityName, coordinates);
+    // Extract country from displayName if available (format: "City, State, Country" or "City, Country")
+    const parts = coordinates.displayName.split(', ');
+    const country = parts.length > 1 ? parts[parts.length - 1] : undefined;
+    
+    setManualLocation(cityName, country);
   }, [setManualLocation]);
 
   const handleSaveEvent = useCallback(async (event: Event) => {
