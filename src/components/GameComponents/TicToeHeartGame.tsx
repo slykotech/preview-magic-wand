@@ -216,13 +216,22 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
           last_move_at: existingGame.last_move_at || new Date().toISOString()
         });
       } else {
-        // Create new game with user as first player
-        console.log('🎮 Creating new game with user as first player:', user!.id);
+        // Create new game with randomly selected first player
+        const players = [user!.id, partnerId];
+        const randomFirstPlayer = players[Math.floor(Math.random() * players.length)];
+        
+        console.log('🎮 Creating new game with random first player:', {
+          user: user!.id,
+          partner: partnerId,
+          randomFirstPlayer: randomFirstPlayer,
+          playerName: randomFirstPlayer === user!.id ? getUserDisplayName() : getPartnerDisplayName()
+        });
+        
         const { data: newGame, error: createError } = await supabase
           .from('tic_toe_heart_games')
           .insert({
             session_id: sessionId,
-            current_player_id: user!.id,
+            current_player_id: randomFirstPlayer,
             board: [
               [null, null, null],
               [null, null, null],
