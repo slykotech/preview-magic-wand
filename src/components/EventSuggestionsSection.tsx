@@ -2,10 +2,10 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { EventSuggestionCard } from "./EventSuggestionCard";
 import { useEventSuggestions, EventSuggestion } from "@/hooks/useEventSuggestions";
 import { useLocation } from "@/hooks/useLocation";
 import { WorldwideLocationSearch } from "./WorldwideLocationSearch";
+import { EventDisplay } from "./EventDisplay";
 import { RefreshCw, Search, MapPin, Filter, Navigation } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -253,71 +253,14 @@ export const EventSuggestionsSection = ({ onEventSelect, className = "" }: Event
         </Select>
       </div>
 
-      {/* Loading state */}
-      {isLoading && (
-        <div className="text-center py-8">
-          <RefreshCw className="w-8 h-8 mx-auto animate-spin text-primary mb-4" />
-          <p className="text-muted-foreground">Finding amazing events for you...</p>
-        </div>
-      )}
-
-      {/* Events grid */}
-      {!isLoading && filteredEvents.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredEvents.map((event) => (
-            <EventSuggestionCard
-              key={event.id}
-              event={event}
-              onSaveToPlanner={handleEventSave}
-              onViewDetails={handleEventView}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* Empty state */}
-      {!isLoading && filteredEvents.length === 0 && events.length === 0 && (
-        <div className="text-center py-8 space-y-4">
-          <div className="w-16 h-16 mx-auto bg-muted rounded-full flex items-center justify-center">
-            <Search className="w-8 h-8 text-muted-foreground" />
-          </div>
-          <h3 className="text-lg font-semibold">No events found</h3>
-          <p className="text-muted-foreground max-w-md mx-auto">
-            We couldn't find any events in your area right now. Try refreshing or adjusting your location.
-          </p>
-          <Button onClick={refreshEvents} variant="outline">
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Try Again
-          </Button>
-        </div>
-      )}
-
-      {/* No results for filters */}
-      {!isLoading && filteredEvents.length === 0 && events.length > 0 && (
-        <div className="text-center py-8 space-y-4">
-          <div className="w-16 h-16 mx-auto bg-muted rounded-full flex items-center justify-center">
-            <Filter className="w-8 h-8 text-muted-foreground" />
-          </div>
-          <h3 className="text-lg font-semibold">No matching events</h3>
-          <p className="text-muted-foreground">
-            Try adjusting your search or category filter to see more events.
-          </p>
-          <div className="flex gap-2 justify-center">
-            <Button 
-              variant="outline" 
-              onClick={() => setSearchQuery('')}
-            >
-              Clear Search
-            </Button>
-            <Button 
-              variant="outline" 
-              onClick={() => setSelectedCategory('all')}
-            >
-              Show All Categories
-            </Button>
-          </div>
-        </div>
-      )}
+      <EventDisplay
+        events={filteredEvents}
+        isLoading={isLoading}
+        onEventSelect={handleEventSave}
+        onRefresh={refreshEvents}
+        searchQuery={searchQuery}
+        selectedCategory={selectedCategory}
+      />
     </div>
   );
 };

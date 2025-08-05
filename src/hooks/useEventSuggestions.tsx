@@ -167,15 +167,24 @@ export const useEventSuggestions = () => {
 
   // Auto-fetch events when location changes and has valid coordinates
   useEffect(() => {
-    if (location && location.latitude && location.longitude && location.latitude !== 0 && location.longitude !== 0) {
+    const shouldFetch = location && 
+                       location.latitude && 
+                       location.longitude && 
+                       location.latitude !== 0 && 
+                       location.longitude !== 0;
+    
+    console.log('Location effect triggered:', { shouldFetch, location });
+    
+    if (shouldFetch) {
       console.log('Location changed with valid coordinates, fetching events');
       fetchEvents();
     }
-  }, [location?.latitude, location?.longitude, fetchEvents]);
+  }, [location?.latitude, location?.longitude]); // Removed fetchEvents from dependencies to prevent infinite loop
 
   // Reset events when location is cleared
   useEffect(() => {
     if (!location) {
+      console.log('Location cleared, resetting events');
       setEvents([]);
       setLastFetched(null);
     }
@@ -187,12 +196,13 @@ export const useEventSuggestions = () => {
 
     const interval = setInterval(() => {
       if (document.visibilityState === 'visible' && lastFetched) {
+        console.log('Auto-refreshing events...');
         fetchEvents();
       }
     }, 30 * 60 * 1000); // 30 minutes
 
     return () => clearInterval(interval);
-  }, [location?.latitude, location?.longitude, lastFetched, fetchEvents]);
+  }, [location?.latitude, location?.longitude, lastFetched]); // Removed fetchEvents from dependencies
 
   return {
     events,
