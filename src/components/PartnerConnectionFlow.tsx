@@ -121,10 +121,10 @@ export const PartnerConnectionFlow = () => {
     setCurrentStep('sending');
 
     try {
-      const { data, error } = await supabase.functions.invoke('manage-partner-connection', {
+      const { data, error } = await supabase.functions.invoke('partner-connection-v2', {
         body: {
           action: 'send_request',
-          partnerEmail: email.trim()
+          email: email.trim()
         }
       });
 
