@@ -18,14 +18,25 @@ const gameTypes = [
     description: "500+ meaningful questions to spark intimate conversations and laughter"
   },
   {
-    id: "tic_toe_heart",
-    title: "Tic Toe Heart",
-    subtitle: "Playful Competition",
+    id: "heart_sync",
+    title: "Heart Sync",
+    subtitle: "Real-Time Romance",
     icon: Heart,
     secondaryIcon: Users,
     gradient: "from-purple-400 to-pink-400",
     bgGradient: "from-purple-50 to-pink-50",
     darkBgGradient: "from-purple-950/30 to-pink-950/30",
+    description: "Real-time romantic Tic-Tac-Toe where winners get to ask HeartWish questions! 💖 vs 💘"
+  },
+  {
+    id: "tic_toe_heart",
+    title: "Tic Toe Heart",
+    subtitle: "Playful Competition",
+    icon: Heart,
+    secondaryIcon: Users,
+    gradient: "from-indigo-400 to-purple-400",
+    bgGradient: "from-indigo-50 to-purple-50",
+    darkBgGradient: "from-indigo-950/30 to-purple-950/30",
     description: "Romantic twist on classic Tic-Tac-Toe with winner rewards and heart animations"
   },
   {
@@ -47,6 +58,11 @@ export const Games = () => {
 
   const handleGameSelect = async (gameType: string) => {
     try {
+      if (gameType === 'heart_sync') {
+        navigate('/heart-sync');
+        return;
+      }
+      
       const session = await createGameSession(gameType);
       if (session) {
         navigate(`/games/${session.id}`);

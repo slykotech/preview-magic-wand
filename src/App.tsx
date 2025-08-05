@@ -36,6 +36,7 @@ import { Signup } from "./pages/Signup";
 import { VerifyEmail } from "./pages/VerifyEmail";
 import SignupResolver from "./pages/SignupResolver";
 import CompleteSignup from "./pages/CompleteSignup";
+import HeartSyncGamePage from "./pages/HeartSyncGame";
 
 const queryClient = new QueryClient();
 
@@ -73,6 +74,7 @@ const App = () => {
               <Route path="/planner" element={<DatePlanner />} />
                 <Route path="/games" element={<Games />} />
                 <Route path="/games/:sessionId" element={<GameSession />} />
+                <Route path="/heart-sync" element={<HeartSyncGamePage />} />
               <Route path="/vault" element={<MemoryVault />} />
               <Route path="/profile" element={<Profile />} />
                 <Route path="/couple-setup" element={<CoupleSetup />} />
