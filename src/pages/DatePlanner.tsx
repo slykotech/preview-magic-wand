@@ -9,11 +9,14 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { BottomNavigation } from '@/components/BottomNavigation';
-import { useToast } from '@/components/ui/use-toast';
-import { Calendar, MapPin, Clock, DollarSign, Heart, X, Plus, Trash2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { Calendar, MapPin, Clock, DollarSign, Heart, X, Plus, Trash2, Lightbulb } from 'lucide-react';
 import { GradientHeader } from '@/components/GradientHeader';
+import { EventSuggestionsSection } from '@/components/EventSuggestionsSection';
+import { EventSuggestion } from '@/hooks/useEventSuggestions';
 
 interface DateIdea {
   id: string;
@@ -371,6 +374,22 @@ export const DatePlanner = () => {
 
   const categories = ['romantic', 'adventure', 'cultural', 'food', 'sports', 'entertainment', 'outdoor', 'relaxation'];
 
+  // Handler for when user selects an event suggestion
+  const handleEventSuggestionSelect = (event: EventSuggestion) => {
+    setFormData({
+      title: event.title,
+      description: event.description || '',
+      category: event.category || 'entertainment',
+      scheduled_date: event.event_date,
+      scheduled_time: event.event_time || '',
+      location: event.location_name,
+      estimated_cost: event.price_range || '',
+      estimated_duration: '',
+      notes: `${event.organizer ? `Organized by: ${event.organizer}` : ''}${event.source_url ? `\nMore info: ${event.source_url}` : ''}`
+    });
+    setShowAddForm(true);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 flex items-center justify-center">
@@ -390,204 +409,232 @@ export const DatePlanner = () => {
       />
 
       <div className="flex-1 overflow-y-auto container mx-auto px-4 py-6">
-        <div className="space-y-6">
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold">Your Planned Dates</h3>
-            <Button onClick={() => setShowAddForm(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add New Date
-            </Button>
-          </div>
+        <Tabs defaultValue="planned" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-6">
+            <TabsTrigger value="planned" className="flex items-center gap-2">
+              <Heart className="w-4 h-4" />
+              Planned Dates
+            </TabsTrigger>
+            <TabsTrigger value="suggestions" className="flex items-center gap-2">
+              <Lightbulb className="w-4 h-4" />
+              Sweet Suggestions
+            </TabsTrigger>
+          </TabsList>
 
-          {/* Add Form */}
-          {showAddForm && (
-            <Card>
-              <CardHeader>
-                <div className="flex justify-between items-center">
-                  <CardTitle>Add New Date</CardTitle>
-                  <Button variant="ghost" size="sm" onClick={() => setShowAddForm(false)}>
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium">Title *</label>
-                    <Input
-                      value={formData.title}
-                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                      placeholder="Dinner at..."
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Category</label>
-                    <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categories.map(cat => (
-                          <SelectItem key={cat} value={cat}>
-                            {cat.charAt(0).toUpperCase() + cat.slice(1)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Date</label>
-                    <Input
-                      type="date"
-                      value={formData.scheduled_date}
-                      onChange={(e) => setFormData({ ...formData, scheduled_date: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Time</label>
-                    <Input
-                      type="time"
-                      value={formData.scheduled_time}
-                      onChange={(e) => setFormData({ ...formData, scheduled_time: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Location</label>
-                    <Input
-                      value={formData.location}
-                      onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                      placeholder="Restaurant, park, etc."
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Estimated Cost</label>
-                    <Input
-                      value={formData.estimated_cost}
-                      onChange={(e) => setFormData({ ...formData, estimated_cost: e.target.value })}
-                      placeholder="$50"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Description</label>
-                  <Textarea
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Describe your date idea..."
-                    rows={3}
-                  />
-                </div>
-                <div className="flex gap-2 justify-end">
-                  <Button variant="outline" onClick={() => setShowAddForm(false)}>
-                    Cancel
-                  </Button>
-                  <Button onClick={handleAddEvent}>
-                    Add Date
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          {/* Planned Dates Tab */}
+          <TabsContent value="planned" className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-semibold">Your Planned Dates</h3>
+              <Button onClick={() => setShowAddForm(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add New Date
+              </Button>
+            </div>
 
-          {/* Dates List */}
-          {plannedDates.length === 0 ? (
-            <Card className="text-center py-12">
-              <CardContent>
-                <Heart className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <h3 className="font-semibold text-lg mb-2">No planned dates yet</h3>
-                <p className="text-muted-foreground mb-4">Start planning your perfect dates together!</p>
-                <Button onClick={() => setShowAddForm(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Plan Your First Date
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-4">
-              {Object.entries(getDatesByCategory()).map(([category, dates]) => (
-                <div key={category} className="space-y-3">
-                  <h4 className="font-medium text-lg flex items-center gap-2">
-                    {category.charAt(0).toUpperCase() + category.slice(1)}
-                    <Badge variant="secondary">{dates.length}</Badge>
-                  </h4>
-                  <div className="grid gap-3">
-                    {dates.map((date) => (
-                      <Card key={date.id}>
-                        <CardContent className="p-4">
-                          <div className="flex justify-between items-start mb-3">
-                            <div className="flex-1">
-                              <h5 className="font-medium text-lg">{date.title}</h5>
-                              {date.description && (
-                                <p className="text-muted-foreground text-sm mt-1">{date.description}</p>
+            {/* Add Form */}
+            {showAddForm && (
+              <Card>
+                <CardHeader>
+                  <div className="flex justify-between items-center">
+                    <CardTitle>Add New Date</CardTitle>
+                    <Button variant="ghost" size="sm" onClick={() => setShowAddForm(false)}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium">Title *</label>
+                      <Input
+                        value={formData.title}
+                        onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                        placeholder="Dinner at..."
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Category</label>
+                      <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background border z-50">
+                          {categories.map(cat => (
+                            <SelectItem key={cat} value={cat}>
+                              {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Date</label>
+                      <Input
+                        type="date"
+                        value={formData.scheduled_date}
+                        onChange={(e) => setFormData({ ...formData, scheduled_date: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Time</label>
+                      <Input
+                        type="time"
+                        value={formData.scheduled_time}
+                        onChange={(e) => setFormData({ ...formData, scheduled_time: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Location</label>
+                      <Input
+                        value={formData.location}
+                        onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                        placeholder="Restaurant, park, etc."
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Estimated Cost</label>
+                      <Input
+                        value={formData.estimated_cost}
+                        onChange={(e) => setFormData({ ...formData, estimated_cost: e.target.value })}
+                        placeholder="$50"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Description</label>
+                    <Textarea
+                      value={formData.description}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      placeholder="Describe your date idea..."
+                      rows={3}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Notes</label>
+                    <Textarea
+                      value={formData.notes}
+                      onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                      placeholder="Additional notes..."
+                      rows={2}
+                    />
+                  </div>
+                  <div className="flex gap-2 justify-end">
+                    <Button variant="outline" onClick={() => setShowAddForm(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleAddEvent}>
+                      Add Date
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Dates List */}
+            {plannedDates.length === 0 ? (
+              <Card className="text-center py-12">
+                <CardContent>
+                  <Heart className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                  <h3 className="font-semibold text-lg mb-2">No planned dates yet</h3>
+                  <p className="text-muted-foreground mb-4">Start planning your perfect dates together!</p>
+                  <Button onClick={() => setShowAddForm(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Plan Your First Date
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {Object.entries(getDatesByCategory()).map(([category, dates]) => (
+                  <div key={category} className="space-y-3">
+                    <h4 className="font-medium text-lg flex items-center gap-2">
+                      {category.charAt(0).toUpperCase() + category.slice(1)}
+                      <Badge variant="secondary">{dates.length}</Badge>
+                    </h4>
+                    <div className="grid gap-3">
+                      {dates.map((date) => (
+                        <Card key={date.id}>
+                          <CardContent className="p-4">
+                            <div className="flex justify-between items-start mb-3">
+                              <div className="flex-1">
+                                <h5 className="font-medium text-lg">{date.title}</h5>
+                                {date.description && (
+                                  <p className="text-muted-foreground text-sm mt-1">{date.description}</p>
+                                )}
+                              </div>
+                              <div className="flex gap-2">
+                                <Button variant="ghost" size="sm" onClick={() => handleEditDate(date)}>
+                                  Edit
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleDeleteDate(date.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+
+                            <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mb-4">
+                              {date.scheduled_date && (
+                                <div className="flex items-center gap-1">
+                                  <Calendar className="h-4 w-4" />
+                                  {new Date(date.scheduled_date).toLocaleDateString()}
+                                </div>
+                              )}
+                              {date.scheduled_time && (
+                                <div className="flex items-center gap-1">
+                                  <Clock className="h-4 w-4" />
+                                  {date.scheduled_time}
+                                </div>
+                              )}
+                              {date.location && (
+                                <div className="flex items-center gap-1">
+                                  <MapPin className="h-4 w-4" />
+                                  {date.location}
+                                </div>
+                              )}
+                              {date.estimated_cost && (
+                                <div className="flex items-center gap-1">
+                                  <DollarSign className="h-4 w-4" />
+                                  {date.estimated_cost}
+                                </div>
                               )}
                             </div>
+
                             <div className="flex gap-2">
-                              <Button variant="ghost" size="sm" onClick={() => handleEditDate(date)}>
-                                Edit
+                              <Button
+                                size="sm"
+                                onClick={() => handleDateFeedback(date.id, true)}
+                                className="flex items-center gap-1"
+                              >
+                                <Heart className="h-4 w-4" />
+                                Mark as Done
                               </Button>
                               <Button
-                                variant="ghost"
                                 size="sm"
-                                onClick={() => handleDeleteDate(date.id)}
+                                variant="outline"
+                                onClick={() => handleDateFeedback(date.id, false)}
                               >
-                                <Trash2 className="h-4 w-4" />
+                                Didn't happen
                               </Button>
                             </div>
-                          </div>
-
-                          <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mb-4">
-                            {date.scheduled_date && (
-                              <div className="flex items-center gap-1">
-                                <Calendar className="h-4 w-4" />
-                                {new Date(date.scheduled_date).toLocaleDateString()}
-                              </div>
-                            )}
-                            {date.scheduled_time && (
-                              <div className="flex items-center gap-1">
-                                <Clock className="h-4 w-4" />
-                                {date.scheduled_time}
-                              </div>
-                            )}
-                            {date.location && (
-                              <div className="flex items-center gap-1">
-                                <MapPin className="h-4 w-4" />
-                                {date.location}
-                              </div>
-                            )}
-                            {date.estimated_cost && (
-                              <div className="flex items-center gap-1">
-                                <DollarSign className="h-4 w-4" />
-                                {date.estimated_cost}
-                              </div>
-                            )}
-                          </div>
-
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              onClick={() => handleDateFeedback(date.id, true)}
-                              className="flex items-center gap-1"
-                            >
-                              <Heart className="h-4 w-4" />
-                              Mark as Done
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleDateFeedback(date.id, false)}
-                            >
-                              Didn't happen
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Event Suggestions Tab */}
+          <TabsContent value="suggestions" className="space-y-6">
+            <EventSuggestionsSection onEventSelect={handleEventSuggestionSelect} />
+          </TabsContent>
+        </Tabs>
 
         {/* Edit Form Modal */}
         {editingDate && (
