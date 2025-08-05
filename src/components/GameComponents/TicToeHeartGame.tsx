@@ -66,6 +66,8 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
   useEffect(() => {
     if (!gameState?.id) return;
 
+    console.log('Setting up real-time subscription for game:', gameState.id);
+
     const channel = supabase
       .channel(`tic-toe-game-${gameState.id}`)
       .on(
@@ -77,13 +79,16 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
           filter: `id=eq.${gameState.id}`
         },
         (payload) => {
+          console.log('Real-time game update received:', payload);
           const updatedState = payload.new as any;
-          setGameState({
+          const newGameState = {
             ...updatedState,
             board: updatedState.board as Board,
             game_status: updatedState.game_status as GameStatus,
             last_move_at: updatedState.last_move_at || new Date().toISOString()
-          });
+          };
+          console.log('Setting new game state:', newGameState);
+          setGameState(newGameState);
           
           // Check for game end
           if (payload.new.game_status !== 'playing') {
@@ -94,9 +99,12 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Subscription status:', status);
+      });
 
     return () => {
+      console.log('Cleaning up real-time subscription');
       supabase.removeChannel(channel);
     };
   }, [gameState?.id, user?.id]);
@@ -194,12 +202,16 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
     }
 
     try {
+      console.log('Making move at:', row, col, 'Current board:', gameState.board);
+      
       // Create new board with the move
       const newBoard = gameState.board.map((r, rowIndex) =>
         r.map((c, colIndex) => 
           rowIndex === row && colIndex === col ? userSymbol : c
         )
       );
+
+      console.log('New board after move:', newBoard);
 
       // Check for winner
       const winner = checkWinner(newBoard);
@@ -215,8 +227,16 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
         newStatus = 'draw';
       }
 
+      console.log('Updating database with:', {
+        board: newBoard,
+        current_player_id: newStatus === 'playing' ? partnerId : gameState.current_player_id,
+        game_status: newStatus,
+        winner_id: winnerId,
+        moves_count: gameState.moves_count + 1
+      });
+
       // Update game state in database
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('tic_toe_heart_games')
         .update({
           board: newBoard,
@@ -226,9 +246,27 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
           moves_count: gameState.moves_count + 1,
           last_move_at: new Date().toISOString()
         })
-        .eq('id', gameState.id);
+        .eq('id', gameState.id)
+        .select()
+        .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Database update error:', error);
+        throw error;
+      }
+
+      console.log('Database update successful:', data);
+
+      // Force local state update immediately (optimistic update)
+      setGameState({
+        ...gameState,
+        board: newBoard,
+        current_player_id: newStatus === 'playing' ? partnerId! : gameState.current_player_id,
+        game_status: newStatus,
+        winner_id: winnerId,
+        moves_count: gameState.moves_count + 1,
+        last_move_at: new Date().toISOString()
+      });
 
       toast.success('Move made!');
     } catch (error) {
