@@ -115,21 +115,30 @@ export const EventDiscovery: React.FC<EventDiscoveryProps> = ({
 
   const handleSaveEvent = useCallback(async (event: Event) => {
     try {
-      // For now, just simulate saving - will work once types are updated
-      console.log('Saving event:', event.id);
-      // const { error } = await supabase
-      //   .from('user_saved_events')
-      //   .insert({
-      //     user_id: userId,
-      //     event_id: event.id,
-      //     couple_id: coupleId
-      //   });
-      // if (error) throw error;
+      const { error } = await supabase
+        .from('user_saved_events')
+        .insert({
+          user_id: userId,
+          event_id: event.id,
+          couple_id: coupleId
+        });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Event saved!",
+        description: `${event.title} has been saved to your favorites.`,
+      });
     } catch (error) {
       console.error('Error saving event:', error);
+      toast({
+        title: "Error saving event",
+        description: "Please try again later.",
+        variant: "destructive"
+      });
       throw error;
     }
-  }, [userId, coupleId]);
+  }, [userId, coupleId, toast]);
 
   const handleAddToDatePlan = useCallback((event: Event) => {
     if (!onAddToDatePlan) return;
