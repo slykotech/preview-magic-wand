@@ -130,6 +130,9 @@ export const HeartSyncGame = () => {
     setIsLoading(true);
 
     try {
+      // Randomly select first player (true for player1, false for player2)
+      const randomFirstPlayer = Math.random() < 0.5 ? 'player1' : 'player2';
+      
       const { data, error } = await supabase
         .from('heart_sync_games')
         .insert({
@@ -137,7 +140,7 @@ export const HeartSyncGame = () => {
           player2_id: couple.user2_id,
           player1_name: user.id === couple.user1_id ? 'You' : 'Partner',
           player2_name: user.id === couple.user2_id ? 'You' : 'Partner',
-          current_turn: 'player1',
+          current_turn: randomFirstPlayer,
           board: createEmptyBoard()
         })
         .select()
