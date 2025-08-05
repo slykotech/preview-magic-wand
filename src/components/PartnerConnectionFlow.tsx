@@ -15,12 +15,14 @@ import {
   XCircle,
   Clock,
   ArrowRight,
-  Home
+  Home,
+  UserMinus
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { useCoupleData } from "@/hooks/useCoupleData";
 
 type EmailCheckStatus = 'idle' | 'checking' | 'exists_available' | 'exists_unavailable' | 'not_exists';
 type ConnectionStep = 'input' | 'validation' | 'sending' | 'success';
@@ -38,12 +40,14 @@ export const PartnerConnectionFlow = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { coupleData, userProfile, partnerProfile, getPartnerDisplayName, loading } = useCoupleData();
   
   const [email, setEmail] = useState("");
   const [emailStatus, setEmailStatus] = useState<EmailCheckStatus>('idle');
   const [currentStep, setCurrentStep] = useState<ConnectionStep>('input');
   const [isProcessing, setIsProcessing] = useState(false);
   const [emailCheckResult, setEmailCheckResult] = useState<EmailCheckResult | null>(null);
+  const [isDisconnecting, setIsDisconnecting] = useState(false);
   
   // Reset state when email changes
   useEffect(() => {
@@ -155,6 +159,38 @@ export const PartnerConnectionFlow = () => {
     setCurrentStep('input');
     setEmailCheckResult(null);
     setIsProcessing(false);
+  };
+
+  // Disconnect from partner
+  const disconnectPartner = async () => {
+    if (!coupleData) return;
+
+    setIsDisconnecting(true);
+    try {
+      const { error } = await supabase
+        .from('couples')
+        .delete()
+        .eq('id', coupleData.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Disconnected successfully",
+        description: "You have been disconnected from your partner",
+      });
+
+      // Refresh the page to update the UI
+      window.location.reload();
+    } catch (error: any) {
+      console.error('Error disconnecting:', error);
+      toast({
+        title: "Failed to disconnect",
+        description: error.message || "Please try again",
+        variant: "destructive"
+      });
+    } finally {
+      setIsDisconnecting(false);
+    }
   };
 
   // Render different states based on current step
@@ -371,6 +407,110 @@ export const PartnerConnectionFlow = () => {
     }
   };
 
+  // Show loading state
+  if (loading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Heart size={20} />
+            Partner Connection
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading connection status...</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Show connected state if user has a partner
+  if (coupleData && partnerProfile) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Heart size={20} />
+            Partner Connection
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-6">
+            {/* Connected Status */}
+            <div className="bg-green-50 border border-green-200 p-6 rounded-lg">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                  <CheckCircle className="text-green-600" size={24} />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-green-800">💕 Successfully Connected!</h4>
+                  <p className="text-sm text-green-700">You are connected with your partner</p>
+                </div>
+              </div>
+              
+              {/* Partner Info */}
+              <div className="flex items-center gap-4 p-4 bg-white rounded-lg border">
+                <div className="w-10 h-10 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full flex items-center justify-center">
+                  <Users className="text-white" size={20} />
+                </div>
+                <div>
+                  <p className="font-medium">{getPartnerDisplayName()}</p>
+                  <p className="text-sm text-muted-foreground">Your Partner</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="space-y-3">
+              <Button
+                onClick={() => navigate('/dashboard')}
+                className="w-full bg-primary hover:bg-primary/90"
+              >
+                <Home size={16} className="mr-2" />
+                Go to Dashboard
+              </Button>
+              
+              <Button
+                variant="outline"
+                onClick={disconnectPartner}
+                disabled={isDisconnecting}
+                className="w-full text-red-600 border-red-200 hover:bg-red-50"
+              >
+                {isDisconnecting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600 mr-2"></div>
+                    Disconnecting...
+                  </>
+                ) : (
+                  <>
+                    <UserMinus size={16} className="mr-2" />
+                    Disconnect Partner
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {/* Warning */}
+            <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <AlertTriangle className="text-amber-600" size={16} />
+                <h4 className="font-semibold text-amber-800">Important</h4>
+              </div>
+              <p className="text-sm text-amber-700">
+                Disconnecting will remove all shared data and cannot be undone. 
+                You'll need to send a new invitation to reconnect.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Show invitation flow if not connected
   return (
     <Card>
       <CardHeader>
