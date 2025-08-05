@@ -453,6 +453,17 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
     if (!gameState || !user?.id) return;
 
     try {
+      // Randomly select first player for rematch
+      const players = [user.id, partnerId];
+      const randomFirstPlayer = players[Math.floor(Math.random() * players.length)];
+      
+      console.log('🎮 Starting rematch with random first player:', {
+        user: user.id,
+        partner: partnerId,
+        randomFirstPlayer: randomFirstPlayer,
+        playerName: randomFirstPlayer === user.id ? getUserDisplayName() : getPartnerDisplayName()
+      });
+      
       // Reset the game state
       const { error } = await supabase
         .from('tic_toe_heart_games')
@@ -462,7 +473,7 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
             [null, null, null],
             [null, null, null]
           ],
-          current_player_id: partnerId, // Partner starts next game
+          current_player_id: randomFirstPlayer,
           game_status: 'playing' as GameStatus,
           winner_id: null,
           moves_count: 0,
