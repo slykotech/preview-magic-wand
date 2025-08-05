@@ -68,50 +68,15 @@ async function fetchEventbriteEvents(lat: number, lng: number, radius: number) {
   }
 }
 
-// Google Places API integration for events
+// Google Places API integration - DISABLED mock data generation
 async function fetchGooglePlacesEvents(lat: number, lng: number, radius: number) {
-  console.log('Fetching from Google Places...');
+  console.log('Google Places API disabled for mock event generation');
   
-  const googleApiKey = Deno.env.get('GOOGLE_PLACES_API_KEY');
-  if (!googleApiKey) {
-    console.log('Google Places API key not found');
-    return [];
-  }
-
-  try {
-    // Search for event venues and entertainment places
-    const response = await fetch(
-      `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=${radius * 1000}&type=establishment&keyword=events&key=${googleApiKey}`
-    );
-
-    if (!response.ok) return [];
-
-    const data = await response.json();
-    const today = new Date();
-    
-    return (data.results || []).slice(0, 15).map((place: any) => ({
-      title: `Event at ${place.name}`,
-      description: `Entertainment event at ${place.name}`,
-      event_date: new Date(today.getTime() + Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      event_time: '19:00:00',
-      location_name: place.name,
-      location_address: place.vicinity || '',
-      latitude: place.geometry.location.lat,
-      longitude: place.geometry.location.lng,
-      category: place.types?.[0] || 'entertainment',
-      price_range: `$${(Math.random() * 50 + 10).toFixed(0)}`,
-      organizer: place.name,
-      source_url: '',
-      source_platform: 'google_places',
-      image_url: place.photos?.[0] ? 
-        `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${place.photos[0].photo_reference}&key=${googleApiKey}` : 
-        null,
-      tags: place.types || []
-    }));
-  } catch (error) {
-    console.error('Google Places fetch error:', error);
-    return [];
-  }
+  // Note: Google Places API is not designed for fetching real events
+  // It only provides venue information, not actual events
+  // Returning empty array to stop generating fake events
+  
+  return [];
 }
 
 // Mock data generation removed - using real events only
