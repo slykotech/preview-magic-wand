@@ -39,7 +39,7 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
   onExit,
 }) => {
   const { user } = useAuth();
-  const { coupleData, getPartnerDisplayName } = useCoupleData();
+  const { coupleData, getPartnerDisplayName, getUserDisplayName } = useCoupleData();
   const { isPartnerOnline } = usePresence(coupleData?.id);
   
   const [gameState, setGameState] = useState<TicToeGameState | null>(null);
@@ -364,7 +364,7 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
                 <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
               </div>
               <div>
-                <p className="font-medium">You ({userSymbol})</p>
+                <p className="font-medium">{getUserDisplayName()} ({userSymbol})</p>
                 <p className={`text-sm font-medium ${
                   isUserTurn && !isGameOver 
                     ? 'text-green-600 animate-pulse' 
