@@ -14,7 +14,10 @@ export const useLocation = () => {
   const [isGettingLocation, setIsGettingLocation] = useState(false);
 
   const getCurrentLocation = useCallback(() => {
+    console.log('getCurrentLocation called, checking geolocation support...');
+    
     if (!navigator.geolocation) {
+      console.log('Geolocation not supported by this browser');
       toast({
         title: "Geolocation not supported",
         description: "Please enter your location manually",
@@ -23,10 +26,12 @@ export const useLocation = () => {
       return;
     }
 
+    console.log('Starting geolocation request...');
     setIsGettingLocation(true);
     
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        console.log('Geolocation success:', position.coords);
         const locationData: LocationData = {
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
@@ -34,6 +39,7 @@ export const useLocation = () => {
           displayName: 'Your Current Location'
         };
         
+        console.log('Setting location data:', locationData);
         setLocation(locationData);
         setIsGettingLocation(false);
         
@@ -79,6 +85,8 @@ export const useLocation = () => {
       return;
     }
 
+    console.log('Setting manual location:', cityName.trim());
+    
     // First set the location with placeholder coordinates
     const locationData: LocationData = {
       latitude: 0, // Will be geocoded
@@ -88,6 +96,7 @@ export const useLocation = () => {
     };
 
     setLocation(locationData);
+    console.log('Location set with placeholder coordinates:', locationData);
     
     toast({
       title: "Location set! 📍",
@@ -96,6 +105,7 @@ export const useLocation = () => {
 
     // Try to geocode the location to get actual coordinates
     try {
+      console.log('Starting geocoding for:', cityName);
       // Use a simple geocoding approach - you can enhance this with a proper geocoding service
       const geocodeResponse = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(cityName)}&limit=1`
@@ -103,6 +113,7 @@ export const useLocation = () => {
       
       if (geocodeResponse.ok) {
         const results = await geocodeResponse.json();
+        console.log('Geocoding results:', results);
         if (results && results.length > 0) {
           const result = results[0];
           const lat = parseFloat(result.lat);
@@ -110,12 +121,14 @@ export const useLocation = () => {
           
           if (!isNaN(lat) && !isNaN(lng)) {
             // Update location with actual coordinates
-            setLocation(prev => prev ? {
-              ...prev,
+            const updatedLocation = {
               latitude: lat,
               longitude: lng,
+              city: cityName.trim(),
               displayName: result.display_name || cityName.trim()
-            } : null);
+            };
+            console.log('Updating location with geocoded coordinates:', updatedLocation);
+            setLocation(updatedLocation);
             
             console.log(`Geocoded ${cityName} to coordinates:`, lat, lng);
           }
@@ -126,6 +139,7 @@ export const useLocation = () => {
       // Use fallback coordinates for major Indian cities
       const fallbackCoordinates = getFallbackCoordinates(cityName);
       if (fallbackCoordinates) {
+        console.log('Using fallback coordinates:', fallbackCoordinates);
         setLocation(prev => prev ? {
           ...prev,
           latitude: fallbackCoordinates.lat,

@@ -40,19 +40,27 @@ export const EventSuggestionsSection = ({ onEventSelect, className = "" }: Event
 
   // Auto-detect location on component mount
   useEffect(() => {
+    console.log('EventSuggestionsSection mount effect - location:', location, 'isGettingLocation:', isGettingLocation);
     if (!location && !isGettingLocation) {
+      console.log('No location detected, starting auto-detection...');
       handleAutoLocationDetection();
     }
   }, []);
 
   const handleAutoLocationDetection = async () => {
+    console.log('Starting auto location detection...');
     try {
       const locationGranted = await requestPermission('location');
+      console.log('Location permission granted:', locationGranted);
       if (locationGranted) {
         getCurrentLocation();
       } else {
+        console.log('Location permission denied, showing manual search');
         // If permission denied, show location search after a brief delay
-        setTimeout(() => setShowLocationSearch(true), 1000);
+        setTimeout(() => {
+          console.log('Setting showLocationSearch to true');
+          setShowLocationSearch(true);
+        }, 1000);
       }
     } catch (error) {
       console.log('Auto location detection failed:', error);
