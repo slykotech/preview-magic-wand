@@ -359,20 +359,37 @@ const AcceptInvitation = () => {
           )}
 
           {status === 'success' && (
-            <div className="text-center space-y-3">
+            <div className="text-center space-y-4">
               <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
-                <h4 className="font-semibold text-green-800 mb-2">🎉 Connection Successful!</h4>
+                <h4 className="font-semibold text-green-800 mb-2">🎉 You are now successfully connected with your partner!</h4>
                 <p className="text-sm text-green-700">
-                  You and your partner are now connected. Both of your profiles have been automatically updated to "Paired" status.
+                  Your account has been automatically connected to your partner's account in the backend. 
+                  You can now share your relationship journey together.
                 </p>
               </div>
-              <Button 
-                onClick={() => navigate('/dashboard')}
-                className="w-full"
-                size="lg"
-              >
-                Go to Dashboard
-              </Button>
+              <div className="space-y-3">
+                <Button 
+                  onClick={() => navigate('/dashboard')}
+                  className="w-full"
+                  size="lg"
+                >
+                  Go to Dashboard
+                </Button>
+                <Button 
+                  onClick={() => window.close()}
+                  variant="outline"
+                  className="w-full"
+                  size="lg"
+                >
+                  Leave
+                </Button>
+              </div>
+              <div className="bg-blue-50 border border-blue-200 p-3 rounded-lg">
+                <p className="text-xs text-blue-700">
+                  <strong>Note:</strong> We will not auto-redirect you to the dashboard. 
+                  Use the buttons above to navigate as needed.
+                </p>
+              </div>
             </div>
           )}
 
