@@ -31,9 +31,10 @@ serve(async (req) => {
     const token = authHeader.replace('Bearer ', '');
     console.log('JWT token length:', token.length);
 
-    const supabase = createClient(
+    // Create user client for authentication
+    const userSupabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       { 
         global: { 
           headers: { Authorization: authHeader } 
@@ -41,8 +42,14 @@ serve(async (req) => {
       }
     );
 
+    // Create admin client for database operations
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
     // Verify the user
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    const { data: { user }, error: authError } = await userSupabase.auth.getUser(token);
     if (authError || !user) {
       throw new Error('Invalid authentication');
     }
@@ -90,23 +97,37 @@ serve(async (req) => {
           });
         }
 
-        // Check if partner user exists
-        const { data: partnerUser } = await supabase
-          .from('profiles')
-          .select('user_id')
-          .eq('user_id', (await supabase.auth.admin.getUserByEmail(email)).data.user?.id)
-          .maybeSingle();
+        // Check if partner user exists by looking up profile by email lookup through auth.users
+        const { data: authUsers, error: authUsersError } = await supabase.auth.admin.listUsers();
+        
+        if (authUsersError) {
+          console.error('Error looking up users:', authUsersError);
+          // Continue without user lookup - treat as invitation to new user
+        }
+        
+        const existingAuthUser = authUsers?.users.find(u => u.email?.toLowerCase() === email.toLowerCase());
+        const partnerUserId = existingAuthUser?.id;
+        
+        let partnerUser = null;
+        if (partnerUserId) {
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('user_id')
+            .eq('user_id', partnerUserId)
+            .maybeSingle();
+          partnerUser = profileData;
+        }
 
         console.log('Partner user found:', !!partnerUser, 'for email:', email);
 
         // Check if partner already has a connection
-        if (partnerUser) {
+        if (partnerUserId) {
           const { data: partnerCouple } = await supabase
             .from('couples')
             .select('*')
-            .or(`user1_id.eq.${partnerUser.user_id},user2_id.eq.${partnerUser.user_id}`)
-            .neq('user1_id', partnerUser.user_id) // Exclude demo connections
-            .neq('user2_id', partnerUser.user_id)
+            .or(`user1_id.eq.${partnerUserId},user2_id.eq.${partnerUserId}`)
+            .neq('user1_id', partnerUserId) // Exclude demo connections
+            .neq('user2_id', partnerUserId)
             .maybeSingle();
 
           if (partnerCouple) {
@@ -125,8 +146,8 @@ serve(async (req) => {
           .from('partner_requests')
           .insert({
             requester_id: user.id,
-            requested_email: email,
-            requested_user_id: partnerUser?.user_id || null,
+            requested_email: email.toLowerCase().trim(),
+            requested_user_id: partnerUserId || null,
             status: 'pending'
           })
           .select()
@@ -141,8 +162,13 @@ serve(async (req) => {
 
         // Send email invitation
         console.log('Sending invite email to', email);
-        await sendInvitationEmail(email, user, partnerUser ? 'connect' : 'invite');
-        console.log('Invitation email sent successfully');
+        try {
+          await sendInvitationEmail(email, user, partnerUser ? 'connect' : 'invite');
+          console.log('Invitation email sent successfully');
+        } catch (emailError) {
+          console.error('Email sending failed:', emailError);
+          // Don't fail the request if email fails
+        }
 
         return new Response(JSON.stringify({
           success: true,
@@ -331,12 +357,14 @@ serve(async (req) => {
 });
 
 async function sendInvitationEmail(email: string, inviter: any, type: 'connect' | 'invite') {
-  const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
+  const resendApiKey = Deno.env.get('RESEND_API_KEY');
   
-  if (!resend) {
+  if (!resendApiKey) {
     console.log('Resend API key not configured, skipping email');
     return;
   }
+  
+  const resend = new Resend(resendApiKey);
 
   const inviterName = inviter.user_metadata?.first_name || 'Your partner';
   const baseUrl = Deno.env.get('SUPABASE_URL')?.replace('/auth/v1', '') || 'https://lovesync.app';
