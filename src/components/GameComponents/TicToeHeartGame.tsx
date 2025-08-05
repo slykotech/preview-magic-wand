@@ -83,6 +83,7 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
   const [winnerReward, setWinnerReward] = useState('');
   const [loveGrants, setLoveGrants] = useState<LoveGrant[]>([]);
   const [playfulMessage, setPlayfulMessage] = useState('');
+  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
 
   // Determine partner ID
   const partnerId = coupleData?.user1_id === user?.id ? coupleData?.user2_id : coupleData?.user1_id;
@@ -142,22 +143,32 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
 
   // Real-time subscription for game updates with improved sync
   useEffect(() => {
-    if (!sessionId || !user?.id) return;
+    if (!sessionId || !user?.id) {
+      setConnectionStatus('disconnected');
+      return;
+    }
 
     console.log('🎮 Setting up real-time subscription for session:', sessionId);
+    setConnectionStatus('connecting');
 
     const channel = supabase
-      .channel(`tic-toe-session-${sessionId}`)
+      .channel(`tic-toe-${sessionId}`) // Use consistent channel naming
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'UPDATE', // Listen specifically for updates
           schema: 'public',
           table: 'tic_toe_heart_games',
           filter: `session_id=eq.${sessionId}`
         },
         (payload) => {
-          console.log('🎮 Real-time game update received:', payload);
+          console.group('🎮 Game Update Received');
+          console.log('Event Type:', payload.eventType);
+          console.log('Table:', payload.table);
+          console.log('New Data:', payload.new);
+          console.log('Timestamp:', new Date().toISOString());
+          console.groupEnd();
+
           if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
             const updatedState = payload.new as any;
             const newGameState = {
@@ -174,6 +185,9 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
             
             // Force update game state immediately
             setGameState(newGameState);
+            
+            // Update connection status
+            setConnectionStatus('connected');
             
             // Debug the new turn state immediately
             setTimeout(() => {
@@ -196,21 +210,104 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
           }
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'tic_toe_heart_games',
+          filter: `session_id=eq.${sessionId}`
+        },
+        (payload) => {
+          console.log('🎮 New game created:', payload);
+          // Handle new game creation
+          if (payload.new) {
+            const newGameState = {
+              ...payload.new as any,
+              board: (payload.new as any).board as Board,
+              game_status: (payload.new as any).game_status as GameStatus,
+              last_move_at: (payload.new as any).last_move_at || new Date().toISOString()
+            };
+            setGameState(newGameState);
+            setConnectionStatus('connected');
+          }
+        }
+      )
       .subscribe((status) => {
         console.log('🎮 Subscription status:', status);
         
-        // Force refresh game state when subscription is established
         if (status === 'SUBSCRIBED') {
-          console.log('🎮 Subscription established, refreshing game state...');
-          initializeGame();
+          console.log('🎮 Successfully subscribed to game updates');
+          setConnectionStatus('connected');
+          // Force refresh game state when subscription is established
+          setTimeout(() => {
+            initializeGame();
+          }, 100);
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('🎮 Channel error - falling back to polling');
+          setConnectionStatus('disconnected');
         }
       });
 
     return () => {
       console.log('🎮 Cleaning up real-time subscription');
       supabase.removeChannel(channel);
+      setConnectionStatus('disconnected');
     };
   }, [sessionId, user?.id]);
+
+  // Polling fallback when real-time fails
+  useEffect(() => {
+    if (connectionStatus !== 'connected' && sessionId && user?.id) {
+      console.log('🎮 Starting polling fallback...');
+      const pollInterval = setInterval(async () => {
+        try {
+          const { data, error } = await supabase
+            .from('tic_toe_heart_games')
+            .select('*')
+            .eq('session_id', sessionId)
+            .single();
+          
+          if (data && !error) {
+            const polledGameState = {
+              ...data,
+              board: data.board as Board,
+              game_status: data.game_status as GameStatus,
+              last_move_at: data.last_move_at || new Date().toISOString()
+            };
+            
+            // Only update if the state has actually changed
+            if (JSON.stringify(polledGameState) !== JSON.stringify(gameState)) {
+              console.log('🎮 Polling update detected:', polledGameState);
+              setGameState(polledGameState);
+            }
+          }
+        } catch (error) {
+          console.error('🎮 Polling error:', error);
+        }
+      }, 2000); // Poll every 2 seconds
+
+      return () => {
+        console.log('🎮 Cleaning up polling fallback');
+        clearInterval(pollInterval);
+      };
+    }
+  }, [connectionStatus, sessionId, user?.id, gameState]);
+
+  // Connection health monitoring
+  useEffect(() => {
+    const checkConnection = supabase.getChannels();
+    console.log('🎮 Active channels:', checkConnection);
+    
+    // Monitor auth state for connection issues
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
+        setConnectionStatus('disconnected');
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   // Update playful message when turn changes
   useEffect(() => {
@@ -418,18 +515,20 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
   };
 
   const handleCellClick = async (row: number, col: number) => {
-    console.log('🎮 CELL CLICK DEBUG:', {
-      row, col,
-      gameState: gameState ? {
-        id: gameState.id,
-        current_player_id: gameState.current_player_id,
-        moves_count: gameState.moves_count,
-        game_status: gameState.game_status
-      } : null,
-      userId: user?.id,
-      isUserTurn: gameState?.current_player_id === user?.id,
-      cellValue: gameState?.board[row]?.[col]
-    });
+    console.group('🎮 Making Move');
+    console.log('Player:', user?.id);
+    console.log('Current Turn:', gameState?.current_player_id);
+    console.log('Position:', { row, col });
+    console.log('Session ID:', sessionId);
+    console.log('Game State:', gameState ? {
+      id: gameState.id,
+      current_player_id: gameState.current_player_id,
+      moves_count: gameState.moves_count,
+      game_status: gameState.game_status
+    } : null);
+    console.log('User ID:', user?.id);
+    console.log('Is User Turn:', gameState?.current_player_id === user?.id);
+    console.log('Cell Value:', gameState?.board[row]?.[col]);
 
     if (!gameState || !user?.id) {
       console.error('❌ No game state or user ID');
@@ -661,6 +760,15 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
       {/* Live Avatars & Status */}
       <Card className="border-primary/20 animate-fade-in">
         <CardContent className="p-4">
+          {/* Connection Status Indicator */}
+          <div className="flex justify-center mb-4">
+            <Badge variant={connectionStatus === 'connected' ? 'default' : connectionStatus === 'connecting' ? 'secondary' : 'destructive'}>
+              {connectionStatus === 'connected' && '🟢 Real-time Connected'}
+              {connectionStatus === 'connecting' && '🟡 Connecting...'}
+              {connectionStatus === 'disconnected' && '🔴 Offline Mode'}
+            </Badge>
+          </div>
+          
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="relative">
