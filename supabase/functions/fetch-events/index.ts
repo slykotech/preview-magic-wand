@@ -235,37 +235,53 @@ async function fetchEventbriteEvents(lat: number, lng: number, radiusKm: number)
     return [];
   }
 
-  const url = `https://www.eventbriteapi.com/v3/events/search/?location.latitude=${lat}&location.longitude=${lng}&location.within=${radiusKm}km&expand=venue,organizer&sort_by=date`;
+  // Updated Eventbrite API endpoint with correct parameters
+  const url = `https://www.eventbriteapi.com/v3/events/search/?location.latitude=${lat}&location.longitude=${lng}&location.within=${radiusKm}km&start_date.range_start=${new Date().toISOString()}&expand=venue,organizer,category&sort_by=date&page_size=50&status=live`;
   
-  const response = await fetch(url, {
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json'
+  console.log(`Fetching from Eventbrite: ${url}`);
+  
+  try {
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Eventbrite API error ${response.status}: ${errorText}`);
+      throw new Error(`Eventbrite API error: ${response.status}`);
     }
-  });
 
-  if (!response.ok) {
-    throw new Error(`Eventbrite API error: ${response.status}`);
+    const data = await response.json();
+    console.log(`Eventbrite response: ${JSON.stringify(data)}`);
+    
+    if (!data.events || data.events.length === 0) {
+      console.log('No events found in Eventbrite response');
+      return [];
+    }
+    
+    return data.events?.map((event: any) => ({
+      title: event.name?.text || 'Untitled Event',
+      description: event.description?.text || event.summary,
+      start_date: event.start?.utc,
+      end_date: event.end?.utc,
+      location_name: event.venue?.name || event.venue?.address?.localized_address_display,
+      latitude: event.venue?.latitude ? parseFloat(event.venue.latitude) : null,
+      longitude: event.venue?.longitude ? parseFloat(event.venue.longitude) : null,
+      price: event.is_free ? 'Free' : (event.ticket_availability?.minimum_ticket_price?.display || 'Paid'),
+      organizer: event.organizer?.name,
+      category: event.category?.name,
+      website_url: event.url,
+      image_url: event.logo?.url,
+      source: 'eventbrite',
+      external_id: event.id.toString()
+    })).filter(event => event.latitude && event.longitude) || [];
+  } catch (error) {
+    console.error('Eventbrite fetch error:', error);
+    throw error;
   }
-
-  const data = await response.json();
-  
-  return data.events?.map((event: any) => ({
-    title: event.name?.text || 'Untitled Event',
-    description: event.description?.text,
-    start_date: event.start?.utc,
-    end_date: event.end?.utc,
-    location_name: event.venue?.name,
-    latitude: parseFloat(event.venue?.latitude),
-    longitude: parseFloat(event.venue?.longitude),
-    price: event.is_free ? 'Free' : 'Paid',
-    organizer: event.organizer?.name,
-    category: event.category?.name,
-    website_url: event.url,
-    image_url: event.logo?.url,
-    source: 'eventbrite',
-    external_id: event.id
-  })) || [];
 }
 
 async function fetchMeetupEvents(lat: number, lng: number, radiusKm: number): Promise<EventData[]> {
