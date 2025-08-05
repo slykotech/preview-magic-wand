@@ -6,34 +6,63 @@ const corsHeaders = {
 }
 
 Deno.serve(async (req) => {
+  console.log('check-email-exists function called:', req.method, req.url)
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Create supabase client with anon key for user operations
+    // Get the authorization header
+    const authHeader = req.headers.get('Authorization')
+    console.log('Auth header present:', !!authHeader, 'First 20 chars:', authHeader?.substring(0, 20))
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.log('Invalid or missing authorization header')
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Authentication required - invalid auth header' 
+        }),
+        { 
+          status: 401, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+
+    // Create supabase client with the auth header
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       {
         global: {
           headers: {
-            Authorization: req.headers.get('Authorization') ?? '',
+            Authorization: authHeader,
           },
         },
       }
     )
 
+    console.log('Attempting to get user...')
+    
     // Get the current user from the request
     const { data: { user }, error: authError } = await supabase.auth.getUser()
+    
+    console.log('Auth result:', { 
+      userExists: !!user, 
+      userId: user?.id, 
+      userEmail: user?.email,
+      errorMessage: authError?.message 
+    })
 
     if (authError || !user) {
-      console.error('Auth error:', authError)
+      console.error('Authentication failed:', authError)
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: 'Authentication required' 
+          error: 'Authentication failed: ' + (authError?.message || 'No user found')
         }),
         { 
           status: 401, 

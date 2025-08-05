@@ -190,8 +190,14 @@ export const PartnerConnectionSection = () => {
     try {
       // Check if user is authenticated first
       const session = await supabase.auth.getSession();
+      console.log('Session check:', { 
+        hasSession: !!session.data.session, 
+        hasAccessToken: !!session.data.session?.access_token,
+        tokenFirst20: session.data.session?.access_token?.substring(0, 20)
+      });
       
       if (!session.data.session || !session.data.session.access_token) {
+        console.log('No valid session found');
         setEmailValidation({
           isValid: true,
           exists: false,
@@ -203,10 +209,14 @@ export const PartnerConnectionSection = () => {
         return;
       }
 
+      console.log('Calling check-email-exists function for email:', email);
+
       // Use Supabase client to invoke the edge function
       const { data: result, error: functionError } = await supabase.functions.invoke('check-email-exists', {
         body: { email }
       });
+      
+      console.log('Function response:', { result, error: functionError });
 
       if (functionError) {
         console.error('Function error:', functionError);
@@ -221,12 +231,13 @@ export const PartnerConnectionSection = () => {
         return;
       }
 
-      if (!result.success) {
+      if (!result || !result.success) {
+        console.log('Function returned error result:', result);
         setEmailValidation({
           isValid: true,
           exists: false,
           available: false,
-          message: result.error || "Error checking user existence",
+          message: result?.error || "Error checking user existence",
           isChecking: false,
           showInviteToJoin: false
         });
