@@ -130,45 +130,195 @@ async function fetchGooglePlacesEvents(lat: number, lng: number, radius: number)
 function generateEventFromVenue(place: any, venueType: string) {
   const today = new Date();
   const eventDate = new Date(today);
-  eventDate.setDate(today.getDate() + Math.floor(Math.random() * 14) + 1); // 1-14 days from now
+  eventDate.setDate(today.getDate() + Math.floor(Math.random() * 21) + 1); // 1-21 days from now
 
+  // More diverse event generation based on venue specifics
   const venueEventMap: Record<string, any> = {
     restaurant: {
+      events: [
+        `Special Tasting Menu at ${place.name}`,
+        `Chef's Table Experience - ${place.name}`,
+        `Wine Pairing Dinner at ${place.name}`,
+        `Date Night Special - ${place.name}`,
+        `Weekend Brunch at ${place.name}`,
+        `Cooking Class at ${place.name}`,
+        `Food Festival Night - ${place.name}`,
+        `Live Music & Dining at ${place.name}`
+      ],
       categories: ['food', 'romantic', 'cultural'],
-      events: ['Special Dinner Menu', 'Wine Tasting Evening', 'Chef\'s Table Experience', 'Romantic Dinner for Two'],
-      times: ['18:00', '19:30', '20:00'],
-      prices: ['₹₹', '₹₹₹']
+      times: ['11:00', '13:00', '18:00', '19:30', '20:00', '21:00'],
+      prices: ['₹₹', '₹₹₹', '₹₹₹₹']
     },
     cafe: {
+      events: [
+        `Coffee Cupping at ${place.name}`,
+        `Artisan Breakfast at ${place.name}`,
+        `Book Club Meeting - ${place.name}`,
+        `Live Acoustic Session at ${place.name}`,
+        `Art & Coffee at ${place.name}`,
+        `Morning Yoga & Coffee - ${place.name}`,
+        `Business Networking at ${place.name}`,
+        `Poetry Reading at ${place.name}`
+      ],
       categories: ['food', 'cultural', 'networking'],
-      events: ['Coffee Cupping Session', 'Live Acoustic Music', 'Book Reading Club', 'Artisan Coffee Workshop'],
-      times: ['10:00', '15:00', '17:00'],
+      times: ['08:00', '10:00', '12:00', '15:00', '17:00', '19:00'],
       prices: ['₹', '₹₹']
     },
     bar: {
+      events: [
+        `Happy Hour at ${place.name}`,
+        `Live DJ Night - ${place.name}`,
+        `Cocktail Masterclass at ${place.name}`,
+        `Trivia Night - ${place.name}`,
+        `Karaoke Evening at ${place.name}`,
+        `Sports Viewing Party - ${place.name}`,
+        `Date Night Cocktails at ${place.name}`,
+        `Weekend Party - ${place.name}`
+      ],
       categories: ['entertainment', 'music', 'romantic'],
-      events: ['Happy Hour Specials', 'Live DJ Night', 'Cocktail Making Class', 'Trivia Night'],
-      times: ['18:00', '20:00', '21:30'],
+      times: ['17:00', '18:00', '20:00', '21:30', '22:00'],
+      prices: ['₹₹', '₹₹₹']
+    },
+    night_club: {
+      events: [
+        `DJ Night at ${place.name}`,
+        `Dance Party - ${place.name}`,
+        `Theme Night at ${place.name}`,
+        `Live Music Show - ${place.name}`,
+        `Weekend Celebration at ${place.name}`,
+        `Special Guest DJ - ${place.name}`
+      ],
+      categories: ['entertainment', 'music', 'dancing'],
+      times: ['21:00', '22:00', '23:00'],
+      prices: ['₹₹', '₹₹₹']
+    },
+    movie_theater: {
+      events: [
+        `Latest Movie Screening at ${place.name}`,
+        `Date Night Movie at ${place.name}`,
+        `Special Preview Show - ${place.name}`,
+        `IMAX Experience at ${place.name}`,
+        `Couple's Movie Night - ${place.name}`,
+        `Weekend Blockbuster at ${place.name}`
+      ],
+      categories: ['entertainment', 'romantic'],
+      times: ['12:00', '15:00', '18:00', '21:00'],
       prices: ['₹₹', '₹₹₹']
     },
     museum: {
-      categories: ['cultural', 'educational'],
-      events: ['Special Exhibition', 'Guided Tour', 'Art Workshop', 'Cultural Heritage Walk'],
-      times: ['10:00', '14:00', '16:00'],
+      events: [
+        `Art Exhibition at ${place.name}`,
+        `Guided Heritage Tour - ${place.name}`,
+        `Cultural Workshop at ${place.name}`,
+        `Interactive Gallery Walk - ${place.name}`,
+        `Photography Exhibition - ${place.name}`,
+        `Educational Tour at ${place.name}`,
+        `Art Appreciation Class - ${place.name}`
+      ],
+      categories: ['cultural', 'educational', 'romantic'],
+      times: ['10:00', '12:00', '14:00', '16:00'],
       prices: ['₹', '₹₹']
     },
-    // Add more venue types as needed
+    art_gallery: {
+      events: [
+        `Contemporary Art Show at ${place.name}`,
+        `Artist Meet & Greet - ${place.name}`,
+        `Gallery Opening Night - ${place.name}`,
+        `Art Appreciation Evening at ${place.name}`,
+        `Creative Workshop - ${place.name}`,
+        `Sculpture Exhibition at ${place.name}`
+      ],
+      categories: ['cultural', 'artistic', 'romantic'],
+      times: ['11:00', '14:00', '17:00', '19:00'],
+      prices: ['₹', '₹₹']
+    },
+    amusement_park: {
+      events: [
+        `Adventure Day at ${place.name}`,
+        `Couple's Fun Day - ${place.name}`,
+        `Weekend Adventure at ${place.name}`,
+        `Thrilling Rides Experience - ${place.name}`,
+        `Family Fun Time at ${place.name}`,
+        `Date Adventure at ${place.name}`
+      ],
+      categories: ['adventure', 'entertainment', 'romantic'],
+      times: ['10:00', '12:00', '14:00', '16:00'],
+      prices: ['₹₹', '₹₹₹']
+    },
+    zoo: {
+      events: [
+        `Wildlife Tour at ${place.name}`,
+        `Animal Feeding Experience - ${place.name}`,
+        `Educational Safari at ${place.name}`,
+        `Nature Photography at ${place.name}`,
+        `Conservation Talk - ${place.name}`,
+        `Wildlife Adventure at ${place.name}`
+      ],
+      categories: ['educational', 'nature', 'adventure'],
+      times: ['09:00', '11:00', '14:00', '16:00'],
+      prices: ['₹₹', '₹₹₹']
+    },
+    shopping_mall: {
+      events: [
+        `Shopping Experience at ${place.name}`,
+        `Fashion Show - ${place.name}`,
+        `Food Court Festival at ${place.name}`,
+        `Weekend Market at ${place.name}`,
+        `Brand Launch Event - ${place.name}`,
+        `Couple's Shopping Day at ${place.name}`
+      ],
+      categories: ['shopping', 'fashion', 'food'],
+      times: ['10:00', '12:00', '15:00', '18:00'],
+      prices: ['₹₹', '₹₹₹']
+    },
+    gym: {
+      events: [
+        `Couples Workout at ${place.name}`,
+        `Fitness Challenge - ${place.name}`,
+        `Yoga Session at ${place.name}`,
+        `Dance Fitness Class - ${place.name}`,
+        `Strength Training Workshop - ${place.name}`,
+        `Wellness Session at ${place.name}`
+      ],
+      categories: ['fitness', 'wellness', 'sports'],
+      times: ['06:00', '09:00', '17:00', '19:00'],
+      prices: ['₹', '₹₹']
+    },
+    spa: {
+      events: [
+        `Couples Spa Day at ${place.name}`,
+        `Relaxation Session - ${place.name}`,
+        `Wellness Retreat at ${place.name}`,
+        `Massage Therapy at ${place.name}`,
+        `Beauty Treatment at ${place.name}`,
+        `Romantic Spa Experience - ${place.name}`
+      ],
+      categories: ['wellness', 'romantic', 'relaxation'],
+      times: ['10:00', '12:00', '14:00', '16:00'],
+      prices: ['₹₹₹', '₹₹₹₹']
+    }
   };
 
   const venueInfo = venueEventMap[venueType] || venueEventMap.restaurant;
-  const eventTitle = venueInfo.events[Math.floor(Math.random() * venueInfo.events.length)];
+  
+  // Add randomization to make events more unique
+  const eventIndex = Math.floor(Math.random() * venueInfo.events.length);
+  const eventTitle = venueInfo.events[eventIndex];
   const eventTime = venueInfo.times[Math.floor(Math.random() * venueInfo.times.length)];
   const category = venueInfo.categories[Math.floor(Math.random() * venueInfo.categories.length)];
   const priceRange = venueInfo.prices[Math.floor(Math.random() * venueInfo.prices.length)];
 
+  // Create unique descriptions based on venue rating and details
+  const rating = place.rating ? `(${place.rating}⭐)` : '';
+  const description = `${eventTitle}. Located at ${place.vicinity || 'your area'} ${rating}. ${generateDescriptionByCategory(category, place.name)}.`;
+
+  // Create unique hash for each event
+  const uniqueId = `${place.place_id}_${eventDate.toISOString().split('T')[0]}_${eventTime}_${eventIndex}`;
+
   return {
-    title: `${eventTitle} at ${place.name}`,
-    description: `Join us for ${eventTitle.toLowerCase()} at ${place.name}. ${place.vicinity || 'Located in your area'}.`,
+    id: uniqueId,
+    title: eventTitle,
+    description: description,
     event_date: eventDate.toISOString().split('T')[0],
     event_time: eventTime,
     location_name: place.name || 'Venue',
@@ -183,8 +333,47 @@ function generateEventFromVenue(place: any, venueType: string) {
     image_url: place.photos?.[0] ? 
       `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${place.photos[0].photo_reference}&key=${Deno.env.get('GOOGLE_PLACES_API_KEY')}` : 
       null,
-    tags: [venueType, category, 'local']
+    tags: [venueType, category, 'local', place.name?.toLowerCase().replace(/\s+/g, '_')]
   };
+}
+
+// Generate category-specific descriptions
+function generateDescriptionByCategory(category: string, venueName: string): string {
+  const descriptions: Record<string, string[]> = {
+    food: [
+      `Indulge in culinary delights and exceptional flavors`,
+      `Experience fine dining with a perfect ambiance`,
+      `Savor authentic cuisine in a romantic setting`,
+      `Enjoy delicious food with great company`
+    ],
+    romantic: [
+      `Perfect for a romantic evening with your partner`,
+      `Create beautiful memories in an intimate setting`,
+      `Ideal for couples looking for a special experience`,
+      `Romance and elegance combined`
+    ],
+    cultural: [
+      `Immerse yourself in rich cultural experiences`,
+      `Discover art, history, and local traditions`,
+      `Educational and entertaining cultural journey`,
+      `Explore the heritage and culture of the region`
+    ],
+    entertainment: [
+      `Fun-filled experience with great entertainment`,
+      `Enjoy lively atmosphere and exciting activities`,
+      `Perfect for a night out with lots of entertainment`,
+      `Thrilling and engaging entertainment awaits`
+    ],
+    fitness: [
+      `Boost your health and wellness together`,
+      `Stay active and energized with fitness activities`,
+      `Combine wellness with quality time`,
+      `Achieve your fitness goals in a supportive environment`
+    ]
+  };
+
+  const categoryDescriptions = descriptions[category] || descriptions.food;
+  return categoryDescriptions[Math.floor(Math.random() * categoryDescriptions.length)];
 }
 
 // Mock data generation removed - using real events only
