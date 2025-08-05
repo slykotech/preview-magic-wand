@@ -1168,6 +1168,7 @@ export type Database = {
           is_open: boolean | null
           last_updated: string
           latitude: number
+          location_context: Json | null
           longitude: number
           name: string
           opening_hours: Json | null
@@ -1187,6 +1188,7 @@ export type Database = {
           is_open?: boolean | null
           last_updated?: string
           latitude: number
+          location_context?: Json | null
           longitude: number
           name: string
           opening_hours?: Json | null
@@ -1206,6 +1208,7 @@ export type Database = {
           is_open?: boolean | null
           last_updated?: string
           latitude?: number
+          location_context?: Json | null
           longitude?: number
           name?: string
           opening_hours?: Json | null
