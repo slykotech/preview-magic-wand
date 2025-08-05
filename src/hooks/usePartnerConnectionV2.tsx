@@ -169,6 +169,26 @@ export const usePartnerConnectionV2 = () => {
       return false;
     }
 
+    // Check if user is already connected (client-side check)
+    if (connectionStatus === 'paired') {
+      toast({
+        title: "Already connected",
+        description: "You are already connected with a partner. Remove your current partner first to connect with someone new.",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    // Check if user has pending requests
+    if (outgoingRequests.length > 0) {
+      toast({
+        title: "Request already sent",
+        description: "You have already sent a partner request. Please wait for a response or cancel the existing request.",
+        variant: "destructive"
+      });
+      return false;
+    }
+
     setIsProcessing(true);
     try {
       const { data, error } = await supabase.functions.invoke('manage-partner-connection', {

@@ -146,7 +146,7 @@ async function handleSendRequest(supabase: any, user: any, partnerEmail: string,
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: 'You are already in a couple relationship. Remove your current partner first.' 
+        error: 'You are already connected with a partner. Remove your current partner first to connect with someone new.' 
       }),
       { 
         status: 400, 
@@ -165,6 +165,37 @@ async function handleSendRequest(supabase: any, user: any, partnerEmail: string,
 
   const partnerUser = authUsers.users.find((u: any) => u.email === partnerEmail)
   console.log('Partner user found:', !!partnerUser, 'for email:', partnerEmail)
+  
+  // Check if target user already has a partner connection (only if they exist)
+  if (partnerUser) {
+    console.log('Checking if target user already has a partner:', partnerUser.id)
+    
+    const { data: targetUserCouple, error: targetCoupleError } = await supabase
+      .from('couples')
+      .select('*')
+      .or(`user1_id.eq.${partnerUser.id},user2_id.eq.${partnerUser.id}`)
+      .neq('user1_id', partnerUser.id) // Exclude demo mode couples
+      .maybeSingle()
+
+    if (targetCoupleError) {
+      console.error('Error checking target user couple status:', targetCoupleError)
+      throw new Error('Failed to check target user connection status')
+    }
+
+    if (targetUserCouple) {
+      console.log('Target user is already connected with a partner')
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: '⚠️ This user is already connected with a partner.' 
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+  }
   
   // Check for any existing requests to this email and clean them up if needed
   const { data: existingRequests, error: requestError } = await supabase
@@ -306,10 +337,27 @@ async function handleAcceptRequest(supabase: any, user: any, requestId: string) 
   const nonDemoCouples = existingCouples?.filter((couple: any) => couple.user1_id !== couple.user2_id) || []
   
   if (nonDemoCouples.length > 0) {
+    // Check which user(s) are already connected
+    const userAlreadyConnected = nonDemoCouples.some((couple: any) => 
+      couple.user1_id === user.id || couple.user2_id === user.id
+    )
+    const requesterAlreadyConnected = nonDemoCouples.some((couple: any) => 
+      couple.user1_id === request.requester_id || couple.user2_id === request.requester_id
+    )
+
+    let errorMessage = 'One of you is already connected with a partner.'
+    if (userAlreadyConnected && requesterAlreadyConnected) {
+      errorMessage = 'Both users are already connected with other partners.'
+    } else if (userAlreadyConnected) {
+      errorMessage = 'You are already connected with a partner.'
+    } else if (requesterAlreadyConnected) {
+      errorMessage = 'The person who sent this request is now connected with someone else.'
+    }
+
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: 'One of you is already in a couple relationship.' 
+        error: errorMessage 
       }),
       { 
         status: 400, 
