@@ -87,14 +87,30 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
   // Determine partner ID
   const partnerId = coupleData?.user1_id === user?.id ? coupleData?.user2_id : coupleData?.user1_id;
   
-  // 🎯 FIX: Consistent symbol assignment - 💖 for user1, 💘 for user2  
+  // 🎯 FIXED: Consistent symbol assignment - 💖 for user1, 💘 for user2  
   const getUserSymbol = (userId: string): CellValue => {
     if (!coupleData) return '💖';
     return coupleData.user1_id === userId ? '💖' : '💘';
   };
 
   const userSymbol = getUserSymbol(user?.id || '');
-  const partnerSymbol = getUserSymbol(partnerId || ''); // This was the bug - should get partner's symbol, not user's symbol again
+  const partnerSymbol = getUserSymbol(partnerId || '');
+  
+  // Debug current turn state
+  const debugTurnState = () => {
+    if (gameState && user?.id) {
+      console.log('🎮 TURN DEBUG:', {
+        gameStateCurrentPlayer: gameState.current_player_id,
+        currentUserId: user.id,
+        partnerId: partnerId,
+        isUserTurn: gameState.current_player_id === user.id,
+        userSymbol,
+        partnerSymbol,
+        gameStatus: gameState.game_status,
+        movesCount: gameState.moves_count
+      });
+    }
+  };
 
   // Playful messages based on turn state
   const getPlayfulMessage = (isUserTurn: boolean, playerName: string, symbol: CellValue) => {
@@ -159,6 +175,11 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
             // Force update game state immediately
             setGameState(newGameState);
             
+            // Debug the new turn state immediately
+            setTimeout(() => {
+              debugTurnState();
+            }, 100);
+            
             // Update playful message based on new turn
             const isUserTurn = newGameState.current_player_id === user?.id;
             const currentPlayerName = isUserTurn ? getUserDisplayName() : getPartnerDisplayName();
@@ -198,6 +219,9 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
       const currentPlayerName = isUserTurn ? getUserDisplayName() : getPartnerDisplayName();
       const currentSymbol = isUserTurn ? userSymbol : partnerSymbol;
       setPlayfulMessage(getPlayfulMessage(isUserTurn, currentPlayerName || 'Player', currentSymbol));
+      
+      // Debug turn changes
+      debugTurnState();
     }
   }, [gameState?.current_player_id, gameState?.game_status]);
 
@@ -216,12 +240,16 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
 
       if (existingGame) {
         console.log('🎮 Loading existing game:', existingGame);
-        setGameState({
+        const loadedState = {
           ...existingGame,
           board: existingGame.board as Board,
           game_status: existingGame.game_status as GameStatus,
           last_move_at: existingGame.last_move_at || new Date().toISOString()
-        });
+        };
+        setGameState(loadedState);
+        
+        // Debug turn state after loading
+        setTimeout(() => debugTurnState(), 100);
       } else {
         // Create new game with randomly selected first player
         const players = [user!.id, partnerId];
@@ -250,12 +278,16 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
 
         if (createError) throw createError;
         console.log('🎮 New game created:', newGame);
-        setGameState({
+        const newGameState = {
           ...newGame,
           board: newGame.board as Board,
           game_status: newGame.game_status as GameStatus,
           last_move_at: newGame.last_move_at || new Date().toISOString()
-        });
+        };
+        setGameState(newGameState);
+        
+        // Debug turn state after creating new game
+        setTimeout(() => debugTurnState(), 100);
       }
 
       // Load love grants history
@@ -535,18 +567,6 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
 
   const isUserTurn = gameState.current_player_id === user?.id;
   const isGameOver = gameState.game_status !== 'playing';
-
-  // 🔍 DEBUG: Add comprehensive turn debugging
-  console.log('🎮 TURN DEBUG:', {
-    gameStateCurrentPlayer: gameState.current_player_id,
-    currentUserId: user?.id,
-    partnerId: partnerId,
-    isUserTurn: isUserTurn,
-    userSymbol: userSymbol,
-    partnerSymbol: partnerSymbol,
-    gameStatus: gameState.game_status,
-    movesCount: gameState.moves_count
-  });
 
   return (
     <div className="space-y-6">
