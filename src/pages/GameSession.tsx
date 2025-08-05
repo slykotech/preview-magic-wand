@@ -13,11 +13,9 @@ import { useCoupleData } from '@/hooks/useCoupleData';
 import { toast } from 'sonner';
 
 // Import specialized game components
-import { TruthOrLoveGame } from '@/components/GameComponents/TruthOrLoveGame';
-import { ThisOrThatGame } from '@/components/GameComponents/ThisOrThatGame';
-import { MemoryMatchGame } from '@/components/GameComponents/MemoryMatchGame';
-import { LoveCouponsGame } from '@/components/GameComponents/LoveCouponsGame';
-import { CoupleQuizGame } from '@/components/GameComponents/CoupleQuizGame';
+import { CouplesCardGame } from '@/components/GameComponents/CouplesCardGame';
+import { TicToeHeartGame } from '@/components/GameComponents/TicToeHeartGame';
+import { TruthOrDareCouplesGame } from '@/components/GameComponents/TruthOrDareCouplesGame';
 
 interface GameSession {
   id: string;
@@ -325,50 +323,94 @@ export const GameSession = () => {
         </Card>
 
         {/* Specialized Game Card Component */}
-        {session.card_games.game_type === 'truth_or_love' && (
-          <TruthOrLoveGame currentCard={currentCard} />
+        {session.card_games.game_type === 'couples_cards' && (
+          <CouplesCardGame 
+            currentCard={currentCard}
+            sessionId={sessionId!}
+            onSubmitResponse={async (response) => {
+              await supabase
+                .from('card_responses')
+                .insert({
+                  session_id: sessionId,
+                  card_id: currentCard.id,
+                  user_id: user?.id,
+                  response_text: response
+                });
+            }}
+            onNextCard={nextCard}
+            userResponse={getUserResponse()?.response_text}
+            partnerResponse={getPartnerResponse()?.response_text}
+            isUserTurn={session.player_turn === user?.id}
+          />
         )}
-        {session.card_games.game_type === 'this_or_that' && (
-          <ThisOrThatGame currentCard={currentCard} />
-        )}
-        {session.card_games.game_type === 'memory_match' && (
-          <MemoryMatchGame currentCard={currentCard} />
-        )}
-        {session.card_games.game_type === 'love_coupons' && (
-          <LoveCouponsGame currentCard={currentCard} />
-        )}
-        {session.card_games.game_type === 'couple_quiz' && (
-          <CoupleQuizGame currentCard={currentCard} />
-        )}
-        {/* Fallback for existing games */}
-        {!['truth_or_love', 'this_or_that', 'memory_match', 'love_coupons', 'couple_quiz'].includes(session.card_games.game_type) && (
-          <Card className="border-primary/20">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-xl">{currentCard.title}</CardTitle>
-                <Badge variant="outline" className="capitalize">
-                  {currentCard.category}
-                </Badge>
-              </div>
-              {currentCard.requires_action && (
-                <Badge className="w-fit bg-amber-100 text-amber-800 border-amber-200">
-                  Action Required
-                </Badge>
-              )}
-            </CardHeader>
-            <CardContent>
-              <CardDescription className="text-base leading-relaxed mb-4">
-                {currentCard.prompt}
-              </CardDescription>
+        {session.card_games.game_type === 'tic_toe_heart' && (
+          <TicToeHeartGame 
+            sessionId={sessionId!}
+            isUserTurn={session.player_turn === user?.id}
+            onMove={async (row, col) => {
+              // Update game state with move
+              const gameData = session.session_data || {};
+              const board = gameData.board || [[null,null,null],[null,null,null],[null,null,null]];
+              board[row][col] = '💖';
               
-              {currentCard.time_limit_seconds && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Clock className="w-4 h-4" />
-                  <span>Suggested time: {Math.round(currentCard.time_limit_seconds / 60)} minutes</span>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+              await supabase
+                .from('game_sessions')
+                .update({ 
+                  session_data: { ...gameData, board },
+                  player_turn: coupleData?.user1_id === user?.id ? coupleData.user2_id : coupleData?.user1_id
+                })
+                .eq('id', sessionId);
+            }}
+            onRematch={async () => {
+              await supabase
+                .from('game_sessions')
+                .update({ 
+                  session_data: { 
+                    board: [[null,null,null],[null,null,null],[null,null,null]], 
+                    userSymbol: '💖', 
+                    partnerSymbol: '💘', 
+                    winner: null 
+                  },
+                  status: 'active'
+                })
+                .eq('id', sessionId);
+            }}
+            onExit={() => navigate('/games')}
+            gameState={session.session_data}
+          />
+        )}
+        {session.card_games.game_type === 'truth_or_dare_couples' && (
+          <TruthOrDareCouplesGame 
+            sessionId={sessionId!}
+            isUserTurn={session.player_turn === user?.id}
+            onSubmitResponse={async (response, proof) => {
+              // Handle truth/dare response with optional proof upload
+              await supabase
+                .from('card_responses')
+                .insert({
+                  session_id: sessionId,
+                  card_id: currentCard?.id || '',
+                  user_id: user?.id,
+                  response_text: response
+                });
+              
+              // TODO: Handle proof file upload to storage
+            }}
+            onNextRound={async () => {
+              const gameData = session.session_data || {};
+              await supabase
+                .from('game_sessions')
+                .update({ 
+                  session_data: { 
+                    ...gameData, 
+                    round: (gameData.round || 1) + 1 
+                  },
+                  player_turn: coupleData?.user1_id === user?.id ? coupleData.user2_id : coupleData?.user1_id
+                })
+                .eq('id', sessionId);
+            }}
+            gameData={session.session_data}
+          />
         )}
 
         {/* User's Response */}
