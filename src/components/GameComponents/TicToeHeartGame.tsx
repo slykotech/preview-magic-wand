@@ -251,15 +251,22 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
         // Debug turn state after loading
         setTimeout(() => debugTurnState(), 100);
       } else {
+        // Ensure we have both user and partner before creating game
+        if (!user?.id || !partnerId) {
+          console.error('❌ Cannot create game: missing user or partner ID', { user: user?.id, partnerId });
+          toast.error('Partner connection required to start game');
+          return;
+        }
+
         // Create new game with randomly selected first player
-        const players = [user!.id, partnerId];
+        const players = [user.id, partnerId];
         const randomFirstPlayer = players[Math.floor(Math.random() * players.length)];
         
         console.log('🎮 Creating new game with random first player:', {
-          user: user!.id,
+          user: user.id,
           partner: partnerId,
           randomFirstPlayer: randomFirstPlayer,
-          playerName: randomFirstPlayer === user!.id ? getUserDisplayName() : getPartnerDisplayName()
+          playerName: randomFirstPlayer === user.id ? getUserDisplayName() : getPartnerDisplayName()
         });
         
         // Use upsert to prevent duplicates if both players try to create simultaneously
