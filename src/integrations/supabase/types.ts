@@ -1614,6 +1614,53 @@ export type Database = {
         }
         Relationships: []
       }
+      tic_toe_heart_games: {
+        Row: {
+          board: Json
+          created_at: string
+          current_player_id: string
+          game_status: string
+          id: string
+          last_move_at: string | null
+          moves_count: number
+          session_id: string
+          updated_at: string
+          winner_id: string | null
+        }
+        Insert: {
+          board?: Json
+          created_at?: string
+          current_player_id: string
+          game_status?: string
+          id?: string
+          last_move_at?: string | null
+          moves_count?: number
+          session_id: string
+          updated_at?: string
+          winner_id?: string | null
+        }
+        Update: {
+          board?: Json
+          created_at?: string
+          current_player_id?: string
+          game_status?: string
+          id?: string
+          last_move_at?: string | null
+          moves_count?: number
+          session_id?: string
+          updated_at?: string
+          winner_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tic_toe_heart_games_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "game_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_api_quotas: {
         Row: {
           created_at: string | null
