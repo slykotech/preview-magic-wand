@@ -194,7 +194,7 @@ export const EventSuggestionsSection = ({ onEventSelect, className = "" }: Event
           <h2 className="text-2xl font-bold">Event Suggestions</h2>
           <div className="flex items-center gap-2 text-muted-foreground">
             <MapPin className="w-4 h-4" />
-            <span>Events near {location.displayName}</span>
+            <span>Events near {location.city}{location.city && ', '}{location.displayName}</span>
             <Button 
               variant="ghost" 
               size="sm"
