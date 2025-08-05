@@ -171,7 +171,7 @@ async function performRegionalScraping(country: string, region?: string, city?: 
   let totalEventsInserted = 0;
   
   // Call each scraping function with appropriate delays
-  const scrapingFunctions = ['scrape-ticketmaster', 'scrape-eventbrite', 'scrape-googleplaces'];
+  const scrapingFunctions = ['scrape-ticketmaster', 'scrape-eventbrite', 'scrape-googleplaces', 'scrape-events-firecrawl'];
   
   for (const functionName of scrapingFunctions) {
     try {
