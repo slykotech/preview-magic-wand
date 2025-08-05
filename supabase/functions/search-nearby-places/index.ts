@@ -85,8 +85,8 @@ serve(async (req) => {
 
     // First, check database for existing places in the area
     const { data: existingPlaces, error: dbError } = await supabase.rpc('find_nearby_places', {
-      user_lat: latitude,
-      user_lng: longitude,
+      search_lat: latitude,
+      search_lng: longitude,
       radius_km: 100,
       category_filter: category || null
     });
@@ -95,12 +95,23 @@ serve(async (req) => {
       console.error('Database query error:', dbError);
     }
 
-    // If we have enough recent places from database, return them
-    if (existingPlaces && existingPlaces.length >= 10) {
-      console.log(`Found ${existingPlaces.length} places from database`);
+    // Verify distances for database results to ensure they're actually nearby
+    let validPlaces = [];
+    if (existingPlaces && existingPlaces.length > 0) {
+      validPlaces = existingPlaces.filter((place: any) => {
+        const actualDistance = calculateDistance(latitude, longitude, place.latitude, place.longitude);
+        return actualDistance <= 100;
+      });
+      
+      console.log(`Found ${existingPlaces.length} places from database, ${validPlaces.length} are valid`);
+    }
+
+    // If we have enough valid places from database, return them
+    if (validPlaces && validPlaces.length >= 10) {
+      console.log(`Returning ${validPlaces.length} places from database`);
       return new Response(JSON.stringify({ 
         success: true,
-        places: existingPlaces.map((place: any) => ({
+        places: validPlaces.map((place: any) => ({
           id: place.google_place_id,
           name: place.name,
           address: place.address,
@@ -113,7 +124,7 @@ serve(async (req) => {
           isOpen: place.is_open,
           distance: parseFloat(place.distance_km)
         })),
-        total: existingPlaces.length,
+        total: validPlaces.length,
         source: 'database'
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }

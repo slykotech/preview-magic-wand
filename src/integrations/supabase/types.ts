@@ -2110,12 +2110,19 @@ export type Database = {
         Returns: string
       }
       find_nearby_places: {
-        Args: {
-          user_lat: number
-          user_lng: number
-          radius_km?: number
-          category_filter?: string
-        }
+        Args:
+          | {
+              search_lat: number
+              search_lng: number
+              radius_km?: number
+              category_filter?: string
+            }
+          | {
+              user_lat: number
+              user_lng: number
+              radius_km?: number
+              category_filter?: string
+            }
         Returns: {
           id: string
           google_place_id: string
