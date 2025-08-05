@@ -43,7 +43,7 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    const { latitude, longitude, radiusKm = 25, city, sources = ['eventbrite'] }: FetchEventsRequest = await req.json();
+    const { latitude, longitude, radiusKm = 25, city, sources = ['meetup'] }: FetchEventsRequest = await req.json();
 
     console.log(`Fetching events for location: ${latitude}, ${longitude}, radius: ${radiusKm}km`);
 
@@ -122,15 +122,9 @@ serve(async (req) => {
     // Fetch events from multiple sources
     const allEvents: EventData[] = [];
 
-    // Eventbrite API
+    // Eventbrite API was deprecated in 2020 - no longer available for public use
     if (sources.includes('eventbrite')) {
-      try {
-        const eventbriteEvents = await fetchEventbriteEvents(latitude, longitude, radiusKm);
-        allEvents.push(...eventbriteEvents);
-        console.log(`Fetched ${eventbriteEvents.length} events from Eventbrite`);
-      } catch (error) {
-        console.error('Eventbrite fetch error:', error);
-      }
+      console.log('Eventbrite API is no longer available for public use (deprecated in 2020)');
     }
 
     // Meetup API  
