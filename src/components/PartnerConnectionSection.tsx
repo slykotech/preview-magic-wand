@@ -249,7 +249,7 @@ export const PartnerConnectionSection = () => {
           isValid: true,
           exists: false,
           available: false,
-          message: "This email is not registered with Love Sync.",
+          message: "This email is not registered. You can invite them to join Love Sync!",
           isChecking: false,
           showInviteToJoin: true
         });
@@ -261,7 +261,7 @@ export const PartnerConnectionSection = () => {
           isValid: true,
           exists: true,
           available: false,
-          message: "This user is already in a couple relationship.",
+          message: result.message || "This user is already in a couple relationship.",
           isChecking: false,
           showInviteToJoin: false
         });
@@ -273,7 +273,7 @@ export const PartnerConnectionSection = () => {
         isValid: true,
         exists: true,
         available: true,
-        message: "Ready to invite this user",
+        message: result.message || "Ready to send connection request! ✨",
         isChecking: false,
         showInviteToJoin: false
       });
