@@ -121,14 +121,11 @@ export const SweetSuggestions: React.FC<SweetSuggestionsProps> = ({
     return displayName.split(',')[0].trim();
   };
   
-  const handleLocationSet = (locationData: any) => {
+  const handleLocationSet = (cityName: string, coordinates: { lat: number; lng: number; displayName: string }) => {
+    console.log('Setting location:', { cityName, coordinates });
     // Clear existing places when location changes
     setPlaces([]);
-    setManualLocation(locationData.name, {
-      lat: locationData.lat,
-      lng: locationData.lng,
-      displayName: locationData.displayName || locationData.name
-    });
+    setManualLocation(cityName, coordinates);
   };
   const handleAddToDatePlan = (place: Place) => {
     const dateData = {

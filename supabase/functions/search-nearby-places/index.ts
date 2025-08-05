@@ -89,13 +89,13 @@ serve(async (req) => {
       });
     }
 
-    console.log(`Searching for places near ${latitude}, ${longitude} with 100km radius`);
+    console.log(`Searching for places near ${latitude}, ${longitude} with 100km radius${cityName ? ` in ${cityName}` : ''}`);
 
     // First, check database for existing places in the area with city filtering
     const { data: existingPlaces, error: dbError } = await supabase.rpc('find_nearby_places', {
       search_lat: latitude,
       search_lng: longitude,
-      radius_km: 50,
+      radius_km: 100,
       category_filter: category || null,
       city_name: cityName || null
     });
@@ -108,17 +108,23 @@ serve(async (req) => {
     if (existingPlaces && existingPlaces.length > 0) {
       validPlaces = existingPlaces.filter((place: any) => {
         const actualDistance = calculateDistance(latitude, longitude, place.latitude, place.longitude);
-        return actualDistance <= 50; // Reduced to 50km for more relevant results
+        const cityMatch = !cityName || 
+          place.location_context?.city?.toLowerCase().includes(cityName.toLowerCase()) ||
+          place.location_context?.search_city?.toLowerCase().includes(cityName.toLowerCase()) ||
+          place.address?.toLowerCase().includes(cityName.toLowerCase());
+        return actualDistance <= 100 && cityMatch; // Updated to 100km radius
       });
       
       console.log(`Found ${existingPlaces.length} places from database, ${validPlaces.length} are valid for ${cityName || 'this location'}`);
+      
+      // For new cities with no data, return empty to trigger API call
+      if (cityName && validPlaces.length === 0) {
+        console.log(`No places found for ${cityName} in database, will fetch from API`);
+      }
     }
 
-    // If we have enough valid places from database AND they're from the right city, return them
-    if (validPlaces && validPlaces.length >= 10 && (!cityName || validPlaces.some((p: any) => 
-      p.location_context?.city?.toLowerCase().includes(cityName.toLowerCase()) ||
-      p.address?.toLowerCase().includes(cityName.toLowerCase())
-    ))) {
+    // If we have enough valid places from database, return them
+    if (validPlaces && validPlaces.length >= 10) {
       console.log(`Returning ${validPlaces.length} places from database for ${cityName || 'this location'}`);
       return new Response(JSON.stringify({ 
         success: true,
@@ -157,7 +163,7 @@ serve(async (req) => {
       const params = new URLSearchParams({
         key: apiKey,
         location: `${latitude},${longitude}`,
-        radius: '50000', // 50km for more focused results
+        radius: '100000', // 100km radius
         type: placeType
       });
 
@@ -195,9 +201,9 @@ serve(async (req) => {
               opening_hours: place.opening_hours ? { open_now: place.opening_hours.open_now } : null,
               is_open: place.opening_hours?.open_now,
               location_context: {
-                city: cityInfo || cityName,
+                city: cityInfo || cityName || 'Unknown',
                 region: regionInfo,
-                search_city: cityName,
+                search_city: cityName?.toLowerCase(),
                 coordinates: { lat: latitude, lng: longitude }
               },
               google_data: place,
