@@ -298,110 +298,124 @@ async function fetchEventbriteEvents(lat: number, lng: number, radiusKm: number,
     const events: EventData[] = [];
     const seenIds = new Set<string>(); // Track unique events to avoid duplicates
     
-    // Look for React hydration data - common pattern
-    const reactDataRegex = /window\.__NEXT_DATA__\s*=\s*({.+?});?(?:\s*<\/script>|\s*window)/s;
-    const reactMatch = html.match(reactDataRegex);
+    // Strategy 1: Look for the most common Eventbrite data pattern - __NEXT_DATA__
+    const nextDataRegex = /window\.__NEXT_DATA__\s*=\s*({.+?});/s;
+    const nextDataMatch = html.match(nextDataRegex);
     
-    if (reactMatch) {
+    if (nextDataMatch) {
       try {
-        console.log('Found React hydration data, parsing...');
-        const reactData = JSON.parse(reactMatch[1]);
+        console.log('Found __NEXT_DATA__, parsing...');
+        const nextData = JSON.parse(nextDataMatch[1]);
         
-        // Look for events in various possible paths
-        const findEvents = (obj: any, path = ''): any[] => {
-          const foundEvents: any[] = [];
-          
-          if (obj && typeof obj === 'object') {
-            // Check if this object looks like an event
-            if (obj.name && (obj.start_date || obj.startDate || obj.start)) {
-              foundEvents.push(obj);
-            }
+        // Common paths where events are stored in Eventbrite's Next.js data
+        const eventPaths = [
+          nextData?.props?.pageProps?.searchResults?.events,
+          nextData?.props?.pageProps?.initialSearchState?.results?.events,
+          nextData?.props?.pageProps?.data?.events,
+          nextData?.props?.pageProps?.events,
+          nextData?.query?.events
+        ];
+        
+        for (const eventList of eventPaths) {
+          if (Array.isArray(eventList) && eventList.length > 0) {
+            console.log(`Found ${eventList.length} events in Next.js data`);
             
-            // Recursively search for events arrays
-            for (const [key, value] of Object.entries(obj)) {
-              if (Array.isArray(value)) {
-                // Check if this is an events array
-                const eventLikeItems = value.filter(item => 
-                  item && typeof item === 'object' && 
-                  (item.name || item.title) && 
-                  (item.start_date || item.startDate || item.start)
-                );
-                if (eventLikeItems.length > 0) {
-                  foundEvents.push(...eventLikeItems);
+            for (const event of eventList.slice(0, 20)) {
+              try {
+                const eventId = event.id || event.objectId || `eb_${Math.random()}`;
+                if (seenIds.has(eventId)) continue;
+                seenIds.add(eventId);
+                
+                const venue = event.venue || event.primary_venue || {};
+                const eventData: EventData = {
+                  title: event.name || event.title || 'Event',
+                  description: event.description?.text || event.description || event.summary || '',
+                  start_date: parseEventDate(event.start_date || event.startDate || event.start?.utc || event.start?.local),
+                  end_date: parseEventDate(event.end_date || event.endDate || event.end?.utc || event.end?.local),
+                  location_name: venue.name || venue.display_name || venue.address?.localized_address_display || 'TBD',
+                  latitude: parseFloat(venue.latitude || venue.lat || lat.toString()),
+                  longitude: parseFloat(venue.longitude || venue.lng || lng.toString()),
+                  price: extractPrice(event),
+                  organizer: event.organizer?.name || 'Eventbrite',
+                  category: event.category?.name || event.primary_category?.name || 'Events',
+                  website_url: event.url || `https://www.eventbrite.com/e/${eventId}`,
+                  image_url: extractImageUrl(event),
+                  source: 'eventbrite',
+                  external_id: `eventbrite_${eventId}`
+                };
+                
+                if (eventData.title && eventData.start_date) {
+                  events.push(eventData);
+                  console.log(`Added event: ${eventData.title} at ${eventData.location_name}`);
                 }
-              } else if (value && typeof value === 'object') {
-                foundEvents.push(...findEvents(value, `${path}.${key}`));
+              } catch (e) {
+                console.log('Error parsing individual event:', e);
               }
             }
-          }
-          
-          return foundEvents;
-        };
-        
-        const foundEvents = findEvents(reactData);
-        console.log(`Found ${foundEvents.length} event objects in React data`);
-        
-        for (const event of foundEvents.slice(0, 20)) { // Process up to 20 events
-          try {
-            const eventId = event.id || event.objectId || event.url?.split('/').pop() || `event_${Math.random()}`;
-            
-            // Skip duplicates
-            if (seenIds.has(eventId)) {
-              continue;
-            }
-            seenIds.add(eventId);
-            
-            // Extract proper start/end dates
-            const startDate = event.start_date || event.startDate || event.start?.utc || event.start?.local || event.datetime_start;
-            const endDate = event.end_date || event.endDate || event.end?.utc || event.end?.local || event.datetime_end;
-            
-            // Extract venue information
-            const venue = event.venue || event.primary_venue || event.location;
-            const venueName = venue?.name || venue?.display_name || 
-                             event.venue_name || event.location_name ||
-                             venue?.address?.localized_address_display ||
-                             'Venue TBD';
-            
-            // Extract coordinates
-            const eventLat = venue?.latitude || venue?.lat || venue?.address?.latitude || 
-                           (lat + (Math.random() - 0.5) * 0.02);
-            const eventLng = venue?.longitude || venue?.lng || venue?.lon || venue?.address?.longitude || 
-                           (lng + (Math.random() - 0.5) * 0.02);
-            
-            const eventData: EventData = {
-              title: event.name || event.title || 'Eventbrite Event',
-              description: event.description?.text || event.description || event.summary || '',
-              start_date: parseEventDate(startDate),
-              end_date: endDate ? parseEventDate(endDate) : undefined,
-              location_name: venueName,
-              latitude: parseFloat(eventLat.toString()) || lat,
-              longitude: parseFloat(eventLng.toString()) || lng,
-              price: extractPrice(event),
-              organizer: event.organizer?.name || event.organization?.name || 'Eventbrite',
-              category: event.category?.name || event.primary_category?.name || event.subcategory?.name || 'Events',
-              website_url: event.url || `https://www.eventbrite.com/e/${eventId}`,
-              image_url: extractImageUrl(event),
-              source: 'eventbrite',
-              external_id: `eventbrite_${eventId}`
-            };
-            
-            // Only add if we have valid required data
-            if (eventData.title && eventData.start_date && eventData.location_name !== 'Venue TBD') {
-              events.push(eventData);
-              console.log(`Extracted event: ${eventData.title} at ${eventData.location_name} on ${eventData.start_date}`);
-            }
-          } catch (eventError) {
-            console.error('Error parsing individual event:', eventError);
+            break; // Found events, no need to check other paths
           }
         }
-      } catch (parseError) {
-        console.error('Error parsing React data:', parseError);
+      } catch (e) {
+        console.log('Error parsing __NEXT_DATA__:', e);
+      }
+    }
+    
+    // Strategy 2: Look for event cards in HTML structure
+    if (events.length === 0) {
+      console.log('No Next.js data found, trying HTML parsing...');
+      
+      // Look for common Eventbrite event card patterns
+      const eventCardRegex = /<article[^>]*data-testid="event-card"[^>]*>.*?<\/article>/gis;
+      const cardMatches = html.match(eventCardRegex);
+      
+      if (cardMatches) {
+        console.log(`Found ${cardMatches.length} event cards in HTML`);
+        
+        for (const cardHtml of cardMatches.slice(0, 15)) {
+          try {
+            // Extract event details from card HTML
+            const titleMatch = cardHtml.match(/<h[1-6][^>]*>([^<]+)<\/h[1-6]>/i);
+            const linkMatch = cardHtml.match(/href="([^"]*\/e\/[^"]*)"/) || cardHtml.match(/href="([^"]*event[^"]*)"/) ;
+            const timeMatch = cardHtml.match(/time[^>]*datetime="([^"]*)"/) || cardHtml.match(/(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})/);
+            const venueMatch = cardHtml.match(/venue[^>]*>([^<]+)</i) || cardHtml.match(/location[^>]*>([^<]+)</i);
+            
+            if (titleMatch && titleMatch[1]) {
+              const eventId = linkMatch?.[1]?.split('/').pop() || `card_${Math.random()}`;
+              if (seenIds.has(eventId)) continue;
+              seenIds.add(eventId);
+              
+              const eventData: EventData = {
+                title: titleMatch[1].trim(),
+                description: '',
+                start_date: parseEventDate(timeMatch?.[1] || new Date().toISOString()),
+                end_date: undefined,
+                location_name: venueMatch?.[1]?.trim() || 'Venue TBD',
+                latitude: lat + (Math.random() - 0.5) * 0.02,
+                longitude: lng + (Math.random() - 0.5) * 0.02,
+                price: 'Check website',
+                organizer: 'Eventbrite',
+                category: 'Events',
+                website_url: linkMatch?.[1] ? `https://www.eventbrite.com${linkMatch[1]}` : eventbriteUrl,
+                image_url: null,
+                source: 'eventbrite',
+                external_id: `eventbrite_${eventId}`
+              };
+              
+              if (eventData.title && eventData.start_date) {
+                events.push(eventData);
+                console.log(`Extracted from HTML: ${eventData.title}`);
+              }
+            }
+          } catch (e) {
+            console.log('Error parsing event card:', e);
+          }
+        }
       }
     }
 
-    // Fallback: Look for __SERVER_DATA__
+    // Strategy 3: Look for __SERVER_DATA__ (fallback)
     if (events.length === 0) {
-      console.log('No React data found, trying __SERVER_DATA__...');
+      console.log('No HTML cards found, trying __SERVER_DATA__...');
       const serverDataMatch = html.match(/window\.__SERVER_DATA__\s*=\s*({.+?});/s);
       if (serverDataMatch) {
         try {
