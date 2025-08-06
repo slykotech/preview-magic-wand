@@ -105,12 +105,31 @@ export const useEnhancedSubscription = () => {
   };
 
   // Start trial subscription
-  const startTrial = async (cardDetails: { last_four: string; brand: string }) => {
+  const startTrial = async (
+    cardDetails: { last_four: string; brand: string },
+    planDetails?: {
+      name: string;
+      price: string;
+      period: string;
+      originalPrice?: string;
+      discount?: number;
+      discountCode?: string;
+    }
+  ) => {
     if (!user) return { success: false, error: 'No user found' };
 
     try {
       const trialEndDate = new Date();
       trialEndDate.setDate(trialEndDate.getDate() + 7);
+
+      // Parse price to handle different formats (e.g., "$7.99", "7.99")
+      const parsePrice = (priceStr: string): number => {
+        const cleanPrice = priceStr.replace(/[$,]/g, '');
+        return parseFloat(cleanPrice) || 0;
+      };
+
+      const currentPrice = planDetails ? parsePrice(planDetails.price) : 0;
+      const originalPrice = planDetails?.originalPrice ? parsePrice(planDetails.originalPrice) : currentPrice;
 
       const { error } = await supabase
         .from('subscriptions')
@@ -122,7 +141,14 @@ export const useEnhancedSubscription = () => {
           trial_end_date: trialEndDate.toISOString(),
           auto_charge_date: trialEndDate.toISOString(),
           card_last_four: cardDetails.last_four,
-          card_brand: cardDetails.brand
+          card_brand: cardDetails.brand,
+          // Store complete plan information
+          selected_plan_name: planDetails?.name || 'Premium Plan',
+          plan_price: currentPrice,
+          original_price: originalPrice,
+          plan_period: planDetails?.period || 'month',
+          discount_applied: planDetails?.discount || null,
+          discount_code: planDetails?.discountCode || null
         });
 
       if (error) throw error;

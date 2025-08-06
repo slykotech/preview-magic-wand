@@ -102,7 +102,20 @@ export const SubscriptionOnboarding = () => {
       
       console.log('Calling startTrial with card details:', cardDetails);
       
-      const result = await startTrial(cardDetails);
+      // Prepare plan details to store
+      const planDetails = {
+        name: selectedPlan.name,
+        price: selectedPlan.price,
+        period: selectedPlan.period,
+        // Handle discount string conversion and extract numeric value if present
+        discount: selectedPlan.discount ? 
+          parseFloat(selectedPlan.discount.replace(/[^\d.]/g, '')) || undefined : 
+          undefined
+      };
+      
+      console.log('Plan details to store:', planDetails);
+      
+      const result = await startTrial(cardDetails, planDetails);
       
       console.log('StartTrial result:', result);
       
