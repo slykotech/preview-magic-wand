@@ -241,96 +241,227 @@ async function fetchEventbriteEvents(lat: number, lng: number, radiusKm: number,
 
     const response = await fetch(eventbriteUrl, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'DNT': '1',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1'
       }
     });
 
     if (!response.ok) {
-      console.error(`Failed to fetch Eventbrite page: ${response.status}`);
+      console.error(`Failed to fetch Eventbrite page: ${response.status} ${response.statusText}`);
       return [];
     }
 
     const html = await response.text();
-    console.log('Successfully fetched Eventbrite page, parsing events...');
+    console.log(`Successfully fetched Eventbrite page (${html.length} chars), parsing events...`);
 
-    // Extract event data from HTML using regex patterns
     const events: EventData[] = [];
     
-    // Look for JSON-LD structured data or script tags with event data
-    const jsonLdMatches = html.match(/<script[^>]*type="application\/ld\+json"[^>]*>(.*?)<\/script>/gis);
-    
-    if (jsonLdMatches) {
-      for (const match of jsonLdMatches) {
-        try {
-          const jsonContent = match.replace(/<script[^>]*>/, '').replace(/<\/script>/, '');
-          const data = JSON.parse(jsonContent);
+    // Look for structured data in script tags - Eventbrite often uses window.__SERVER_DATA__
+    const serverDataMatch = html.match(/window\.__SERVER_DATA__\s*=\s*({.+?});/s);
+    if (serverDataMatch) {
+      try {
+        console.log('Found server data, parsing...');
+        const serverData = JSON.parse(serverDataMatch[1]);
+        
+        // Navigate through the server data structure to find events
+        const searchResults = serverData?.props?.pageProps?.serverState?.searchState?.searchResults?.events;
+        if (searchResults && Array.isArray(searchResults)) {
+          console.log(`Found ${searchResults.length} events in server data`);
           
-          if (data['@type'] === 'Event' || (Array.isArray(data) && data.some(item => item['@type'] === 'Event'))) {
-            const eventItems = Array.isArray(data) ? data.filter(item => item['@type'] === 'Event') : [data];
+          for (const event of searchResults.slice(0, 10)) { // Limit to 10 events
+            try {
+              // Parse event data with proper error handling
+              const eventData = {
+                title: event.name || event.title || 'Eventbrite Event',
+                description: event.description?.text || event.summary || '',
+                start_date: parseEventDate(event.start_date || event.startDate || event.start?.utc),
+                end_date: parseEventDate(event.end_date || event.endDate || event.end?.utc),
+                location_name: extractLocationName(event),
+                latitude: extractLatitude(event, lat),
+                longitude: extractLongitude(event, lng),
+                price: extractPrice(event),
+                organizer: event.organizer?.name || event.organization?.name || 'Eventbrite',
+                category: event.category?.name || event.primary_category?.name || 'Events',
+                website_url: event.url || `https://www.eventbrite.com/e/${event.id}`,
+                image_url: extractImageUrl(event),
+                source: 'eventbrite_web',
+                external_id: `eventbrite_${event.id || Math.random()}`
+              };
+              
+              // Only add if we have valid data
+              if (eventData.title && eventData.start_date) {
+                events.push(eventData);
+              }
+            } catch (eventError) {
+              console.error('Error parsing individual event:', eventError);
+              continue;
+            }
+          }
+        }
+      } catch (parseError) {
+        console.error('Error parsing server data:', parseError);
+      }
+    }
+
+    // Fallback: Look for JSON-LD structured data
+    if (events.length === 0) {
+      console.log('No server data found, trying JSON-LD...');
+      const jsonLdMatches = html.match(/<script[^>]*type="application\/ld\+json"[^>]*>(.*?)<\/script>/gis);
+      
+      if (jsonLdMatches) {
+        for (const match of jsonLdMatches) {
+          try {
+            const jsonContent = match.replace(/<script[^>]*>/, '').replace(/<\/script>/, '').trim();
+            const data = JSON.parse(jsonContent);
             
-            for (const event of eventItems) {
-              events.push({
-                title: event.name || 'Eventbrite Event',
+            const eventItems = Array.isArray(data) ? data.filter(item => item['@type'] === 'Event') : 
+                              (data['@type'] === 'Event' ? [data] : []);
+            
+            for (const event of eventItems.slice(0, 5)) {
+              const eventData = {
+                title: event.name || 'Event',
                 description: event.description || '',
-                start_date: event.startDate || new Date().toISOString(),
-                end_date: event.endDate,
-                location_name: event.location?.name || event.location?.address?.addressLocality || `${city}`,
-                latitude: lat + (Math.random() - 0.5) * 0.02, // Approximate location
-                longitude: lng + (Math.random() - 0.5) * 0.02,
+                start_date: parseEventDate(event.startDate),
+                end_date: parseEventDate(event.endDate),
+                location_name: extractJsonLdLocation(event),
+                latitude: event.location?.geo?.latitude || (lat + (Math.random() - 0.5) * 0.01),
+                longitude: event.location?.geo?.longitude || (lng + (Math.random() - 0.5) * 0.01),
                 price: event.offers?.price ? `$${event.offers.price}` : 'Check website',
                 organizer: event.organizer?.name || 'Eventbrite',
                 category: 'Events',
                 website_url: event.url || eventbriteUrl,
-                image_url: event.image || null,
+                image_url: event.image?.url || event.image || null,
                 source: 'eventbrite_web',
-                external_id: `eventbrite_web_${Date.now()}_${Math.random()}`
-              });
+                external_id: `eventbrite_jsonld_${Math.random()}`
+              };
+              
+              if (eventData.title && eventData.start_date) {
+                events.push(eventData);
+              }
             }
+          } catch (e) {
+            console.log('Failed to parse JSON-LD data:', e);
           }
-        } catch (e) {
-          console.log('Failed to parse JSON-LD data:', e);
         }
       }
     }
 
-    // If no structured data found, use basic HTML parsing
-    if (events.length === 0) {
-      console.log('No JSON-LD data found, using fallback parsing...');
-      
-      // Look for event patterns in the HTML (this is a simplified approach)
-      const titleMatches = html.match(/<h3[^>]*>([^<]+)<\/h3>/gi) || [];
-      const limitedTitles = titleMatches.slice(0, 3); // Limit to avoid too much data
-      
-      for (let i = 0; i < limitedTitles.length; i++) {
-        const titleMatch = limitedTitles[i].match(/>([^<]+)</);
-        if (titleMatch) {
-          events.push({
-            title: titleMatch[1].trim(),
-            description: `Event in ${city} - Visit Eventbrite for full details`,
-            start_date: new Date(Date.now() + (i + 1) * 24 * 60 * 60 * 1000).toISOString(),
-            end_date: new Date(Date.now() + (i + 1) * 24 * 60 * 60 * 1000 + 3 * 60 * 60 * 1000).toISOString(),
-            location_name: city,
-            latitude: lat + (Math.random() - 0.5) * 0.02,
-            longitude: lng + (Math.random() - 0.5) * 0.02,
-            price: 'Check website',
-            organizer: 'Eventbrite',
-            category: 'Events',
-            website_url: eventbriteUrl,
-            image_url: null,
-            source: 'eventbrite_web',
-            external_id: `eventbrite_web_fallback_${i}`
-          });
-        }
-      }
-    }
-
-    console.log(`Found ${events.length} events from Eventbrite website scraping`);
-    return events.slice(0, 5); // Limit to 5 events
+    console.log(`Successfully extracted ${events.length} events from Eventbrite`);
+    return events;
 
   } catch (error) {
     console.error('Error scraping Eventbrite website:', error);
     return [];
   }
+}
+
+// Helper functions for data extraction
+function parseEventDate(dateString: any): string {
+  if (!dateString) return new Date().toISOString();
+  
+  try {
+    // Handle various date formats
+    if (typeof dateString === 'string') {
+      // Handle ISO strings, timestamps, and various formats
+      const date = new Date(dateString);
+      if (!isNaN(date.getTime())) {
+        return date.toISOString();
+      }
+    }
+    
+    if (typeof dateString === 'number') {
+      // Handle timestamps (both seconds and milliseconds)
+      const timestamp = dateString > 1e10 ? dateString : dateString * 1000;
+      return new Date(timestamp).toISOString();
+    }
+    
+    // Fallback to current date
+    return new Date().toISOString();
+  } catch (error) {
+    console.error('Error parsing date:', dateString, error);
+    return new Date().toISOString();
+  }
+}
+
+function extractLocationName(event: any): string {
+  // Try multiple possible location fields
+  return event.venue?.name || 
+         event.venue?.address?.localized_address_display ||
+         event.location?.name ||
+         event.location?.address?.display_name ||
+         event.primary_venue?.name ||
+         event.venue_name ||
+         'TBD';
+}
+
+function extractLatitude(event: any, fallbackLat: number): number {
+  const lat = event.venue?.latitude || 
+             event.venue?.address?.latitude ||
+             event.location?.latitude ||
+             event.primary_venue?.latitude;
+  
+  if (lat && !isNaN(parseFloat(lat))) {
+    return parseFloat(lat);
+  }
+  
+  // Return fallback with small random offset
+  return fallbackLat + (Math.random() - 0.5) * 0.01;
+}
+
+function extractLongitude(event: any, fallbackLng: number): number {
+  const lng = event.venue?.longitude || 
+             event.venue?.address?.longitude ||
+             event.location?.longitude ||
+             event.primary_venue?.longitude;
+  
+  if (lng && !isNaN(parseFloat(lng))) {
+    return parseFloat(lng);
+  }
+  
+  // Return fallback with small random offset
+  return fallbackLng + (Math.random() - 0.5) * 0.01;
+}
+
+function extractPrice(event: any): string {
+  if (event.is_free === true || event.free === true) {
+    return 'Free';
+  }
+  
+  if (event.ticket_availability?.minimum_ticket_price?.display) {
+    return event.ticket_availability.minimum_ticket_price.display;
+  }
+  
+  if (event.price_display) {
+    return event.price_display;
+  }
+  
+  if (event.ticket_classes?.[0]?.cost?.display) {
+    return event.ticket_classes[0].cost.display;
+  }
+  
+  return 'Check website';
+}
+
+function extractImageUrl(event: any): string | null {
+  return event.logo?.url || 
+         event.image?.url || 
+         event.logo?.original?.url ||
+         event.primary_image?.url ||
+         null;
+}
+
+function extractJsonLdLocation(event: any): string {
+  if (event.location?.name) return event.location.name;
+  if (event.location?.address?.streetAddress) {
+    const addr = event.location.address;
+    return `${addr.streetAddress}, ${addr.addressLocality || ''}, ${addr.addressRegion || ''}`.replace(/,\s*,/g, ',').replace(/,$/, '');
+  }
+  return 'TBD';
 }
 
 async function fetchMeetupEvents(lat: number, lng: number, radiusKm: number): Promise<EventData[]> {
