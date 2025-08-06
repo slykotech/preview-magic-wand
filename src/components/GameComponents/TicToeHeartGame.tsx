@@ -349,6 +349,49 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
     };
   }, [sessionId, user?.id, userSymbol, partnerSymbol]);
 
+  // Real-time subscription for love grants
+  useEffect(() => {
+    if (!coupleData?.id) return;
+
+    console.log('💌 Setting up love grants real-time subscription for couple:', coupleData.id);
+
+    const loveGrantsChannel = supabase
+      .channel(`love-grants-${coupleData.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'love_grants',
+          filter: `couple_id=eq.${coupleData.id}`
+        },
+        (payload) => {
+          console.log('💌 New love grant received:', payload);
+          const newGrant = payload.new as any;
+          
+          // Add to local state immediately for real-time updates
+          setLoveGrants(prev => [{
+            ...newGrant,
+            winner_symbol: newGrant.winner_symbol as CellValue,
+            status: newGrant.status as 'pending' | 'acknowledged' | 'fulfilled'
+          }, ...prev]);
+          
+          // Show toast notification to the partner
+          if (newGrant.winner_user_id !== user?.id) {
+            toast.success(`💌 ${newGrant.winner_name} sent you a Love Grant!`);
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('💌 Love grants subscription status:', status);
+      });
+
+    return () => {
+      console.log('💌 Cleaning up love grants subscription');
+      supabase.removeChannel(loveGrantsChannel);
+    };
+  }, [coupleData?.id, user?.id]);
+
   // Enhanced polling fallback when real-time fails
   useEffect(() => {
     if (connectionStatus !== 'connected' && sessionId && user?.id && gameState) {
@@ -570,6 +613,7 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
         .limit(10);
 
       if (error) throw error;
+      console.log('💌 Loaded love grants:', grants);
       setLoveGrants((grants || []).map(g => ({
         ...g,
         winner_symbol: g.winner_symbol as CellValue,
