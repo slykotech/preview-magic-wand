@@ -6,10 +6,12 @@ import { TurnIndicator } from '@/components/CardGame/TurnIndicator';
 import { GameStats } from '@/components/CardGame/GameStats';
 import { DebugInfo } from '@/components/CardGame/DebugInfo';
 import { TaskHistory } from '@/components/CardGame/TaskHistory';
+import CardDistribution from '@/components/CardGame/CardDistribution';
 import { Button } from '@/components/ui/button';
 import { GradientHeader } from '@/components/GradientHeader';
 import { useAuth } from '@/hooks/useAuth';
 import { ArrowLeft } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 export const CardDeckGame: React.FC = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -206,7 +208,43 @@ export const CardDeckGame: React.FC = () => {
           >
             End Game
           </Button>
+          
+          {/* Debug button to force photo card */}
+          {process.env.NODE_ENV === 'development' && (
+            <Button
+              onClick={async () => {
+                const playedCardIds = [...(gameState.played_cards || []), ...(gameState.skipped_cards || [])];
+                const { data: photoCards } = await supabase
+                  .from("deck_cards")
+                  .select("id")
+                  .eq("response_type", "photo")
+                  .eq("is_active", true)
+                  .not("id", "in", playedCardIds.length > 0 ? `(${playedCardIds.join(",")})` : "()")
+                  .limit(1);
+                
+                if (photoCards && photoCards.length > 0) {
+                  await supabase
+                    .from("card_deck_game_sessions")
+                    .update({
+                      current_card_id: photoCards[0].id,
+                      last_activity_at: new Date().toISOString()
+                    })
+                    .eq("id", sessionId);
+                  
+                  console.log('Forced photo card:', photoCards[0].id);
+                }
+              }}
+              variant="secondary"
+              size="sm"
+              className="bg-purple-500 text-white hover:bg-purple-600"
+            >
+              Force Photo
+            </Button>
+          )}
         </div>
+
+        {/* Card Distribution Tracking */}
+        <CardDistribution gameState={gameState} />
 
         {/* Debug Info - Remove this in production */}
         <DebugInfo 

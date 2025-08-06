@@ -342,37 +342,102 @@ export function useCardGame(sessionId: string | null) {
         return;
       }
 
-      // Debug: Check card type distribution in available cards
-      const cardTypeDistribution = availableCards.reduce((acc, card) => {
-        acc[card.response_type] = (acc[card.response_type] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
-      
-      console.log('📊 Available card types:', cardTypeDistribution);
-      console.log('📋 Available cards sample:', availableCards.slice(0, 5).map(c => ({
-        id: c.id.substring(0, 8),
-        type: c.response_type,
-        prompt: c.prompt.substring(0, 30) + '...'
-      })));
+      // First, check distribution of played cards for weighted selection
+      if (gameState.played_cards && gameState.played_cards.length > 0) {
+        const { data: playedCards } = await supabase
+          .from("deck_cards")
+          .select("response_type")
+          .in("id", gameState.played_cards);
+        
+        const distribution = {
+          action: playedCards?.filter(c => c.response_type === 'action').length || 0,
+          text: playedCards?.filter(c => c.response_type === 'text').length || 0,
+          photo: playedCards?.filter(c => c.response_type === 'photo').length || 0
+        };
+        
+        console.log('📊 Current distribution:', distribution);
+      }
 
-      // Select random card
-      const randomIndex = Math.floor(Math.random() * availableCards.length);
-      const randomCard = availableCards[randomIndex];
-      console.log('🎲 Selected random card:', {
-        index: randomIndex,
-        total: availableCards.length,
-        type: randomCard.response_type,
-        id: randomCard.id.substring(0, 8),
-        prompt: randomCard.prompt.substring(0, 50) + '...'
+      // Group available cards by type
+      const cardsByType = {
+        action: availableCards.filter(c => c.response_type === 'action'),
+        text: availableCards.filter(c => c.response_type === 'text'),
+        photo: availableCards.filter(c => c.response_type === 'photo')
+      };
+
+      console.log('📦 Available cards by type:', {
+        action: cardsByType.action.length,
+        text: cardsByType.text.length,
+        photo: cardsByType.photo.length
+      });
+
+      // WEIGHTED SELECTION - Prioritize underrepresented types
+      let selectedCard;
+      
+      // If no photo cards have been played and some are available, increase chance
+      const totalPlayed = gameState.total_cards_played || 0;
+      if (totalPlayed > 5 && cardsByType.photo.length > 0) {
+        // Check if any photo cards have been played
+        const { data: playedPhotoCards } = await supabase
+          .from("deck_cards")
+          .select("id")
+          .eq("response_type", "photo")
+          .in("id", gameState.played_cards || []);
+        
+        const photoCardsPlayed = playedPhotoCards?.length || 0;
+        
+        if (photoCardsPlayed === 0) {
+          console.log('🎯 Forcing photo card selection (none played yet)');
+          selectedCard = cardsByType.photo[Math.floor(Math.random() * cardsByType.photo.length)];
+        }
+      }
+      
+      // If not forced, use weighted random selection
+      if (!selectedCard) {
+        // Calculate weights based on availability
+        const totalAvailable = availableCards.length;
+        const weights = {
+          action: cardsByType.action.length / totalAvailable,
+          text: cardsByType.text.length / totalAvailable,
+          photo: cardsByType.photo.length / totalAvailable
+        };
+        
+        // Random selection with weights
+        const random = Math.random();
+        let selectedType;
+        
+        if (random < weights.action) {
+          selectedType = 'action';
+        } else if (random < weights.action + weights.text) {
+          selectedType = 'text';
+        } else {
+          selectedType = 'photo';
+        }
+        
+        const typeCards = cardsByType[selectedType];
+        if (typeCards.length > 0) {
+          selectedCard = typeCards[Math.floor(Math.random() * typeCards.length)];
+          console.log(`🎲 Selected ${selectedType} card`);
+        } else {
+          // Fallback to any available card
+          selectedCard = availableCards[Math.floor(Math.random() * availableCards.length)];
+        }
+      }
+
+      console.log('✅ Selected card:', {
+        id: selectedCard.id.substring(0, 8),
+        type: selectedCard.response_type,
+        category: selectedCard.category,
+        prompt: selectedCard.prompt.substring(0, 50) + '...'
       });
       
       // Set the card locally immediately for better UX
-      setCurrentCard(randomCard as CardData);
+      setCurrentCard(selectedCard as CardData);
       
       // Update game state with the new card
-      console.log('💾 Updating game state with card:', randomCard.id);
+      console.log('💾 Updating game state with card:', selectedCard.id);
       const updateData = {
-        current_card_id: randomCard.id,
+        current_card_id: selectedCard.id,
         current_card_revealed: false,
         current_card_started_at: null,
         current_card_completed: false,
