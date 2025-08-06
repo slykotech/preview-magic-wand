@@ -396,13 +396,13 @@ export const GameCard: React.FC<GameCardProps> = ({
         </div>
       )}
 
-      {/* Partner Response Display */}
+      {/* Partner Response Display - Fixed positioning and styling */}
       {showResponse && partnerResponse && (
-        <div className="mt-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200 shadow-sm">
-          <div className="flex items-center justify-between mb-2">
+        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 w-11/12 max-w-md p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border-2 border-green-300 shadow-lg animate-in fade-in-0 zoom-in-95 duration-300">
+          <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <span className="text-lg">👤</span>
-              <h3 className="font-semibold text-green-800">Partner's Response:</h3>
+              <span className="text-xl animate-pulse">💬</span>
+              <h3 className="font-bold text-green-800">Partner's Response!</h3>
               <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">
                 {new Date(partnerResponse.responded_at).toLocaleTimeString()}
               </span>
@@ -411,35 +411,51 @@ export const GameCard: React.FC<GameCardProps> = ({
               variant="ghost"
               size="sm"
               onClick={() => {
+                console.log('🎯 Manually dismissing partner response');
                 setShowResponse(false);
                 if (responseDismissTimer) clearTimeout(responseDismissTimer);
               }}
-              className="text-green-600 hover:text-green-800 h-6 w-6 p-0"
+              className="text-green-600 hover:text-green-800 h-8 w-8 p-0 hover:bg-green-100 rounded-full"
             >
               ✕
             </Button>
           </div>
+          
+          {/* Text Response */}
           {partnerResponse.response_type === 'text' && partnerResponse.response_text && (
-          <div className="bg-white p-3 rounded-md border border-green-100">
-            <p className="text-green-700 whitespace-pre-wrap">{partnerResponse.response_text}</p>
-            <div className="mt-2 text-xs text-green-600">
-              Auto-dismiss in 15s • Click × to close
+            <div className="bg-white p-4 rounded-md border border-green-100 shadow-sm">
+              <p className="text-green-800 font-medium whitespace-pre-wrap text-sm leading-relaxed">
+                "{partnerResponse.response_text}"
+              </p>
+              <div className="mt-3 text-xs text-green-600 flex items-center justify-between">
+                <span>⏰ Auto-dismiss in 15s</span>
+                <span>Click × to close</span>
+              </div>
             </div>
-          </div>
           )}
-          {partnerResponse.response_type === 'photo' && (
-            <div className="mt-2">
+          
+          {/* Photo Response */}
+          {partnerResponse.response_type === 'photo' && partnerResponse.response_text && (
+            <div className="bg-white p-2 rounded-md border border-green-100">
               <img
                 src={`${supabase.storage.from('card-responses').getPublicUrl(partnerResponse.response_text).data.publicUrl}`}
                 alt="Partner's response"
-                className="max-h-60 rounded-lg border shadow-sm"
+                className="max-h-48 w-full object-contain rounded"
               />
+              <div className="mt-2 text-xs text-green-600 text-center">
+                📸 Partner shared a photo
+              </div>
             </div>
           )}
+          
+          {/* Action Response */}
           {partnerResponse.response_type === 'action' && (
-            <div className="flex items-center gap-2 text-green-700">
-              <span className="text-xl">✅</span>
-              <p className="font-medium">Completed the action successfully!</p>
+            <div className="bg-white p-3 rounded-md border border-green-100 flex items-center gap-3">
+              <span className="text-2xl">✅</span>
+              <div>
+                <p className="font-semibold text-green-800">Task Completed!</p>
+                <p className="text-sm text-green-600">Your partner finished the action</p>
+              </div>
             </div>
           )}
         </div>
