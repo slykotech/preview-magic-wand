@@ -92,82 +92,165 @@ serve(async (req) => {
       );
     }
 
-    // Fetch fresh events using Firecrawl
+    // Fetch fresh events using Firecrawl with multiple strategies
     const events: EventData[] = [];
-    const searchQuery = query || `events ${city || `near ${latitude}, ${longitude}`}`;
     
+    // Strategy 1: Health check with simple API test
+    console.log('Testing Firecrawl API connection...');
     try {
-      console.log(`Using Firecrawl to search for: ${searchQuery}`);
-      
-      // Use Firecrawl's search endpoint for more reliable results
-      const firecrawlResponse = await fetch('https://api.firecrawl.dev/v0/search', {
+      const healthCheck = await fetch('https://api.firecrawl.dev/v0/crawl', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${firecrawlApiKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          query: `events in ${city} this week upcoming concerts shows`,
-          limit: 20,
-          formats: ['markdown']
+          url: 'https://example.com',
+          crawlerOptions: { limit: 1 }
         })
       });
-
-      if (!firecrawlResponse.ok) {
-        const errorText = await firecrawlResponse.text();
-        console.log(`Firecrawl search failed: ${firecrawlResponse.status} - ${errorText}`);
-        
-        // Don't throw error, instead continue to sample events
-        if (city) {
-          const sampleEvents = createSampleEvents(city, latitude, longitude);
-          events.push(...sampleEvents);
-          console.log(`Firecrawl failed, created ${sampleEvents.length} sample events for ${city}`);
-        }
+      
+      if (healthCheck.ok) {
+        console.log('Firecrawl API is accessible');
       } else {
+        console.log(`Firecrawl API health check failed: ${healthCheck.status}`);
+      }
+    } catch (healthError) {
+      console.log('Firecrawl API health check error:', healthError);
+    }
+
+    // Strategy 2: Try multiple targeted searches with retry logic
+    const searchStrategies = [
+      // Strategy A: Direct event platform scraping
+      {
+        name: 'Eventbrite Search',
+        url: 'https://www.eventbrite.com/d/us--' + (city || 'new-york') + '/events/',
+        method: 'crawl'
+      },
+      // Strategy B: General search
+      {
+        name: 'General Events Search',
+        query: `"${city}" events this week concerts shows festivals`,
+        method: 'search'
+      },
+      // Strategy C: Cultural events
+      {
+        name: 'Cultural Events',
+        query: `"${city}" music art theater cultural events`,
+        method: 'search'
+      }
+    ];
+
+    for (const strategy of searchStrategies) {
+      if (events.length >= 10) break; // Stop if we have enough events
+      
+      console.log(`Trying strategy: ${strategy.name}`);
+      
+      try {
+        let firecrawlResponse;
+        
+        if (strategy.method === 'crawl' && strategy.url) {
+          // Try direct crawling of event sites
+          firecrawlResponse = await fetch('https://api.firecrawl.dev/v0/crawl', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${firecrawlApiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              url: strategy.url,
+              crawlerOptions: {
+                limit: 5,
+                timeout: 30000 // 30 seconds timeout
+              },
+              pageOptions: {
+                formats: ['markdown']
+              }
+            })
+          });
+        } else {
+          // Use search method
+          firecrawlResponse = await fetch('https://api.firecrawl.dev/v0/search', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${firecrawlApiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              query: strategy.query,
+              limit: 10,
+              formats: ['markdown'],
+              timeout: 30000 // 30 seconds timeout
+            })
+          });
+        }
+
+        if (!firecrawlResponse.ok) {
+          const errorText = await firecrawlResponse.text();
+          console.log(`${strategy.name} failed: ${firecrawlResponse.status} - ${errorText}`);
+          continue; // Try next strategy
+        }
+
         const firecrawlData = await firecrawlResponse.json();
-        console.log(`Firecrawl search response status:`, firecrawlData.success);
+        console.log(`${strategy.name} response:`, firecrawlData.success ? 'Success' : 'Failed');
 
         if (firecrawlData.success && firecrawlData.data && Array.isArray(firecrawlData.data)) {
-          console.log(`Found ${firecrawlData.data.length} search results`);
+          console.log(`${strategy.name} found ${firecrawlData.data.length} results`);
           
-          // Process search results to extract event information
-          for (const result of firecrawlData.data.slice(0, 10)) {
+          // Process results
+          for (const result of firecrawlData.data.slice(0, 5)) {
             if (result.markdown && result.url) {
-              // Simple extraction from markdown/text
               const title = extractTitle(result.markdown) || result.title || 'Event';
               const eventDate = extractDate(result.markdown) || getDefaultEventDate();
               
-              const eventData: EventData = {
-                title: title,
-                description: result.markdown.substring(0, 200) + '...',
-                start_date: eventDate,
-                location_name: city || 'Unknown Location',
-                price: 'See website',
-                organizer: extractOrganizer(result.markdown) || 'Various',
-                category: categorizeEvent(title, result.markdown),
-                website_url: result.url,
-                image_url: null,
-                source: 'firecrawl',
-                external_id: `firecrawl-${encodeURIComponent(result.url)}`
-              };
+              // Skip if we already have this event
+              const existingEvent = events.find(e => 
+                e.title.toLowerCase() === title.toLowerCase() || 
+                e.external_id === `firecrawl-${encodeURIComponent(result.url)}`
+              );
               
-              events.push(eventData);
+              if (!existingEvent) {
+                const eventData: EventData = {
+                  title: title,
+                  description: extractDescription(result.markdown),
+                  start_date: eventDate,
+                  location_name: city || extractLocation(result.markdown) || 'Unknown Location',
+                  price: extractPrice(result.markdown) || 'See website',
+                  organizer: extractOrganizer(result.markdown) || 'Various',
+                  category: categorizeEvent(title, result.markdown),
+                  website_url: result.url,
+                  image_url: null,
+                  source: 'firecrawl',
+                  external_id: `firecrawl-${encodeURIComponent(result.url)}`
+                };
+                
+                events.push(eventData);
+              }
             }
           }
-
-          console.log(`Extracted ${events.length} events from search results`);
+          
+          console.log(`${strategy.name} extracted ${events.length} total events so far`);
         }
-      }
 
-    } catch (firecrawlError) {
-      console.error('Firecrawl error:', firecrawlError);
-      
-      // Always create sample events as fallback when Firecrawl fails
-      if (city && events.length === 0) {
+        // Add delay between strategies to avoid rate limiting
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+      } catch (strategyError) {
+        console.error(`${strategy.name} error:`, strategyError);
+        continue; // Try next strategy
+      }
+    }
+
+    // Strategy 3: Only use sample events if absolutely no real events found
+    if (events.length === 0) {
+      console.log('All Firecrawl strategies failed, using sample events as last resort');
+      if (city) {
         const sampleEvents = createSampleEvents(city, latitude, longitude);
         events.push(...sampleEvents);
-        console.log(`Firecrawl failed, created ${sampleEvents.length} sample events for ${city}`);
+        console.log(`Created ${sampleEvents.length} sample events for ${city}`);
       }
+    } else {
+      console.log(`Successfully found ${events.length} real events using Firecrawl`);
     }
 
     // Store events in database if we found any
@@ -334,6 +417,59 @@ function categorizeEvent(title: string, content: string): string {
   if (text.includes('learn') || text.includes('workshop') || text.includes('class')) return 'learning';
   
   return 'general';
+}
+
+function extractDescription(text: string): string {
+  // Clean up markdown and extract meaningful description
+  const cleanText = text
+    .replace(/#{1,6}\s+/g, '') // Remove markdown headers
+    .replace(/\*\*/g, '') // Remove bold markers
+    .replace(/\*/g, '') // Remove italic markers
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Convert links to text
+    .replace(/\n+/g, ' ') // Replace newlines with spaces
+    .trim();
+  
+  // Get first meaningful paragraph (200 chars)
+  const description = cleanText.substring(0, 200);
+  return description.length < cleanText.length ? description + '...' : description;
+}
+
+function extractLocation(text: string): string | null {
+  const locationPatterns = [
+    /(?:at|location|venue)[:\s]+(.+?)[\n\r]/i,
+    /(\d+\s+[^,\n]+(?:street|st|avenue|ave|boulevard|blvd|road|rd)[^,\n]*)/i,
+    /(downtown|midtown|uptown)\s+([^,\n]+)/i
+  ];
+  
+  for (const pattern of locationPatterns) {
+    const match = text.match(pattern);
+    if (match) {
+      return match[1].trim();
+    }
+  }
+  
+  return null;
+}
+
+function extractPrice(text: string): string | null {
+  const pricePatterns = [
+    /(?:price|cost|fee|admission)[:\s]*\$?(\d+(?:\.\d{2})?)/i,
+    /\$(\d+(?:\.\d{2})?)/,
+    /(free|no charge|no cost|complimentary)/i,
+    /(\d+(?:\.\d{2})?\s*(?:dollars?|usd))/i
+  ];
+  
+  for (const pattern of pricePatterns) {
+    const match = text.match(pattern);
+    if (match) {
+      if (match[1].toLowerCase().includes('free') || match[1].toLowerCase().includes('no')) {
+        return 'Free';
+      }
+      return match[1].includes('$') ? match[1] : `$${match[1]}`;
+    }
+  }
+  
+  return null;
 }
 
 function createSampleEvents(city: string, lat: number, lng: number): EventData[] {
