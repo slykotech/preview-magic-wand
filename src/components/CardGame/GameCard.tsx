@@ -60,12 +60,18 @@ export const GameCard: React.FC<GameCardProps> = ({
     if (!card || !sessionId) return;
     
     console.log(`🔍 Setting up response subscription for card ${card.id}, response_type: ${card.response_type}`);
+    console.log(`🔄 Card change detected:`, {
+      currentCardId,
+      newCardId: card.id,
+      hasPartnerResponse: !!partnerResponse,
+      showResponse,
+      willClearResponse: currentCardId && currentCardId !== card.id
+    });
     
-    // Clear previous response only when card ID actually changes
+    // DON'T clear previous response when card changes - let it persist until manually dismissed
+    // This allows responses to stay visible across card transitions
     if (currentCardId && currentCardId !== card.id) {
-      console.log(`🔄 Card changed from ${currentCardId} to ${card.id}, clearing previous response`);
-      setShowResponse(false);
-      setPartnerResponse(null);
+      console.log(`📋 Card changed from ${currentCardId} to ${card.id}, but keeping response visible`);
     }
     setCurrentCardId(card.id);
     
@@ -147,12 +153,13 @@ export const GameCard: React.FC<GameCardProps> = ({
             currentUserId: userId
           });
           
-          // Check if this response is for the current card and session, and from the partner
+          // Show partner responses even if they're for a different card
+          // This handles the case where the game moves to the next card but we want to show the previous response
           if (payload.new.session_id === sessionId && 
-              payload.new.card_id === card.id && 
               payload.new.user_id !== userId) {
             
-            console.log('✅ Response matches current context, showing to partner');
+            console.log('✅ Partner response received, showing regardless of card match');
+            console.log(`📋 Response card: ${payload.new.card_id}, Current card: ${card.id}`);
             setPartnerResponse(payload.new);
             setShowResponse(true);
             
@@ -162,7 +169,7 @@ export const GameCard: React.FC<GameCardProps> = ({
                                    'completed the task';
             toast.success(`Partner ${responseTypeText}! 🎉`);
           } else {
-            console.log('❌ Response does not match current context');
+            console.log('❌ Response does not match session or is from same user');
           }
         }
       )
