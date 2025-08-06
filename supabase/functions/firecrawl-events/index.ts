@@ -124,39 +124,39 @@ serve(async (req) => {
           console.log(`Firecrawl failed, created ${sampleEvents.length} sample events for ${city}`);
         }
       } else {
+        const firecrawlData = await firecrawlResponse.json();
+        console.log(`Firecrawl search response status:`, firecrawlData.success);
 
-      const firecrawlData = await firecrawlResponse.json();
-      console.log(`Firecrawl search response status:`, firecrawlData.success);
-
-      if (firecrawlData.success && firecrawlData.data && Array.isArray(firecrawlData.data)) {
-        console.log(`Found ${firecrawlData.data.length} search results`);
-        
-        // Process search results to extract event information
-        for (const result of firecrawlData.data.slice(0, 10)) {
-          if (result.markdown && result.url) {
-            // Simple extraction from markdown/text
-            const title = extractTitle(result.markdown) || result.title || 'Event';
-            const eventDate = extractDate(result.markdown) || getDefaultEventDate();
-            
-            const eventData: EventData = {
-              title: title,
-              description: result.markdown.substring(0, 200) + '...',
-              start_date: eventDate,
-              location_name: city || 'Unknown Location',
-              price: 'See website',
-              organizer: extractOrganizer(result.markdown) || 'Various',
-              category: categorizeEvent(title, result.markdown),
-              website_url: result.url,
-              image_url: null,
-              source: 'firecrawl',
-              external_id: `firecrawl-${encodeURIComponent(result.url)}`
-            };
-            
-            events.push(eventData);
+        if (firecrawlData.success && firecrawlData.data && Array.isArray(firecrawlData.data)) {
+          console.log(`Found ${firecrawlData.data.length} search results`);
+          
+          // Process search results to extract event information
+          for (const result of firecrawlData.data.slice(0, 10)) {
+            if (result.markdown && result.url) {
+              // Simple extraction from markdown/text
+              const title = extractTitle(result.markdown) || result.title || 'Event';
+              const eventDate = extractDate(result.markdown) || getDefaultEventDate();
+              
+              const eventData: EventData = {
+                title: title,
+                description: result.markdown.substring(0, 200) + '...',
+                start_date: eventDate,
+                location_name: city || 'Unknown Location',
+                price: 'See website',
+                organizer: extractOrganizer(result.markdown) || 'Various',
+                category: categorizeEvent(title, result.markdown),
+                website_url: result.url,
+                image_url: null,
+                source: 'firecrawl',
+                external_id: `firecrawl-${encodeURIComponent(result.url)}`
+              };
+              
+              events.push(eventData);
+            }
           }
-        }
 
-        console.log(`Extracted ${events.length} events from search results`);
+          console.log(`Extracted ${events.length} events from search results`);
+        }
       }
 
     } catch (firecrawlError) {
