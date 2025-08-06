@@ -19,6 +19,7 @@ import { Messages } from "./pages/Messages";
 import { Profile } from "./pages/Profile";
 import { Games } from "./pages/Games";
 import { GameSession } from "./pages/GameSession";
+import { CardDeckGame } from "./pages/CardDeckGame";
 import { CoupleSetup } from "./pages/CoupleSetup";
 import { RelationshipInsights } from "./pages/RelationshipInsights";
 import { RelationshipPreferences } from "./pages/RelationshipPreferences";
@@ -75,6 +76,8 @@ const App = () => {
               <Route path="/planner" element={<DatePlanner />} />
                 <Route path="/games" element={<Games />} />
                 <Route path="/games/:sessionId" element={<GameSession />} />
+                <Route path="/games/card-deck/:sessionId" element={<CardDeckGame />} />
+                <Route path="/games/card-deck/new" element={<CardDeckGame />} />
                 
                 <Route path="/test-google-places" element={<GooglePlacesTestPage />} />
               <Route path="/vault" element={<MemoryVault />} />

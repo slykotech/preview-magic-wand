@@ -2,10 +2,23 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft, Heart, MessageCircle, Lightbulb, HelpCircle, Brain, Ticket, Users } from "lucide-react";
+import { ArrowLeft, Heart, MessageCircle, Lightbulb, HelpCircle, Brain, Ticket, Users, Spade } from "lucide-react";
 import { useCardGames } from "@/hooks/useCardGames";
+import { useCoupleData } from "@/hooks/useCoupleData";
 
 const gameTypes = [
+  {
+    id: "card_deck",
+    title: "Card Deck Game",
+    subtitle: "Deep Connection",
+    icon: Spade,
+    secondaryIcon: Heart,
+    gradient: "from-pink-400 to-purple-400",
+    bgGradient: "from-pink-50 to-purple-50",
+    darkBgGradient: "from-pink-950/30 to-purple-950/30",
+    description: "Interactive conversation cards with dynamic timers to deepen intimacy and spark meaningful moments",
+    isNew: true
+  },
   {
     id: "tic_toe_heart",
     title: "Tic Toe Heart",
@@ -33,9 +46,16 @@ const gameTypes = [
 export const Games = () => {
   const navigate = useNavigate();
   const { createGameSession, loading } = useCardGames();
+  const { coupleData } = useCoupleData();
 
   const handleGameSelect = async (gameType: string) => {
     try {
+      if (gameType === 'card_deck') {
+        // For card deck game, redirect to create a new session
+        window.location.href = '/games/card-deck/new';
+        return;
+      }
+      
       const session = await createGameSession(gameType);
       if (session) {
         navigate(`/games/${session.id}`);
@@ -100,8 +120,13 @@ export const Games = () => {
                   </div>
 
                   {/* Title */}
-                  <h3 className="text-2xl font-bold text-center text-gray-800 dark:text-gray-100 mb-2">
+                  <h3 className="text-2xl font-bold text-center text-gray-800 dark:text-gray-100 mb-2 flex items-center justify-center gap-2">
                     {game.title}
+                    {game.isNew && (
+                      <span className="text-xs bg-gradient-to-r from-emerald-400 to-green-500 text-white px-2 py-1 rounded-full">
+                        NEW
+                      </span>
+                    )}
                   </h3>
 
                   {/* Subtitle Badge */}

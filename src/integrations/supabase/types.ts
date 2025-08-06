@@ -208,6 +208,90 @@ export type Database = {
         }
         Relationships: []
       }
+      card_deck_game_sessions: {
+        Row: {
+          completed_at: string | null
+          couple_id: string
+          created_at: string | null
+          current_card_id: string | null
+          current_turn: string
+          favorite_cards: Json | null
+          game_mode: string | null
+          id: string
+          last_activity_at: string | null
+          played_cards: Json | null
+          session_duration: unknown | null
+          skipped_cards: Json | null
+          started_at: string | null
+          status: string | null
+          total_cards_played: number | null
+          updated_at: string | null
+          user1_id: string
+          user1_skips_remaining: number | null
+          user2_id: string
+          user2_skips_remaining: number | null
+        }
+        Insert: {
+          completed_at?: string | null
+          couple_id: string
+          created_at?: string | null
+          current_card_id?: string | null
+          current_turn: string
+          favorite_cards?: Json | null
+          game_mode?: string | null
+          id?: string
+          last_activity_at?: string | null
+          played_cards?: Json | null
+          session_duration?: unknown | null
+          skipped_cards?: Json | null
+          started_at?: string | null
+          status?: string | null
+          total_cards_played?: number | null
+          updated_at?: string | null
+          user1_id: string
+          user1_skips_remaining?: number | null
+          user2_id: string
+          user2_skips_remaining?: number | null
+        }
+        Update: {
+          completed_at?: string | null
+          couple_id?: string
+          created_at?: string | null
+          current_card_id?: string | null
+          current_turn?: string
+          favorite_cards?: Json | null
+          game_mode?: string | null
+          id?: string
+          last_activity_at?: string | null
+          played_cards?: Json | null
+          session_duration?: unknown | null
+          skipped_cards?: Json | null
+          started_at?: string | null
+          status?: string | null
+          total_cards_played?: number | null
+          updated_at?: string | null
+          user1_id?: string
+          user1_skips_remaining?: number | null
+          user2_id?: string
+          user2_skips_remaining?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "card_deck_game_sessions_couple_id_fkey"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "card_deck_game_sessions_current_card_id_fkey"
+            columns: ["current_card_id"]
+            isOneToOne: false
+            referencedRelation: "deck_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       card_games: {
         Row: {
           created_at: string
@@ -257,11 +341,15 @@ export type Database = {
           id: string
           meaningful_response: boolean | null
           partner_rating: number | null
+          partner_reaction: string | null
+          responded_at: string | null
           response_audio_url: string | null
           response_text: string | null
           response_time_seconds: number | null
+          response_type: string | null
           response_video_url: string | null
           session_id: string
+          time_taken_seconds: number | null
           user_id: string
         }
         Insert: {
@@ -270,11 +358,15 @@ export type Database = {
           id?: string
           meaningful_response?: boolean | null
           partner_rating?: number | null
+          partner_reaction?: string | null
+          responded_at?: string | null
           response_audio_url?: string | null
           response_text?: string | null
           response_time_seconds?: number | null
+          response_type?: string | null
           response_video_url?: string | null
           session_id: string
+          time_taken_seconds?: number | null
           user_id: string
         }
         Update: {
@@ -283,11 +375,15 @@ export type Database = {
           id?: string
           meaningful_response?: boolean | null
           partner_rating?: number | null
+          partner_reaction?: string | null
+          responded_at?: string | null
           response_audio_url?: string | null
           response_text?: string | null
           response_time_seconds?: number | null
+          response_type?: string | null
           response_video_url?: string | null
           session_id?: string
+          time_taken_seconds?: number | null
           user_id?: string
         }
         Relationships: [
@@ -582,6 +678,69 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      deck_cards: {
+        Row: {
+          avg_rating: number | null
+          category: string
+          created_at: string | null
+          difficulty_level: number | null
+          follow_up_card_id: string | null
+          id: string
+          intimacy_level: number | null
+          is_active: boolean | null
+          mood_tags: string[] | null
+          prompt: string
+          relationship_stage: string[] | null
+          requires_action: boolean | null
+          requires_physical_presence: boolean | null
+          special_occasions: string[] | null
+          subcategory: string
+          timer_category: string
+          timer_seconds: number
+          usage_count: number | null
+        }
+        Insert: {
+          avg_rating?: number | null
+          category: string
+          created_at?: string | null
+          difficulty_level?: number | null
+          follow_up_card_id?: string | null
+          id?: string
+          intimacy_level?: number | null
+          is_active?: boolean | null
+          mood_tags?: string[] | null
+          prompt: string
+          relationship_stage?: string[] | null
+          requires_action?: boolean | null
+          requires_physical_presence?: boolean | null
+          special_occasions?: string[] | null
+          subcategory: string
+          timer_category: string
+          timer_seconds: number
+          usage_count?: number | null
+        }
+        Update: {
+          avg_rating?: number | null
+          category?: string
+          created_at?: string | null
+          difficulty_level?: number | null
+          follow_up_card_id?: string | null
+          id?: string
+          intimacy_level?: number | null
+          is_active?: boolean | null
+          mood_tags?: string[] | null
+          prompt?: string
+          relationship_stage?: string[] | null
+          requires_action?: boolean | null
+          requires_physical_presence?: boolean | null
+          special_occasions?: string[] | null
+          subcategory?: string
+          timer_category?: string
+          timer_seconds?: number
+          usage_count?: number | null
+        }
+        Relationships: []
       }
       event_fetch_jobs: {
         Row: {
