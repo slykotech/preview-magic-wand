@@ -705,7 +705,7 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
 
       if (winner) {
         newStatus = 'won';
-        winnerId = winner === userSymbol ? user.id : partnerId;
+        winnerId = winner; // checkWinner already returns the correct player ID
         console.log('🎮 🏆 Winner detected:', winnerId);
       } else if (isFull) {
         newStatus = 'draw';
