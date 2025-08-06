@@ -233,14 +233,17 @@ serve(async (req) => {
                   title: title,
                   description: extractDescription(content),
                   start_date: eventDate,
-                  location_name: city || extractLocation(content) || 'Unknown Location',
-                  price: extractPrice(content) || 'See website',
-                  organizer: extractOrganizer(content) || 'Various',
+                  end_date: null, // Will be extracted if available
+                  location_name: extractLocation(content) || city || 'TBD',
+                  latitude: latitude,
+                  longitude: longitude,
+                  price: extractPrice(content) || 'Contact organizer',
+                  organizer: extractOrganizer(content) || 'TBD',
                   category: categorizeEvent(title, content),
-                  website_url: url || `https://example.com/events/${encodeURIComponent(title)}`,
-                  image_url: null,
-                  source: 'firecrawl',
-                  external_id: url ? `firecrawl-${encodeURIComponent(url)}` : `firecrawl-${Date.now()}-${encodeURIComponent(title)}`
+                  website_url: url || null,
+                  image_url: extractImageUrl(content) || null,
+                  source: 'real', // Mark as real data from Firecrawl
+                  external_id: url ? `firecrawl-${encodeURIComponent(url)}` : `firecrawl-${Date.now()}-${Math.random()}`
                 };
                 
                 events.push(eventData);
@@ -487,6 +490,24 @@ function extractPrice(text: string): string | null {
         return 'Free';
       }
       return match[1].includes('$') ? match[1] : `$${match[1]}`;
+    }
+  }
+  
+  return null;
+}
+
+function extractImageUrl(text: string): string | null {
+  // Look for image URLs in markdown or HTML
+  const imagePatterns = [
+    /!\[.*?\]\((https?:\/\/[^\s)]+\.(?:jpg|jpeg|png|gif|webp))/i,
+    /<img[^>]+src=["\']([^"\']+)["\'][^>]*>/i,
+    /(https?:\/\/[^\s]+\.(?:jpg|jpeg|png|gif|webp))/i
+  ];
+  
+  for (const pattern of imagePatterns) {
+    const match = text.match(pattern);
+    if (match) {
+      return match[1];
     }
   }
   
