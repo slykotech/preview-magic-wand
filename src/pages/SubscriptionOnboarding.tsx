@@ -214,12 +214,12 @@ export const SubscriptionOnboarding = () => {
 
             {/* Plan Selection */}
             <div className="space-y-4">
-              <div className="bg-accent/50 p-4 rounded-lg text-center text-white">
+              <div className="bg-accent/50 p-4 rounded-lg text-center">
                 <div className="flex items-center justify-center gap-2 mb-2">
-                  <Gift className="w-4 h-4" />
-                  <span className="font-medium">7-Day Free Trial on All Plans</span>
+                  <Gift className="w-4 h-4 text-foreground" />
+                  <span className="font-medium text-foreground">7-Day Free Trial on All Plans</span>
                 </div>
-                <p className="text-sm text-white/80">Cancel anytime during trial period</p>
+                <p className="text-sm text-muted-foreground">Cancel anytime during trial period</p>
               </div>
 
               {plans.map((plan) => (
@@ -274,11 +274,11 @@ export const SubscriptionOnboarding = () => {
               ))}
 
               <div className="bg-accent/50 p-4 rounded-lg">
-                <div className="flex items-center gap-2 text-sm text-white">
+                <div className="flex items-center gap-2 text-sm text-foreground">
                   <Shield className="w-4 h-4" />
                   <span className="font-medium">100% Risk-Free Trial</span>
                 </div>
-                <p className="text-xs text-white/80 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   Cancel anytime during your 7-day trial and you won't be charged
                 </p>
               </div>
@@ -286,13 +286,13 @@ export const SubscriptionOnboarding = () => {
 
             {/* Footer */}
             <div className="text-center">
-              <Button 
-                variant="ghost" 
-                onClick={() => navigate('/dashboard')}
-                className="text-white/70 hover:text-white"
-              >
-                Continue with Free Version
-              </Button>
+                <Button 
+                  variant="ghost" 
+                  onClick={() => navigate('/dashboard')}
+                  className="text-white hover:text-white hover:bg-white/10"
+                >
+                  Continue with Free Version
+                </Button>
             </div>
           </div>
         ) : (
