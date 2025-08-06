@@ -6,6 +6,26 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Enhanced validation rules
+const VALIDATION_RULES = {
+  MIN_TITLE_LENGTH: 8,
+  MAX_TITLE_LENGTH: 150,
+  MIN_DESCRIPTION_LENGTH: 20,
+  MAX_DESCRIPTION_LENGTH: 500,
+  BLACKLIST_PATTERNS: [
+    '404', 'not found', 'page not found', 'error', 'access denied',
+    'artificial intelligence (ai) for community groups',
+    'this page does not exist', 'content not available',
+    'sign in required', 'login required', 'unauthorized',
+    'server error', 'internal error', 'maintenance mode'
+  ],
+  HTML_ARTIFACTS: [
+    '&nbsp;', '&amp;', '&lt;', '&gt;', '&quot;', '&#39;',
+    '<div>', '</div>', '<span>', '</span>', '<p>', '</p>',
+    '```', '###', '##', '#', '**', '*', '[', ']', '('
+  ]
+};
+
 interface FirecrawlEventsRequest {
   latitude: number;
   longitude: number;
@@ -129,81 +149,111 @@ serve(async (req) => {
       console.log('Firecrawl API health check error:', healthError);
     }
 
-    // Strategy 2: Try multiple targeted searches with retry logic
+    // Strategy 2: Enhanced search strategies with working URLs and comprehensive validation
     const searchStrategies = [
-      // Strategy A: Indian Event Platforms - Updated URLs to avoid 404s
+      // Strategy A: Indian Event Platforms - Verified working URLs
       {
         name: 'BookMyShow Events',
-        url: `https://in.bookmyshow.com/explore/events-${(city || 'mumbai').toLowerCase().replace(/\s+/g, '')}`,
+        url: `https://in.bookmyshow.com/explore/events-${(city || 'mumbai').toLowerCase().replace(/\s+/g, '').replace(/hyderabad/g, 'hyderabad')}`,
         method: 'scrape',
-        query: `site:bookmyshow.com events ${city} concerts shows movies entertainment`,
-        fallbackUrl: 'https://in.bookmyshow.com/explore/events'
-      },
-      {
-        name: 'District Events (Zomato)',
-        url: `https://www.district.in/${(city || 'mumbai').toLowerCase()}/events`,
-        method: 'scrape',
-        query: `site:district.in ${city} events parties dining nightlife`,
-        fallbackUrl: 'https://www.district.in/events'
+        query: `site:bookmyshow.com events ${city} concerts shows movies entertainment upcoming`,
+        fallbackUrl: 'https://in.bookmyshow.com/explore/events',
+        platform: 'bookmyshow'
       },
       {
         name: 'Paytm Insider Events',
-        url: `https://insider.in/${(city || 'mumbai').toLowerCase()}`,
+        url: `https://insider.in/${(city || 'mumbai').toLowerCase().replace(/\s+/g, '')}/events`,
         method: 'scrape',
-        query: `site:insider.in ${city} events parties workshops experiences`,
-        fallbackUrl: 'https://insider.in/events'
+        query: `site:insider.in ${city} events parties workshops experiences comedy`,
+        fallbackUrl: 'https://insider.in/city/all/events',
+        platform: 'insider'
       },
       {
         name: 'Townscript Events',
-        url: `https://www.townscript.com/e/${(city || 'mumbai').toLowerCase()}-events`,
+        url: `https://www.townscript.com/e/${(city || 'mumbai').toLowerCase().replace(/\s+/g, '')}-events`,
         method: 'scrape',
-        query: `site:townscript.com ${city} events workshops seminars`,
-        fallbackUrl: 'https://www.townscript.com/events'
+        query: `site:townscript.com ${city} events workshops seminars conferences`,
+        fallbackUrl: 'https://www.townscript.com/e/events',
+        platform: 'townscript'
       },
       {
         name: 'Explara Events',
-        url: `https://www.explara.com/events/${(city || 'mumbai').toLowerCase()}`,
+        url: `https://www.explara.com/events/${(city || 'mumbai').toLowerCase().replace(/\s+/g, '')}`,
         method: 'scrape',
-        query: `site:explara.com ${city} events conferences`,
-        fallbackUrl: 'https://www.explara.com/events'
+        query: `site:explara.com ${city} events conferences tech business`,
+        fallbackUrl: 'https://www.explara.com/events',
+        platform: 'explara'
       },
-      // Strategy B: Search-only strategies (safer from 404s)
+      {
+        name: 'MeraEvents Platform',
+        url: `https://meraevents.com/events/${(city || 'mumbai').toLowerCase().replace(/\s+/g, '')}`,
+        method: 'scrape',
+        query: `site:meraevents.com ${city} events workshops training`,
+        fallbackUrl: 'https://meraevents.com/events',
+        platform: 'meraevents'
+      },
+      // Strategy B: Enhanced search-only strategies (more reliable)
       {
         name: 'Eventbrite Search',
-        query: `site:eventbrite.com events ${city} concerts shows workshops tickets`,
-        method: 'search'
+        query: `site:eventbrite.com events ${city} concerts shows workshops tickets 2025`,
+        method: 'search',
+        platform: 'eventbrite'
       },
       {
         name: 'Meetup Events',
-        query: `site:meetup.com ${city} events meetups networking community groups`,
-        method: 'search'
+        query: `site:meetup.com ${city} events meetups networking community groups upcoming`,
+        method: 'search',
+        platform: 'meetup'
       },
       {
-        name: 'Facebook Events',
-        query: `site:facebook.com/events ${city} local events community gatherings`,
-        method: 'search'
+        name: 'AllEvents India',
+        query: `site:allevents.in ${city} events tickets booking concerts shows`,
+        method: 'search',
+        platform: 'allevents'
       },
       {
-        name: 'AllEvents Search',
-        query: `site:allevents.in ${city} events tickets booking`,
-        method: 'search'
-      },
-      // Strategy C: General event searches
-      {
-        name: 'Local Event Platforms',
-        query: `${city} events tickets booking concerts shows festivals entertainment`,
-        method: 'search'
+        name: 'EventsHigh Platform',
+        query: `site:eventshigh.com ${city} events cultural music festivals`,
+        method: 'search',
+        platform: 'eventshigh'
       },
       {
-        name: 'Cultural Events Search',
-        query: `${city} music art theater cultural events exhibitions performances today weekend`,
-        method: 'search'
+        name: 'Little App Events',
+        query: `site:thelittleapp.com events ${city} dining experiences activities`,
+        method: 'search',
+        platform: 'littleapp'
       },
-      // Strategy D: Date-specific searches
+      // Strategy C: Cultural and venue-specific searches
       {
-        name: 'Upcoming Events',
-        query: `${city} events happening today tomorrow this weekend upcoming concerts shows`,
-        method: 'search'
+        name: 'Cultural Centers',
+        query: `${city} cultural center events art music theater performances 2025`,
+        method: 'search',
+        platform: 'cultural'
+      },
+      {
+        name: 'Music Venues',
+        query: `${city} music concerts live performances venues upcoming shows`,
+        method: 'search',
+        platform: 'music'
+      },
+      {
+        name: 'Food Events',
+        query: `${city} food festivals dining events restaurants pop-up experiences`,
+        method: 'search',
+        platform: 'food'
+      },
+      // Strategy D: Date and category specific searches
+      {
+        name: 'Weekend Events',
+        query: `${city} events this weekend upcoming Saturday Sunday activities`,
+        method: 'search',
+        platform: 'weekend'
+      },
+      {
+        name: 'Tech Events',
+        query: `${city} tech meetup conferences workshops developer startup events`,
+        method: 'search',
+        platform: 'tech'
       }
     ];
 
@@ -314,32 +364,28 @@ serve(async (req) => {
               const content = result.markdown || result.content;
               const url = result.url || result.sourceURL;
               
-              const title = extractTitle(content) || result.title || 'Event';
+              // Extract and validate title with comprehensive cleaning
+              let title = extractTitle(content) || result.title || '';
+              title = cleanTitle(title);
+              
+              // Extract and validate date with enhanced parsing
               const eventDate = extractDate(content) || getDefaultEventDate();
               
-              // Skip old events (more than 30 days ago)
-              const eventTime = new Date(eventDate).getTime();
-              const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
-              if (eventTime < thirtyDaysAgo) {
-                console.log(`Skipping old event: ${title} (${eventDate})`);
+              // Advanced content validation
+              const validationResult = validateEventData(title, content, eventDate);
+              if (!validationResult.isValid) {
+                console.log(`Skipping invalid event: ${title} - ${validationResult.reason}`);
                 continue;
               }
               
-              // Skip if we already have this event
+              // Skip if we already have this event (check multiple fields)
               const existingEvent = events.find(e => 
                 e.title.toLowerCase() === title.toLowerCase() || 
-                (url && e.external_id === `firecrawl-${encodeURIComponent(url)}`)
+                (url && e.external_id === `firecrawl-${encodeURIComponent(url)}`) ||
+                (e.title.includes(title.substring(0, 20)) && title.includes(e.title.substring(0, 20)))
               );
               
-              // Enhanced validation
-              const isValidEvent = title.length > 5 && 
-                                   !title.toLowerCase().includes('404') &&
-                                   !title.toLowerCase().includes('not found') &&
-                                   !title.toLowerCase().includes('error') &&
-                                   !title.toLowerCase().includes('page not found') &&
-                                   !content.toLowerCase().includes('artificial intelligence (ai) for community groups'); // Filter out AI training events
-              
-              if (!existingEvent && isValidEvent) {
+              if (!existingEvent) {
                 const eventData: EventData = {
                   title: title,
                   description: extractDescription(content),
@@ -452,7 +498,88 @@ serve(async (req) => {
   }
 });
 
-// Helper functions
+// Enhanced Helper functions with comprehensive validation and data cleaning
+
+// Advanced event data validation function
+function validateEventData(title: string, content: string, eventDate: string): { isValid: boolean; reason?: string } {
+  // Check title length
+  if (!title || title.length < VALIDATION_RULES.MIN_TITLE_LENGTH) {
+    return { isValid: false, reason: 'Title too short' };
+  }
+  
+  if (title.length > VALIDATION_RULES.MAX_TITLE_LENGTH) {
+    return { isValid: false, reason: 'Title too long' };
+  }
+  
+  // Check for blacklisted patterns in title and content
+  const textToCheck = (title + ' ' + content).toLowerCase();
+  for (const pattern of VALIDATION_RULES.BLACKLIST_PATTERNS) {
+    if (textToCheck.includes(pattern.toLowerCase())) {
+      return { isValid: false, reason: `Contains blacklisted pattern: ${pattern}` };
+    }
+  }
+  
+  // Check for HTML artifacts
+  let htmlArtifactCount = 0;
+  for (const artifact of VALIDATION_RULES.HTML_ARTIFACTS) {
+    if (textToCheck.includes(artifact.toLowerCase())) {
+      htmlArtifactCount++;
+    }
+  }
+  
+  if (htmlArtifactCount > 3) {
+    return { isValid: false, reason: 'Too many HTML artifacts detected' };
+  }
+  
+  // Validate date
+  const eventTime = new Date(eventDate).getTime();
+  const now = Date.now();
+  const oneYearFromNow = now + (365 * 24 * 60 * 60 * 1000);
+  const thirtyDaysAgo = now - (30 * 24 * 60 * 60 * 1000);
+  
+  if (eventTime < thirtyDaysAgo || eventTime > oneYearFromNow) {
+    return { isValid: false, reason: 'Event date out of reasonable range' };
+  }
+  
+  // Check for overly repetitive content
+  const words = title.toLowerCase().split(/\s+/);
+  const uniqueWords = new Set(words);
+  if (words.length > 0 && uniqueWords.size / words.length < 0.5) {
+    return { isValid: false, reason: 'Title appears to be repetitive or spam' };
+  }
+  
+  return { isValid: true };
+}
+
+// Enhanced title cleaning function
+function cleanTitle(title: string): string {
+  if (!title) return '';
+  
+  let cleaned = title;
+  
+  // Remove HTML artifacts
+  for (const artifact of VALIDATION_RULES.HTML_ARTIFACTS) {
+    cleaned = cleaned.replace(new RegExp(artifact.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '');
+  }
+  
+  // Remove excessive whitespace and special characters
+  cleaned = cleaned
+    .replace(/\s+/g, ' ') // Multiple spaces to single space
+    .replace(/^[^\w]+|[^\w]+$/g, '') // Remove leading/trailing non-word chars
+    .replace(/([a-z])([A-Z])/g, '$1 $2') // Add space between camelCase
+    .trim();
+    
+  // Capitalize first letter of each word (title case)
+  cleaned = cleaned.replace(/\b\w/g, char => char.toUpperCase());
+  
+  // Limit length
+  if (cleaned.length > VALIDATION_RULES.MAX_TITLE_LENGTH) {
+    cleaned = cleaned.substring(0, VALIDATION_RULES.MAX_TITLE_LENGTH - 3) + '...';
+  }
+  
+  return cleaned;
+}
+
 function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371; // Earth's radius in kilometers
   const dLat = (lat2 - lat1) * Math.PI / 180;
