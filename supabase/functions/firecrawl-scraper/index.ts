@@ -16,6 +16,15 @@ interface EventData {
   category?: string;
   url?: string;
   source?: string;
+  platform?: string;
+}
+
+interface PlatformConfig {
+  name: string;
+  urlTemplate: string;
+  method: 'crawl' | 'search';
+  formatCity: (city: string) => string;
+  extractionPrompt?: string;
 }
 
 serve(async (req) => {
@@ -34,37 +43,98 @@ serve(async (req) => {
 
     const firecrawl = new FirecrawlApp({ apiKey: firecrawlApiKey })
     
-    const defaultUrls = [
-      `https://www.eventbrite.com/d/${country}--${city}/events/`,
-      `https://in.bookmyshow.com/explore/events-${city}`,
-      `https://paytminsider.com/events/${city}`,
-      `https://www.meetup.com/find/?location=${city}--${country}`,
-    ]
+    // Platform configurations with dynamic URL generation
+    const platforms: PlatformConfig[] = [
+      {
+        name: 'BookMyShow',
+        urlTemplate: 'https://in.bookmyshow.com/explore/home/{city}',
+        method: 'crawl',
+        formatCity: (c: string) => c.toLowerCase().replace(/\s+/g, '-'),
+        extractionPrompt: 'Extract BookMyShow events with focus on movies, shows, concerts, and entertainment events.'
+      },
+      {
+        name: 'Paytm Insider',
+        urlTemplate: 'https://insider.in/all-events-in-{city}',
+        method: 'crawl',
+        formatCity: (c: string) => c.toLowerCase().replace(/\s+/g, '-'),
+        extractionPrompt: 'Extract Paytm Insider events focusing on live events, workshops, and experiences.'
+      },
+      {
+        name: 'EventsHigh',
+        urlTemplate: 'https://eventshigh.com/{city}',
+        method: 'crawl',
+        formatCity: (c: string) => c.toLowerCase().replace(/\s+/g, '-'),
+      },
+      {
+        name: 'Townscript',
+        urlTemplate: 'https://www.townscript.com/in/{city}',
+        method: 'crawl',
+        formatCity: (c: string) => c.toLowerCase().replace(/\s+/g, '-'),
+      },
+      {
+        name: 'Eventbrite',
+        urlTemplate: 'https://www.eventbrite.com/d/{city}/events/',
+        method: 'crawl',
+        formatCity: (c: string) => c.toLowerCase().replace(/\s+/g, '-'),
+      },
+      {
+        name: 'Meetup',
+        urlTemplate: 'https://www.meetup.com/find/events/?allMeetups=true&radius=10&userFreeform={city}',
+        method: 'crawl',
+        formatCity: (c: string) => encodeURIComponent(c),
+      },
+      {
+        name: 'AllEvents',
+        urlTemplate: 'https://allevents.in/{city}',
+        method: 'crawl',
+        formatCity: (c: string) => c.toLowerCase().replace(/\s+/g, '-'),
+      }
+    ];
 
-    const urlsToScrape = urls || defaultUrls
+    // Generate URLs from platforms if not provided
+    const urlsToScrape = urls || platforms.map(platform => {
+      const formattedCity = platform.formatCity(city);
+      return {
+        url: platform.urlTemplate.replace('{city}', formattedCity),
+        platform: platform.name,
+        method: platform.method,
+        extractionPrompt: platform.extractionPrompt
+      };
+    });
     const scrapedEvents: EventData[] = []
 
-    for (const url of urlsToScrape) {
+    for (const urlConfig of urlsToScrape) {
       try {
-        console.log(`Scraping: ${url}`)
+        const url = typeof urlConfig === 'string' ? urlConfig : urlConfig.url;
+        const platform = typeof urlConfig === 'string' ? 'Unknown' : urlConfig.platform;
+        const method = typeof urlConfig === 'string' ? 'crawl' : urlConfig.method;
+        const customPrompt = typeof urlConfig === 'string' ? null : urlConfig.extractionPrompt;
         
-        const scrapeResponse = await firecrawl.scrapeUrl(url, {
-          formats: ['markdown', 'html'],
-          extractorOptions: {
-            mode: 'llm-extraction',
-            extractionPrompt: `Extract event information from this page. For each event found, extract:
-              - title: Event name/title
-              - date: Event date and time (format as readable string)
-              - location: Venue name and address
-              - price: Ticket price or "Free" if free
-              - description: Brief event description
-              - category: Event category (music, sports, arts, comedy, etc.)
-              - url: Direct link to event page
-              
-              Return as a JSON array of events. If no events found, return empty array.
-              Example: [{"title": "Concert Name", "date": "Dec 15, 2024 8:00 PM", "location": "Venue Name", "price": "$25", "description": "Description", "category": "music", "url": "https://..."}]`
-          }
-        })
+        console.log(`Scraping ${platform}: ${url} using ${method}`)
+        
+        const basePrompt = `Extract event information from this ${platform} page. For each event found, extract:
+          - title: Event name/title
+          - date: Event date and time (format as readable string like "Dec 15, 2024 8:00 PM")
+          - location: Venue name and full address
+          - price: Ticket price (include currency) or "Free" if free
+          - description: Brief event description (max 200 chars)
+          - category: Event category (music, sports, arts, comedy, food, technology, etc.)
+          - url: Direct link to event page
+          
+          ${customPrompt || ''}
+          
+          Return as a JSON array of events. If no events found, return empty array.
+          Example: [{"title": "Concert Name", "date": "Dec 15, 2024 8:00 PM", "location": "Venue Name, Full Address", "price": "₹500", "description": "Description", "category": "music", "url": "https://..."}]`;
+
+        const scrapeResponse = method === 'search' 
+          ? await firecrawl.search(url, { limit: 10 })
+          : await firecrawl.scrapeUrl(url, {
+              formats: ['markdown', 'html'],
+              extractorOptions: {
+                mode: 'llm-extraction',
+                extractionPrompt: basePrompt
+              }
+            })
 
         if (scrapeResponse.success && scrapeResponse.data) {
           let extractedEvents = []
@@ -99,7 +169,8 @@ serve(async (req) => {
                   description: event.description || undefined,
                   category: event.category || undefined,
                   url: event.url || url,
-                  source: url
+                  source: platform,
+                  platform: platform
                 })
               }
             })
@@ -107,10 +178,12 @@ serve(async (req) => {
         }
         
         // Add delay between requests to be respectful
-        await new Promise(resolve => setTimeout(resolve, 2000))
+        await new Promise(resolve => setTimeout(resolve, 3000))
         
       } catch (error) {
-        console.error(`Error scraping ${url}:`, error)
+        const url = typeof urlConfig === 'string' ? urlConfig : urlConfig.url;
+        const platform = typeof urlConfig === 'string' ? 'Unknown' : urlConfig.platform;
+        console.error(`Error scraping ${platform} (${url}):`, error)
         // Continue with other URLs even if one fails
       }
     }
@@ -125,17 +198,17 @@ serve(async (req) => {
       const eventsToStore = scrapedEvents.map(event => ({
         title: event.title,
         description: event.description || '',
-        event_date: event.date || new Date().toISOString(),
-        location: event.location || `${city}, ${country}`,
+        start_date: event.date ? new Date(event.date).toISOString() : new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        location_name: event.location || `${city}, ${country}`,
         price: event.price || 'Free',
         category: event.category || 'general',
-        source: 'firecrawl',
-        external_id: `firecrawl_${event.url}_${Date.now()}`,
-        external_url: event.url,
-        city: city,
-        country: country,
+        source: event.platform || event.source || 'firecrawl',
+        external_id: `${event.platform || 'firecrawl'}_${city}_${event.title.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}`,
+        website_url: event.url,
+        city_name: city,
         latitude: null,
         longitude: null,
+        ai_generated: false,
         created_at: new Date().toISOString()
       }))
 

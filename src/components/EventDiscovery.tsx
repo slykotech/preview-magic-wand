@@ -93,82 +93,63 @@ export const EventDiscovery: React.FC<EventDiscoveryProps> = ({
 
       console.log(`Found ${dbEvents?.length || 0} events in database`);
 
-      // Step 2: Check if we have enough fresh events
-      const hasEnoughEvents = dbEvents && dbEvents.length >= 5;
-      const recentAIEvents = dbEvents?.filter(e => 
-        e.ai_generated && 
-        new Date(e.start_date).getTime() > Date.now() - (24 * 60 * 60 * 1000)
-      ) || [];
+      // Step 2: Filter out AI-generated events to show only real scraped events
+      const realEvents = dbEvents?.filter(e => !e.ai_generated) || [];
+      
+      console.log(`Found ${realEvents.length} real events (filtered out ${(dbEvents?.length || 0) - realEvents.length} AI events)`);
 
-      if (hasEnoughEvents && recentAIEvents.length > 0) {
-        // We have enough fresh database events
-        setEvents(dbEvents.map(event => ({
-          ...event,
-          start_date: event.start_date,
-          distance_km: event.distance_km
-        })));
-        setLastFetchSource('database');
-        toast({
-          title: `Found ${dbEvents.length} events`,
-          description: `Showing events from database (${recentAIEvents.length} AI-generated)`,
-        });
-        return;
-      }
-
-      // Step 3: Check if city needs refresh
-      const { data: needsRefresh, error: refreshError } = await supabase.rpc('city_needs_event_refresh', {
-        p_city_name: cityQuery || location.city,
-        p_min_events: 5,
-        p_hours_threshold: 24
-      });
-
-      if (refreshError) {
-        console.error('Refresh check error:', refreshError);
-      }
-
-      console.log(`City needs refresh: ${needsRefresh}`);
-
-      // Step 4: Generate fresh AI events if needed
-      if (needsRefresh) {
-        console.log('Generating fresh AI events...');
-        const { data: aiData, error: aiError } = await supabase.functions.invoke('generate-ai-events', {
-          body: {
-            cityName: cityQuery || location.city,
-            latitude: location.latitude,
-            longitude: location.longitude,
-            forceRefresh: false
-          }
-        });
-
-        if (aiData?.success && aiData.events?.length > 0) {
-          // Combine new AI events with existing database events
-          const combinedEvents = [...aiData.events, ...(dbEvents || [])];
-          const uniqueEvents = combinedEvents.filter((event, index, self) => 
-            index === self.findIndex(e => e.id === event.id)
-          );
-
-          setEvents(uniqueEvents.slice(0, 20)); // Limit to 20 events
-          setLastFetchSource(aiData.source === 'cache' ? 'ai_cache' : 'ai_fresh');
-          toast({
-            title: `Found ${uniqueEvents.length} events`,
-            description: aiData.source === 'cache' 
-              ? `Showing cached AI events + ${dbEvents?.length || 0} database events`
-              : `Generated ${aiData.events.length} fresh AI events + ${dbEvents?.length || 0} database events`,
+      // Step 3: If we don't have enough real events, try scraping fresh data
+      if (realEvents.length < 3) {
+        console.log('Not enough real events, attempting to scrape fresh data...');
+        try {
+          const { data: scrapeData, error: scrapeError } = await supabase.functions.invoke('firecrawl-scraper', {
+            body: {
+              city: cityQuery || location.city,
+              country: location.country || 'india'
+            }
           });
-          return;
+
+          if (scrapeData?.success && scrapeData.events?.length > 0) {
+            console.log(`Scraped ${scrapeData.events.length} fresh events`);
+            
+            // Re-query database to get the newly stored events
+            const { data: freshDbEvents } = await supabase.rpc('search_events_by_location', {
+              p_lat: location.latitude,
+              p_lng: location.longitude,
+              p_radius_km: location.searchRadius || 50,
+              p_city_name: cityQuery || location.city,
+              p_limit: 20
+            });
+            
+            const freshRealEvents = freshDbEvents?.filter(e => !e.ai_generated) || [];
+            if (freshRealEvents.length > realEvents.length) {
+              setEvents(freshRealEvents.map(event => ({
+                ...event,
+                distance_km: event.distance_km
+              })));
+              setLastFetchSource('database');
+              toast({
+                title: `Found ${freshRealEvents.length} events`,
+                description: `Scraped ${scrapeData.events.length} fresh events from real sources`,
+              });
+              return;
+            }
+          }
+        } catch (scrapeError) {
+          console.error('Scraping error:', scrapeError);
         }
       }
 
-      // Step 5: Use database events even if not many, or show sample events
-      if (dbEvents && dbEvents.length > 0) {
-        setEvents(dbEvents.map(event => ({
+      // Step 4: Use real events if we have any, or show sample events
+      if (realEvents && realEvents.length > 0) {
+        setEvents(realEvents.map(event => ({
           ...event,
           distance_km: event.distance_km
         })));
         setLastFetchSource('database');
         toast({
-          title: `Found ${dbEvents.length} events`,
-          description: "Showing available events from database",
+          title: `Found ${realEvents.length} real events`,
+          description: `Showing verified events from ${realEvents.map(e => e.source).filter((v, i, a) => a.indexOf(v) === i).join(', ')}`,
         });
       } else {
         // Fallback to sample events
