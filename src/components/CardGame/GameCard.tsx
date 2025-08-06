@@ -72,6 +72,7 @@ export const GameCard: React.FC<GameCardProps> = ({
       
       if (error) {
         console.error('❌ Error fetching partner responses:', error);
+        // Don't show error toast for this as it's not critical
         return;
       }
       

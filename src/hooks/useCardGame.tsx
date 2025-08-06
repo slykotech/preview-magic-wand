@@ -103,14 +103,25 @@ export function useCardGame(sessionId: string | null) {
 
         // Fetch current card if exists
         if (gameData.current_card_id) {
-          const { data: cardData } = await supabase
+          console.log('Fetching current card:', gameData.current_card_id);
+          const { data: cardData, error: cardError } = await supabase
             .from("deck_cards")
             .select("*")
             .eq("id", gameData.current_card_id)
             .single();
           
-          if (cardData) {
+          if (cardError) {
+            console.error('Failed to fetch current card:', cardError);
+            // If card fetch fails, clear the current_card_id
+            await supabase
+              .from("card_deck_game_sessions")
+              .update({ current_card_id: null })
+              .eq("id", sessionId);
+          } else if (cardData) {
+            console.log('Current card fetched successfully:', cardData);
             setCurrentCard(cardData as CardData);
+            // Set reveal state based on database
+            setCardRevealed(gameData.current_card_revealed || false);
           }
         }
 
@@ -346,7 +357,7 @@ export function useCardGame(sessionId: string | null) {
         toast.error("Network error. Please check your connection.");
       }
     }
-  }, [isMyTurn, gameState, sessionId, toast]);
+  }, [isMyTurn, gameState, sessionId]);
 
   // Complete turn and switch to partner
   const completeTurn = useCallback(async (response?: string | File, reactionTime?: number) => {
@@ -566,20 +577,6 @@ export function useCardGame(sessionId: string | null) {
     }
   }, [gameState, sessionId]);
 
-  // Auto-draw card when it's my turn and no current card
-  useEffect(() => {
-    console.log('Auto-draw check:', {
-      isMyTurn,
-      currentCard: !!currentCard,
-      gameStatus: gameState?.status,
-      sessionId
-    });
-    
-    if (isMyTurn && !currentCard && gameState?.status === 'active' && sessionId) {
-      console.log('Auto-drawing card...');
-      drawCard();
-    }
-  }, [isMyTurn, currentCard, gameState?.status, sessionId, drawCard]);
 
   return {
     gameState,
