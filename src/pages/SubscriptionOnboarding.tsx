@@ -258,7 +258,7 @@ export const SubscriptionOnboarding = () => {
 
                     {plan.isPopular && (
                       <div className="space-y-3 text-left">
-                         <h4 className="text-sm font-medium text-foreground">Everything included:</h4>
+                         <h4 className="text-sm font-medium text-gray-900">Everything included:</h4>
                          <div className="grid grid-cols-2 gap-2">
                            {features.slice(0, 6).map((feature, index) => (
                              <div key={index} className="flex items-center gap-2">
@@ -309,7 +309,7 @@ export const SubscriptionOnboarding = () => {
               <Card className="p-4 bg-white/95 backdrop-blur-sm shadow-xl">
                 <div className="flex items-center justify-between">
                    <div>
-                     <h3 className="font-bold text-foreground">{selectedPlan.name} Plan</h3>
+                     <h3 className="font-bold text-gray-900">{selectedPlan.name} Plan</h3>
                      <p className="text-sm text-muted-foreground">
                        {selectedPlan.price}/{selectedPlan.period}
                      </p>
@@ -371,7 +371,7 @@ export const SubscriptionOnboarding = () => {
                   </div>
 
                   <div>
-                    <Label htmlFor="cardNumber">Card Number</Label>
+                    <Label htmlFor="cardNumber" className="text-gray-900 font-medium">Card Number</Label>
                     <div className="relative">
                       <Input
                         id="cardNumber"
@@ -398,7 +398,7 @@ export const SubscriptionOnboarding = () => {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="expiryDate">Expiry Date</Label>
+                      <Label htmlFor="expiryDate" className="text-gray-900 font-medium">Expiry Date</Label>
                       <div className="relative">
                         <Input
                           id="expiryDate"
@@ -419,7 +419,7 @@ export const SubscriptionOnboarding = () => {
                     </div>
 
                     <div>
-                      <Label htmlFor="cvv">CVV</Label>
+                      <Label htmlFor="cvv" className="text-gray-900 font-medium">CVV</Label>
                       <div className="relative">
                         <Input
                           id="cvv"
