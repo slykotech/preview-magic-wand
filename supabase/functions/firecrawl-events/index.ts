@@ -77,20 +77,27 @@ serve(async (req) => {
       return distance <= radiusKm;
     }) || [];
 
-    console.log(`📚 Found ${nearbyEvents.length} cached events`);
+    // Filter out sample events to check for real events only
+    const realEvents = nearbyEvents.filter(event => event.source !== 'sample');
+    const sampleEvents = nearbyEvents.filter(event => event.source === 'sample');
+    
+    console.log(`📚 Found ${nearbyEvents.length} total cached events (${realEvents.length} real, ${sampleEvents.length} sample)`);
 
-    // If we have good cache, return it
-    if (nearbyEvents.length >= 5) {
+    // Only return cache if we have sufficient REAL events (not sample events)
+    if (realEvents.length >= 3) {
+      console.log(`✅ Returning ${realEvents.length} cached real events`);
       return new Response(
         JSON.stringify({ 
           success: true, 
-          events: nearbyEvents.slice(0, 50),
+          events: realEvents.slice(0, 50),
           source: 'cache',
-          count: nearbyEvents.length 
+          count: realEvents.length 
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+    
+    console.log(`🚀 Need fresh data - only ${realEvents.length} real events in cache, fetching from Firecrawl...`);
 
     // Fetch fresh events using Firecrawl with multiple strategies
     const events: EventData[] = [];
