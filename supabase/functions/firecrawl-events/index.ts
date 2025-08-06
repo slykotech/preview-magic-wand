@@ -114,9 +114,16 @@ serve(async (req) => {
       });
 
       if (!firecrawlResponse.ok) {
-        console.log(`Firecrawl search failed: ${firecrawlResponse.status} ${await firecrawlResponse.text()}`);
-        throw new Error(`Firecrawl API error: ${firecrawlResponse.status}`);
-      }
+        const errorText = await firecrawlResponse.text();
+        console.log(`Firecrawl search failed: ${firecrawlResponse.status} - ${errorText}`);
+        
+        // Don't throw error, instead continue to sample events
+        if (city) {
+          const sampleEvents = createSampleEvents(city, latitude, longitude);
+          events.push(...sampleEvents);
+          console.log(`Firecrawl failed, created ${sampleEvents.length} sample events for ${city}`);
+        }
+      } else {
 
       const firecrawlData = await firecrawlResponse.json();
       console.log(`Firecrawl search response status:`, firecrawlData.success);
@@ -155,34 +162,39 @@ serve(async (req) => {
     } catch (firecrawlError) {
       console.error('Firecrawl error:', firecrawlError);
       
-      // If Firecrawl fails, create some sample events for the city
-      if (city) {
+      // Always create sample events as fallback when Firecrawl fails
+      if (city && events.length === 0) {
         const sampleEvents = createSampleEvents(city, latitude, longitude);
         events.push(...sampleEvents);
-        console.log(`Created ${sampleEvents.length} sample events for ${city}`);
+        console.log(`Firecrawl failed, created ${sampleEvents.length} sample events for ${city}`);
       }
     }
 
     // Store events in database if we found any
     if (events.length > 0) {
-      const eventsToStore = events.map(event => ({
-        ...event,
-        latitude: latitude,
-        longitude: longitude,
-        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hour expiry
-      }));
+      try {
+        const eventsToStore = events.map(event => ({
+          ...event,
+          latitude: latitude,
+          longitude: longitude,
+          expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hour expiry
+        }));
 
-      const { error: insertError } = await supabase
-        .from('events')
-        .upsert(eventsToStore, { 
-          onConflict: 'external_id',
-          ignoreDuplicates: false 
-        });
+        const { error: insertError } = await supabase
+          .from('events')
+          .upsert(eventsToStore, { 
+            onConflict: 'external_id',
+            ignoreDuplicates: false 
+          });
 
-      if (insertError) {
-        console.error('Error storing events:', insertError);
-      } else {
-        console.log(`Stored ${events.length} new events`);
+        if (insertError) {
+          console.error('Error storing events:', insertError);
+        } else {
+          console.log(`Stored ${events.length} new events`);
+        }
+      } catch (dbError) {
+        console.error('Database error:', dbError);
+        // Continue execution even if database storage fails
       }
     }
 
