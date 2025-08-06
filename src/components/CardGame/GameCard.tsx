@@ -53,12 +53,21 @@ export const GameCard: React.FC<GameCardProps> = ({
   const [partnerResponse, setPartnerResponse] = useState<any>(null);
   const [showResponse, setShowResponse] = useState(false);
   const [responseDismissTimer, setResponseDismissTimer] = useState<NodeJS.Timeout | null>(null);
+  const [currentCardId, setCurrentCardId] = useState<string | null>(null);
 
   // Fetch partner response when card changes and setup real-time subscription
   useEffect(() => {
     if (!card || !sessionId) return;
     
     console.log(`🔍 Setting up response subscription for card ${card.id}, response_type: ${card.response_type}`);
+    
+    // Clear previous response only when card ID actually changes
+    if (currentCardId && currentCardId !== card.id) {
+      console.log(`🔄 Card changed from ${currentCardId} to ${card.id}, clearing previous response`);
+      setShowResponse(false);
+      setPartnerResponse(null);
+    }
+    setCurrentCardId(card.id);
     
     const fetchPartnerResponse = async () => {
       console.log(`📡 Fetching partner responses for session: ${sessionId}, card: ${card.id}, excluding user: ${userId}`);
@@ -88,7 +97,8 @@ export const GameCard: React.FC<GameCardProps> = ({
         userId,
         responseCount: data?.length || 0,
         showResponse,
-        partnerResponse: !!partnerResponse
+        partnerResponse: !!partnerResponse,
+        currentCardId
       });
       
       if (data && data.length > 0) {
@@ -105,9 +115,8 @@ export const GameCard: React.FC<GameCardProps> = ({
         setPartnerResponse(latestResponse);
         setShowResponse(true);
       } else {
-        console.log('📭 No partner responses found');
-        setPartnerResponse(null);
-        setShowResponse(false);
+        console.log('📭 No partner responses found for this card');
+        // Don't clear existing responses here - only clear when card changes
       }
     };
 
