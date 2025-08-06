@@ -109,13 +109,15 @@ REQUIRED CATEGORIES (create multiple events for each):
 For each event, provide:
 - title: Clear, engaging event name that feels authentic to ${cityName}
 - description: 2-3 detailed sentences describing the event experience
-- start_date: Date/time in next 3 weeks (format: YYYY-MM-DDTHH:MM:SS)
+- start_date: Date/time in FUTURE dates within next 3 weeks (format: YYYY-MM-DDTHH:MM:SS, starting from ${new Date().toISOString().split('T')[0]})
 - location_name: Specific venue, landmark, or well-known area in ${cityName}
 - latitude: Realistic coordinates within ${cityName} area (vary around ${latitude})
 - longitude: Realistic coordinates within ${cityName} area (vary around ${longitude})
 - category: One of: music, food, art, sports, social, outdoor, learning, entertainment, family, wellness
 - price: Realistic local pricing (Free, $5, $10-20, $25-50, etc.)
 - organizer: Authentic-sounding local business, organization, or community group
+
+CRITICAL: All start_date values MUST be in the future, starting from ${new Date().toISOString().split('T')[0]} onwards.
 
 IMPORTANT GUIDELINES:
 - Make events feel completely authentic to ${cityName}'s culture, landmarks, and local scene
