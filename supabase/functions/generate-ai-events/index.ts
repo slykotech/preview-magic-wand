@@ -52,7 +52,7 @@ serve(async (req) => {
           p_lng: longitude,
           p_radius_km: 50,
           p_city_name: cityName,
-          p_limit: 15
+          p_limit: 100
         });
 
         if (!checkError && existingEvents && existingEvents.length >= 5) {
@@ -91,8 +91,19 @@ serve(async (req) => {
       console.error('Error creating job record:', jobError);
     }
 
+    // Get current date and time for generating only upcoming events
+    const currentDateTime = new Date();
+    const currentDateStr = currentDateTime.toISOString();
+    const startDateStr = currentDateTime.toISOString().split('T')[0];
+    
     // Generate events using OpenAI with enhanced location and theme focus
-    const prompt = `Generate exactly 25-30 realistic local events for ${cityName} (coordinates: ${latitude}, ${longitude}). Create a comprehensive mix of:
+    const prompt = `CURRENT DATE & TIME: ${currentDateStr}
+    
+Generate exactly 50-75 realistic upcoming local events for ${cityName} (coordinates: ${latitude}, ${longitude}). 
+
+CRITICAL TIMING REQUIREMENT: ALL events must have start_date AFTER current time (${currentDateStr}). No past or current time events allowed.
+
+Create a comprehensive mix of:
 
 REQUIRED CATEGORIES (create multiple events for each):
 - Cultural & Arts (concerts, art shows, theater, galleries, cultural festivals)
@@ -109,7 +120,7 @@ REQUIRED CATEGORIES (create multiple events for each):
 For each event, provide:
 - title: Clear, engaging event name that feels authentic to ${cityName}
 - description: 2-3 detailed sentences describing the event experience
-- start_date: Date/time in FUTURE dates within next 3 weeks (format: YYYY-MM-DDTHH:MM:SS, starting from ${new Date().toISOString().split('T')[0]})
+- start_date: MUST be FUTURE date/time after ${currentDateStr} within next 4 weeks (format: YYYY-MM-DDTHH:MM:SS)
 - location_name: Specific venue, landmark, or well-known area in ${cityName}
 - latitude: Realistic coordinates within ${cityName} area (vary around ${latitude})
 - longitude: Realistic coordinates within ${cityName} area (vary around ${longitude})
@@ -117,7 +128,7 @@ For each event, provide:
 - price: Realistic local pricing (Free, $5, $10-20, $25-50, etc.)
 - organizer: Authentic-sounding local business, organization, or community group
 
-CRITICAL: All start_date values MUST be in the future, starting from ${new Date().toISOString().split('T')[0]} onwards.
+ABSOLUTE REQUIREMENT: Every single start_date MUST be after ${currentDateStr}. Any event with past date will be rejected.
 
 IMPORTANT GUIDELINES:
 - Make events feel completely authentic to ${cityName}'s culture, landmarks, and local scene
@@ -147,8 +158,8 @@ Respond with valid JSON array only - no markdown formatting.`;
             content: prompt
           }
         ],
-        temperature: 0.8,
-        max_tokens: 4000,
+        temperature: 0.7,
+        max_tokens: 8000,
       }),
     });
 
