@@ -114,57 +114,6 @@ export const RecentTasks: React.FC = () => {
 
   return (
     <Card>
-      <CardContent className="space-y-4">
-        {recentTasks.length === 0 ? (
-          <p className="text-muted-foreground text-center py-4">
-            No completed tasks yet. Start playing to see your history!
-          </p>
-        ) : (
-          recentTasks.map(task => (
-            <div key={task.id} className="border border-border rounded-lg p-4 space-y-2">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <p className="font-medium text-sm">{task.card_prompt}</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Badge variant="secondary" className="text-xs">
-                      {task.card_category}
-                    </Badge>
-                    <Badge variant="outline" className="text-xs">
-                      {task.response_type}
-                    </Badge>
-                  </div>
-                </div>
-                <div className="text-xs text-muted-foreground text-right">
-                  <p>{task.user_name}</p>
-                  <p>{formatDistanceToNow(new Date(task.responded_at), { addSuffix: true })}</p>
-                </div>
-              </div>
-              
-              {task.response_type === 'text' && task.response_text && (
-                <div className="mt-2 p-2 bg-muted/50 rounded text-sm">
-                  <p className="italic">"{task.response_text}"</p>
-                </div>
-              )}
-              
-              {task.response_type === 'photo' && task.response_text && (
-                <div className="mt-2">
-                  <img
-                    src={`${supabase.storage.from('card-responses').getPublicUrl(task.response_text).data.publicUrl}`}
-                    alt="Response"
-                    className="max-h-20 rounded border"
-                  />
-                </div>
-              )}
-              
-              {task.response_type === 'action' && (
-                <div className="mt-2 text-sm text-green-600">
-                  ✅ Action completed
-                </div>
-              )}
-            </div>
-          ))
-        )}
-      </CardContent>
     </Card>
   );
 };
