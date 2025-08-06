@@ -2458,6 +2458,14 @@ export type Database = {
         Args: { p_user_id: string; p_estimated_cost?: number }
         Returns: Json
       }
+      city_needs_event_refresh: {
+        Args: {
+          p_city_name: string
+          p_min_events?: number
+          p_hours_threshold?: number
+        }
+        Returns: boolean
+      }
       cleanup_demo_connection: {
         Args: { p_user_id: string }
         Returns: undefined
@@ -2866,6 +2874,15 @@ export type Database = {
           distance_km: number
         }[]
       }
+      get_popular_cities_for_refresh: {
+        Args: { p_limit?: number }
+        Returns: {
+          city_name: string
+          event_count: number
+          last_ai_generation: string
+          needs_refresh: boolean
+        }[]
+      }
       get_proj4_from_srid: {
         Args: { "": number }
         Returns: string
@@ -3139,6 +3156,34 @@ export type Database = {
       reset_monthly_quotas: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      search_events_by_location: {
+        Args: {
+          p_lat: number
+          p_lng: number
+          p_radius_km?: number
+          p_city_name?: string
+          p_limit?: number
+        }
+        Returns: {
+          id: string
+          title: string
+          description: string
+          start_date: string
+          end_date: string
+          location_name: string
+          latitude: number
+          longitude: number
+          price: string
+          organizer: string
+          category: string
+          website_url: string
+          image_url: string
+          source: string
+          ai_generated: boolean
+          city_name: string
+          distance_km: number
+        }[]
       }
       set_limit: {
         Args: { "": number }

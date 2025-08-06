@@ -49,20 +49,22 @@ export const EventDiscovery: React.FC<EventDiscoveryProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [selectedTimeFrame, setSelectedTimeFrame] = useState("this_week");
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const [lastFetchSource, setLastFetchSource] = useState<'cache' | 'fresh' | 'sample' | null>(null);
+  const [lastFetchSource, setLastFetchSource] = useState<'database' | 'ai_fresh' | 'ai_cache' | 'sample' | null>(null);
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
-  // Automatically get location and fetch events on mount
+  // Auto-fetch location and events on mount
   useEffect(() => {
     getCurrentLocation();
   }, [getCurrentLocation]);
 
+  // Auto-search events when location changes
   useEffect(() => {
     if (location?.latitude && location?.longitude) {
       searchEvents();
     }
   }, [location]);
 
-  const searchEvents = useCallback(async () => {
+  const searchEventsByLocation = useCallback(async (cityQuery?: string) => {
     if (!location?.latitude || !location?.longitude) {
       toast({
         title: "Location required",
@@ -73,69 +75,144 @@ export const EventDiscovery: React.FC<EventDiscoveryProps> = ({
     }
 
     setIsLoading(true);
+    console.log(`Searching events for: ${cityQuery || location.city} at ${location.latitude}, ${location.longitude}`);
+
     try {
-      // Try AI-generated events first (fastest and most reliable)
-      const { data: aiData, error: aiError } = await supabase.functions.invoke('generate-ai-events', {
-        body: {
-          cityName: location.city,
-          latitude: location.latitude,
-          longitude: location.longitude,
-          forceRefresh: false
-        }
+      // Step 1: Query database first using new intelligent search function
+      const { data: dbEvents, error: dbError } = await supabase.rpc('search_events_by_location', {
+        p_lat: location.latitude,
+        p_lng: location.longitude,
+        p_radius_km: location.searchRadius || 50,
+        p_city_name: cityQuery || location.city,
+        p_limit: 20
       });
 
-      if (aiData?.success && aiData.events?.length > 0) {
-        setEvents(aiData.events);
-        setLastFetchSource(aiData.source);
+      if (dbError) {
+        console.error('Database search error:', dbError);
+      }
+
+      console.log(`Found ${dbEvents?.length || 0} events in database`);
+
+      // Step 2: Check if we have enough fresh events
+      const hasEnoughEvents = dbEvents && dbEvents.length >= 5;
+      const recentAIEvents = dbEvents?.filter(e => 
+        e.ai_generated && 
+        new Date(e.start_date).getTime() > Date.now() - (24 * 60 * 60 * 1000)
+      ) || [];
+
+      if (hasEnoughEvents && recentAIEvents.length > 0) {
+        // We have enough fresh database events
+        setEvents(dbEvents.map(event => ({
+          ...event,
+          start_date: event.start_date,
+          distance_km: event.distance_km
+        })));
+        setLastFetchSource('database');
         toast({
-          title: `Found ${aiData.events.length} events`,
-          description: aiData.source === 'cache' 
-            ? "Showing cached AI events" 
-            : `Generated ${aiData.events.length} fresh AI events`,
+          title: `Found ${dbEvents.length} events`,
+          description: `Showing events from database (${recentAIEvents.length} AI-generated)`,
         });
         return;
       }
 
-      // If AI fails, show sample events instead of scraping
-      console.log('AI events failed, showing sample events:', aiError);
-      toast({
-        title: "Unable to find events",
-        description: "Showing sample events for your area",
-        duration: 3000,
+      // Step 3: Check if city needs refresh
+      const { data: needsRefresh, error: refreshError } = await supabase.rpc('city_needs_event_refresh', {
+        p_city_name: cityQuery || location.city,
+        p_min_events: 5,
+        p_hours_threshold: 24
       });
-      
-      // Generate sample events
-      const sampleEvents = [
-        {
-          id: `sample-1-${Date.now()}`,
-          title: "Local Coffee Shop Music Night",
-          start_date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          location_name: location.city || "Your City",
-          price: "Free",
-          category: "music",
-          description: "Enjoy live acoustic music at your local coffee shop",
-          source: "sample",
-          organizer: "Community Events"
-        },
-        {
-          id: `sample-2-${Date.now()}`,
-          title: "Weekend Farmers Market",
-          start_date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          location_name: location.city || "Your City",
-          price: "Free",
-          category: "food",
-          description: "Fresh local produce and artisan goods",
-          source: "sample",
-          organizer: "Local Farmers"
+
+      if (refreshError) {
+        console.error('Refresh check error:', refreshError);
+      }
+
+      console.log(`City needs refresh: ${needsRefresh}`);
+
+      // Step 4: Generate fresh AI events if needed
+      if (needsRefresh) {
+        console.log('Generating fresh AI events...');
+        const { data: aiData, error: aiError } = await supabase.functions.invoke('generate-ai-events', {
+          body: {
+            cityName: cityQuery || location.city,
+            latitude: location.latitude,
+            longitude: location.longitude,
+            forceRefresh: false
+          }
+        });
+
+        if (aiData?.success && aiData.events?.length > 0) {
+          // Combine new AI events with existing database events
+          const combinedEvents = [...aiData.events, ...(dbEvents || [])];
+          const uniqueEvents = combinedEvents.filter((event, index, self) => 
+            index === self.findIndex(e => e.id === event.id)
+          );
+
+          setEvents(uniqueEvents.slice(0, 20)); // Limit to 20 events
+          setLastFetchSource(aiData.source === 'cache' ? 'ai_cache' : 'ai_fresh');
+          toast({
+            title: `Found ${uniqueEvents.length} events`,
+            description: aiData.source === 'cache' 
+              ? `Showing cached AI events + ${dbEvents?.length || 0} database events`
+              : `Generated ${aiData.events.length} fresh AI events + ${dbEvents?.length || 0} database events`,
+          });
+          return;
         }
-      ];
-      
-      setEvents(sampleEvents);
-      setLastFetchSource('sample');
+      }
+
+      // Step 5: Use database events even if not many, or show sample events
+      if (dbEvents && dbEvents.length > 0) {
+        setEvents(dbEvents.map(event => ({
+          ...event,
+          distance_km: event.distance_km
+        })));
+        setLastFetchSource('database');
+        toast({
+          title: `Found ${dbEvents.length} events`,
+          description: "Showing available events from database",
+        });
+      } else {
+        // Fallback to sample events
+        console.log('No events found, showing sample events');
+        const sampleEvents = [
+          {
+            id: `sample-1-${Date.now()}`,
+            title: "Local Coffee Shop Music Night",
+            start_date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+            location_name: location.city || "Your City",
+            price: "Free",
+            category: "music",
+            description: "Enjoy live acoustic music at your local coffee shop",
+            source: "sample",
+            organizer: "Community Events",
+            ai_generated: false
+          },
+          {
+            id: `sample-2-${Date.now()}`,
+            title: "Weekend Farmers Market",
+            start_date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+            location_name: location.city || "Your City",
+            price: "Free", 
+            category: "food",
+            description: "Fresh local produce and artisan goods",
+            source: "sample",
+            organizer: "Local Farmers",
+            ai_generated: false
+          }
+        ];
+        
+        setEvents(sampleEvents);
+        setLastFetchSource('sample');
+        toast({
+          title: "No events found",
+          description: "Showing sample events for your area",
+          duration: 3000,
+        });
+      }
+
     } catch (error) {
-      console.error('Error fetching events:', error);
+      console.error('Error in intelligent event search:', error);
       toast({
-        title: "Error fetching events",
+        title: "Error searching events",
         description: "Please try again later.",
         variant: "destructive"
       });
@@ -144,6 +221,17 @@ export const EventDiscovery: React.FC<EventDiscoveryProps> = ({
       setIsLoading(false);
     }
   }, [location, toast]);
+
+  const searchEvents = useCallback(() => {
+    searchEventsByLocation();
+  }, [searchEventsByLocation]);
+
+  const handleCitySearch = useCallback((cityQuery: string) => {
+    setSearchQuery(cityQuery);
+    if (cityQuery.trim()) {
+      searchEventsByLocation(cityQuery.trim());
+    }
+  }, [searchEventsByLocation]);
 
   const handleLocationSet = useCallback((cityName: string, coordinates: {lat: number, lng: number, displayName: string}) => {
     // Extract country from displayName if available (format: "City, State, Country" or "City, Country")
@@ -308,15 +396,48 @@ export const EventDiscovery: React.FC<EventDiscoveryProps> = ({
           </div>
 
           {lastFetchSource && (
-            <div className="flex items-center gap-2">
-              <Badge variant={lastFetchSource === 'fresh' ? 'default' : 'secondary'}>
-                {lastFetchSource === 'fresh' ? 'Fresh Events' : 'Cached Events'}
+            <div className="flex items-center gap-2 flex-wrap">
+              <Badge variant={
+                lastFetchSource === 'ai_fresh' ? 'default' : 
+                lastFetchSource === 'database' ? 'default' :
+                'secondary'
+              }>
+                {lastFetchSource === 'ai_fresh' ? 'Fresh AI Events' : 
+                 lastFetchSource === 'ai_cache' ? 'Cached AI Events' :
+                 lastFetchSource === 'database' ? 'Database Events' :
+                 'Sample Events'}
               </Badge>
               <span className="text-sm text-muted-foreground">
                 {filteredEvents.length} of {events.length} events
               </span>
+              {searchQuery && (
+                <Badge variant="outline" className="text-xs">
+                  Search: {searchQuery}
+                </Badge>
+              )}
             </div>
           )}
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Search by City</label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Enter city name..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleCitySearch(searchQuery)}
+                className="flex-1 px-3 py-2 border border-input rounded-md text-sm"
+              />
+              <Button 
+                onClick={() => handleCitySearch(searchQuery)}
+                disabled={isLoading || !searchQuery.trim()}
+                size="sm"
+              >
+                Search
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
 

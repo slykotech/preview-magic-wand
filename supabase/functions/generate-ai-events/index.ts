@@ -34,32 +34,42 @@ serve(async (req) => {
 
     console.log(`Generating AI events for ${cityName}...`);
 
-    // Check if we have recent AI events (less than 3 hours old) unless forced refresh
+    // Enhanced cache checking using new database functions
     if (!forceRefresh) {
-      const { data: existingEvents, error: checkError } = await supabase
-        .from('events')
-        .select('*')
-        .eq('ai_generated', true)
-        .eq('city_name', cityName)
-        .gte('created_at', new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString())
-        .limit(10);
+      // First, check if city needs refresh using intelligent function
+      const { data: needsRefresh, error: refreshError } = await supabase.rpc('city_needs_event_refresh', {
+        p_city_name: cityName,
+        p_min_events: 5,
+        p_hours_threshold: 24 // 24-hour cache for AI events
+      });
 
-      if (checkError) {
-        console.error('Error checking existing events:', checkError);
-      } else if (existingEvents && existingEvents.length >= 5) {
-        console.log(`Found ${existingEvents.length} recent AI events for ${cityName}`);
-        return new Response(
-          JSON.stringify({
-            success: true,
-            events: existingEvents,
-            source: 'cache',
-            message: `Using cached AI-generated events for ${cityName}`
-          }),
-          { 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 200 
-          }
-        );
+      if (refreshError) {
+        console.error('Error checking refresh status:', refreshError);
+      } else if (!needsRefresh) {
+        // Get existing events to return
+        const { data: existingEvents, error: checkError } = await supabase.rpc('search_events_by_location', {
+          p_lat: latitude,
+          p_lng: longitude,
+          p_radius_km: 50,
+          p_city_name: cityName,
+          p_limit: 15
+        });
+
+        if (!checkError && existingEvents && existingEvents.length >= 5) {
+          console.log(`Found ${existingEvents.length} fresh events for ${cityName}, using cache`);
+          return new Response(
+            JSON.stringify({
+              success: true,
+              events: existingEvents,
+              source: 'cache',
+              message: `Using cached events for ${cityName} (${existingEvents.filter(e => e.ai_generated).length} AI-generated)`
+            }),
+            { 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 200 
+            }
+          );
+        }
       }
     }
 
@@ -149,24 +159,34 @@ Respond in valid JSON format as an array of events.`;
 
     console.log(`Generated ${aiEvents.length} events for ${cityName}`);
 
-    // Transform and insert events into database
-    const eventsToInsert = aiEvents.map((event: any) => ({
-      external_id: `ai-${generationBatchId}-${crypto.randomUUID()}`,
-      title: event.title || 'Untitled Event',
-      description: event.description || '',
-      start_date: event.start_date || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-      location_name: event.location_name || `${cityName} Area`,
-      latitude: latitude + (Math.random() - 0.5) * 0.02, // Small random offset
-      longitude: longitude + (Math.random() - 0.5) * 0.02,
-      price: event.price || 'Free',
-      organizer: event.organizer || 'Local Organization',
-      category: event.category || 'social',
-      source: 'ai_generated',
-      ai_generated: true,
-      generation_batch_id: generationBatchId,
-      city_name: cityName,
-      expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days
-    }));
+    // Transform and insert events into database with enhanced data
+    const eventsToInsert = aiEvents.map((event: any, index: number) => {
+      // Create more realistic coordinate distribution around the city center
+      const radiusKm = 0.05; // ~5km radius
+      const angle = (index / aiEvents.length) * 2 * Math.PI; // Distribute evenly in circle
+      const distance = Math.random() * radiusKm; // Random distance within radius
+      
+      const deltaLat = distance * Math.cos(angle) / 111; // 111 km per degree latitude
+      const deltaLng = distance * Math.sin(angle) / (111 * Math.cos(latitude * Math.PI / 180));
+
+      return {
+        external_id: `ai-${generationBatchId}-${crypto.randomUUID()}`,
+        title: event.title || 'Untitled Event',
+        description: event.description || '',
+        start_date: event.start_date || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        location_name: event.location_name || `${cityName} Area`,
+        latitude: latitude + deltaLat,
+        longitude: longitude + deltaLng,
+        price: event.price || 'Free',
+        organizer: event.organizer || 'Local Organization',
+        category: event.category || 'social',
+        source: 'ai_generated',
+        ai_generated: true,
+        generation_batch_id: generationBatchId,
+        city_name: cityName,
+        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days
+      };
+    });
 
     // Insert events into database
     const { data: insertedEvents, error: insertError } = await supabase
