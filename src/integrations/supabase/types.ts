@@ -1987,8 +1987,14 @@ export type Database = {
           created_at: string
           current_period_end: string | null
           current_period_start: string | null
+          discount_applied: number | null
+          discount_code: string | null
           id: string
+          original_price: number | null
+          plan_period: string | null
+          plan_price: number | null
           plan_type: string
+          selected_plan_name: string | null
           status: string
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
@@ -2004,8 +2010,14 @@ export type Database = {
           created_at?: string
           current_period_end?: string | null
           current_period_start?: string | null
+          discount_applied?: number | null
+          discount_code?: string | null
           id?: string
+          original_price?: number | null
+          plan_period?: string | null
+          plan_price?: number | null
           plan_type?: string
+          selected_plan_name?: string | null
           status?: string
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
@@ -2021,8 +2033,14 @@ export type Database = {
           created_at?: string
           current_period_end?: string | null
           current_period_start?: string | null
+          discount_applied?: number | null
+          discount_code?: string | null
           id?: string
+          original_price?: number | null
+          plan_period?: string | null
+          plan_price?: number | null
           plan_type?: string
+          selected_plan_name?: string | null
           status?: string
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
