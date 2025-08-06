@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { Purchases } from '@revenuecat/purchases-capacitor';
 import { Capacitor } from '@capacitor/core';
+import { useAuth } from './useAuth';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface SubscriptionPlan {
   id: string;
@@ -59,6 +61,7 @@ const initializeRevenueCat = async (): Promise<boolean> => {
 };
 
 export const useSubscription = () => {
+  const { user } = useAuth();
   const [subscriptionInfo, setSubscriptionInfo] = useState<SubscriptionInfo>({
     isActive: false,
     isLoading: true
@@ -78,6 +81,29 @@ export const useSubscription = () => {
     const checkSubscriptionStatus = async () => {
       try {
         setSubscriptionInfo(prev => ({ ...prev, isLoading: true }));
+        
+        // First check if user is whitelisted (highest priority)
+        if (user?.email) {
+          try {
+            const { data: whitelistData, error: whitelistError } = await supabase
+              .from('admin_whitelist')
+              .select('full_access')
+              .eq('email', user.email)
+              .single();
+
+            if (!whitelistError && whitelistData?.full_access) {
+              setSubscriptionInfo({
+                isActive: true,
+                planName: 'Admin Access',
+                nextBillingDate: 'Unlimited',
+                isLoading: false
+              });
+              return;
+            }
+          } catch (error) {
+            console.log('No whitelist entry found, checking normal subscription');
+          }
+        }
         
         if (Capacitor.isNativePlatform() && isRevenueCatConfigured) {
           // Use RevenueCat to check subscription status

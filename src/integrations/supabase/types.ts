@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_whitelist: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          email: string
+          full_access: boolean
+          id: string
+          notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          email: string
+          full_access?: boolean
+          id?: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          email?: string
+          full_access?: boolean
+          id?: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ai_coach_messages: {
         Row: {
           content: string
@@ -3149,6 +3179,10 @@ export type Database = {
       hash_password: {
         Args: { password: string }
         Returns: string
+      }
+      is_user_whitelisted: {
+        Args: { user_email: string }
+        Returns: boolean
       }
       json: {
         Args: { "": unknown }

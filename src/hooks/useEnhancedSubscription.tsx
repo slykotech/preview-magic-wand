@@ -222,6 +222,30 @@ export const useEnhancedSubscription = () => {
     }
 
     try {
+      // First check if user is whitelisted (highest priority)
+      if (user.email) {
+        try {
+          const { data: whitelistData, error: whitelistError } = await supabase
+            .from('admin_whitelist')
+            .select('full_access, notes')
+            .eq('email', user.email)
+            .single();
+
+          if (!whitelistError && whitelistData?.full_access) {
+            setPremiumAccess({
+              has_access: true,
+              access_type: 'own_subscription',
+              status: 'active',
+              plan_type: 'premium'
+            });
+            setLoading(false);
+            return;
+          }
+        } catch (error) {
+          console.log('No whitelist entry found, checking normal subscription');
+        }
+      }
+
       const { data, error } = await retryWithBackoff(async () => {
         const response = await supabase.rpc('get_premium_access_details', {
           p_user_id: user.id
