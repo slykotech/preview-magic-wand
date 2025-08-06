@@ -131,7 +131,7 @@ export const GameCard: React.FC<GameCardProps> = ({
     fetchPartnerResponse();
 
     // Subscribe to ALL responses for this session - not just current card
-    // This ensures we catch responses even if they come in after card changes
+    // This ensures User 2 sees User 1's response IMMEDIATELY when sent
     const channelName = `session-responses-${sessionId}`;
     console.log(`🔔 Creating session-wide subscription channel: ${channelName}`);
     
@@ -145,7 +145,7 @@ export const GameCard: React.FC<GameCardProps> = ({
           filter: `session_id=eq.${sessionId}`
         }, 
         (payload) => {
-          console.log('🎉 Real-time response received for session:', payload);
+          console.log('🎉 REAL-TIME RESPONSE RECEIVED FOR SESSION:', payload);
           console.log('📊 Response details:', {
             sessionId: payload.new.session_id,
             cardId: payload.new.card_id,
@@ -158,22 +158,25 @@ export const GameCard: React.FC<GameCardProps> = ({
             isFromPartner: payload.new.user_id !== userId
           });
           
-          // Show ANY partner response from this session (regardless of card)
+          // Show ANY partner response from this session IMMEDIATELY
           if (payload.new.session_id === sessionId && 
               payload.new.user_id !== userId) {
             
-            console.log('✅ Partner response received - showing immediately!');
+            console.log('🚨 SHOWING PARTNER RESPONSE IMMEDIATELY!');
             console.log(`📋 Response for card: ${payload.new.card_id}, Current card: ${card.id}`);
             
-            // Store in persistent responses map
+            // Store in persistent responses map for this card
             setPersistentResponses(prev => {
               const newMap = new Map(prev);
               newMap.set(payload.new.card_id, payload.new);
+              console.log('💾 Stored response in persistent map for card:', payload.new.card_id);
               return newMap;
             });
             
+            // Show the response immediately regardless of current card
             setPartnerResponse(payload.new);
             setShowResponse(true);
+            console.log('🔥 PARTNER RESPONSE STATE SET - USER 2 SHOULD SEE THIS NOW!');
             
             // Show toast notification
             const responseTypeText = payload.new.response_type === 'text' ? 'sent a message' : 
@@ -182,11 +185,20 @@ export const GameCard: React.FC<GameCardProps> = ({
             toast.success(`Partner ${responseTypeText}! 🎉`);
           } else {
             console.log('❌ Response is from same user or different session');
+            console.log('Details:', {
+              sameSession: payload.new.session_id === sessionId,
+              differentUser: payload.new.user_id !== userId,
+              responseUserId: payload.new.user_id,
+              currentUserId: userId
+            });
           }
         }
       )
       .subscribe((status) => {
         console.log(`📡 Subscription status for ${channelName}:`, status);
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ Real-time subscription is ACTIVE - User 2 should receive responses immediately!');
+        }
       });
 
     // Fallback: Poll for responses every 2 seconds if real-time fails
