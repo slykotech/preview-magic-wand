@@ -491,12 +491,55 @@ export function useCardGame(sessionId: string | null) {
         totalPlayed: gameState.total_cards_played
       });
 
+      // First, let's draw the next card for the partner
+      console.log('🎯 Drawing next card for partner before switching turns');
+      let nextCardId = null;
+      
+      try {
+        // Get available cards for the next player
+        let query = supabase
+          .from("deck_cards")
+          .select("id")
+          .eq("is_active", true);
+
+        // Exclude played cards (including the one we just completed)
+        if (updatedPlayedCards.length > 0) {
+          const validPlayedCards = updatedPlayedCards.filter(id => id && typeof id === 'string');
+          if (validPlayedCards.length > 0) {
+            query = query.not("id", "in", `(${validPlayedCards.join(",")})`);
+          }
+        }
+
+        // Exclude skipped cards  
+        if (gameState.skipped_cards && Array.isArray(gameState.skipped_cards) && gameState.skipped_cards.length > 0) {
+          const validSkippedCards = gameState.skipped_cards.filter(id => id && typeof id === 'string');
+          if (validSkippedCards.length > 0) {
+            query = query.not("id", "in", `(${validSkippedCards.join(",")})`);
+          }
+        }
+
+        const { data: availableCards, error: cardError } = await query.limit(100);
+
+        if (cardError) {
+          console.error('❌ Error fetching next card:', cardError);
+        } else if (availableCards && availableCards.length > 0) {
+          // Select random card for next player
+          const randomCard = availableCards[Math.floor(Math.random() * availableCards.length)];
+          nextCardId = randomCard.id;
+          console.log('✅ Next card selected:', nextCardId);
+        } else {
+          console.log('🏁 No more cards available for next player');
+        }
+      } catch (error) {
+        console.error('❌ Failed to fetch next card:', error);
+      }
+
       const updateData = {
         current_turn: nextTurn,
-        current_card_id: null,
+        current_card_id: nextCardId, // Set the next card immediately
         current_card_revealed: false,
         current_card_started_at: null,
-        current_card_completed: true,
+        current_card_completed: false, // Reset for next turn
         played_cards: updatedPlayedCards,
         total_cards_played: gameState.total_cards_played + 1,
         last_activity_at: new Date().toISOString(),
@@ -513,9 +556,9 @@ export function useCardGame(sessionId: string | null) {
         throw updateError;
       }
       
-      console.log('✅ Game state updated successfully');
+      console.log('✅ Game state updated successfully with next card');
 
-      // Update card usage count
+      // Update card usage count for the completed card
       await supabase
         .from("deck_cards")
         .update({ usage_count: (currentCard.usage_count || 0) + 1 })
