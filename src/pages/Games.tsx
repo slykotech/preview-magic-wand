@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { ArrowLeft, Heart, MessageCircle, Lightbulb, HelpCircle, Brain, Ticket, Users, Spade } from "lucide-react";
 import { useCardGames } from "@/hooks/useCardGames";
 import { useCoupleData } from "@/hooks/useCoupleData";
+import { supabase } from "@/integrations/supabase/client";
 
 const gameTypes = [
   {
@@ -51,8 +52,45 @@ export const Games = () => {
   const handleGameSelect = async (gameType: string) => {
     try {
       if (gameType === 'card_deck') {
-        // Navigate to the card deck game page
-        navigate('/games/card-deck/new');
+        // Check for existing active game first
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user || !coupleData) return;
+        
+        // Look for existing active game session
+        const { data: existingGame } = await supabase
+          .from("card_deck_game_sessions")
+          .select("*")
+          .eq("couple_id", coupleData.id)
+          .eq("status", "active")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        
+        if (existingGame) {
+          // Join existing game
+          console.log('Joining existing game:', existingGame.id);
+          navigate(`/games/card-deck/${existingGame.id}`);
+        } else {
+          // Create new game session
+          console.log('Creating new card deck game session');
+          const { data: newSession, error } = await supabase
+            .from("card_deck_game_sessions")
+            .insert({
+              couple_id: coupleData.id,
+              user1_id: coupleData.user1_id,
+              user2_id: coupleData.user2_id,
+              current_turn: Math.random() < 0.5 ? coupleData.user1_id : coupleData.user2_id,
+              game_mode: 'classic',
+              status: 'active'
+            })
+            .select()
+            .single();
+          
+          if (error) throw error;
+          
+          console.log('Created new game session:', newSession.id);
+          navigate(`/games/card-deck/${newSession.id}`);
+        }
         return;
       }
       

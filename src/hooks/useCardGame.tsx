@@ -188,47 +188,9 @@ export function useCardGame(sessionId: string | null) {
     }
   }, [user, coupleData, sessionId]);
 
-  // Create new game session
+  // This function is no longer needed as game creation is handled in Games.tsx
   const createNewSession = async () => {
-    if (!user || !coupleData) return;
-
-    try {
-      // Use the exact user IDs from the couple record
-      const player1Id = coupleData.user1_id;
-      const player2Id = coupleData.user2_id;
-      
-      // Randomly select first player
-      const firstPlayer = Math.random() < 0.5 ? player1Id : player2Id;
-      
-      console.log('Creating new game session:', {
-        player1Id,
-        player2Id,
-        firstPlayer,
-        currentUserId: user.id,
-        coupleId: coupleData.id
-      });
-
-      const { data: newSession, error } = await supabase
-        .from("card_deck_game_sessions")
-        .insert({
-          couple_id: coupleData.id,
-          user1_id: player1Id,
-          user2_id: player2Id,
-          current_turn: firstPlayer,
-          game_mode: 'classic'
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      // Navigate to new session
-      window.location.href = `/games/card-deck/${newSession.id}`;
-
-    } catch (error) {
-      console.error("Failed to create session:", error);
-      toast.error("Failed to create game session");
-    }
+    console.log('createNewSession called - this should not happen anymore');
   };
 
   // Draw next card
