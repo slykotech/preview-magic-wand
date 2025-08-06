@@ -351,7 +351,7 @@ export const SubscriptionOnboarding = () => {
 
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="cardholderName">Cardholder Name</Label>
+                    <Label htmlFor="cardholderName" className="text-gray-900 font-medium">Cardholder Name</Label>
                     <div className="relative">
                       <Input
                         id="cardholderName"
