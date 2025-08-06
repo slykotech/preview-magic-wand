@@ -234,7 +234,7 @@ export const GameCard: React.FC<GameCardProps> = ({
           
           setPartnerResponse(latestResponse);
           setShowResponse(true);
-          toast.success('Partner responded! 🎉');
+          // Remove duplicate toast - already handled by real-time subscription
         }
       }
     }, 2000);
