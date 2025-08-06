@@ -55,6 +55,9 @@ interface LoveGrant {
   game_session_id: string | null;
   status: 'pending' | 'acknowledged' | 'fulfilled';
   response_text?: string;
+  partner_response?: string;
+  responded_at?: string;
+  rejection_reason?: string;
   created_at: string;
 }
 
@@ -93,9 +96,12 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
   const [loading, setLoading] = useState(true);
   const [showCelebration, setShowCelebration] = useState(false);
   const [showLoveGrant, setShowLoveGrant] = useState(false);
+  const [showGrantResponse, setShowGrantResponse] = useState(false);
+  const [pendingGrant, setPendingGrant] = useState<LoveGrant | null>(null);
   const [winnerReward, setWinnerReward] = useState('');
   const [loveGrants, setLoveGrants] = useState<LoveGrant[]>([]);
   const [playfulMessage, setPlayfulMessage] = useState('');
+  const [rejectionReason, setRejectionReason] = useState('');
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'error'>('connecting');
   const [moveHistory, setMoveHistory] = useState<GameMove[]>([]);
   const [isProcessingMove, setIsProcessingMove] = useState(false);
@@ -376,9 +382,52 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
             status: newGrant.status as 'pending' | 'acknowledged' | 'fulfilled'
           }, ...prev]);
           
-          // Show toast notification to the partner
-          if (newGrant.winner_user_id !== user?.id) {
+          // If this is for the current user and they are NOT the winner, show response modal
+          if (newGrant.winner_user_id !== user?.id && newGrant.status === 'pending') {
+            setPendingGrant({
+              ...newGrant,
+              winner_symbol: newGrant.winner_symbol as CellValue,
+              status: newGrant.status as 'pending' | 'acknowledged' | 'fulfilled'
+            });
+            setShowGrantResponse(true);
             toast.success(`💌 ${newGrant.winner_name} sent you a Love Grant!`);
+          } else if (newGrant.winner_user_id === user?.id) {
+            toast.success('💌 Love Grant sent successfully!');
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'love_grants',
+          filter: `couple_id=eq.${coupleData.id}`
+        },
+        (payload) => {
+          console.log('💌 Love grant updated:', payload);
+          const updatedGrant = payload.new as any;
+          
+          // Update local state
+          setLoveGrants(prev => prev.map(grant => 
+            grant.id === updatedGrant.id 
+              ? {
+                  ...updatedGrant,
+                  winner_symbol: updatedGrant.winner_symbol as CellValue,
+                  status: updatedGrant.status as 'pending' | 'acknowledged' | 'fulfilled'
+                }
+              : grant
+          ));
+          
+          // Notify the winner about the response
+          if (updatedGrant.winner_user_id === user?.id) {
+            if (updatedGrant.status === 'acknowledged') {
+              toast.success(`💚 Your Love Grant was accepted!`);
+            } else if (updatedGrant.status === 'fulfilled') {
+              toast.success(`💌 Love Grant completed!`);
+            } else if (updatedGrant.partner_response && updatedGrant.partner_response.includes('rejected')) {
+              toast.error(`💔 Your Love Grant was rejected. ${updatedGrant.rejection_reason || 'Try another request!'}`);
+            }
           }
         }
       )
@@ -861,6 +910,47 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
     setWinnerReward('');
   };
 
+  const handleGrantResponse = async (accepted: boolean) => {
+    if (!pendingGrant || !user?.id) return;
+
+    try {
+      console.log('💌 Responding to grant:', pendingGrant.id, 'Accepted:', accepted);
+      
+      const updateData: any = {
+        responded_at: new Date().toISOString(),
+        status: accepted ? 'acknowledged' : 'pending'
+      };
+
+      if (accepted) {
+        updateData.partner_response = 'accepted';
+        updateData.status = 'acknowledged';
+      } else {
+        updateData.partner_response = 'rejected';
+        updateData.rejection_reason = rejectionReason || 'The request was declined. Please try another approach.';
+      }
+
+      const { error } = await supabase
+        .from('love_grants')
+        .update(updateData)
+        .eq('id', pendingGrant.id);
+
+      if (error) throw error;
+
+      setShowGrantResponse(false);
+      setPendingGrant(null);
+      setRejectionReason('');
+
+      if (accepted) {
+        toast.success('💚 Love Grant accepted! Your partner has been notified.');
+      } else {
+        toast.success('💔 Love Grant declined. Your partner can try again.');
+      }
+    } catch (error) {
+      console.error('❌ Error responding to grant:', error);
+      toast.error('Failed to respond to Love Grant');
+    }
+  };
+
   const handleRematch = async () => {
     if (!gameState || !user?.id) return;
 
@@ -1192,6 +1282,71 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
         </DialogContent>
       </Dialog>
 
+      {/* Grant Response Modal (for losing partner) */}
+      <Dialog open={showGrantResponse} onOpenChange={setShowGrantResponse}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center text-xl bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+              💌 Love Grant Received! 💝
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="text-center p-4 bg-gradient-to-r from-purple-100 to-pink-100 rounded-lg">
+              <Crown className="h-8 w-8 text-purple-500 mx-auto mb-2" />
+              <p className="text-purple-700 text-sm font-medium">
+                {pendingGrant?.winner_name} has a request for you:
+              </p>
+            </div>
+            
+            <div className="p-4 bg-white rounded-lg border-2 border-purple-200">
+              <p className="text-gray-800 font-medium text-center">
+                "{pendingGrant?.request_text}"
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <div className="text-center text-sm text-muted-foreground">
+                How would you like to respond?
+              </div>
+              
+              <div className="flex gap-2">
+                <Button 
+                  onClick={() => handleGrantResponse(true)}
+                  className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
+                >
+                  <Heart className="w-4 h-4 mr-2" />
+                  Accept 💚
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => handleGrantResponse(false)}
+                  className="flex-1 border-red-300 text-red-600 hover:bg-red-50"
+                >
+                  💔 Decline
+                </Button>
+              </div>
+
+              {/* Optional rejection reason */}
+              <div className="space-y-2">
+                <label className="text-sm text-muted-foreground">
+                  Optional: Suggest something else (if declining)
+                </label>
+                <textarea
+                  value={rejectionReason}
+                  onChange={(e) => setRejectionReason(e.target.value)}
+                  placeholder="You could try asking for... (optional)"
+                  className="w-full p-2 rounded border text-sm h-16 resize-none"
+                  maxLength={100}
+                />
+                <p className="text-xs text-muted-foreground text-right">
+                  {rejectionReason.length}/100 characters
+                </p>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Love Grants History */}
       {loveGrants.length > 0 && (
         <Card className="border-yellow-200 bg-gradient-to-r from-yellow-50 to-pink-50 dark:from-yellow-950/20 dark:to-pink-950/20 animate-fade-in">
@@ -1203,8 +1358,8 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
           </CardHeader>
           <CardContent>
             <div className="space-y-2 max-h-40 overflow-y-auto">
-              {loveGrants.slice(0, 3).map((grant) => (
-                <div key={grant.id} className="p-3 bg-white/50 rounded-lg border">
+              {loveGrants.slice(0, 5).map((grant) => (
+                <div key={grant.id} className="p-3 bg-white/50 rounded-lg border space-y-2">
                   <div className="flex items-center gap-2 mb-1">
                     <Crown className="h-4 w-4 text-yellow-500" />
                     <span className="font-medium text-sm">
@@ -1217,11 +1372,37 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
                   <p className="text-sm text-gray-700 dark:text-gray-300">
                     "{grant.request_text}"
                   </p>
-                  {grant.status === 'pending' && (
-                    <Badge className="mt-2 bg-yellow-100 text-yellow-800 text-xs">
-                      💌 Awaiting response
-                    </Badge>
-                  )}
+                  
+                  {/* Enhanced status display */}
+                  <div className="flex items-center gap-2">
+                    {grant.status === 'pending' && !grant.partner_response && (
+                      <Badge className="bg-yellow-100 text-yellow-800 text-xs">
+                        💌 Awaiting response
+                      </Badge>
+                    )}
+                    {grant.status === 'pending' && grant.partner_response?.includes('rejected') && (
+                      <Badge className="bg-red-100 text-red-800 text-xs">
+                        💔 Declined
+                      </Badge>
+                    )}
+                    {grant.status === 'acknowledged' && (
+                      <Badge className="bg-green-100 text-green-800 text-xs">
+                        💚 Accepted
+                      </Badge>
+                    )}
+                    {grant.status === 'fulfilled' && (
+                      <Badge className="bg-blue-100 text-blue-800 text-xs">
+                        ✨ Completed
+                      </Badge>
+                    )}
+                    
+                    {/* Show rejection reason if available */}
+                    {grant.rejection_reason && grant.winner_user_id === user?.id && (
+                      <span className="text-xs text-orange-600 italic">
+                        💡 {grant.rejection_reason}
+                      </span>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

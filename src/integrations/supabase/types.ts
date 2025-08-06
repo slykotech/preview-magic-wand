@@ -1190,7 +1190,10 @@ export type Database = {
           created_at: string
           game_session_id: string | null
           id: string
+          partner_response: string | null
+          rejection_reason: string | null
           request_text: string
+          responded_at: string | null
           response_text: string | null
           status: string
           updated_at: string
@@ -1203,7 +1206,10 @@ export type Database = {
           created_at?: string
           game_session_id?: string | null
           id?: string
+          partner_response?: string | null
+          rejection_reason?: string | null
           request_text: string
+          responded_at?: string | null
           response_text?: string | null
           status?: string
           updated_at?: string
@@ -1216,7 +1222,10 @@ export type Database = {
           created_at?: string
           game_session_id?: string | null
           id?: string
+          partner_response?: string | null
+          rejection_reason?: string | null
           request_text?: string
+          responded_at?: string | null
           response_text?: string | null
           status?: string
           updated_at?: string
