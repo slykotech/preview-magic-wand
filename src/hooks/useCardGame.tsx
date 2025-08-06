@@ -50,6 +50,7 @@ export function useCardGame(sessionId: string | null) {
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'connecting' | 'error'>('connecting');
   const [partnerInfo, setPartnerInfo] = useState<{id: string, name: string} | null>(null);
   const [cardRevealed, setCardRevealed] = useState(false);
+  const [blockAutoAdvance, setBlockAutoAdvance] = useState(false);
 
   // Initialize game
   useEffect(() => {
@@ -664,8 +665,10 @@ export function useCardGame(sessionId: string | null) {
       favoriteCard,
       togglePause,
       endGame,
-      revealCard
+      revealCard,
+      setBlockAutoAdvance
     },
-    cardRevealed
+    cardRevealed,
+    blockAutoAdvance
   };
 }

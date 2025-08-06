@@ -33,6 +33,8 @@ interface GameCardProps {
   skipsRemaining: number;
   sessionId: string;
   userId: string;
+  blockAutoAdvance?: boolean;
+  setBlockAutoAdvance?: (blocked: boolean) => void;
 }
 
 export const GameCard: React.FC<GameCardProps> = ({ 
@@ -46,7 +48,9 @@ export const GameCard: React.FC<GameCardProps> = ({
   onFavorite, 
   skipsRemaining,
   sessionId,
-  userId
+  userId,
+  blockAutoAdvance: parentBlockAutoAdvance,
+  setBlockAutoAdvance: setParentBlockAutoAdvance
 }) => {
   const [response, setResponse] = useState('');
   const [photoResponse, setPhotoResponse] = useState<File | null>(null);
@@ -55,6 +59,7 @@ export const GameCard: React.FC<GameCardProps> = ({
   const [responseDismissTimer, setResponseDismissTimer] = useState<NodeJS.Timeout | null>(null);
   const [currentCardId, setCurrentCardId] = useState<string | null>(null);
   const [persistentResponses, setPersistentResponses] = useState<Map<string, any>>(new Map());
+  const [blockAutoAdvance, setBlockAutoAdvance] = useState(false);
 
   // Fetch partner response when card changes and setup real-time subscription
   useEffect(() => {
@@ -184,7 +189,9 @@ export const GameCard: React.FC<GameCardProps> = ({
             // Show the response only if it's for the current card
             setPartnerResponse(payload.new);
             setShowResponse(true);
-            console.log('🔥 PARTNER RESPONSE STATE SET FOR CURRENT CARD!');
+            setBlockAutoAdvance(true);
+            if (setParentBlockAutoAdvance) setParentBlockAutoAdvance(true); // Block auto-advance until response is dismissed
+            console.log('🔥 PARTNER RESPONSE STATE SET FOR CURRENT CARD! Auto-advance BLOCKED.');
             
             // Show toast notification
             const responseTypeText = payload.new.response_type === 'text' ? 'sent a message' : 
@@ -468,6 +475,10 @@ export const GameCard: React.FC<GameCardProps> = ({
               onClick={() => {
                 console.log('🎯 Manually dismissing partner response');
                 setShowResponse(false);
+                setPartnerResponse(null);
+                setBlockAutoAdvance(false);
+                if (setParentBlockAutoAdvance) setParentBlockAutoAdvance(false); // Unblock auto-advance when dismissed
+                console.log('🎯 Response dismissed - auto-advance UNBLOCKED');
                 if (responseDismissTimer) clearTimeout(responseDismissTimer);
               }}
               className="text-green-600 hover:text-green-800 h-8 w-8 p-0 hover:bg-green-100 rounded-full"

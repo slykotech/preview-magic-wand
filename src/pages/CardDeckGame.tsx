@@ -26,7 +26,8 @@ export const CardDeckGame: React.FC = () => {
     partnerInfo,
     stats,
     actions,
-    cardRevealed
+    cardRevealed,
+    blockAutoAdvance
   } = useCardGame(sessionId || null);
 
   // Auto-draw card when it's my turn and no current card  
@@ -39,7 +40,7 @@ export const CardDeckGame: React.FC = () => {
       loading
     });
     
-    if (isMyTurn && !currentCard && gameState?.status === 'active' && !loading) {
+    if (isMyTurn && !currentCard && gameState?.status === 'active' && !loading && !blockAutoAdvance) {
       console.log('Auto-drawing card for user turn');
       const timer = setTimeout(() => {
         actions.drawCard();
@@ -47,7 +48,7 @@ export const CardDeckGame: React.FC = () => {
       
       return () => clearTimeout(timer);
     }
-  }, [isMyTurn, currentCard, gameState?.status, sessionId, loading, actions.drawCard]);
+  }, [isMyTurn, currentCard, gameState?.status, sessionId, loading, blockAutoAdvance, actions.drawCard]);
 
 
   if (loading) {
@@ -140,6 +141,8 @@ export const CardDeckGame: React.FC = () => {
               skipsRemaining={stats.skipsRemaining}
               sessionId={sessionId || ''}
               userId={user?.id || ''}
+              blockAutoAdvance={blockAutoAdvance}
+              setBlockAutoAdvance={actions.setBlockAutoAdvance}
             />
           ) : (
             <div className="text-center p-8 bg-muted rounded-lg">
