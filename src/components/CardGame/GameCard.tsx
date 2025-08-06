@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { SharedTimer } from './SharedTimer';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface CardData {
   id: string;
@@ -51,51 +52,83 @@ export const GameCard: React.FC<GameCardProps> = ({
   const [photoResponse, setPhotoResponse] = useState<File | null>(null);
   const [partnerResponse, setPartnerResponse] = useState<any>(null);
   const [showResponse, setShowResponse] = useState(false);
+  const [responseDismissTimer, setResponseDismissTimer] = useState<NodeJS.Timeout | null>(null);
 
-  // Fetch partner response when card changes
+  // Fetch partner response when card changes and setup real-time subscription
   useEffect(() => {
     if (!card || !sessionId) return;
     
+    console.log(`🔍 Setting up response subscription for card ${card.id}`);
+    
     const fetchPartnerResponse = async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('card_responses')
         .select('*')
         .eq('session_id', sessionId)
         .eq('card_id', card.id)
-        .neq('user_id', userId)
-        .single();
+        .neq('user_id', userId);
       
-      if (data) {
-        setPartnerResponse(data);
+      console.log('📨 Fetched partner responses:', data);
+      
+      if (data && data.length > 0) {
+        const latestResponse = data[0];
+        setPartnerResponse(latestResponse);
         setShowResponse(true);
+        
+        // Auto-dismiss after 10 seconds
+        if (responseDismissTimer) clearTimeout(responseDismissTimer);
+        const timer = setTimeout(() => {
+          setShowResponse(false);
+        }, 10000);
+        setResponseDismissTimer(timer);
       }
     };
 
     fetchPartnerResponse();
 
-    // Subscribe to new responses
+    // Subscribe to new responses for this specific card
     const channel = supabase
-      .channel(`responses-${sessionId}-${card.id}`)
+      .channel(`card-responses-${sessionId}-${card.id}`)
       .on('postgres_changes', 
         { 
           event: 'INSERT', 
           schema: 'public', 
           table: 'card_responses',
-          filter: `session_id=eq.${sessionId}`
+          filter: `session_id=eq.${sessionId},card_id=eq.${card.id}`
         }, 
         (payload) => {
-          if (payload.new.card_id === card.id && payload.new.user_id !== userId) {
+          console.log('🎉 New response received:', payload);
+          if (payload.new.user_id !== userId) {
             setPartnerResponse(payload.new);
             setShowResponse(true);
+            
+            // Auto-dismiss after 10 seconds
+            if (responseDismissTimer) clearTimeout(responseDismissTimer);
+            const timer = setTimeout(() => {
+              setShowResponse(false);
+            }, 10000);
+            setResponseDismissTimer(timer);
+            
+            // Show toast notification
+            toast.success("Partner completed the task! 🎉");
           }
         }
       )
       .subscribe();
 
     return () => {
+      console.log(`🧹 Cleaning up subscription for card ${card.id}`);
       supabase.removeChannel(channel);
+      if (responseDismissTimer) clearTimeout(responseDismissTimer);
     };
-  }, [card?.id, sessionId, userId]);
+  }, [card?.id, sessionId, userId, responseDismissTimer]);
+
+  // Clean up timer on unmount
+  useEffect(() => {
+    return () => {
+      if (responseDismissTimer) clearTimeout(responseDismissTimer);
+    };
+  }, [responseDismissTimer]);
 
   const handleReveal = () => {
     console.log('=== CARD REVEAL CLICKED ===');
@@ -293,16 +326,22 @@ export const GameCard: React.FC<GameCardProps> = ({
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setShowResponse(false)}
+              onClick={() => {
+                setShowResponse(false);
+                if (responseDismissTimer) clearTimeout(responseDismissTimer);
+              }}
               className="text-green-600 hover:text-green-800 h-6 w-6 p-0"
             >
               ✕
             </Button>
           </div>
           {partnerResponse.response_type === 'text' && (
-            <div className="bg-white p-3 rounded-md border border-green-100">
-              <p className="text-green-700 whitespace-pre-wrap">{partnerResponse.response_text}</p>
+          <div className="bg-white p-3 rounded-md border border-green-100">
+            <p className="text-green-700 whitespace-pre-wrap">{partnerResponse.response_text}</p>
+            <div className="mt-2 text-xs text-green-600">
+              Auto-dismiss in 10s
             </div>
+          </div>
           )}
           {partnerResponse.response_type === 'photo' && (
             <div className="mt-2">
