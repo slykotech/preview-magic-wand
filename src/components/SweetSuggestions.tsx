@@ -257,13 +257,12 @@ export const SweetSuggestions: React.FC<SweetSuggestionsProps> = ({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Categories</SelectItem>
-                <SelectItem value="restaurant">Restaurants</SelectItem>
-                <SelectItem value="tourist_attraction">Tourist Attractions</SelectItem>
-                <SelectItem value="park">Parks & Recreation</SelectItem>
-                <SelectItem value="museum">Museums</SelectItem>
-                <SelectItem value="cafe">Cafes</SelectItem>
-                <SelectItem value="shopping_mall">Shopping</SelectItem>
-                <SelectItem value="entertainment">Entertainment</SelectItem>
+                <SelectItem value="Cultural & Historical">Cultural & Historical</SelectItem>
+                <SelectItem value="Religious & Spiritual">Religious & Spiritual</SelectItem>
+                <SelectItem value="Entertainment">Entertainment</SelectItem>
+                <SelectItem value="Dining & Social">Dining & Social</SelectItem>
+                <SelectItem value="Nature & Outdoor">Nature & Outdoor</SelectItem>
+                <SelectItem value="Shopping & Markets">Shopping & Markets</SelectItem>
               </SelectContent>
             </Select>
           </div>
