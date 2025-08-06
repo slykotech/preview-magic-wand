@@ -4,11 +4,12 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Crown, Check, Shield, CreditCard, Star, Gift } from 'lucide-react';
+import { Crown, Check, Shield, CreditCard, Star, Gift, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useEnhancedSubscription } from '@/hooks/useEnhancedSubscription';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { validateCard, formatCardNumber, formatExpiryDate, getCardBrandName } from '@/utils/cardValidation';
 
 interface PaymentDetails {
   cardNumber: string;
@@ -30,6 +31,7 @@ export const SubscriptionOnboarding = () => {
     cardholderName: ''
   });
   const [isProcessing, setIsProcessing] = useState(false);
+  const [cardErrors, setCardErrors] = useState<string[]>([]);
 
   // Redirect to dashboard if user already has premium access
   useEffect(() => {
@@ -54,20 +56,31 @@ export const SubscriptionOnboarding = () => {
   };
 
   const handlePaymentSubmit = async () => {
-    if (!paymentDetails.cardNumber || !paymentDetails.expiryDate || !paymentDetails.cvv || !paymentDetails.cardholderName) {
+    // Clear previous errors
+    setCardErrors([]);
+    
+    // Validate card details using our validation utility
+    const validation = validateCard(paymentDetails);
+    
+    if (!validation.isValid) {
+      setCardErrors(validation.errors);
       toast({
         variant: "destructive",
-        description: "Please fill in all payment details"
+        description: "Please fix the card validation errors below"
       });
       return;
     }
 
     setIsProcessing(true);
     try {
+      // Get card brand for better integration
+      const cardBrand = getCardBrandName(paymentDetails.cardNumber);
+      
       const cardDetails = {
-        last_four: paymentDetails.cardNumber.slice(-4),
-        brand: 'visa' // In a real app, you'd detect the card brand
+        last_four: paymentDetails.cardNumber.replace(/\D/g, '').slice(-4),
+        brand: cardBrand.toLowerCase()
       };
+      
       const success = await startTrial(cardDetails);
       if (success) {
         toast({
@@ -91,13 +104,6 @@ export const SubscriptionOnboarding = () => {
     }
   };
 
-  const formatCardNumber = (value: string) => {
-    return value.replace(/\s/g, '').replace(/(.{4})/g, '$1 ').trim();
-  };
-
-  const formatExpiryDate = (value: string) => {
-    return value.replace(/\D/g, '').replace(/(\d{2})(\d{2})/, '$1/$2');
-  };
 
   if (loading) {
     return (
@@ -204,6 +210,24 @@ export const SubscriptionOnboarding = () => {
                   </p>
                 </div>
 
+                {/* Show validation errors */}
+                {cardErrors.length > 0 && (
+                  <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3">
+                    <div className="flex items-center gap-2 text-destructive text-sm font-medium mb-2">
+                      <AlertCircle className="w-4 h-4" />
+                      Please fix the following errors:
+                    </div>
+                    <ul className="text-sm text-destructive space-y-1">
+                      {cardErrors.map((error, index) => (
+                        <li key={index} className="flex items-center gap-2">
+                          <span className="w-1 h-1 bg-destructive rounded-full"></span>
+                          {error}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
                 <div className="space-y-4">
                   <div>
                     <Label htmlFor="cardholderName">Cardholder Name</Label>
@@ -218,17 +242,24 @@ export const SubscriptionOnboarding = () => {
 
                   <div>
                     <Label htmlFor="cardNumber">Card Number</Label>
-                    <Input
-                      id="cardNumber"
-                      placeholder="1234 5678 9012 3456"
-                      value={paymentDetails.cardNumber}
-                      onChange={(e) => setPaymentDetails(prev => ({ 
-                        ...prev, 
-                        cardNumber: formatCardNumber(e.target.value) 
-                      }))}
-                      maxLength={19}
-                      className="mt-1"
-                    />
+                    <div className="relative">
+                      <Input
+                        id="cardNumber"
+                        placeholder="1234 5678 9012 3456"
+                        value={paymentDetails.cardNumber}
+                        onChange={(e) => setPaymentDetails(prev => ({ 
+                          ...prev, 
+                          cardNumber: formatCardNumber(e.target.value) 
+                        }))}
+                        maxLength={23} // Increased for formatting
+                        className="mt-1"
+                      />
+                      {paymentDetails.cardNumber && (
+                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-muted-foreground">
+                          {getCardBrandName(paymentDetails.cardNumber)}
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
