@@ -93,6 +93,19 @@ export const CardDeckGame: React.FC = () => {
           </Button>
         </div>
 
+        {/* Debug Info */}
+        <div className="text-xs bg-yellow-100 p-3 rounded border mb-6">
+          <p><strong>Debug Info:</strong></p>
+          <p>Current Card ID: {currentCard?.id || 'None'}</p>
+          <p>Game Card ID: {gameState?.current_card_id || 'None'}</p>
+          <p>Card Revealed: {cardRevealed ? 'Yes' : 'No'}</p>
+          <p>Has Card Data: {currentCard ? 'Yes' : 'No'}</p>
+          <p>Is My Turn: {isMyTurn ? 'Yes' : 'No'}</p>
+          <p>Game Status: {gameState?.status || 'Unknown'}</p>
+          <p>Loading: {loading ? 'Yes' : 'No'}</p>
+          {currentCard && <p>Card Prompt: {currentCard.prompt?.substring(0, 50)}...</p>}
+        </div>
+
         {/* Game Stats */}
         <GameStats 
           cardsPlayed={stats.cardsPlayed}
@@ -110,18 +123,43 @@ export const CardDeckGame: React.FC = () => {
           />
         </div>
 
-        {/* Game Card */}
+        {/* Game Card or Loading State */}
         <div className="mt-8">
-          <GameCard
-            card={currentCard}
-            isRevealed={cardRevealed}
-            onReveal={() => setCardRevealed(true)}
-            onComplete={actions.completeTurn}
-            onSkip={actions.skipCard}
-            onFavorite={actions.favoriteCard}
-            disabled={!isMyTurn || gameState.status !== 'active'}
-            skipsRemaining={stats.skipsRemaining}
-          />
+          {currentCard ? (
+            <GameCard
+              card={currentCard}
+              isRevealed={cardRevealed}
+              onReveal={() => setCardRevealed(true)}
+              onComplete={actions.completeTurn}
+              onSkip={actions.skipCard}
+              onFavorite={actions.favoriteCard}
+              disabled={!isMyTurn || gameState.status !== 'active'}
+              skipsRemaining={stats.skipsRemaining}
+            />
+          ) : (
+            <div className="text-center p-8 bg-muted rounded-lg">
+              {isMyTurn ? (
+                loading ? (
+                  <div>
+                    <p className="text-lg font-semibold">Drawing card...</p>
+                    <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mt-4"></div>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-lg font-semibold">No card available</p>
+                    <button 
+                      onClick={actions.drawCard}
+                      className="mt-4 px-6 py-2 bg-primary text-primary-foreground rounded-lg"
+                    >
+                      Draw Card
+                    </button>
+                  </div>
+                )
+              ) : (
+                <p className="text-lg">Waiting for partner to play...</p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Game Controls */}

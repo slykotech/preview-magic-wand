@@ -156,15 +156,20 @@ export function useCardGame(sessionId: string | null) {
             setGameState(processedState);
             setIsMyTurn(newState.current_turn === user.id);
             
-            // Fetch new card if changed
-            if (newState.current_card_id && newState.current_card_id !== gameState?.current_card_id) {
-              const { data: cardData } = await supabase
+            // IMPORTANT: Fetch the card data when current_card_id changes
+            if (newState.current_card_id) {
+              console.log('Fetching card from real-time update:', newState.current_card_id);
+              
+              const { data: cardData, error: cardError } = await supabase
                 .from("deck_cards")
                 .select("*")
                 .eq("id", newState.current_card_id)
                 .single();
               
-              if (cardData) {
+              if (cardError) {
+                console.error('Failed to fetch card from real-time:', cardError);
+              } else {
+                console.log('Card fetched successfully from real-time:', cardData);
                 setCurrentCard(cardData);
               }
               
@@ -172,7 +177,9 @@ export function useCardGame(sessionId: string | null) {
               if (newState.current_turn === user.id) {
                 toast.success("It's your turn! 🎯");
               }
-            } else if (!newState.current_card_id) {
+            } else {
+              // Clear card when no current_card_id
+              console.log('No current_card_id, clearing card');
               setCurrentCard(null);
             }
           }
@@ -194,7 +201,7 @@ export function useCardGame(sessionId: string | null) {
     console.log('createNewSession called - this should not happen anymore');
   };
 
-  // Draw next card with comprehensive error handling
+  // Draw next card with comprehensive error handling and immediate card setting
   const drawCard = useCallback(async () => {
     console.log('🎯 drawCard called:', { 
       isMyTurn, 
@@ -211,19 +218,27 @@ export function useCardGame(sessionId: string | null) {
     try {
       console.log('🔍 Fetching available cards...');
       
-      // Build the query with proper error handling for played cards
+      // Get available cards with full data
       let query = supabase
         .from("deck_cards")
-        .select("*")
+        .select("*") // Get all fields, not just id
         .eq("is_active", true);
 
-      // Only filter played cards if there are any
+      // Exclude played cards
       if (gameState.played_cards && Array.isArray(gameState.played_cards) && gameState.played_cards.length > 0) {
-        // Filter out any null/undefined values and ensure all are strings
         const validPlayedCards = gameState.played_cards.filter(id => id && typeof id === 'string');
         if (validPlayedCards.length > 0) {
           console.log('🚫 Filtering out played cards:', validPlayedCards);
           query = query.not("id", "in", `(${validPlayedCards.join(",")})`);
+        }
+      }
+
+      // Exclude skipped cards  
+      if (gameState.skipped_cards && Array.isArray(gameState.skipped_cards) && gameState.skipped_cards.length > 0) {
+        const validSkippedCards = gameState.skipped_cards.filter(id => id && typeof id === 'string');
+        if (validSkippedCards.length > 0) {
+          console.log('⏭️ Filtering out skipped cards:', validSkippedCards);
+          query = query.not("id", "in", `(${validSkippedCards.join(",")})`);
         }
       }
 
@@ -249,15 +264,17 @@ export function useCardGame(sessionId: string | null) {
 
       // Select random card
       const randomCard = availableCards[Math.floor(Math.random() * availableCards.length)];
-      console.log('🎲 Selected random card:', { id: randomCard.id, category: randomCard.category });
+      console.log('🎲 Selected random card:', randomCard);
       
-      // Update game state with comprehensive data
+      // Set the card locally immediately for better UX
+      setCurrentCard(randomCard);
+      
+      // Update game state with the new card
       console.log('💾 Updating game state with card:', randomCard.id);
       const updateData = {
         current_card_id: randomCard.id,
         last_activity_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        total_cards_played: (gameState.total_cards_played || 0) + 1
+        updated_at: new Date().toISOString()
       };
 
       const { error: updateError } = await supabase
@@ -267,6 +284,7 @@ export function useCardGame(sessionId: string | null) {
 
       if (updateError) {
         console.error('❌ Update error:', updateError);
+        setCurrentCard(null); // Clear card on error
         throw new Error(`Failed to update game: ${updateError.message}`);
       }
       
@@ -277,6 +295,7 @@ export function useCardGame(sessionId: string | null) {
       console.error("💥 Failed to draw card - Full error:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       toast.error(`Failed to draw card: ${errorMessage}`);
+      setCurrentCard(null); // Clear card on error
       
       // Add more specific error handling
       if (errorMessage.includes('permission denied') || errorMessage.includes('policy violation')) {

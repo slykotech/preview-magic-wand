@@ -80,6 +80,19 @@ export const GameCard: React.FC<GameCardProps> = ({
 
   return (
     <div className="space-y-4 max-w-2xl mx-auto">
+      {/* Debug info - remove after fixing */}
+      <div className="text-xs bg-gray-100 p-2 rounded">
+        Card ID: {card?.id || 'No card'}
+        <br />
+        Card Prompt: {card?.prompt || 'No prompt'}
+        <br />
+        Revealed: {isRevealed ? 'Yes' : 'No'}
+        <br />
+        Disabled: {disabled ? 'Yes' : 'No'}
+        <br />
+        Show Timer: {showTimer ? 'Yes' : 'No'}
+      </div>
+
       {/* Card Flip Container */}
       <div className="relative h-96">
         <div 
