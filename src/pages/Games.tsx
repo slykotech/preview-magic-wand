@@ -51,11 +51,10 @@ export const Games = () => {
 
   const handleGameSelect = async (gameType: string) => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || !coupleData) return;
+
       if (gameType === 'card_deck') {
-        // Check for existing active game first
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user || !coupleData) return;
-        
         // Look for existing active game session
         const { data: existingGame } = await supabase
           .from("card_deck_game_sessions")
@@ -68,7 +67,7 @@ export const Games = () => {
         
         if (existingGame) {
           // Join existing game
-          console.log('Joining existing game:', existingGame.id);
+          console.log('Joining existing card deck game:', existingGame.id);
           navigate(`/games/card-deck/${existingGame.id}`);
         } else {
           // Create new game session
@@ -88,15 +87,34 @@ export const Games = () => {
           
           if (error) throw error;
           
-          console.log('Created new game session:', newSession.id);
+          console.log('Created new card deck game session:', newSession.id);
           navigate(`/games/card-deck/${newSession.id}`);
         }
         return;
       }
+
+      // For tic_toe_heart and truth_or_dare_couples - check for existing session first
+      const { data: existingSession } = await supabase
+        .from("game_sessions")
+        .select("*")
+        .eq("couple_id", coupleData.id)
+        .eq("status", "active")
+        .order("started_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
       
-      const session = await createGameSession(gameType);
-      if (session) {
-        navigate(`/games/${session.id}`);
+      if (existingSession) {
+        // Join existing game session
+        console.log('Joining existing game session:', existingSession.id);
+        navigate(`/games/${existingSession.id}`);
+      } else {
+        // Create new session
+        console.log('Creating new game session for:', gameType);
+        const session = await createGameSession(gameType);
+        if (session) {
+          console.log('Created new game session:', session.id);
+          navigate(`/games/${session.id}`);
+        }
       }
     } catch (error) {
       console.error('Failed to create game session:', error);
