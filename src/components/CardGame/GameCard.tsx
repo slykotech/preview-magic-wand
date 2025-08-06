@@ -3,6 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { SharedTimer } from './SharedTimer';
 import { ResponsePopup } from './ResponsePopup';
+import { PhotoResponsePopup } from './PhotoResponsePopup';
+import { PhotoInput } from './PhotoInput';
 import { DebugInfo } from './DebugInfo';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -29,7 +31,7 @@ interface GameCardProps {
   isMyTurn: boolean;
   isRevealed: boolean;
   onReveal: () => void;
-  onComplete: (response?: string | File, timedOut?: boolean) => void;
+  onComplete: (response?: string | File, caption?: string, timedOut?: boolean) => void;
   onSkip: () => void;
   onFavorite: () => void;
   skipsRemaining: number;
@@ -59,10 +61,16 @@ export const GameCard: React.FC<GameCardProps> = ({
   const [showResponsePopup, setShowResponsePopup] = useState(false);
   const [blockAutoAdvance, setBlockAutoAdvance] = useState(false);
 
-  // Check if there's an unseen response from the previous turn
-  const hasUnseenResponse = gameState?.last_response_text && 
-                           !gameState?.last_response_seen &&
-                           gameState?.last_response_author_id !== userId;
+  // Check for unseen text or photo responses
+  const hasUnseenTextResponse = gameState?.last_response_text && 
+                                !gameState?.last_response_seen &&
+                                gameState?.last_response_author_id !== userId;
+  
+  const hasUnseenPhotoResponse = gameState?.last_response_photo_url && 
+                                 !gameState?.last_response_seen &&
+                                 gameState?.last_response_author_id !== userId;
+  
+  const hasUnseenResponse = hasUnseenTextResponse || hasUnseenPhotoResponse;
 
   // Show popup when it's my turn and there's an unseen response
   useEffect(() => {
@@ -119,16 +127,22 @@ export const GameCard: React.FC<GameCardProps> = ({
   const handleComplete = (timedOut = false) => {
     switch (card?.response_type) {
       case 'text':
-        onComplete(response, timedOut);
+        onComplete(response, undefined, timedOut);
         break;
       case 'photo':
-        onComplete(photoResponse || undefined, timedOut);
+        onComplete(photoResponse || undefined, undefined, timedOut);
         break;
       case 'action':
       default:
-        onComplete(undefined, timedOut);
+        onComplete(undefined, undefined, timedOut);
         break;
     }
+    setResponse('');
+    setPhotoResponse(null);
+  };
+
+  const handlePhotoSubmit = async (photoUrl: string, caption?: string) => {
+    onComplete(photoUrl, caption, false);
     setResponse('');
     setPhotoResponse(null);
   };
@@ -173,14 +187,27 @@ export const GameCard: React.FC<GameCardProps> = ({
           isMyTurn={isMyTurn}
         />
 
-        {/* Response Popup */}
-        <ResponsePopup
-          isOpen={showResponsePopup}
-          response={gameState?.last_response_text || ''}
-          authorName={responseAuthorName}
-          timestamp={gameState?.last_response_timestamp || ''}
-          onDismiss={handleDismissPopup}
-        />
+        {/* Response Popups */}
+        {hasUnseenTextResponse && (
+          <ResponsePopup
+            isOpen={showResponsePopup}
+            response={gameState?.last_response_text || ''}
+            authorName={responseAuthorName}
+            timestamp={gameState?.last_response_timestamp || ''}
+            onDismiss={handleDismissPopup}
+          />
+        )}
+        
+        {hasUnseenPhotoResponse && (
+          <PhotoResponsePopup
+            isOpen={showResponsePopup}
+            photoUrl={gameState?.last_response_photo_url || ''}
+            caption={gameState?.last_response_photo_caption}
+            authorName={responseAuthorName}
+            timestamp={gameState?.last_response_timestamp || ''}
+            onDismiss={handleDismissPopup}
+          />
+        )}
 
         <div className="space-y-4 max-w-2xl mx-auto">
           <div className="card-scene">
@@ -229,14 +256,27 @@ export const GameCard: React.FC<GameCardProps> = ({
         isMyTurn={isMyTurn}
       />
 
-      {/* Response Popup */}
-      <ResponsePopup
-        isOpen={showResponsePopup}
-        response={gameState?.last_response_text || ''}
-        authorName={responseAuthorName}
-        timestamp={gameState?.last_response_timestamp || ''}
-        onDismiss={handleDismissPopup}
-      />
+      {/* Response Popups */}
+      {hasUnseenTextResponse && (
+        <ResponsePopup
+          isOpen={showResponsePopup}
+          response={gameState?.last_response_text || ''}
+          authorName={responseAuthorName}
+          timestamp={gameState?.last_response_timestamp || ''}
+          onDismiss={handleDismissPopup}
+        />
+      )}
+      
+      {hasUnseenPhotoResponse && (
+        <PhotoResponsePopup
+          isOpen={showResponsePopup}
+          photoUrl={gameState?.last_response_photo_url || ''}
+          caption={gameState?.last_response_photo_caption}
+          authorName={responseAuthorName}
+          timestamp={gameState?.last_response_timestamp || ''}
+          onDismiss={handleDismissPopup}
+        />
+      )}
 
       <div className="space-y-4 max-w-2xl mx-auto">
         {/* Revealed Card Content */}
@@ -286,7 +326,7 @@ export const GameCard: React.FC<GameCardProps> = ({
         />
 
         {/* Show response status if exists and seen */}
-        {gameState?.last_response_text && gameState?.last_response_seen && (
+        {(gameState?.last_response_text || gameState?.last_response_photo_url) && gameState?.last_response_seen && (
           <div className="mb-4 p-3 bg-green-50 rounded-lg">
             <p className="text-sm text-green-700 flex items-center gap-2">
               <span>✅</span>
@@ -331,13 +371,11 @@ export const GameCard: React.FC<GameCardProps> = ({
                 ) : (
                   <Button
                     onClick={() => handleComplete(false)}
-                    disabled={
-                      (card.response_type === 'photo' && !photoResponse)
-                    }
+                    disabled={false}
                     className="px-6 py-3 bg-gradient-to-r from-primary to-purple-500 font-semibold"
                     size="lg"
                   >
-                    Send Response
+                    Complete Turn
                   </Button>
                 )}
                 
@@ -403,41 +441,11 @@ export const GameCard: React.FC<GameCardProps> = ({
       case 'photo':
         return (
           <div className="mt-4 space-y-2">
-            <label className="text-sm text-muted-foreground">Upload Photo:</label>
-            <div className="border-2 border-dashed border-border rounded-lg p-4">
-              <input
-                type="file"
-                accept="image/*"
-                capture="environment"
-                onChange={(e) => setPhotoResponse(e.target.files?.[0] || null)}
-                className="hidden"
-                id="photo-upload"
-              />
-              <label
-                htmlFor="photo-upload"
-                className="cursor-pointer flex flex-col items-center"
-              >
-                {photoResponse ? (
-                  <>
-                    <img
-                      src={URL.createObjectURL(photoResponse)}
-                      alt="Response"
-                      className="max-h-40 rounded"
-                    />
-                    <p className="text-sm text-muted-foreground mt-2">
-                      Click to change photo
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <span className="text-4xl mb-2">📷</span>
-                    <p className="text-sm text-muted-foreground">
-                      Tap to take photo or upload
-                    </p>
-                  </>
-                )}
-              </label>
-            </div>
+            <label className="text-sm text-muted-foreground">Take or Upload Photo:</label>
+            <PhotoInput
+              onPhotoSelected={handlePhotoSubmit}
+              isSubmitting={false}
+            />
           </div>
         );
 

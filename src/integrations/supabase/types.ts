@@ -306,6 +306,8 @@ export type Database = {
           id: string
           last_activity_at: string | null
           last_response_author_id: string | null
+          last_response_photo_caption: string | null
+          last_response_photo_url: string | null
           last_response_seen: boolean | null
           last_response_text: string | null
           last_response_timestamp: string | null
@@ -340,6 +342,8 @@ export type Database = {
           id?: string
           last_activity_at?: string | null
           last_response_author_id?: string | null
+          last_response_photo_caption?: string | null
+          last_response_photo_url?: string | null
           last_response_seen?: boolean | null
           last_response_text?: string | null
           last_response_timestamp?: string | null
@@ -374,6 +378,8 @@ export type Database = {
           id?: string
           last_activity_at?: string | null
           last_response_author_id?: string | null
+          last_response_photo_caption?: string | null
+          last_response_photo_url?: string | null
           last_response_seen?: boolean | null
           last_response_text?: string | null
           last_response_timestamp?: string | null
@@ -460,6 +466,8 @@ export type Database = {
           partner_reaction: string | null
           responded_at: string | null
           response_audio_url: string | null
+          response_photo_caption: string | null
+          response_photo_url: string | null
           response_text: string | null
           response_time_seconds: number | null
           response_type: string | null
@@ -477,6 +485,8 @@ export type Database = {
           partner_reaction?: string | null
           responded_at?: string | null
           response_audio_url?: string | null
+          response_photo_caption?: string | null
+          response_photo_url?: string | null
           response_text?: string | null
           response_time_seconds?: number | null
           response_type?: string | null
@@ -494,6 +504,8 @@ export type Database = {
           partner_reaction?: string | null
           responded_at?: string | null
           response_audio_url?: string | null
+          response_photo_caption?: string | null
+          response_photo_url?: string | null
           response_text?: string | null
           response_time_seconds?: number | null
           response_type?: string | null

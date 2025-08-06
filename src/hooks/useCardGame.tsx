@@ -477,7 +477,7 @@ export function useCardGame(sessionId: string | null) {
   }, [isMyTurn, gameState, sessionId]);
 
   // Complete turn and switch to partner
-  const completeTurn = useCallback(async (response?: string | File, reactionTime?: number) => {
+  const completeTurn = useCallback(async (response?: string | File, caption?: string, reactionTime?: number) => {
     console.group('🎯 COMPLETE TURN FLOW');
     console.log('Starting completeTurn with:', {
       response,
@@ -707,6 +707,8 @@ export function useCardGame(sessionId: string | null) {
       if (response && typeof response === 'string' && currentCard.response_type === 'text') {
         console.log('💬 Adding text response data for next player...');
         updateData.last_response_text = response;
+        updateData.last_response_photo_url = null;
+        updateData.last_response_photo_caption = null;
         updateData.last_response_author_id = user.id;
         updateData.last_response_timestamp = new Date().toISOString();
         updateData.last_response_seen = false;
@@ -716,9 +718,26 @@ export function useCardGame(sessionId: string | null) {
           authorId: user.id,
           seen: false
         });
-      } else {
-        console.log('🧹 Clearing previous response data (not a text task)');
+      } else if (response && typeof response === 'string' && currentCard.response_type === 'photo') {
+        console.log('📸 Adding photo response data for next player...');
         updateData.last_response_text = null;
+        updateData.last_response_photo_url = response;
+        updateData.last_response_photo_caption = caption || null;
+        updateData.last_response_author_id = user.id;
+        updateData.last_response_timestamp = new Date().toISOString();
+        updateData.last_response_seen = false;
+        
+        console.log('Photo response data to save:', {
+          photoUrl: response.substring(0, 50) + '...',
+          caption: caption || null,
+          authorId: user.id,
+          seen: false
+        });
+      } else {
+        console.log('🧹 Clearing previous response data (action task or no response)');
+        updateData.last_response_text = null;
+        updateData.last_response_photo_url = null;
+        updateData.last_response_photo_caption = null;
         updateData.last_response_author_id = null;
         updateData.last_response_timestamp = null;
         updateData.last_response_seen = true;
