@@ -1137,11 +1137,6 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
               💙 Your partner won! 🏆
             </Badge>
           )}
-          {gameState.game_status === 'draw' && (
-            <Badge className="mx-auto bg-gray-500 text-white">
-              🤝 It's a draw! 💕
-            </Badge>
-          )}
         </CardHeader>
         
         <CardContent>
@@ -1200,7 +1195,7 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
                     As the winner, you've earned a 💌 Love Grant! ✨
                   </p>
                 </div>
-              ) : gameState.game_status === 'won' ? (
+              ) : (
                 <div className="space-y-3">
                   <Heart className="h-8 w-8 text-pink-500 mx-auto" />
                   <h3 className="text-xl font-bold text-purple-700 dark:text-purple-300">
@@ -1208,15 +1203,6 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
                   </h3>
                   <p className="text-purple-600 dark:text-purple-400">
                     They've earned a 💌 Love Grant from you! 💝
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <h3 className="text-xl font-bold text-gray-700 dark:text-gray-300">
-                    🤝 It's a draw!
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-400">
-                    Great game! Both hearts played wonderfully! 💕
                   </p>
                 </div>
               )}
