@@ -5,6 +5,7 @@ import { GameCard } from '@/components/CardGame/GameCard';
 import { TurnIndicator } from '@/components/CardGame/TurnIndicator';
 import { GameStats } from '@/components/CardGame/GameStats';
 import { DebugInfo } from '@/components/CardGame/DebugInfo';
+import { TaskHistory } from '@/components/CardGame/TaskHistory';
 import { Button } from '@/components/ui/button';
 import { GradientHeader } from '@/components/GradientHeader';
 import { useAuth } from '@/hooks/useAuth';
@@ -14,6 +15,7 @@ export const CardDeckGame: React.FC = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [showHistory, setShowHistory] = useState(false);
   
   const {
     gameState,
@@ -164,6 +166,14 @@ export const CardDeckGame: React.FC = () => {
         <div className="mt-8 flex justify-center gap-4">
           <Button
             variant="outline"
+            onClick={() => setShowHistory(true)}
+            className="flex items-center gap-2"
+          >
+            📝 History
+          </Button>
+          
+          <Button
+            variant="outline"
             onClick={actions.togglePause}
           >
             {gameState.status === 'paused' ? '▶️ Resume' : '⏸️ Pause'}
@@ -203,6 +213,13 @@ export const CardDeckGame: React.FC = () => {
             </div>
           </div>
         )}
+        
+        {/* Task History Modal */}
+        <TaskHistory 
+          sessionId={sessionId || ''} 
+          isOpen={showHistory} 
+          onClose={() => setShowHistory(false)} 
+        />
       </div>
     </div>
   );

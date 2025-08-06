@@ -236,17 +236,27 @@ export const GameCard: React.FC<GameCardProps> = ({
       {/* Action Buttons - Only for active player */}
       {isMyTurn && (
         <div className="flex gap-3 justify-center">
-          <Button
-            onClick={() => handleComplete(false)}
-            disabled={
-              (card.response_type === 'text' && !response.trim()) ||
-              (card.response_type === 'photo' && !photoResponse)
-            }
-            className="px-6 py-3 bg-gradient-to-r from-primary to-purple-500 font-semibold"
-            size="lg"
-          >
-            Complete Turn
-          </Button>
+          {card.response_type === 'action' ? (
+            <Button
+              onClick={() => handleComplete(false)}
+              className="px-6 py-3 bg-gradient-to-r from-primary to-purple-500 font-semibold"
+              size="lg"
+            >
+              Mark Complete
+            </Button>
+          ) : (
+            <Button
+              onClick={() => handleComplete(false)}
+              disabled={
+                (card.response_type === 'text' && !response.trim()) ||
+                (card.response_type === 'photo' && !photoResponse)
+              }
+              className="px-6 py-3 bg-gradient-to-r from-primary to-purple-500 font-semibold"
+              size="lg"
+            >
+              Send Response
+            </Button>
+          )}
           
           <Button
             variant="ghost"
@@ -271,22 +281,33 @@ export const GameCard: React.FC<GameCardProps> = ({
 
       {/* Partner Response Display */}
       {showResponse && partnerResponse && (
-        <div className="mt-4 p-4 bg-green-50 rounded-lg border border-green-200">
-          <h3 className="font-semibold text-green-800 mb-2">Partner's Response:</h3>
+        <div className="mt-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200 shadow-sm">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-lg">👤</span>
+            <h3 className="font-semibold text-green-800">Partner's Response:</h3>
+            <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">
+              {new Date(partnerResponse.responded_at).toLocaleTimeString()}
+            </span>
+          </div>
           {partnerResponse.response_type === 'text' && (
-            <p className="text-green-700">{partnerResponse.response_text}</p>
+            <div className="bg-white p-3 rounded-md border border-green-100">
+              <p className="text-green-700 whitespace-pre-wrap">{partnerResponse.response_text}</p>
+            </div>
           )}
           {partnerResponse.response_type === 'photo' && (
             <div className="mt-2">
               <img
                 src={`${supabase.storage.from('card-responses').getPublicUrl(partnerResponse.response_text).data.publicUrl}`}
                 alt="Partner's response"
-                className="max-h-40 rounded-lg"
+                className="max-h-60 rounded-lg border shadow-sm"
               />
             </div>
           )}
           {partnerResponse.response_type === 'action' && (
-            <p className="text-green-700">✅ Completed the action</p>
+            <div className="flex items-center gap-2 text-green-700">
+              <span className="text-xl">✅</span>
+              <p className="font-medium">Completed the action successfully!</p>
+            </div>
           )}
         </div>
       )}
