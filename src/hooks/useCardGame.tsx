@@ -350,7 +350,21 @@ export function useCardGame(sessionId: string | null) {
 
   // Complete turn and switch to partner
   const completeTurn = useCallback(async (response?: string | File, reactionTime?: number) => {
-    if (!isMyTurn || !gameState || !currentCard || !sessionId || !user) return;
+    console.log('🚀 Attempting to complete turn:', {
+      isMyTurn,
+      hasGameState: !!gameState,
+      hasCurrentCard: !!currentCard,
+      sessionId,
+      userId: user?.id,
+      currentTurn: gameState?.current_turn
+    });
+    
+    if (!isMyTurn || !gameState || !currentCard || !sessionId || !user) {
+      const errorMsg = `Cannot complete turn: ${!isMyTurn ? 'Not your turn' : !gameState ? 'No game state' : !currentCard ? 'No current card' : !sessionId ? 'No session ID' : 'No user'}`;
+      console.error('❌ ' + errorMsg);
+      toast.error(errorMsg);
+      return;
+    }
 
     try {
       // Save response if provided
