@@ -342,9 +342,29 @@ export function useCardGame(sessionId: string | null) {
         return;
       }
 
+      // Debug: Check card type distribution in available cards
+      const cardTypeDistribution = availableCards.reduce((acc, card) => {
+        acc[card.response_type] = (acc[card.response_type] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+      
+      console.log('📊 Available card types:', cardTypeDistribution);
+      console.log('📋 Available cards sample:', availableCards.slice(0, 5).map(c => ({
+        id: c.id.substring(0, 8),
+        type: c.response_type,
+        prompt: c.prompt.substring(0, 30) + '...'
+      })));
+
       // Select random card
-      const randomCard = availableCards[Math.floor(Math.random() * availableCards.length)];
-      console.log('🎲 Selected random card:', randomCard);
+      const randomIndex = Math.floor(Math.random() * availableCards.length);
+      const randomCard = availableCards[randomIndex];
+      console.log('🎲 Selected random card:', {
+        index: randomIndex,
+        total: availableCards.length,
+        type: randomCard.response_type,
+        id: randomCard.id.substring(0, 8),
+        prompt: randomCard.prompt.substring(0, 50) + '...'
+      });
       
       // Set the card locally immediately for better UX
       setCurrentCard(randomCard as CardData);
