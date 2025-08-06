@@ -252,4 +252,173 @@ input, textarea, [contenteditable] {
   .rotate-y-180 {
     transform: rotateY(180deg);
   }
+
+  /* Card Scene Animation Styles */
+  .card-scene {
+    --twilight-blue: #2C3E50;
+    --sunrise-coral: #E74C3C;
+    --soft-cloud: #ECF0F1;
+    --gold-accent: #F1C40F;
+    --text-dark: #2c3e50;
+    
+    width: 300px;
+    height: 450px;
+    perspective: 1500px;
+    margin: 0 auto;
+  }
+
+  .sync-card {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.8s cubic-bezier(0.77, 0, 0.175, 1);
+    cursor: pointer;
+  }
+
+  .sync-card.is-flipped {
+    transform: rotateY(180deg);
+  }
+
+  .card-face {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    border-radius: 16px;
+    box-shadow: 0 15px 35px rgba(44, 62, 80, 0.2);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 25px;
+    box-sizing: border-box;
+  }
+
+  /* Card Back (Visible First) */
+  .card-face--back {
+    background: linear-gradient(135deg, var(--twilight-blue), #34495e);
+    color: white;
+    cursor: pointer;
+  }
+  
+  .card-face--back .logo {
+    width: 80px;
+    height: 80px;
+    fill: var(--soft-cloud);
+    opacity: 0.9;
+    margin-bottom: 20px;
+  }
+  
+  .card-face--back .tap-prompt {
+    font-weight: 600;
+    font-size: 18px;
+    letter-spacing: 0.5px;
+    margin-bottom: 15px;
+  }
+
+  .category-hint {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    opacity: 0.8;
+    font-size: 12px;
+  }
+
+  .category-text {
+    text-transform: uppercase;
+    font-weight: 500;
+    letter-spacing: 1px;
+  }
+
+  .timer-text {
+    font-size: 10px;
+    opacity: 0.7;
+  }
+
+  /* Card Front (Revealed) */
+  .card-face--front {
+    background-color: var(--soft-cloud);
+    color: var(--text-dark);
+    transform: rotateY(180deg);
+    text-align: center;
+  }
+  
+  .card-face--front .card-title {
+    font-weight: 700;
+    font-size: 22px;
+    color: var(--sunrise-coral);
+    margin: 0;
+  }
+  
+  .card-face--front .card-subtitle {
+    font-weight: 500;
+    font-size: 14px;
+    opacity: 0.7;
+    margin: 5px 0 25px 0;
+    border-bottom: 2px solid rgba(44, 62, 80, 0.1);
+    padding-bottom: 15px;
+    width: 100%;
+  }
+  
+  .card-face--front .card-question {
+    font-weight: 500;
+    font-size: 16px;
+    line-height: 1.5;
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+
+  .card-details {
+    width: 100%;
+    margin-top: auto;
+  }
+
+  .card-badges {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+  }
+
+  .game-card-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+
+  .game-card-badge-outline {
+    border: 1px solid rgba(44, 62, 80, 0.3);
+    background: transparent;
+    color: var(--text-dark);
+  }
+
+  .card-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 11px;
+    opacity: 0.8;
+  }
+
+  .stat-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .stat-label {
+    font-weight: 500;
+  }
+
+  .stat-value {
+    font-weight: 600;
+  }
 }
