@@ -114,10 +114,6 @@ export const RecentTasks: React.FC = () => {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Recent Tasks</CardTitle>
-        <CardDescription>Your latest completed challenges</CardDescription>
-      </CardHeader>
       <CardContent className="space-y-4">
         {recentTasks.length === 0 ? (
           <p className="text-muted-foreground text-center py-4">
