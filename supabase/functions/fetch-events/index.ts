@@ -43,37 +43,39 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    const { latitude, longitude, radiusKm = 25, city, sources = ['eventbrite', 'meetup', 'webscraping'] }: FetchEventsRequest = await req.json();
+    const { latitude, longitude, radiusKm = 25, city, sources = ['eventbrite', 'meetup'] }: FetchEventsRequest = await req.json();
 
     console.log(`Fetching events for location: ${latitude}, ${longitude}, radius: ${radiusKm}km, city: ${city}`);
 
-    // Check if we have recent events cached for this specific location (within 10km radius)
-    const { data: cachedEvents, error: cacheError } = await supabase
+    // Check if we have recent events cached for this specific location
+    const { data: allCachedEvents, error: cacheError } = await supabase
       .from('events')
       .select('*')
       .gte('expires_at', new Date().toISOString())
-      .gt('created_at', new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString()) // Only events from last 6 hours
-      .order('created_at', { ascending: false })
-      .limit(50);
+      .gt('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()) // Events from last 24 hours
+      .order('created_at', { ascending: false });
 
     if (cacheError) {
       console.error('Error checking cached events:', cacheError);
     }
 
-    // Filter cached events by location proximity (within specified radius)
-    const nearbyEvents = cachedEvents?.filter(event => {
+    // Filter cached events by location proximity
+    const nearbyEvents = allCachedEvents?.filter(event => {
       if (!event.latitude || !event.longitude) return false;
       const distance = calculateDistance(latitude, longitude, event.latitude, event.longitude);
       return distance <= radiusKm;
     }) || [];
 
-    // Only return cached events if we have sufficient recent events for this specific location
-    if (nearbyEvents.length >= 8) {
-      console.log(`Found ${nearbyEvents.length} cached events near location`);
+    console.log(`Found ${nearbyEvents.length} cached events within ${radiusKm}km of requested location`);
+
+    // If we have sufficient recent events for this location, return them
+    // But lower the threshold to 5 events to be more responsive
+    if (nearbyEvents.length >= 5) {
+      console.log(`Returning ${nearbyEvents.length} cached events for location`);
       return new Response(
         JSON.stringify({ 
           success: true, 
-          events: nearbyEvents,
+          events: nearbyEvents.slice(0, 50),
           source: 'cache',
           count: nearbyEvents.length 
         }),
@@ -83,28 +85,33 @@ serve(async (req) => {
       );
     }
 
-    // Check if there's an active fetch job for this location to prevent duplicate fetching
-    const { data: activeJob } = await supabase
-      .from('event_fetch_jobs')
-      .select('*')
-      .eq('location_lat', latitude)
-      .eq('location_lng', longitude)
-      .eq('status', 'running')
-      .maybeSingle();
+    console.log(`Insufficient cached events (${nearbyEvents.length}), fetching fresh events for location`);
 
-    if (activeJob) {
-      console.log('Fetch job already running for this location');
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          events: cachedEvents || [],
-          message: 'Events are being fetched, showing cached results',
-          source: 'cache'
-        }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
+    // Only check for active jobs if we already have some events (to prevent duplicate refresh)
+    // Skip job check when no events exist to allow immediate fetching
+    if (nearbyEvents.length > 0) {
+      const { data: activeJob } = await supabase
+        .from('event_fetch_jobs')
+        .select('*')
+        .eq('location_lat', latitude)
+        .eq('location_lng', longitude)
+        .eq('status', 'running')
+        .maybeSingle();
+
+      if (activeJob) {
+        console.log('Fetch job already running for this location, returning existing events');
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            events: nearbyEvents,
+            message: 'Events are being refreshed, showing current results',
+            source: 'cache'
+          }),
+          { 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
     }
 
     // Create new fetch job
