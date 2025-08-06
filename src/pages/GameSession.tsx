@@ -12,8 +12,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useCoupleData } from '@/hooks/useCoupleData';
 import { toast } from 'sonner';
 
-// Import new romantic game components
-import { CouplesCardGame } from '@/components/GameComponents/CouplesCardGame';
+// Import romantic game components
 import { TicToeHeartGame } from '@/components/GameComponents/TicToeHeartGame';
 import { TruthOrDareCouplesGame } from '@/components/GameComponents/TruthOrDareCouplesGame';
 
@@ -212,12 +211,7 @@ export const GameSession = () => {
       />
       
       <div className="max-w-md mx-auto p-4 space-y-6">
-        {/* Card Deck Game */}
-        {(session.card_games.game_type === 'couples_cards' || session.card_games.game_type === 'couples_card_game') && (
-          <CouplesCardGame
-            sessionId={sessionId!}
-          />
-        )}
+        {/* Card Deck Game - Removed */}
         
         {session.card_games.game_type === 'tic_toe_heart' && (
           <TicToeHeartGame
@@ -237,14 +231,14 @@ export const GameSession = () => {
         )}
 
         {/* Fallback for unsupported games */}
-        {!['couples_cards', 'couples_card_game', 'tic_toe_heart', 'truth_or_dare_couples'].includes(session.card_games.game_type) && (
+        {!['tic_toe_heart', 'truth_or_dare_couples'].includes(session.card_games.game_type) && (
           <Card>
             <CardHeader>
               <CardTitle>Game Not Yet Supported</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground mb-4">
-                This game type ({session.card_games.game_type}) is not yet fully implemented with the new romantic game suite.
+                This game type ({session.card_games.game_type}) is not yet supported.
               </p>
               <Button onClick={() => navigate('/games')} variant="outline">
                 Back to Games
