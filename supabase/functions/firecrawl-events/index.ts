@@ -45,7 +45,7 @@ serve(async (req) => {
 
     const { latitude, longitude, radiusKm = 25, city, query }: FirecrawlEventsRequest = await req.json();
     
-    console.log(`Firecrawl events search for: ${city || `${latitude}, ${longitude}`}, radius: ${radiusKm}km`);
+    console.log(`🔥 Firecrawl events search for: ${city || `${latitude}, ${longitude}`}, radius: ${radiusKm}km`);
 
     const firecrawlApiKey = Deno.env.get('FIRECRAWL_API_KEY');
     if (!firecrawlApiKey) {
@@ -77,7 +77,7 @@ serve(async (req) => {
       return distance <= radiusKm;
     }) || [];
 
-    console.log(`Found ${nearbyEvents.length} cached events`);
+    console.log(`📚 Found ${nearbyEvents.length} cached events`);
 
     // If we have good cache, return it
     if (nearbyEvents.length >= 5) {
@@ -96,7 +96,7 @@ serve(async (req) => {
     const events: EventData[] = [];
     
     // Strategy 1: Health check with simple API test
-    console.log('Testing Firecrawl API connection...');
+    console.log('🔍 Testing Firecrawl API connection...');
     try {
       const healthCheck = await fetch('https://api.firecrawl.dev/v1/crawl', {
         method: 'POST',
@@ -113,7 +113,7 @@ serve(async (req) => {
       });
       
       if (healthCheck.ok) {
-        console.log('Firecrawl API is accessible');
+        console.log('✅ Firecrawl API is accessible');
       } else {
         const errorText = await healthCheck.text().catch(() => 'Unknown error');
         console.log(`Firecrawl API health check failed: ${healthCheck.status} - ${errorText}`);
@@ -147,7 +147,7 @@ serve(async (req) => {
     for (const strategy of searchStrategies) {
       if (events.length >= 10) break; // Stop if we have enough events
       
-      console.log(`Trying strategy: ${strategy.name}`);
+      console.log(`🎯 Trying strategy: ${strategy.name}`);
       
       try {
         let firecrawlResponse;
