@@ -58,9 +58,11 @@ export const GameCard: React.FC<GameCardProps> = ({
   useEffect(() => {
     if (!card || !sessionId) return;
     
-    console.log(`🔍 Setting up response subscription for card ${card.id}`);
+    console.log(`🔍 Setting up response subscription for card ${card.id}, response_type: ${card.response_type}`);
     
     const fetchPartnerResponse = async () => {
+      console.log(`📡 Fetching partner responses for session: ${sessionId}, card: ${card.id}, excluding user: ${userId}`);
+      
       const { data, error } = await supabase
         .from('card_responses')
         .select('*')
@@ -68,60 +70,90 @@ export const GameCard: React.FC<GameCardProps> = ({
         .eq('card_id', card.id)
         .neq('user_id', userId);
       
+      if (error) {
+        console.error('❌ Error fetching partner responses:', error);
+        return;
+      }
+      
       console.log('📨 Fetched partner responses:', data);
       
       if (data && data.length > 0) {
-        const latestResponse = data[0];
+        const latestResponse = data[data.length - 1]; // Get latest response
+        console.log('✅ Found partner response:', latestResponse);
         setPartnerResponse(latestResponse);
         setShowResponse(true);
         
         // Auto-dismiss after 10 seconds
         if (responseDismissTimer) clearTimeout(responseDismissTimer);
         const timer = setTimeout(() => {
+          console.log('⏰ Auto-dismissing partner response');
           setShowResponse(false);
         }, 10000);
         setResponseDismissTimer(timer);
+      } else {
+        console.log('📭 No partner responses found');
       }
     };
 
     fetchPartnerResponse();
 
-    // Subscribe to new responses for this specific card
+    // Subscribe to new responses - use a broader subscription
+    const channelName = `card-responses-${sessionId}`;
+    console.log(`🔔 Creating subscription channel: ${channelName}`);
+    
     const channel = supabase
-      .channel(`card-responses-${sessionId}-${card.id}`)
+      .channel(channelName)
       .on('postgres_changes', 
         { 
           event: 'INSERT', 
           schema: 'public', 
-          table: 'card_responses',
-          filter: `session_id=eq.${sessionId},card_id=eq.${card.id}`
+          table: 'card_responses'
         }, 
         (payload) => {
-          console.log('🎉 New response received:', payload);
-          if (payload.new.user_id !== userId) {
+          console.log('🎉 Real-time response received:', payload);
+          console.log('Response details:', {
+            sessionId: payload.new.session_id,
+            cardId: payload.new.card_id,
+            userId: payload.new.user_id,
+            currentSessionId: sessionId,
+            currentCardId: card.id,
+            currentUserId: userId
+          });
+          
+          // Check if this response is for the current card and session, and from the partner
+          if (payload.new.session_id === sessionId && 
+              payload.new.card_id === card.id && 
+              payload.new.user_id !== userId) {
+            
+            console.log('✅ Response matches current context, showing to partner');
             setPartnerResponse(payload.new);
             setShowResponse(true);
             
             // Auto-dismiss after 10 seconds
             if (responseDismissTimer) clearTimeout(responseDismissTimer);
             const timer = setTimeout(() => {
+              console.log('⏰ Auto-dismissing partner response');
               setShowResponse(false);
             }, 10000);
             setResponseDismissTimer(timer);
             
             // Show toast notification
             toast.success("Partner completed the task! 🎉");
+          } else {
+            console.log('❌ Response does not match current context');
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log(`📡 Subscription status for ${channelName}:`, status);
+      });
 
     return () => {
       console.log(`🧹 Cleaning up subscription for card ${card.id}`);
       supabase.removeChannel(channel);
       if (responseDismissTimer) clearTimeout(responseDismissTimer);
     };
-  }, [card?.id, sessionId, userId, responseDismissTimer]);
+  }, [card?.id, sessionId, userId]);
 
   // Clean up timer on unmount
   useEffect(() => {
