@@ -104,14 +104,6 @@ export const GameCard: React.FC<GameCardProps> = ({
         
         setPartnerResponse(latestResponse);
         setShowResponse(true);
-        
-        // Auto-dismiss after 15 seconds
-        if (responseDismissTimer) clearTimeout(responseDismissTimer);
-        const timer = setTimeout(() => {
-          console.log('⏰ Auto-dismissing partner response');
-          setShowResponse(false);
-        }, 15000);
-        setResponseDismissTimer(timer);
       } else {
         console.log('📭 No partner responses found');
         setPartnerResponse(null);
@@ -154,14 +146,6 @@ export const GameCard: React.FC<GameCardProps> = ({
             console.log('✅ Response matches current context, showing to partner');
             setPartnerResponse(payload.new);
             setShowResponse(true);
-            
-            // Auto-dismiss after 15 seconds for better visibility
-            if (responseDismissTimer) clearTimeout(responseDismissTimer);
-            const timer = setTimeout(() => {
-              console.log('⏰ Auto-dismissing partner response');
-              setShowResponse(false);
-            }, 15000);
-            setResponseDismissTimer(timer);
             
             // Show toast notification
             const responseTypeText = payload.new.response_type === 'text' ? 'sent a message' : 
@@ -427,8 +411,7 @@ export const GameCard: React.FC<GameCardProps> = ({
               <p className="text-green-800 font-medium whitespace-pre-wrap text-sm leading-relaxed">
                 "{partnerResponse.response_text}"
               </p>
-              <div className="mt-3 text-xs text-green-600 flex items-center justify-between">
-                <span>⏰ Auto-dismiss in 15s</span>
+              <div className="mt-3 text-xs text-green-600 text-center">
                 <span>Click × to close</span>
               </div>
             </div>
