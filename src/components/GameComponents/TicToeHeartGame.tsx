@@ -588,7 +588,7 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
         .from('love_grants')
         .insert({
           couple_id: coupleData.id,
-          winner_user_id: user.id,
+          winner_user_id: grant.winner_user_id, // 🎯 FIX: Use the actual winner from grant
           winner_name: grant.winner_name,
           winner_symbol: grant.winner_symbol,
           request_text: grant.request_text,
@@ -789,15 +789,28 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
   const handleLoveGrantSubmit = async () => {
     if (!winnerReward.trim() || !gameState || !user?.id || !coupleData?.id) return;
 
+    // 🎯 FIX: Use the actual winner_id from gameState, not always the current user
+    const actualWinnerId = gameState.winner_id;
+    const actualWinnerSymbol = getUserSymbol(actualWinnerId || '');
+    const actualWinnerName = actualWinnerId === user.id 
+      ? getUserDisplayName() || 'You'
+      : getPartnerDisplayName() || 'Your Partner';
+
     const loveGrant: Omit<LoveGrant, 'id' | 'created_at'> = {
       couple_id: coupleData.id,
-      winner_user_id: user.id,
-      winner_name: getUserDisplayName() || 'You',
-      winner_symbol: userSymbol,
+      winner_user_id: actualWinnerId || user.id, // Use actual winner
+      winner_name: actualWinnerName,
+      winner_symbol: actualWinnerSymbol,
       request_text: winnerReward.trim(),
       game_session_id: sessionId,
       status: 'pending'
     };
+
+    console.log('🎯 Creating Love Grant for actual winner:', {
+      actualWinnerId,
+      currentUserId: user.id,
+      loveGrant
+    });
 
     await saveLoveGrant(loveGrant);
     setShowLoveGrant(false);
