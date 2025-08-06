@@ -30,10 +30,18 @@ export const CardDeckGame: React.FC = () => {
 
   // Auto-draw card when it's my turn and no current card
   useEffect(() => {
+    console.log('Auto-draw check:', {
+      isMyTurn,
+      currentCard: !!currentCard,
+      gameStatus: gameState?.status,
+      sessionId
+    });
+    
     if (isMyTurn && !currentCard && gameState?.status === 'active') {
+      console.log('Auto-drawing card for user turn');
       actions.drawCard();
     }
-  }, [isMyTurn, currentCard, gameState?.status, actions]);
+  }, [isMyTurn, currentCard, gameState?.status, actions, sessionId]);
 
   // Reset card revealed state when turn changes
   useEffect(() => {
