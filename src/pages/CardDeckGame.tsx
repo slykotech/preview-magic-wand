@@ -134,6 +134,7 @@ export const CardDeckGame: React.FC = () => {
               onSkip={actions.skipCard}
               onFavorite={actions.favoriteCard}
               disabled={!isMyTurn || gameState.status !== 'active'}
+              canInteract={isMyTurn && gameState.status === 'active'}
               skipsRemaining={stats.skipsRemaining}
             />
           ) : (

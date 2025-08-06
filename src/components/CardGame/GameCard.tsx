@@ -27,6 +27,7 @@ interface GameCardProps {
   onFavorite: () => void;
   disabled: boolean;
   skipsRemaining: number;
+  canInteract: boolean; // New prop to control if user can interact with controls
 }
 
 export const GameCard: React.FC<GameCardProps> = ({ 
@@ -37,7 +38,8 @@ export const GameCard: React.FC<GameCardProps> = ({
   onSkip, 
   onFavorite, 
   disabled, 
-  skipsRemaining 
+  skipsRemaining,
+  canInteract = true
 }) => {
   const [response, setResponse] = useState('');
   const [showTimer, setShowTimer] = useState(false);
@@ -45,8 +47,9 @@ export const GameCard: React.FC<GameCardProps> = ({
   const [startTime] = useState(Date.now());
 
   const handleReveal = () => {
-    if (!disabled) {
-      onReveal();
+    // Anyone can reveal the card to see it
+    onReveal();
+    if (canInteract) {
       setShowTimer(true);
     }
   };
@@ -89,6 +92,8 @@ export const GameCard: React.FC<GameCardProps> = ({
         Revealed: {isRevealed ? 'Yes' : 'No'}
         <br />
         Disabled: {disabled ? 'Yes' : 'No'}
+        <br />
+        Can Interact: {canInteract ? 'Yes' : 'No'}
         <br />
         Show Timer: {showTimer ? 'Yes' : 'No'}
       </div>
@@ -224,8 +229,8 @@ export const GameCard: React.FC<GameCardProps> = ({
         </div>
       </div>
 
-      {/* Timer and Controls */}
-      {isRevealed && card && showTimer && (
+      {/* Timer and Controls - Only show for active player */}
+      {isRevealed && card && showTimer && canInteract && (
         <div className="space-y-4">
           {/* Timer */}
           <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
@@ -245,7 +250,7 @@ export const GameCard: React.FC<GameCardProps> = ({
                 {timerPaused ? '▶️ Resume' : '⏸️ Pause'}
               </Button>
               
-              {card.intimacy_level >= 4 && skipsRemaining > 0 && (
+              {card.intimacy_level >= 4 && skipsRemaining > 0 && canInteract && (
                 <Button
                   variant="destructive"
                   size="sm"
@@ -257,16 +262,18 @@ export const GameCard: React.FC<GameCardProps> = ({
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex gap-3 justify-center">
-            <Button
-              onClick={handleComplete}
-              className="px-6 py-3 bg-gradient-to-r from-primary to-purple-500 font-semibold"
-              size="lg"
-            >
-              Complete Turn
-            </Button>
-          </div>
+          {/* Action Buttons - Only show for active player */}
+          {canInteract && (
+            <div className="flex gap-3 justify-center">
+              <Button
+                onClick={handleComplete}
+                className="px-6 py-3 bg-gradient-to-r from-primary to-purple-500 font-semibold"
+                size="lg"
+              >
+                Complete Turn
+              </Button>
+            </div>
+          )}
         </div>
       )}
     </div>
