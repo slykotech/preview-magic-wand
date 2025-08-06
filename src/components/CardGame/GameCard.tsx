@@ -69,10 +69,12 @@ export const GameCard: React.FC<GameCardProps> = ({
       willClearResponse: currentCardId && currentCardId !== card.id
     });
     
-    // DON'T clear previous response when card changes - let it persist until manually dismissed
-    // This allows responses to stay visible across card transitions
+    // Clear previous response when card changes - responses should only be for current card
     if (currentCardId && currentCardId !== card.id) {
-      console.log(`📋 Card changed from ${currentCardId} to ${card.id}, but keeping response visible`);
+      console.log(`📋 Card changed from ${currentCardId} to ${card.id}, clearing previous response`);
+      setPartnerResponse(null);
+      setShowResponse(false);
+      setPersistentResponses(new Map()); // Clear all stored responses
     }
     setCurrentCardId(card.id);
     
@@ -124,7 +126,9 @@ export const GameCard: React.FC<GameCardProps> = ({
         console.log('🔥 PARTNER RESPONSE SET - SHOULD BE VISIBLE NOW!');
       } else {
         console.log('📭 No partner responses found for this card');
-        // Don't clear existing responses here - only clear when card changes
+        // Clear response state when no responses found for current card
+        setPartnerResponse(null);
+        setShowResponse(false);
       }
     };
 
@@ -161,11 +165,12 @@ export const GameCard: React.FC<GameCardProps> = ({
             isFromPartner: payload.new.user_id !== userId
           });
           
-          // Show ANY partner response from this session IMMEDIATELY
+          // Show ONLY responses for the current card
           if (payload.new.session_id === sessionId && 
-              payload.new.user_id !== userId) {
+              payload.new.user_id !== userId &&
+              payload.new.card_id === card.id) {
             
-            console.log('🚨 SHOWING PARTNER RESPONSE IMMEDIATELY!');
+            console.log('🚨 SHOWING PARTNER RESPONSE FOR CURRENT CARD!');
             console.log(`📋 Response for card: ${payload.new.card_id}, Current card: ${card.id}`);
             
             // Store in persistent responses map for this card
@@ -176,10 +181,10 @@ export const GameCard: React.FC<GameCardProps> = ({
               return newMap;
             });
             
-            // Show the response immediately regardless of current card
+            // Show the response only if it's for the current card
             setPartnerResponse(payload.new);
             setShowResponse(true);
-            console.log('🔥 PARTNER RESPONSE STATE SET - USER 2 SHOULD SEE THIS NOW!');
+            console.log('🔥 PARTNER RESPONSE STATE SET FOR CURRENT CARD!');
             
             // Show toast notification
             const responseTypeText = payload.new.response_type === 'text' ? 'sent a message' : 
@@ -187,12 +192,15 @@ export const GameCard: React.FC<GameCardProps> = ({
                                    'completed the task';
             toast.success(`Partner ${responseTypeText}! 🎉`);
           } else {
-            console.log('❌ Response is from same user or different session');
+            console.log('❌ Response is not for current card or from same user');
             console.log('Details:', {
               sameSession: payload.new.session_id === sessionId,
               differentUser: payload.new.user_id !== userId,
               responseUserId: payload.new.user_id,
-              currentUserId: userId
+              currentUserId: userId,
+              responseCardId: payload.new.card_id,
+              currentCardId: card.id,
+              isCurrentCard: payload.new.card_id === card.id
             });
           }
         }
@@ -204,45 +212,16 @@ export const GameCard: React.FC<GameCardProps> = ({
         }
       });
 
-    // Fallback: Poll for responses every 2 seconds if real-time fails
-    const pollInterval = setInterval(async () => {
-      console.log('🔄 Polling for recent responses (fallback)');
-      
-      const { data: recentResponses, error } = await supabase
-        .from('card_responses')
-        .select('*')
-        .eq('session_id', sessionId)
-        .neq('user_id', userId)
-        .gt('responded_at', new Date(Date.now() - 10000).toISOString()) // Last 10 seconds
-        .order('responded_at', { ascending: false })
-        .limit(1);
-      
-      if (!error && recentResponses && recentResponses.length > 0) {
-        const latestResponse = recentResponses[0];
-        console.log('📡 Found recent response via polling:', latestResponse);
-        
-        // Check if we already have this response
-        if (!persistentResponses.has(latestResponse.card_id) || 
-            persistentResponses.get(latestResponse.card_id)?.id !== latestResponse.id) {
-          
-          console.log('🆕 New response found via polling - showing!');
-          setPersistentResponses(prev => {
-            const newMap = new Map(prev);
-            newMap.set(latestResponse.card_id, latestResponse);
-            return newMap;
-          });
-          
-          setPartnerResponse(latestResponse);
-          setShowResponse(true);
-          // Remove duplicate toast - already handled by real-time subscription
-        }
-      }
-    }, 2000);
+    // Disable fallback polling since real-time subscriptions are working
+    // The constant polling was causing unnecessary network requests
+    // and the real-time subscription handles response detection properly
+    
+    // Note: If real-time issues occur in production, re-enable this with 
+    // proper duplicate detection logic
 
     return () => {
       console.log(`🧹 Cleaning up subscription for card ${card.id}`);
       supabase.removeChannel(channel);
-      clearInterval(pollInterval);
       if (responseDismissTimer) clearTimeout(responseDismissTimer);
     };
   }, [sessionId, userId]); // Only depend on session and user, NOT card ID
