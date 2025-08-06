@@ -795,6 +795,7 @@ export type Database = {
           relationship_stage: string[] | null
           requires_action: boolean | null
           requires_physical_presence: boolean | null
+          response_type: string | null
           special_occasions: string[] | null
           subcategory: string
           timer_category: string
@@ -815,6 +816,7 @@ export type Database = {
           relationship_stage?: string[] | null
           requires_action?: boolean | null
           requires_physical_presence?: boolean | null
+          response_type?: string | null
           special_occasions?: string[] | null
           subcategory: string
           timer_category: string
@@ -835,6 +837,7 @@ export type Database = {
           relationship_stage?: string[] | null
           requires_action?: boolean | null
           requires_physical_presence?: boolean | null
+          response_type?: string | null
           special_occasions?: string[] | null
           subcategory?: string
           timer_category?: string
