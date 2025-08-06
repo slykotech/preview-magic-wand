@@ -140,17 +140,20 @@ serve(async (req) => {
           place.location_context?.city?.toLowerCase().includes(cityName.toLowerCase()) ||
           place.location_context?.search_city?.toLowerCase().includes(cityName.toLowerCase()) ||
           place.address?.toLowerCase().includes(cityName.toLowerCase());
-        return actualDistance <= 100 && cityMatch;
+        return actualDistance <= 100 && cityMatch; // Updated to 100km radius
       });
       
       console.log(`Found ${existingPlaces.length} places from database, ${validPlaces.length} are valid for ${cityName || 'this location'}`);
+      
+      // For new cities with no data, return empty to trigger API call
+      if (cityName && validPlaces.length === 0) {
+        console.log(`No places found for ${cityName} in database, will fetch from API`);
+      }
     }
 
-    // PROGRESSIVE LOADING: Return database results immediately if any exist, then fetch more from API
-    const shouldFetchFromAPI = !validPlaces || validPlaces.length < 25; // Increased threshold from 10 to 25
-    
-    if (validPlaces && validPlaces.length > 0 && !shouldFetchFromAPI) {
-      console.log(`Returning ${validPlaces.length} places from database (sufficient) for ${cityName || 'this location'}`);
+    // If we have enough valid places from database, return them
+    if (validPlaces && validPlaces.length >= 10) {
+      console.log(`Returning ${validPlaces.length} places from database for ${cityName || 'this location'}`);
       return new Response(JSON.stringify({ 
         success: true,
         places: validPlaces.map((place: any) => ({
@@ -173,43 +176,13 @@ serve(async (req) => {
       });
     }
 
-    // Return immediate results if we have some, indicating more are loading
-    if (validPlaces && validPlaces.length > 0) {
-      console.log(`Returning ${validPlaces.length} initial places from database, fetching more from API...`);
-      
-      // Start API fetch in background but return database results first
-      const dbResponse = new Response(JSON.stringify({ 
-        success: true,
-        places: validPlaces.map((place: any) => ({
-          id: place.google_place_id,
-          name: place.name,
-          address: place.address,
-          rating: parseFloat(place.rating) || 0,
-          priceLevel: place.price_level,
-          latitude: place.latitude,
-          longitude: place.longitude,
-          types: place.place_types,
-          photoReference: place.photo_references?.[0],
-          isOpen: place.is_open,
-          distance: parseFloat(place.distance_km)
-        })),
-        total: validPlaces.length,
-        source: 'database_partial',
-        hasMore: true // Indicate more results are being fetched
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-      
-      return dbResponse;
-    }
-
     // If not enough places in database or wrong city, fetch from Google Places API
     console.log(`Fetching from Google Places API for ${cityName || 'this location'}...`);
     
     // Get place types for the category, filtered for date-appropriate venues
     const placeTypes = category && PLACE_TYPES[category as keyof typeof PLACE_TYPES] 
-      ? PLACE_TYPES[category as keyof typeof PLACE_TYPES].slice(0, 2) // Reduced to 2 types for faster loading
-      : DATE_APPROPRIATE_TYPES.slice(0, 2); // Reduced to 2 for faster loading
+      ? PLACE_TYPES[category as keyof typeof PLACE_TYPES].slice(0, 3) // Limit category searches to 3 types
+      : DATE_APPROPRIATE_TYPES.slice(0, 3); // Reduced to 3 for faster loading
 
     const allPlaces: any[] = [];
 
@@ -229,7 +202,7 @@ serve(async (req) => {
         const data = await response.json();
         
         if (data.status === 'OK' && data.results) {
-          return data.results.slice(0, 15); // Reduced to 15 results per type for faster processing
+          return data.results.slice(0, 20); // Limit each type to 20 results for faster processing
         }
         return [];
       } catch (error) {
