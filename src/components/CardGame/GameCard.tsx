@@ -282,12 +282,22 @@ export const GameCard: React.FC<GameCardProps> = ({
       {/* Partner Response Display */}
       {showResponse && partnerResponse && (
         <div className="mt-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200 shadow-sm">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-lg">👤</span>
-            <h3 className="font-semibold text-green-800">Partner's Response:</h3>
-            <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">
-              {new Date(partnerResponse.responded_at).toLocaleTimeString()}
-            </span>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <span className="text-lg">👤</span>
+              <h3 className="font-semibold text-green-800">Partner's Response:</h3>
+              <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">
+                {new Date(partnerResponse.responded_at).toLocaleTimeString()}
+              </span>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowResponse(false)}
+              className="text-green-600 hover:text-green-800 h-6 w-6 p-0"
+            >
+              ✕
+            </Button>
           </div>
           {partnerResponse.response_type === 'text' && (
             <div className="bg-white p-3 rounded-md border border-green-100">

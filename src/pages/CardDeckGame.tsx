@@ -215,11 +215,13 @@ export const CardDeckGame: React.FC = () => {
         )}
         
         {/* Task History Modal */}
-        <TaskHistory 
-          sessionId={sessionId || ''} 
-          isOpen={showHistory} 
-          onClose={() => setShowHistory(false)} 
-        />
+        {showHistory && (
+          <TaskHistory 
+            sessionId={sessionId || ''} 
+            isOpen={showHistory} 
+            onClose={() => setShowHistory(false)} 
+          />
+        )}
       </div>
     </div>
   );
