@@ -1,13 +1,13 @@
 import { useState } from 'react';
-import { useEnhancedSubscription } from './useEnhancedSubscription';
+import { useSubscription } from './useSubscription';
 
 export const useSubscriptionGate = () => {
-  const { shouldPromptSubscription } = useEnhancedSubscription();
+  const { subscriptionInfo } = useSubscription();
   const [showPrompt, setShowPrompt] = useState(false);
   const [promptFeature, setPromptFeature] = useState<string>();
 
   const checkFeatureAccess = (featureName?: string): boolean => {
-    if (shouldPromptSubscription()) {
+    if (!subscriptionInfo.isLoading && !subscriptionInfo.isActive) {
       setPromptFeature(featureName);
       setShowPrompt(true);
       return false;

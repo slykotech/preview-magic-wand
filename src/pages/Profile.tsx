@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { SyncScoreBreakdown } from "@/components/SyncScoreBreakdown";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { GradientHeader } from "@/components/GradientHeader";
-import { SubscriptionSection } from "@/components/SubscriptionSection";
+import { SubscriptionManager } from "@/components/subscription/SubscriptionManager";
 import { User, Heart, Settings, Award, Calendar, LogOut, ChevronRight, Crown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -296,7 +296,11 @@ export const Profile = () => {
 
         {/* Subscription Section */}
         <div className="space-y-2">
-          <SubscriptionSection />
+          <h2 className="text-lg font-extrabold font-poppins text-foreground mb-4">
+            <Crown className="inline w-5 h-5 mr-2 text-primary" />
+            Subscription
+          </h2>
+          <SubscriptionManager onPlanChange={fetchProfileData} />
         </div>
 
         {/* Settings Section */}
