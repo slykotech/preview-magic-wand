@@ -71,6 +71,7 @@ export const SweetSuggestions: React.FC<SweetSuggestionsProps> = ({
   // Auto-detect location and search on component mount
   useEffect(() => {
     if (!location && !isGettingLocation) {
+      setIsManualLocation(false);
       getCurrentLocation();
     }
   }, []);
