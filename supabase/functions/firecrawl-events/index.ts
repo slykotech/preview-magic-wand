@@ -131,22 +131,64 @@ serve(async (req) => {
 
     // Strategy 2: Try multiple targeted searches with retry logic
     const searchStrategies = [
-      // Strategy A: Direct event platform scraping
+      // Strategy A: Indian Event Platforms - Direct scraping
+      {
+        name: 'BookMyShow Events',
+        url: `https://in.bookmyshow.com/${(city || 'mumbai').toLowerCase().replace(/\s+/g, '-')}/events`,
+        method: 'scrape',
+        query: `site:bookmyshow.com events ${city} concerts shows movies entertainment`
+      },
+      {
+        name: 'Paytm Insider Events',
+        url: `https://insider.in/${(city || 'mumbai').toLowerCase()}`,
+        method: 'scrape',
+        query: `site:insider.in ${city} events parties workshops experiences`
+      },
+      {
+        name: 'Zomato District Events',
+        url: `https://www.zomato.com/${(city || 'mumbai').toLowerCase()}/events`,
+        method: 'scrape',
+        query: `site:zomato.com ${city} events food festivals dining experiences`
+      },
+      // Strategy B: International Platforms
       {
         name: 'Eventbrite Search',
         url: 'https://www.eventbrite.com/d/' + (city || 'new-york').toLowerCase().replace(/\s+/g, '-') + '/events/',
-        method: 'scrape'
+        method: 'scrape',
+        query: `site:eventbrite.com events ${city} concerts shows workshops`
       },
-      // Strategy B: General search
       {
-        name: 'General Events Search',
-        query: `events ${city} concerts shows festivals entertainment`,
+        name: 'Meetup Events',
+        query: `site:meetup.com ${city} events meetups networking community`,
         method: 'search'
       },
-      // Strategy C: Cultural events
+      {
+        name: 'Facebook Events',
+        query: `site:facebook.com/events ${city} local events community gatherings`,
+        method: 'search'
+      },
+      // Strategy C: Local Event Apps Search
+      {
+        name: 'Local Event Apps',
+        query: `${city} events tickets booking allevents townscript explara meraevents`,
+        method: 'search'
+      },
+      // Strategy D: General search
+      {
+        name: 'General Events Search',
+        query: `events ${city} concerts shows festivals entertainment today weekend`,
+        method: 'search'
+      },
+      // Strategy E: Cultural events
       {
         name: 'Cultural Events',
-        query: `${city} music art theater cultural events today weekend`,
+        query: `${city} music art theater cultural events exhibitions performances`,
+        method: 'search'
+      },
+      // Strategy F: Platform-specific searches
+      {
+        name: 'All Events Search',
+        query: `${city} events happening today weekend concerts shows workshops festivals`,
         method: 'search'
       }
     ];
@@ -382,21 +424,80 @@ function extractTitle(text: string): string | null {
 }
 
 function extractDate(text: string): string | null {
-  // Look for date patterns
+  // Look for date patterns - including Indian formats
   const datePatterns = [
+    // Indian DD/MM/YYYY format
     /(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/,
-    /(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{1,2}/i,
-    /(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\s+\d{1,2}/i
+    // US MM/DD/YYYY format  
+    /(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/,
+    // ISO format YYYY-MM-DD
+    /(\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2})/,
+    // Full month names
+    /(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{1,2}(?:st|nd|rd|th)?,?\s*\d{2,4}/i,
+    // Short month names
+    /(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\s+\d{1,2}(?:st|nd|rd|th)?,?\s*\d{2,4}/i,
+    // Day Month format (common in India)
+    /\d{1,2}(?:st|nd|rd|th)?\s+(january|february|march|april|may|june|july|august|september|october|november|december)/i,
+    /\d{1,2}(?:st|nd|rd|th)?\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i,
+    // Relative dates
+    /(today|tomorrow|this\s+weekend|next\s+week|this\s+week)/i,
+    // Day of week patterns
+    /(monday|tuesday|wednesday|thursday|friday|saturday|sunday)/i
   ];
   
   for (const pattern of datePatterns) {
     const match = text.match(pattern);
     if (match) {
       try {
-        const date = new Date(match[0]);
+        let dateString = match[0];
+        
+        // Handle relative dates
+        if (dateString.toLowerCase().includes('today')) {
+          return new Date().toISOString();
+        }
+        if (dateString.toLowerCase().includes('tomorrow')) {
+          const tomorrow = new Date();
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          return tomorrow.toISOString();
+        }
+        if (dateString.toLowerCase().includes('this weekend')) {
+          const saturday = new Date();
+          saturday.setDate(saturday.getDate() + (6 - saturday.getDay()));
+          return saturday.toISOString();
+        }
+        if (dateString.toLowerCase().includes('next week')) {
+          const nextWeek = new Date();
+          nextWeek.setDate(nextWeek.getDate() + 7);
+          return nextWeek.toISOString();
+        }
+        
+        // Try to parse the date
+        const date = new Date(dateString);
         if (!isNaN(date.getTime())) {
+          // Ensure future date
+          if (date.getTime() < Date.now()) {
+            date.setFullYear(date.getFullYear() + 1);
+          }
           return date.toISOString();
         }
+        
+        // Try DD/MM/YYYY format (Indian style)
+        const ddmmyyyy = dateString.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
+        if (ddmmyyyy) {
+          const day = parseInt(ddmmyyyy[1]);
+          const month = parseInt(ddmmyyyy[2]) - 1; // JS months are 0-indexed
+          const year = parseInt(ddmmyyyy[3]);
+          const parsedDate = new Date(year < 100 ? 2000 + year : year, month, day);
+          
+          if (!isNaN(parsedDate.getTime()) && day <= 31 && month < 12) {
+            // Ensure future date
+            if (parsedDate.getTime() < Date.now()) {
+              parsedDate.setFullYear(parsedDate.getFullYear() + 1);
+            }
+            return parsedDate.toISOString();
+          }
+        }
+        
       } catch (e) {
         // Continue to next pattern
       }
@@ -460,15 +561,37 @@ function extractDescription(text: string): string {
 
 function extractLocation(text: string): string | null {
   const locationPatterns = [
-    /(?:at|location|venue)[:\s]+(.+?)[\n\r]/i,
-    /(\d+\s+[^,\n]+(?:street|st|avenue|ave|boulevard|blvd|road|rd)[^,\n]*)/i,
-    /(downtown|midtown|uptown)\s+([^,\n]+)/i
+    // Explicit venue/location keywords
+    /(?:at|location|venue|address)[:\s]+(.+?)[\n\r]/i,
+    /(?:held at|taking place at|happening at)[:\s]+(.+?)[\n\r]/i,
+    
+    // Indian address patterns
+    /(\d+[^,\n]*(?:sector|block|phase)[^,\n]*)/i,
+    /([^,\n]*(?:marg|nagar|colony|vihar|enclave|plaza|mall|center|centre)[^,\n]*)/i,
+    /([^,\n]*(?:mumbai|delhi|bangalore|bengaluru|pune|hyderabad|chennai|kolkata|ahmedabad|gurgaon|noida)[^,\n]*)/i,
+    
+    // International address patterns  
+    /(\d+\s+[^,\n]+(?:street|st|avenue|ave|boulevard|blvd|road|rd|lane|ln|drive|dr)[^,\n]*)/i,
+    /(downtown|midtown|uptown|central|south|north|east|west)\s+([^,\n]+)/i,
+    
+    // Venue types
+    /([^,\n]*(?:auditorium|theater|theatre|arena|stadium|hall|center|centre|club|hotel|resort|garden|park|ground)[^,\n]*)/i,
+    /([^,\n]*(?:pvr|inox|phoenix|forum|select city|dlf|ambience|palladium)[^,\n]*)/i,
+    
+    // General location patterns
+    /([A-Z][^,\n]*(?:building|tower|complex|square|junction|circle|cross)[^,\n]*)/i
   ];
   
   for (const pattern of locationPatterns) {
     const match = text.match(pattern);
     if (match) {
-      return match[1].trim();
+      const location = match[1] ? match[1].trim() : match[0].trim();
+      // Clean up the location string
+      return location
+        .replace(/^(at|in|near|on)\s+/i, '') // Remove location prepositions
+        .replace(/[^\w\s,-]/g, '') // Remove special characters except commas and hyphens
+        .trim()
+        .substring(0, 100); // Limit length
     }
   }
   
@@ -477,19 +600,47 @@ function extractLocation(text: string): string | null {
 
 function extractPrice(text: string): string | null {
   const pricePatterns = [
+    // Indian Rupee patterns
+    /(?:price|cost|fee|admission|ticket)[:\s]*₹\s*(\d+(?:,\d{3})*(?:\.\d{2})?)/i,
+    /₹\s*(\d+(?:,\d{3})*(?:\.\d{2})?)/,
+    /(?:rs\.?|inr)[:\s]*(\d+(?:,\d{3})*(?:\.\d{2})?)/i,
+    /(\d+(?:,\d{3})*(?:\.\d{2})?\s*(?:rupees?|inr))/i,
+    // USD patterns
     /(?:price|cost|fee|admission)[:\s]*\$?(\d+(?:\.\d{2})?)/i,
     /\$(\d+(?:\.\d{2})?)/,
-    /(free|no charge|no cost|complimentary)/i,
-    /(\d+(?:\.\d{2})?\s*(?:dollars?|usd))/i
+    /(\d+(?:\.\d{2})?\s*(?:dollars?|usd))/i,
+    // Free patterns
+    /(free|no charge|no cost|complimentary|free entry|free admission)/i,
+    // Range patterns
+    /₹\s*(\d+(?:,\d{3})*)\s*-\s*₹?\s*(\d+(?:,\d{3})*)/i,
+    /\$(\d+)\s*-\s*\$?(\d+)/i
   ];
   
   for (const pattern of pricePatterns) {
     const match = text.match(pattern);
     if (match) {
-      if (match[1].toLowerCase().includes('free') || match[1].toLowerCase().includes('no')) {
+      if (match[0].toLowerCase().includes('free') || match[0].toLowerCase().includes('no charge') || match[0].toLowerCase().includes('complimentary')) {
         return 'Free';
       }
-      return match[1].includes('$') ? match[1] : `$${match[1]}`;
+      
+      // Handle range patterns
+      if (match[2]) {
+        if (match[0].includes('₹')) {
+          return `₹${match[1]} - ₹${match[2]}`;
+        } else {
+          return `$${match[1]} - $${match[2]}`;
+        }
+      }
+      
+      // Handle single price
+      if (match[0].includes('₹') || match[0].toLowerCase().includes('rs') || match[0].toLowerCase().includes('inr') || match[0].toLowerCase().includes('rupee')) {
+        return `₹${match[1]}`;
+      } else if (match[0].includes('$') || match[0].toLowerCase().includes('dollar') || match[0].toLowerCase().includes('usd')) {
+        return `$${match[1]}`;
+      } else {
+        // Default to rupees for Indian platforms
+        return `₹${match[1]}`;
+      }
     }
   }
   
