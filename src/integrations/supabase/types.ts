@@ -306,6 +306,8 @@ export type Database = {
           id: string
           last_activity_at: string | null
           played_cards: Json | null
+          response_dismissed_by_user1: boolean | null
+          response_dismissed_by_user2: boolean | null
           session_duration: unknown | null
           skipped_cards: Json | null
           started_at: string | null
@@ -334,6 +336,8 @@ export type Database = {
           id?: string
           last_activity_at?: string | null
           played_cards?: Json | null
+          response_dismissed_by_user1?: boolean | null
+          response_dismissed_by_user2?: boolean | null
           session_duration?: unknown | null
           skipped_cards?: Json | null
           started_at?: string | null
@@ -362,6 +366,8 @@ export type Database = {
           id?: string
           last_activity_at?: string | null
           played_cards?: Json | null
+          response_dismissed_by_user1?: boolean | null
+          response_dismissed_by_user2?: boolean | null
           session_duration?: unknown | null
           skipped_cards?: Json | null
           started_at?: string | null

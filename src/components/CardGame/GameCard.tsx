@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { SharedTimer } from './SharedTimer';
+import { ResponsePopup } from './ResponsePopup';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -54,201 +55,63 @@ export const GameCard: React.FC<GameCardProps> = ({
 }) => {
   const [response, setResponse] = useState('');
   const [photoResponse, setPhotoResponse] = useState<File | null>(null);
-  const [partnerResponse, setPartnerResponse] = useState<any>(null);
-  const [showResponse, setShowResponse] = useState(false);
-  const [responseDismissTimer, setResponseDismissTimer] = useState<NodeJS.Timeout | null>(null);
-  const [currentCardId, setCurrentCardId] = useState<string | null>(null);
-  const [persistentResponses, setPersistentResponses] = useState<Map<string, any>>(new Map());
+  const [showResponsePopup, setShowResponsePopup] = useState(false);
   const [blockAutoAdvance, setBlockAutoAdvance] = useState(false);
 
-  // Fetch partner response when card changes and setup real-time subscription
+  // Check if current user has dismissed the popup
+  const isUser1 = userId === gameState?.user1_id;
+  const hasDismissed = isUser1 
+    ? gameState?.response_dismissed_by_user1 
+    : gameState?.response_dismissed_by_user2;
+  
+  const hasResponse = !!gameState?.current_card_response;
+  const bothDismissed = gameState?.response_dismissed_by_user1 && gameState?.response_dismissed_by_user2;
+
+  // Show popup when there's a new response and user hasn't dismissed it
   useEffect(() => {
-    if (!card || !sessionId) return;
-    
-    console.log(`🔍 Setting up response subscription for card ${card.id}, response_type: ${card.response_type}`);
-    console.log(`🔄 Card change detected:`, {
-      currentCardId,
-      newCardId: card.id,
-      hasPartnerResponse: !!partnerResponse,
-      showResponse,
-      willClearResponse: currentCardId && currentCardId !== card.id
-    });
-    
-    // Clear previous response when card changes - responses should only be for current card
-    if (currentCardId && currentCardId !== card.id) {
-      console.log(`📋 Card changed from ${currentCardId} to ${card.id}, clearing previous response`);
-      setPartnerResponse(null);
-      setShowResponse(false);
-      setPersistentResponses(new Map()); // Clear all stored responses
+    if (hasResponse && !hasDismissed && gameState?.current_card_id === card?.id) {
+      console.log('🎉 Showing response popup:', {
+        hasResponse,
+        hasDismissed,
+        cardMatch: gameState?.current_card_id === card?.id
+      });
+      setShowResponsePopup(true);
+    } else {
+      setShowResponsePopup(false);
     }
-    setCurrentCardId(card.id);
+  }, [hasResponse, hasDismissed, gameState?.current_card_id, card?.id]);
     
-    const fetchPartnerResponse = async () => {
-      console.log(`📡 Fetching partner responses for session: ${sessionId}, card: ${card.id}, excluding user: ${userId}`);
-      
-      const { data, error } = await supabase
-        .from('card_responses')
-        .select('*')
-        .eq('session_id', sessionId)
-        .eq('card_id', card.id)
-        .neq('user_id', userId);
-      
-      if (error) {
-        console.error('❌ Error fetching partner responses:', error);
-        console.error('Response fetch error details:', {
-          code: error.code,
-          message: error.message,
-          details: error.details,
-          hint: error.hint
-        });
-        return;
-      }
-      
-      console.log('📨 Fetched partner responses:', data);
-      console.log('📋 Current state before processing:', {
-        sessionId,
-        cardId: card.id,
-        userId,
-        responseCount: data?.length || 0,
-        showResponse,
-        partnerResponse: !!partnerResponse,
-        currentCardId
-      });
-      
-      if (data && data.length > 0) {
-        const latestResponse = data[data.length - 1]; // Get latest response
-        console.log('✅ Found partner response:', latestResponse);
-        console.log('🎯 Setting partner response state:', {
-          responseId: latestResponse.id,
-          responseType: latestResponse.response_type,
-          responseText: latestResponse.response_text,
-          userId: latestResponse.user_id,
-          timestamp: latestResponse.responded_at
-        });
-        
-        setPartnerResponse(latestResponse);
-        setShowResponse(true);
-        console.log('🔥 PARTNER RESPONSE SET - SHOULD BE VISIBLE NOW!');
-      } else {
-        console.log('📭 No partner responses found for this card');
-        // Clear response state when no responses found for current card
-        setPartnerResponse(null);
-        setShowResponse(false);
-      }
-    };
-
-    fetchPartnerResponse();
-
-    // Subscribe to ALL responses for this session - not just current card
-    // This ensures User 2 sees User 1's response IMMEDIATELY when sent
-    const channelName = `session-responses-${sessionId}`;
-    console.log(`🔔 Creating session-wide subscription channel: ${channelName}`);
-    console.log(`🎯 USER 2 SETUP: Listening for responses from User 1 immediately!`);
-    console.log(`📋 Current User ID: ${userId}, Session: ${sessionId}`);
+  const handleDismissPopup = async () => {
+    console.log('💬 Dismissing response popup...');
     
-    const channel = supabase
-      .channel(channelName)
-      .on('postgres_changes', 
-        { 
-          event: 'INSERT', 
-          schema: 'public', 
-          table: 'card_responses',
-          filter: `session_id=eq.${sessionId}`
-        }, 
-        (payload) => {
-          console.log('🚨🚨🚨 REAL-TIME EVENT TRIGGERED! 🚨🚨🚨');
-          console.log('📡 FULL PAYLOAD:', JSON.stringify(payload, null, 2));
-          console.log('📊 Response details:', {
-            sessionId: payload.new.session_id,
-            cardId: payload.new.card_id,
-            userId: payload.new.user_id,
-            responseType: payload.new.response_type,
-            responseText: payload.new.response_text,
-            currentSessionId: sessionId,
-            currentCardId: card.id,
-            currentUserId: userId,
-            isFromPartner: payload.new.user_id !== userId
-          });
-          
-          // Show ONLY responses for the current card
-          if (payload.new.session_id === sessionId && 
-              payload.new.user_id !== userId &&
-              payload.new.card_id === card.id) {
-            
-            console.log('🚨 SHOWING PARTNER RESPONSE FOR CURRENT CARD!');
-            console.log(`📋 Response for card: ${payload.new.card_id}, Current card: ${card.id}`);
-            
-            // Store in persistent responses map for this card
-            setPersistentResponses(prev => {
-              const newMap = new Map(prev);
-              newMap.set(payload.new.card_id, payload.new);
-              console.log('💾 Stored response in persistent map for card:', payload.new.card_id);
-              return newMap;
-            });
-            
-            // Show the response only if it's for the current card
-            setPartnerResponse(payload.new);
-            setShowResponse(true);
-            setBlockAutoAdvance(true);
-            if (setParentBlockAutoAdvance) setParentBlockAutoAdvance(true); // Block auto-advance until response is dismissed
-            console.log('🔥 PARTNER RESPONSE STATE SET FOR CURRENT CARD! Auto-advance BLOCKED.');
-            
-            // Show toast notification
-            const responseTypeText = payload.new.response_type === 'text' ? 'sent a message' : 
-                                   payload.new.response_type === 'photo' ? 'shared a photo' : 
-                                   'completed the task';
-            toast.success(`Partner ${responseTypeText}! 🎉`);
-          } else {
-            console.log('❌ Response is not for current card or from same user');
-            console.log('Details:', {
-              sameSession: payload.new.session_id === sessionId,
-              differentUser: payload.new.user_id !== userId,
-              responseUserId: payload.new.user_id,
-              currentUserId: userId,
-              responseCardId: payload.new.card_id,
-              currentCardId: card.id,
-              isCurrentCard: payload.new.card_id === card.id
-            });
-          }
-        }
-      )
-      .subscribe((status) => {
-        console.log(`📡 Subscription status for ${channelName}:`, status);
-        if (status === 'SUBSCRIBED') {
-          console.log('✅ Real-time subscription is ACTIVE - User 2 should receive responses immediately!');
-        }
-      });
-
-    // Disable fallback polling since real-time subscriptions are working
-    // The constant polling was causing unnecessary network requests
-    // and the real-time subscription handles response detection properly
+    const dismissField = isUser1 
+      ? 'response_dismissed_by_user1' 
+      : 'response_dismissed_by_user2';
     
-    // Note: If real-time issues occur in production, re-enable this with 
-    // proper duplicate detection logic
+    const { error } = await supabase
+      .from("card_deck_game_sessions")
+      .update({
+        [dismissField]: true,
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", sessionId);
 
-    return () => {
-      console.log(`🧹 Cleaning up subscription for card ${card.id}`);
-      supabase.removeChannel(channel);
-      if (responseDismissTimer) clearTimeout(responseDismissTimer);
-    };
-  }, [sessionId, userId]); // Only depend on session and user, NOT card ID
-
-  // Clean up timer on unmount
-  useEffect(() => {
-    return () => {
-      if (responseDismissTimer) clearTimeout(responseDismissTimer);
-    };
-  }, [responseDismissTimer]);
+    if (error) {
+      console.error('❌ Failed to dismiss popup:', error);
+    } else {
+      setShowResponsePopup(false);
+      console.log('✅ Response popup dismissed');
+    }
+  };
 
   const handleReveal = () => {
     console.log('=== CARD REVEAL CLICKED ===');
-    console.log('Current state:', { 
-      isRevealed, 
-      isMyTurn, 
-      userId: userId,
-      currentTurn: gameState?.current_turn,
-      userIsCurrentTurn: userId === gameState?.current_turn
-    });
+    
+    // Block reveal if popup is open
+    if (showResponsePopup) {
+      console.log('❌ Card reveal blocked - popup is open');
+      return;
+    }
     
     if (isMyTurn && !isRevealed) {
       onReveal();
@@ -304,80 +167,113 @@ export const GameCard: React.FC<GameCardProps> = ({
   // Show card back if not revealed
   if (!isRevealed) {
     return (
-      <div className="space-y-4 max-w-2xl mx-auto">
-        <div className="card-scene">
-          <div className="sync-card">
-            <div 
-              className="card-face card-face--back"
-              onClick={handleReveal}
-            >
-              <svg className="logo" viewBox="0 0 100 100">
-                <path d="M50,10 A40,40 0 0,1 50,90 A20,20 0 0,1 50,50 A20,20 0 0,0 50,10 Z"/>
-              </svg>
-              <div className="tap-prompt">
-                {isMyTurn ? 'Tap to Reveal' : 'Waiting for reveal...'}
-              </div>
-              
-              {/* Category hint on back */}
-              <div className="category-hint">
-                <span className="category-text">{card.category}</span>
-                <span className="timer-text">{card.timer_seconds}s</span>
+      <>
+        {/* Response Popup */}
+        <ResponsePopup
+          isOpen={showResponsePopup}
+          response={gameState?.current_card_response || ''}
+          authorName={gameState?.current_turn !== userId ? 'You' : 'Partner'}
+          timestamp={gameState?.current_card_responded_at || ''}
+          isMyResponse={gameState?.current_turn !== userId}
+          onDismiss={handleDismissPopup}
+        />
+
+        <div className="space-y-4 max-w-2xl mx-auto">
+          <div className="card-scene">
+            <div className="sync-card">
+              <div 
+                className={`card-face card-face--back ${showResponsePopup ? 'opacity-50 pointer-events-none' : ''}`}
+                onClick={handleReveal}
+              >
+                <svg className="logo" viewBox="0 0 100 100">
+                  <path d="M50,10 A40,40 0 0,1 50,90 A20,20 0 0,1 50,50 A20,20 0 0,0 50,10 Z"/>
+                </svg>
+                <div className="tap-prompt">
+                  {isMyTurn && !showResponsePopup ? 'Tap to Reveal' : 'Waiting for reveal...'}
+                </div>
+                
+                {/* Category hint on back */}
+                <div className="category-hint">
+                  <span className="category-text">{card.category}</span>
+                  <span className="timer-text">{card.timer_seconds}s</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </>
     );
   }
 
   // Show revealed card (visible to BOTH players)
   return (
-    <div className="space-y-4 max-w-2xl mx-auto">
-      {/* Revealed Card Content */}
-      <div className="card-scene">
-        <div className="sync-card is-flipped">
-          <div className="card-face card-face--front">
-            <h2 className="card-title">Today's Sync</h2>
-            <p className="card-subtitle">Conversation Starter</p>
-            <p className="card-question">
-              {card.prompt}
-            </p>
-            
-            {/* Card Details */}
-            <div className="card-details">
-              <div className="card-badges">
-                <span className={`game-card-badge ${getCategoryStyle(card.category)}`}>
-                  {card.category.charAt(0).toUpperCase() + card.category.slice(1)}
-                </span>
-                {card.subcategory && (
-                  <span className="game-card-badge game-card-badge-outline">
-                    {card.subcategory}
-                  </span>
-                )}
-              </div>
+    <>
+      {/* Response Popup */}
+      <ResponsePopup
+        isOpen={showResponsePopup}
+        response={gameState?.current_card_response || ''}
+        authorName={gameState?.current_turn !== userId ? 'You' : 'Partner'}
+        timestamp={gameState?.current_card_responded_at || ''}
+        isMyResponse={gameState?.current_turn !== userId}
+        onDismiss={handleDismissPopup}
+      />
+
+      <div className="space-y-4 max-w-2xl mx-auto">
+        {/* Revealed Card Content */}
+        <div className="card-scene">
+          <div className={`sync-card is-flipped ${showResponsePopup ? 'opacity-50 pointer-events-none' : ''}`}>
+            <div className="card-face card-face--front">
+              <h2 className="card-title">Today's Sync</h2>
+              <p className="card-subtitle">Conversation Starter</p>
+              <p className="card-question">
+                {card.prompt}
+              </p>
               
-              <div className="card-stats">
-                <div className="stat-item">
-                  <span className="stat-label">Difficulty:</span>
-                  <span className="stat-value">{'⭐'.repeat(card.difficulty_level)}</span>
+              {/* Card Details */}
+              <div className="card-details">
+                <div className="card-badges">
+                  <span className={`game-card-badge ${getCategoryStyle(card.category)}`}>
+                    {card.category.charAt(0).toUpperCase() + card.category.slice(1)}
+                  </span>
+                  {card.subcategory && (
+                    <span className="game-card-badge game-card-badge-outline">
+                      {card.subcategory}
+                    </span>
+                  )}
                 </div>
-                <div className="stat-item">
-                  <span className="stat-label">Intimacy:</span>
-                  <span className="stat-value">{'💕'.repeat(card.intimacy_level)}</span>
+                
+                <div className="card-stats">
+                  <div className="stat-item">
+                    <span className="stat-label">Difficulty:</span>
+                    <span className="stat-value">{'⭐'.repeat(card.difficulty_level)}</span>
+                  </div>
+                  <div className="stat-item">
+                    <span className="stat-label">Intimacy:</span>
+                    <span className="stat-value">{'💕'.repeat(card.intimacy_level)}</span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Shared Timer - Visible to both players */}
-      <SharedTimer 
-        startTime={gameState?.current_card_started_at}
-        duration={card.timer_seconds}
-        onExpire={handleTimerExpire}
-        isActive={true}
-      />
+        {/* Shared Timer - Visible to both players */}
+        <SharedTimer 
+          startTime={gameState?.current_card_started_at}
+          duration={card.timer_seconds}
+          onExpire={handleTimerExpire}
+          isActive={true}
+        />
+
+        {/* Show response status if exists and both dismissed */}
+        {hasResponse && bothDismissed && (
+          <div className="mb-4 p-3 bg-green-50 rounded-lg">
+            <p className="text-sm text-green-700 flex items-center gap-2">
+              <span>✅</span>
+              Response submitted and read by both players
+            </p>
+          </div>
+        )}
 
       {/* Response Area - Only for active player */}
       {(() => {
@@ -390,116 +286,92 @@ export const GameCard: React.FC<GameCardProps> = ({
         return isMyTurn;
       })() && renderResponseInput()}
 
-      {/* Action Buttons - Only for active player */}
-      {(() => {
-        console.log('🎯 Button render check:', {
-          isMyTurn,
-          userId,
-          currentTurn: gameState?.current_turn,
-          userIsCurrentTurn: userId === gameState?.current_turn,
-          cardResponseType: card.response_type
-        });
-        return isMyTurn;
-      })() && (
-        <div className="flex gap-3 justify-center">
-          {card.response_type === 'action' ? (
-            <Button
-              onClick={() => handleComplete(false)}
-              className="px-6 py-3 bg-gradient-to-r from-primary to-purple-500 font-semibold"
-              size="lg"
-            >
-              Mark Complete
-            </Button>
-          ) : (
-            <Button
-              onClick={() => handleComplete(false)}
-              disabled={
-                (card.response_type === 'text' && !response.trim()) ||
-                (card.response_type === 'photo' && !photoResponse)
-              }
-              className="px-6 py-3 bg-gradient-to-r from-primary to-purple-500 font-semibold"
-              size="lg"
-            >
-              Send Response
-            </Button>
-          )}
-          
-          <Button
-            variant="ghost"
-            size="lg"
-            onClick={onFavorite}
-            className="text-2xl hover:scale-110 transition p-3"
-          >
-            💖
-          </Button>
-          
-          {skipsRemaining > 0 && (
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={onSkip}
-            >
-              Skip ({skipsRemaining})
-            </Button>
-          )}
-        </div>
-      )}
-
-      {/* DEBUG: Response state logging */}
-      {(() => {
-        console.log('💬 RESPONSE DISPLAY CHECK:', {
-          hasGameState: !!gameState,
-          hasResponse: !!gameState?.current_card_response,
-          responseText: gameState?.current_card_response,
-          gameStateCardId: gameState?.current_card_id,
-          currentCardId: card.id,
-          cardIdsMatch: gameState?.current_card_id === card.id,
-          shouldShow: gameState?.current_card_response && gameState?.current_card_id === card.id,
-          timestamp: gameState?.current_card_responded_at,
-          isMyTurn
-        });
-        return null;
-      })()}
-
-      {/* Current Game Response Display - Real-time shared response from game session */}
-      {gameState?.current_card_response && gameState?.current_card_id === card.id && (
-        <div className="mb-4 p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border-2 border-purple-400 shadow-lg">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-2xl animate-pulse">💬</span>
-            <p className="text-sm font-semibold text-purple-700">
-              {isMyTurn ? "Your response:" : "Partner's response:"}
-            </p>
-            <span className="text-xs text-purple-600 bg-purple-100 px-2 py-1 rounded-full ml-auto">
-              {gameState.current_card_responded_at && new Date(gameState.current_card_responded_at).toLocaleTimeString()}
-            </span>
+        {/* Action Buttons - Only show when popup is not open */}
+        {!showResponsePopup && (
+          <div className="flex gap-3 justify-center">
+            {isMyTurn && (
+              <>
+                {/* Show complete button only after response is read by both or for action cards */}
+                {((hasResponse && bothDismissed) || card.response_type === 'action') && (
+                  <Button
+                    onClick={() => handleComplete(false)}
+                    className="px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold"
+                    size="lg"
+                  >
+                    Complete Turn
+                  </Button>
+                )}
+                
+                {/* Show regular action buttons only if no response yet */}
+                {!hasResponse && (
+                  <>
+                    {card.response_type === 'action' ? (
+                      <Button
+                        onClick={() => handleComplete(false)}
+                        className="px-6 py-3 bg-gradient-to-r from-primary to-purple-500 font-semibold"
+                        size="lg"
+                      >
+                        Mark Complete
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={() => handleComplete(false)}
+                        disabled={
+                          (card.response_type === 'text' && !response.trim()) ||
+                          (card.response_type === 'photo' && !photoResponse)
+                        }
+                        className="px-6 py-3 bg-gradient-to-r from-primary to-purple-500 font-semibold"
+                        size="lg"
+                      >
+                        Send Response
+                      </Button>
+                    )}
+                    
+                    <Button
+                      variant="ghost"
+                      size="lg"
+                      onClick={onFavorite}
+                      className="text-2xl hover:scale-110 transition p-3"
+                    >
+                      💖
+                    </Button>
+                    
+                    {skipsRemaining > 0 && (
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={onSkip}
+                      >
+                        Skip ({skipsRemaining})
+                      </Button>
+                    )}
+                  </>
+                )}
+              </>
+            )}
+            
+            {/* Waiting messages */}
+            {!isMyTurn && !hasResponse && (
+              <div className="text-center p-4 bg-purple-50 rounded-lg">
+                <p className="text-purple-700">
+                  ⏳ Waiting for partner to respond...
+                </p>
+              </div>
+            )}
+            
+            {/* Waiting for dismissals */}
+            {hasResponse && !bothDismissed && (
+              <div className="text-center p-4 bg-yellow-50 rounded-lg">
+                <p className="text-yellow-700">
+                  📖 Waiting for both players to read the response...
+                </p>
+              </div>
+            )}
           </div>
-          <p className="text-lg text-gray-800 italic leading-relaxed font-medium">
-            "{gameState.current_card_response}"
-          </p>
-          <div className="mt-2 text-xs text-purple-600">
-            🔄 Real-time response sharing active
-          </div>
-        </div>
-      )}
+        )}
 
-      {/* DEBUG: Show when no response to display */}
-      {!gameState?.current_card_response && (
-        <div className="mb-2 p-2 bg-gray-100 rounded text-xs text-gray-600">
-          🔍 DEBUG: No response to display (response: {gameState?.current_card_response || 'none'}, card match: {gameState?.current_card_id === card.id ? 'yes' : 'no'})
-        </div>
-      )}
-
-
-      {/* Waiting message for non-active player */}
-      {!isMyTurn && !showResponse && (
-        <div className="text-center p-4 bg-purple-50 rounded-lg">
-          <p className="text-purple-700">
-            👀 Watch your partner complete this challenge!
-          </p>
-        </div>
-      )}
-
-    </div>
+      </div>
+    </>
   );
 
   // Render different input types based on response_type
