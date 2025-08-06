@@ -238,11 +238,11 @@ export const SubscriptionOnboarding = () => {
                       </Badge>
                     )}
                     
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="text-lg font-bold">{plan.name}</h3>
-                        <p className="text-sm text-muted-foreground">Billed {plan.period}</p>
-                      </div>
+                     <div className="flex items-center justify-between">
+                       <div>
+                         <h3 className="text-lg font-bold text-foreground">{plan.name}</h3>
+                         <p className="text-sm text-muted-foreground">Billed {plan.period}</p>
+                       </div>
                       <div className="text-right">
                         <div className="flex items-baseline gap-1">
                           <span className="text-2xl font-bold text-primary">{plan.price}</span>
@@ -258,13 +258,13 @@ export const SubscriptionOnboarding = () => {
 
                     {plan.isPopular && (
                       <div className="space-y-3 text-left">
-                        <h4 className="text-sm font-medium">Everything included:</h4>
-                        <div className="grid grid-cols-2 gap-2">
-                          {features.slice(0, 6).map((feature, index) => (
-                            <div key={index} className="flex items-center gap-2">
-                              <Check className="w-3 h-3 text-primary flex-shrink-0" />
-                              <span className="text-xs">{feature}</span>
-                            </div>
+                         <h4 className="text-sm font-medium text-foreground">Everything included:</h4>
+                         <div className="grid grid-cols-2 gap-2">
+                           {features.slice(0, 6).map((feature, index) => (
+                             <div key={index} className="flex items-center gap-2">
+                               <Check className="w-3 h-3 text-primary flex-shrink-0" />
+                               <span className="text-xs text-foreground">{feature}</span>
+                             </div>
                           ))}
                         </div>
                       </div>
@@ -308,12 +308,12 @@ export const SubscriptionOnboarding = () => {
             {selectedPlan && (
               <Card className="p-4 bg-white/95 backdrop-blur-sm shadow-xl">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-bold">{selectedPlan.name} Plan</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {selectedPlan.price}/{selectedPlan.period}
-                    </p>
-                  </div>
+                   <div>
+                     <h3 className="font-bold text-foreground">{selectedPlan.name} Plan</h3>
+                     <p className="text-sm text-muted-foreground">
+                       {selectedPlan.price}/{selectedPlan.period}
+                     </p>
+                   </div>
                   {selectedPlan.discount && (
                     <Badge variant="secondary">{selectedPlan.discount}</Badge>
                   )}
@@ -324,12 +324,12 @@ export const SubscriptionOnboarding = () => {
             {/* Payment Form */}
             <Card className="p-6 bg-white/95 backdrop-blur-sm shadow-xl">
               <div className="space-y-4">
-                <div className="bg-accent/50 p-4 rounded-lg text-center">
-                  <p className="text-sm font-medium">Free for 7 days</p>
-                  <p className="text-xs text-muted-foreground">
-                    You'll be charged {selectedPlan?.price || '$9.99'} after your trial ends. Cancel anytime.
-                  </p>
-                </div>
+                 <div className="bg-accent/50 p-4 rounded-lg text-center">
+                   <p className="text-sm font-medium text-foreground">Free for 7 days</p>
+                   <p className="text-xs text-muted-foreground">
+                     You'll be charged {selectedPlan?.price || '$9.99'} after your trial ends. Cancel anytime.
+                   </p>
+                 </div>
 
                 {/* Show validation errors */}
                 {cardErrors.length > 0 && (
