@@ -212,16 +212,10 @@ export const GameSession = () => {
       />
       
       <div className="max-w-md mx-auto p-4 space-y-6">
-        {/* New Romantic Games */}
-        {session.card_games.game_type === 'couples_card_game' && currentCard && (
+        {/* Card Deck Game */}
+        {(session.card_games.game_type === 'couples_cards' || session.card_games.game_type === 'couples_card_game') && (
           <CouplesCardGame
-            currentCard={currentCard}
             sessionId={sessionId!}
-            onSubmitResponse={handleCardResponse}
-            onNextCard={handleNextCard}
-            userResponse=""
-            partnerResponse=""
-            isUserTurn={true}
           />
         )}
         
@@ -243,7 +237,7 @@ export const GameSession = () => {
         )}
 
         {/* Fallback for unsupported games */}
-        {!['couples_card_game', 'tic_toe_heart', 'truth_or_dare_couples'].includes(session.card_games.game_type) && (
+        {!['couples_cards', 'couples_card_game', 'tic_toe_heart', 'truth_or_dare_couples'].includes(session.card_games.game_type) && (
           <Card>
             <CardHeader>
               <CardTitle>Game Not Yet Supported</CardTitle>

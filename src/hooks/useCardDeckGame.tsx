@@ -31,24 +31,15 @@ export const useCardDeckGame = () => {
 
     setLoading(true);
     try {
-      // Get the card game ID
-      const { data: gameData, error: gameError } = await supabase
-        .from('card_games')
-        .select('id')
-        .eq('game_type', gameType)
-        .eq('is_active', true)
-        .single();
-
-      if (gameError) throw gameError;
-
-      // Create new session
+      // Create new game session
       const { data: sessionData, error: sessionError } = await supabase
         .from('game_sessions')
         .insert({
           couple_id: coupleData.id,
-          game_id: gameData.id,
+          game_id: null, // We'll use this for card deck games without specific game_id
           player_turn: user.id,
-          status: 'active'
+          status: 'active',
+          session_data: { game_type: gameType, cards_drawn: [] }
         })
         .select()
         .single();

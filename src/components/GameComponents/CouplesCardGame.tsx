@@ -8,6 +8,7 @@ import { Heart, MessageCircle, Clock, Send, Shuffle, ThumbsUp, Eye, ChevronRight
 import { useAuth } from '@/hooks/useAuth';
 import { useCoupleData } from '@/hooks/useCoupleData';
 import { usePresence } from '@/hooks/usePresence';
+import { useCardDeckGameSession } from '@/hooks/useCardDeckGameSession';
 
 interface GameCard {
   id: string;
@@ -19,47 +20,60 @@ interface GameCard {
 }
 
 interface CouplesCardGameProps {
-  currentCard: GameCard;
   sessionId: string;
-  onSubmitResponse: (response: string) => void;
-  onNextCard: () => void;
-  userResponse?: string;
-  partnerResponse?: string;
-  isUserTurn: boolean;
 }
 
 const categories = [
-  { id: 'romantic', name: '💞 Romantic', color: 'from-pink-400 to-red-400' },
-  { id: 'flirty', name: '🔥 Flirty', color: 'from-orange-400 to-red-400' },
-  { id: 'funny', name: '😆 Funny', color: 'from-yellow-400 to-orange-400' },
-  { id: 'deep_talk', name: '🧠 Deep Talk', color: 'from-purple-400 to-blue-400' },
-  { id: 'communication', name: '💬 Communication', color: 'from-blue-400 to-cyan-400' },
+  { id: 'Romantic', name: '💞 Romantic', color: 'from-pink-400 to-red-400' },
+  { id: 'Flirty', name: '🔥 Flirty', color: 'from-orange-400 to-red-400' },
+  { id: 'Fun', name: '😆 Fun', color: 'from-yellow-400 to-orange-400' },
+  { id: 'Deep Talk', name: '🧠 Deep Talk', color: 'from-purple-400 to-blue-400' },
+  { id: 'Communication', name: '💬 Communication', color: 'from-blue-400 to-cyan-400' },
   { id: 'conflict_resolution', name: '💔 Healing', color: 'from-green-400 to-blue-400' },
   { id: 'compatibility', name: '🧩 Compatibility', color: 'from-indigo-400 to-purple-400' },
   { id: 'future_planning', name: '🤝 Future Dreams', color: 'from-violet-400 to-pink-400' }
 ];
 
-export const CouplesCardGame: React.FC<CouplesCardGameProps> = ({
-  currentCard,
-  sessionId,
-  onSubmitResponse,
-  onNextCard,
-  userResponse,
-  partnerResponse,
-  isUserTurn
-}) => {
+export const CouplesCardGame: React.FC<CouplesCardGameProps> = ({ sessionId }) => {
   const { user } = useAuth();
   const { coupleData, getPartnerDisplayName } = useCoupleData();
   const { isPartnerOnline } = usePresence(coupleData?.id);
   const [response, setResponse] = useState('');
-  const [showReactions, setShowReactions] = useState(false);
+  
+  // Import the new hook
+  const { 
+    loading, 
+    currentCard, 
+    userResponse, 
+    partnerResponse, 
+    submitResponse, 
+    nextCard,
+    hasResponded,
+    partnerHasResponded,
+    bothResponded
+  } = useCardDeckGameSession(sessionId);
+
+  if (loading || !currentCard) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-center">
+          <Heart className="h-8 w-8 mx-auto mb-4 text-pink-500 animate-pulse" />
+          <p className="text-muted-foreground">Drawing your next card...</p>
+        </div>
+      </div>
+    );
+  }
 
   const categoryInfo = categories.find(cat => cat.id === currentCard.category) || categories[0];
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (response.trim()) {
-      onSubmitResponse(response.trim());
-      setResponse('');
+      try {
+        await submitResponse(response.trim());
+        setResponse('');
+      } catch (error) {
+        console.error('Error submitting response:', error);
+      }
     }
   };
 
@@ -270,7 +284,7 @@ export const CouplesCardGame: React.FC<CouplesCardGameProps> = ({
             </p>
           </div>
           <Button 
-            onClick={onNextCard}
+            onClick={nextCard}
             className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
             size="lg"
           >

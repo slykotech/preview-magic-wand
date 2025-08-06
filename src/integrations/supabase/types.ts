@@ -366,6 +366,45 @@ export type Database = {
         }
         Relationships: []
       }
+      couple_cards: {
+        Row: {
+          category: string
+          created_at: string
+          difficulty_level: string
+          id: string
+          is_active: boolean
+          prompt: string
+          requires_action: boolean
+          requires_voice_response: boolean
+          time_limit_seconds: number | null
+          title: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          difficulty_level?: string
+          id?: string
+          is_active?: boolean
+          prompt: string
+          requires_action?: boolean
+          requires_voice_response?: boolean
+          time_limit_seconds?: number | null
+          title: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          difficulty_level?: string
+          id?: string
+          is_active?: boolean
+          prompt?: string
+          requires_action?: boolean
+          requires_voice_response?: boolean
+          time_limit_seconds?: number | null
+          title?: string
+        }
+        Relationships: []
+      }
       couple_preferences: {
         Row: {
           couple_id: string
