@@ -20,17 +20,13 @@ export const Auth = () => {
     // Check if user is already logged in
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session) {
-        // Redirect to the intended page or dashboard
-        if (redirectUrl) {
-          navigate(redirectUrl);
-        } else {
-          navigate('/dashboard');
-        }
+        // Simply go to dashboard - SubscriptionGate will handle subscription check
+        navigate('/dashboard');
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate, redirectUrl]);
+  }, [navigate]);
 
   const handleSignIn = async () => {
     if (!email || !password) {

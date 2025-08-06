@@ -38,6 +38,8 @@ import { Signup } from "./pages/Signup";
 import { VerifyEmail } from "./pages/VerifyEmail";
 import SignupResolver from "./pages/SignupResolver";
 import CompleteSignup from "./pages/CompleteSignup";
+import { SubscriptionOnboarding } from "./pages/SubscriptionOnboarding";
+import { SubscriptionGate } from "./components/SubscriptionGate";
 
 import GooglePlacesTestPage from "./pages/GooglePlacesTest";
 import EventScraper from "./pages/EventScraper";
@@ -73,26 +75,27 @@ const App = () => {
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/messages" element={<Messages />} />
-                <Route path="/coach" element={<AICoach />} />
-              <Route path="/planner" element={<DatePlanner />} />
-                <Route path="/games" element={<Games />} />
-                <Route path="/games/:sessionId" element={<GameSession />} />
-                <Route path="/games/card-deck/:sessionId" element={<CardDeckGame />} />
-                <Route path="/games/card-deck/new" element={<CardDeckGame />} />
+                <Route path="/subscription" element={<SubscriptionOnboarding />} />
+                <Route path="/dashboard" element={<SubscriptionGate><Dashboard /></SubscriptionGate>} />
+                <Route path="/messages" element={<SubscriptionGate><Messages /></SubscriptionGate>} />
+                <Route path="/coach" element={<SubscriptionGate><AICoach /></SubscriptionGate>} />
+              <Route path="/planner" element={<SubscriptionGate><DatePlanner /></SubscriptionGate>} />
+                <Route path="/games" element={<SubscriptionGate><Games /></SubscriptionGate>} />
+                <Route path="/games/:sessionId" element={<SubscriptionGate><GameSession /></SubscriptionGate>} />
+                <Route path="/games/card-deck/:sessionId" element={<SubscriptionGate><CardDeckGame /></SubscriptionGate>} />
+                <Route path="/games/card-deck/new" element={<SubscriptionGate><CardDeckGame /></SubscriptionGate>} />
                 
                 
                 <Route path="/test-google-places" element={<GooglePlacesTestPage />} />
                 <Route path="/event-scraper" element={<EventScraper />} />
                 <Route path="/event-monitoring" element={<EventMonitoring />} />
-              <Route path="/vault" element={<MemoryVault />} />
-              <Route path="/profile" element={<Profile />} />
-                <Route path="/couple-setup" element={<CoupleSetup />} />
-            <Route path="/preferences" element={<RelationshipPreferences />} />
-            <Route path="/important-dates" element={<ImportantDates />} />
-                <Route path="/insights" element={<RelationshipInsights />} />
-                <Route path="/app-settings" element={<AppSettings />} />
+              <Route path="/vault" element={<SubscriptionGate><MemoryVault /></SubscriptionGate>} />
+              <Route path="/profile" element={<SubscriptionGate><Profile /></SubscriptionGate>} />
+                <Route path="/couple-setup" element={<SubscriptionGate><CoupleSetup /></SubscriptionGate>} />
+            <Route path="/preferences" element={<SubscriptionGate><RelationshipPreferences /></SubscriptionGate>} />
+            <Route path="/important-dates" element={<SubscriptionGate><ImportantDates /></SubscriptionGate>} />
+                <Route path="/insights" element={<SubscriptionGate><RelationshipInsights /></SubscriptionGate>} />
+                <Route path="/app-settings" element={<SubscriptionGate><AppSettings /></SubscriptionGate>} />
                 <Route path="/motto" element={<AppMottoPage onNext={() => {}} onBack={() => {}} />} />
                 <Route path="/onboarding" element={<OnboardingFlow />} />
                 <Route path="/enhanced-onboarding" element={<EnhancedOnboarding />} />

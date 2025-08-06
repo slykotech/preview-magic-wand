@@ -13,7 +13,7 @@ const Index = () => {
   useEffect(() => {
     if (!loading) {
       if (user) {
-        navigate('/dashboard');
+        navigate('/motto');
       }
     }
   }, [user, loading, navigate]);
@@ -107,10 +107,12 @@ const Index = () => {
 
         {/* CTA */}
         <div className="space-y-3">
-          <Button onClick={() => navigate('/enhanced-onboarding')} variant="secondary" size="lg" className="w-full text-lg font-bold">
+          <Button onClick={() => navigate('/motto')} variant="secondary" size="lg" className="w-full text-lg font-bold">
             Get Started
           </Button>
-          
+          <Button onClick={() => navigate('/auth')} variant="ghost" size="lg" className="w-full text-white/80 hover:text-white">
+            Already have an account? Sign In
+          </Button>
         </div>
       </div>
     </div>;
