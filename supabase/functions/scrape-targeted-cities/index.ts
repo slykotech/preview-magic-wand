@@ -128,19 +128,22 @@ serve(async (req) => {
       }
     }
 
-    // Store events in database
+    // Store events in database using UPSERT to handle duplicates
     if (allScrapedEvents.length > 0) {
       const { data, error } = await supabase
         .from('events')
-        .insert(allScrapedEvents)
+        .upsert(allScrapedEvents, { 
+          onConflict: 'source,external_id',
+          ignoreDuplicates: false 
+        })
         .select();
 
       if (error) {
-        console.error('Database insert error:', error);
+        console.error('Database upsert error:', error);
         throw error;
       }
 
-      console.log(`💾 Stored ${data?.length || 0} events in database`);
+      console.log(`💾 Upserted ${data?.length || 0} events in database`);
     }
 
     return new Response(
