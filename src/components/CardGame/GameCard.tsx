@@ -47,6 +47,9 @@ export const GameCard: React.FC<GameCardProps> = ({
   const [startTime] = useState(Date.now());
 
   const handleReveal = () => {
+    console.log('=== CARD REVEAL CLICKED ===');
+    console.log('Current state:', { isRevealed, disabled, canInteract });
+    
     // Anyone can reveal the card to see it
     onReveal();
     if (canInteract) {
@@ -108,9 +111,19 @@ export const GameCard: React.FC<GameCardProps> = ({
         >
           {/* Card Back */}
           <div 
-            className="absolute inset-0 backface-hidden cursor-pointer rounded-2xl"
-            onClick={handleReveal}
-            style={{ backfaceVisibility: 'hidden' }}
+            className="absolute inset-0 cursor-pointer rounded-2xl"
+            style={{ 
+              backfaceVisibility: 'hidden',
+              transform: 'rotateY(0deg)'
+            }}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              console.log('Card back clicked!');
+              if (!disabled && !isRevealed) {
+                handleReveal();
+              }
+            }}
           >
             <div className="h-full bg-gradient-to-br from-primary to-purple-500 rounded-2xl shadow-xl flex items-center justify-center">
               <div className="text-primary-foreground text-center">

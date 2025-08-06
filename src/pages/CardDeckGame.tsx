@@ -45,6 +45,7 @@ export const CardDeckGame: React.FC = () => {
 
   // Reset card revealed state when turn changes
   useEffect(() => {
+    console.log('Card changed, resetting reveal state. New card ID:', currentCard?.id);
     setCardRevealed(false);
   }, [currentCard?.id]);
 
@@ -129,7 +130,11 @@ export const CardDeckGame: React.FC = () => {
             <GameCard
               card={currentCard}
               isRevealed={cardRevealed}
-              onReveal={() => setCardRevealed(true)}
+              onReveal={() => {
+                console.log('=== REVEAL CALLED FROM PARENT ===');
+                console.log('Setting cardRevealed to true');
+                setCardRevealed(true);
+              }}
               onComplete={actions.completeTurn}
               onSkip={actions.skipCard}
               onFavorite={actions.favoriteCard}
