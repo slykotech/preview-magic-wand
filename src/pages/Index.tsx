@@ -107,7 +107,7 @@ const Index = () => {
 
         {/* CTA */}
         <div className="space-y-3">
-          <Button onClick={() => navigate('/motto')} variant="secondary" size="lg" className="w-full text-lg font-bold">
+          <Button onClick={() => navigate('/enhanced-onboarding')} variant="secondary" size="lg" className="w-full text-lg font-bold">
             Get Started
           </Button>
           

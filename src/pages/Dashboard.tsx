@@ -25,6 +25,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PremiumBadge } from '@/components/subscription/PremiumBadge';
 import { TrialStatus } from '@/components/subscription/TrialStatus';
 import { SubscriptionNotifications } from '@/components/subscription/SubscriptionNotifications';
+import { OnboardingProgress } from "@/components/OnboardingProgress";
 import { SubscriptionPromptModal } from '@/components/subscription/SubscriptionPromptModal';
 import { useSubscriptionGate } from '@/hooks/useSubscriptionGate';
 const getTimeBasedMessage = () => {
@@ -56,6 +57,7 @@ const getMoodEmoji = (mood: string): string => {
 };
 export const Dashboard = () => {
   const { checkFeatureAccess, showPrompt, promptFeature, closePrompt } = useSubscriptionGate();
+  const [profiles, setProfiles] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoaded, setIsLoaded] = useState(false);
   const [showSplash, setShowSplash] = useState(() => {
@@ -172,6 +174,15 @@ export const Dashboard = () => {
   const fetchDashboardData = async () => {
     try {
       console.log('Fetching dashboard data for user:', user?.id);
+
+      // Fetch user profile data
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', user?.id)
+        .maybeSingle();
+      
+      setProfiles(profileData ? [profileData] : []);
 
       // First, get user's couple relationship - get the most recent one
       const {
@@ -543,8 +554,11 @@ export const Dashboard = () => {
             <p className="text-lg font-bold text-white/90">{getTimeBasedMessage()}</p>
           </div>
         </div>
-        
+         
         <div className="container mx-auto px-6 space-y-6 pb-20">
+          
+          {/* Onboarding Progress */}
+          <OnboardingProgress userProfile={profiles?.[0]} hasPartner={!!coupleId} />
 
           {/* Sync Score Section */}
           <div className={`${isLoaded ? 'animate-fade-in' : 'opacity-0'}`} style={{

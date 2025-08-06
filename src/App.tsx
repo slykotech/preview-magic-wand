@@ -26,6 +26,7 @@ import { RelationshipPreferences } from "./pages/RelationshipPreferences";
 import { ImportantDates } from "./pages/ImportantDates";
 import AppMottoPage from "./pages/AppMotto";
 import OnboardingFlow from "./pages/OnboardingFlow";
+import EnhancedOnboarding from "./pages/EnhancedOnboarding";
 import NotFound from "./pages/NotFound";
 import { AppSettings } from "./pages/AppSettings";
 import AcceptInvitation from "./pages/AcceptInvitation";
@@ -94,6 +95,7 @@ const App = () => {
                 <Route path="/app-settings" element={<AppSettings />} />
                 <Route path="/motto" element={<AppMottoPage onNext={() => {}} onBack={() => {}} />} />
                 <Route path="/onboarding" element={<OnboardingFlow />} />
+                <Route path="/enhanced-onboarding" element={<EnhancedOnboarding />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/signup-resolver" element={<SignupResolver />} />
