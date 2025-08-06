@@ -393,14 +393,16 @@ export function useCardGame(sessionId: string | null) {
 
   // Complete turn and switch to partner
   const completeTurn = useCallback(async (response?: string | File, reactionTime?: number) => {
-    console.log('🚀 Attempting to complete turn:', {
+    console.group('🎯 COMPLETE TURN FLOW');
+    console.log('Starting completeTurn with:', {
+      response,
+      hasResponse: !!response,
+      responseLength: typeof response === 'string' ? response.length : 'N/A',
+      currentCard: currentCard?.id,
+      cardType: currentCard?.response_type,
       isMyTurn,
-      hasGameState: !!gameState,
-      hasCurrentCard: !!currentCard,
-      sessionId,
-      userId: user?.id,
-      currentTurn: gameState?.current_turn,
-      userIsCurrentTurn: user?.id === gameState?.current_turn
+      currentUserId: user?.id,
+      sessionId
     });
     
     if (!gameState || !currentCard || !sessionId || !user) {
@@ -601,7 +603,7 @@ export function useCardGame(sessionId: string | null) {
         console.error('❌ Failed to fetch next card:', error);
       }
 
-      const updateData = {
+      const updateData: any = {
         current_turn: nextTurn,
         current_card_id: nextCardId, // Set the next card immediately
         current_card_revealed: false,
@@ -616,17 +618,45 @@ export function useCardGame(sessionId: string | null) {
         updated_at: new Date().toISOString()
       };
 
-      const { error: updateError } = await supabase
+      // Add response data for text responses to show next player
+      if (response && typeof response === 'string' && currentCard.response_type === 'text') {
+        console.log('💬 Adding text response data for next player...');
+        updateData.last_response_text = response;
+        updateData.last_response_author_id = user.id;
+        updateData.last_response_timestamp = new Date().toISOString();
+        updateData.last_response_seen = false;
+        
+        console.log('Response data to save:', {
+          text: response.substring(0, 50) + '...',
+          authorId: user.id,
+          seen: false
+        });
+      } else {
+        console.log('🧹 Clearing previous response data (not a text task)');
+        updateData.last_response_text = null;
+        updateData.last_response_author_id = null;
+        updateData.last_response_timestamp = null;
+        updateData.last_response_seen = true;
+      }
+
+      const { data: updatedData, error: updateError } = await supabase
         .from("card_deck_game_sessions")
         .update(updateData)
-        .eq("id", sessionId);
+        .eq("id", sessionId)
+        .select()
+        .single();
 
       if (updateError) {
         console.error('❌ Game state update failed:', updateError);
         throw updateError;
       }
       
-      console.log('✅ Game state updated successfully with next card');
+      console.log('✅ Game state updated successfully:', updatedData);
+      console.log('Response fields after update:', {
+        last_response_text: updatedData?.last_response_text,
+        last_response_author_id: updatedData?.last_response_author_id,
+        last_response_seen: updatedData?.last_response_seen
+      });
 
       // Update card usage count for the completed card
       await supabase
@@ -639,6 +669,8 @@ export function useCardGame(sessionId: string | null) {
     } catch (error) {
       console.error("Failed to complete turn:", error);
       toast.error("Failed to complete turn. Please try again.");
+    } finally {
+      console.groupEnd();
     }
   }, [isMyTurn, gameState, currentCard, sessionId, user]);
 

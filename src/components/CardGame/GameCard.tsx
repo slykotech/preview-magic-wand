@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { SharedTimer } from './SharedTimer';
 import { ResponsePopup } from './ResponsePopup';
+import { DebugInfo } from './DebugInfo';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -165,6 +166,13 @@ export const GameCard: React.FC<GameCardProps> = ({
   if (!isRevealed) {
     return (
       <>
+        {/* Debug Info */}
+        <DebugInfo
+          gameState={gameState}
+          currentUserId={userId}
+          isMyTurn={isMyTurn}
+        />
+
         {/* Response Popup */}
         <ResponsePopup
           isOpen={showResponsePopup}
@@ -214,6 +222,13 @@ export const GameCard: React.FC<GameCardProps> = ({
   // Show revealed card (visible to BOTH players)
   return (
     <>
+      {/* Debug Info */}
+      <DebugInfo
+        gameState={gameState}
+        currentUserId={userId}
+        isMyTurn={isMyTurn}
+      />
+
       {/* Response Popup */}
       <ResponsePopup
         isOpen={showResponsePopup}
