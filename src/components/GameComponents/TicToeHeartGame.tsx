@@ -95,7 +95,7 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
   const [winnerReward, setWinnerReward] = useState('');
   const [loveGrants, setLoveGrants] = useState<LoveGrant[]>([]);
   const [playfulMessage, setPlayfulMessage] = useState('');
-  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
+  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'error'>('connecting');
   const [moveHistory, setMoveHistory] = useState<GameMove[]>([]);
   const [isProcessingMove, setIsProcessingMove] = useState(false);
 
@@ -165,12 +165,45 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
     console.log('🎮 Setting up enhanced real-time subscription for session:', sessionId);
     setConnectionStatus('connecting');
 
+    // Add force refresh function for debugging
+    const refreshGameState = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('tic_toe_heart_games')
+          .select('*')
+          .eq('session_id', sessionId)
+          .single();
+        
+        if (error) throw error;
+        
+        if (data) {
+          console.log('🎮 🔄 Manual refresh data:', data);
+          console.log('🎮 📋 Board from refresh:', data.board);
+          
+          // Ensure board is properly parsed
+          const parsedBoard = typeof data.board === 'string' 
+            ? JSON.parse(data.board) 
+            : data.board;
+            
+          setGameState({
+            ...data,
+            board: parsedBoard as Board,
+            game_status: data.game_status as GameStatus,
+            last_move_at: data.last_move_at || new Date().toISOString()
+          });
+          setConnectionStatus('connected');
+        }
+      } catch (error) {
+        console.error('🎮 ❌ Manual refresh failed:', error);
+      }
+    };
+
     const channel = supabase
-      .channel(`tic-toe-game-${sessionId}`) // Simplified consistent channel name
+      .channel(`tic-toe-game-${sessionId}`)
       .on(
         'postgres_changes',
         {
-          event: '*', // Listen to all events
+          event: '*',
           schema: 'public',
           table: 'tic_toe_heart_games',
           filter: `session_id=eq.${sessionId}`
@@ -183,6 +216,8 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
           console.log('Payload:', payload);
           console.log('New Data:', payload.new);
           console.log('Old Data:', payload.old);
+          console.log('Raw board data:', (payload.new as any)?.board);
+          console.log('Board type:', typeof (payload.new as any)?.board);
           console.log('Timestamp:', new Date().toISOString());
           console.groupEnd();
 
@@ -195,14 +230,37 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
               return;
             }
 
+            // CRITICAL: Properly parse the board from JSONB
+            let parsedBoard: Board;
+            try {
+              if (typeof updatedState.board === 'string') {
+                parsedBoard = JSON.parse(updatedState.board);
+              } else if (Array.isArray(updatedState.board)) {
+                parsedBoard = updatedState.board;
+              } else {
+                console.error('🎮 ❌ Unexpected board format:', updatedState.board);
+                // Fallback: try to refresh manually
+                refreshGameState();
+                return;
+              }
+              
+              console.log('🎮 📋 Parsed board:', parsedBoard);
+            } catch (parseError) {
+              console.error('🎮 ❌ Board parsing failed:', parseError);
+              // Fallback: try to refresh manually
+              refreshGameState();
+              return;
+            }
+
             const newGameState = {
               ...updatedState,
-              board: updatedState.board as Board,
+              board: parsedBoard,
               game_status: updatedState.game_status as GameStatus,
               last_move_at: updatedState.last_move_at || new Date().toISOString()
             };
             
             console.log('🎮 ✅ Applying game state update:', newGameState);
+            console.log('🎮 📋 Board after parsing:', newGameState.board);
             console.log('🎮 Current turn now belongs to:', newGameState.current_player_id);
             console.log('🎮 Current user ID:', user?.id);
             console.log('🎮 Is user turn?:', newGameState.current_player_id === user?.id);
@@ -230,24 +288,56 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
           }
         }
       )
+      .on('system', { event: 'CHANNEL_ERROR' }, (payload) => {
+        console.error('🎮 ❌ Channel error - connection failed', payload);
+        setConnectionStatus('error');
+        // Try to refresh manually on channel error
+        refreshGameState();
+      })
       .subscribe((status) => {
         console.log('🎮 Enhanced Subscription status:', status);
-        
         if (status === 'SUBSCRIBED') {
-          console.log('🎮 ✅ Successfully subscribed to game updates');
           setConnectionStatus('connected');
+          console.log('🎮 ✅ Successfully subscribed to real-time updates');
           
-          // Force refresh game state when subscription is established
-          setTimeout(() => {
-            console.log('🎮 Refreshing game state after subscription...');
-            initializeGame();
-          }, 500);
+          // Initial refresh to ensure we have latest state
+          refreshGameState();
+          
+          // Enhanced polling fallback with better error handling
+          console.log('🎮 🔄 Starting enhanced polling fallback...');
+          const pollInterval = setInterval(async () => {
+            try {
+              const { data: currentState } = await supabase
+                .from('tic_toe_heart_games')
+                .select('*')
+                .eq('session_id', sessionId)
+                .single();
+              
+              if (currentState && gameState && currentState.last_move_at !== gameState.last_move_at) {
+                console.log('🎮 📊 Polling detected change, updating state');
+                console.log('🎮 📋 Polling board data:', currentState.board);
+                
+                const parsedBoard = typeof currentState.board === 'string' 
+                  ? JSON.parse(currentState.board) 
+                  : currentState.board;
+                  
+                setGameState({
+                  ...currentState,
+                  board: parsedBoard as Board,
+                  game_status: currentState.game_status as GameStatus
+                });
+              }
+            } catch (error) {
+              console.error('🎮 ❌ Polling error:', error);
+            }
+          }, 1500); // More frequent polling for better sync
+          
+          return () => clearInterval(pollInterval);
         } else if (status === 'CHANNEL_ERROR') {
           console.error('🎮 ❌ Channel error - connection failed');
-          setConnectionStatus('disconnected');
-        } else if (status === 'CLOSED') {
-          console.warn('🎮 ⚠️ Channel closed');
-          setConnectionStatus('disconnected');
+          setConnectionStatus('error');
+          // Try manual refresh on channel error
+          refreshGameState();
         }
       });
 
@@ -627,10 +717,13 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
       console.log('🎮 📤 Updating database with move...');
       
       // Update the database with comprehensive error handling
+      console.log('🎮 📤 Board being sent to DB:', newBoard);
+      console.log('🎮 📤 Board JSON:', JSON.stringify(newBoard));
+      
       const { data: updatedGame, error: updateError } = await supabase
         .from('tic_toe_heart_games')
         .update({
-          board: newBoard,
+          board: JSON.stringify(newBoard), // Ensure proper JSON serialization
           current_player_id: nextPlayerId,
           game_status: newStatus,
           winner_id: winnerId,
