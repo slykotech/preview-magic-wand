@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { useEnhancedSubscription } from '@/hooks/useEnhancedSubscription';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { useSubscription, SubscriptionPlan } from '@/hooks/useSubscription';
 import { validateCard, formatCardNumber, formatExpiryDate, getCardBrandName, isValidCardNumber, isValidExpiryDate, isValidCVV, isValidCardholderName } from '@/utils/cardValidation';
 
 interface PaymentDetails {
@@ -22,8 +23,10 @@ export const SubscriptionOnboarding = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { startTrial, premiumAccess, loading } = useEnhancedSubscription();
+  const { plans } = useSubscription();
   const { toast } = useToast();
   const [step, setStep] = useState<'plan' | 'payment'>('plan');
+  const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
   const [paymentDetails, setPaymentDetails] = useState<PaymentDetails>({
     cardNumber: '',
     expiryDate: '',
@@ -60,7 +63,8 @@ export const SubscriptionOnboarding = () => {
     "Priority customer support"
   ];
 
-  const handleStartTrial = () => {
+  const handlePlanSelect = (plan: SubscriptionPlan) => {
+    setSelectedPlan(plan);
     setStep('payment');
   };
 
@@ -208,51 +212,77 @@ export const SubscriptionOnboarding = () => {
               <p className="text-white/80">Unlock the full power of your relationship</p>
             </div>
 
-            {/* Plan Card */}
-            <Card className="p-6 bg-white/95 backdrop-blur-sm shadow-xl">
-              <div className="text-center space-y-4">
-                <div className="space-y-2">
-                  <Badge className="bg-primary text-primary-foreground">
-                    <Gift className="w-3 h-3 mr-1" />
-                    7-Day Free Trial
-                  </Badge>
-                  <h2 className="text-xl font-bold">Premium Plan</h2>
-                  <div className="flex items-baseline justify-center gap-1">
-                    <span className="text-3xl font-bold text-primary">$9.99</span>
-                    <span className="text-muted-foreground">/month</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground">Cancel anytime during trial</p>
+            {/* Plan Selection */}
+            <div className="space-y-4">
+              <div className="bg-accent/50 p-4 rounded-lg text-center text-white">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <Gift className="w-4 h-4" />
+                  <span className="font-medium">7-Day Free Trial on All Plans</span>
                 </div>
-
-                <div className="space-y-3 text-left">
-                  {features.map((feature, index) => (
-                    <div key={index} className="flex items-center gap-3">
-                      <Check className="w-4 h-4 text-primary flex-shrink-0" />
-                      <span className="text-sm">{feature}</span>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="bg-accent/50 p-4 rounded-lg">
-                  <div className="flex items-center gap-2 text-sm">
-                    <Shield className="w-4 h-4 text-primary" />
-                    <span className="font-medium">100% Risk-Free</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Cancel anytime during your 7-day trial and you won't be charged
-                  </p>
-                </div>
-
-                <Button 
-                  onClick={handleStartTrial}
-                  className="w-full bg-gradient-primary text-white hover:shadow-glow transition-all py-3"
-                  size="lg"
-                >
-                  Start 7-Day Free Trial
-                  <Star className="w-4 h-4 ml-2" />
-                </Button>
+                <p className="text-sm text-white/80">Cancel anytime during trial period</p>
               </div>
-            </Card>
+
+              {plans.map((plan) => (
+                <Card 
+                  key={plan.id}
+                  className={`p-6 bg-white/95 backdrop-blur-sm shadow-xl cursor-pointer transition-all hover:shadow-2xl border-2 ${
+                    plan.isPopular ? 'border-primary' : 'border-transparent'
+                  }`}
+                  onClick={() => handlePlanSelect(plan)}
+                >
+                  <div className="space-y-4">
+                    {plan.isPopular && (
+                      <Badge className="bg-primary text-primary-foreground w-fit">
+                        <Star className="w-3 h-3 mr-1" />
+                        Most Popular
+                      </Badge>
+                    )}
+                    
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-lg font-bold">{plan.name}</h3>
+                        <p className="text-sm text-muted-foreground">Billed {plan.period}</p>
+                      </div>
+                      <div className="text-right">
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-2xl font-bold text-primary">{plan.price}</span>
+                          <span className="text-sm text-muted-foreground">/{plan.period}</span>
+                        </div>
+                        {plan.discount && (
+                          <Badge variant="secondary" className="text-xs">
+                            {plan.discount}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+
+                    {plan.isPopular && (
+                      <div className="space-y-3 text-left">
+                        <h4 className="text-sm font-medium">Everything included:</h4>
+                        <div className="grid grid-cols-2 gap-2">
+                          {features.slice(0, 6).map((feature, index) => (
+                            <div key={index} className="flex items-center gap-2">
+                              <Check className="w-3 h-3 text-primary flex-shrink-0" />
+                              <span className="text-xs">{feature}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              ))}
+
+              <div className="bg-accent/50 p-4 rounded-lg">
+                <div className="flex items-center gap-2 text-sm text-white">
+                  <Shield className="w-4 h-4" />
+                  <span className="font-medium">100% Risk-Free Trial</span>
+                </div>
+                <p className="text-xs text-white/80 mt-1">
+                  Cancel anytime during your 7-day trial and you won't be charged
+                </p>
+              </div>
+            </div>
 
             {/* Footer */}
             <div className="text-center">
@@ -274,13 +304,30 @@ export const SubscriptionOnboarding = () => {
               <p className="text-white/80">Secure your 7-day free trial</p>
             </div>
 
+            {/* Selected Plan Summary */}
+            {selectedPlan && (
+              <Card className="p-4 bg-white/95 backdrop-blur-sm shadow-xl">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-bold">{selectedPlan.name} Plan</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedPlan.price}/{selectedPlan.period}
+                    </p>
+                  </div>
+                  {selectedPlan.discount && (
+                    <Badge variant="secondary">{selectedPlan.discount}</Badge>
+                  )}
+                </div>
+              </Card>
+            )}
+
             {/* Payment Form */}
             <Card className="p-6 bg-white/95 backdrop-blur-sm shadow-xl">
               <div className="space-y-4">
                 <div className="bg-accent/50 p-4 rounded-lg text-center">
                   <p className="text-sm font-medium">Free for 7 days</p>
                   <p className="text-xs text-muted-foreground">
-                    You'll be charged $9.99/month after your trial ends. Cancel anytime.
+                    You'll be charged {selectedPlan?.price || '$9.99'} after your trial ends. Cancel anytime.
                   </p>
                 </div>
 
