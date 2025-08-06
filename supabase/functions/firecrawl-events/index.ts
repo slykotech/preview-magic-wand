@@ -98,7 +98,7 @@ serve(async (req) => {
     // Strategy 1: Health check with simple API test
     console.log('Testing Firecrawl API connection...');
     try {
-      const healthCheck = await fetch('https://api.firecrawl.dev/v0/crawl', {
+      const healthCheck = await fetch('https://api.firecrawl.dev/v1/crawl', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${firecrawlApiKey}`,
@@ -106,14 +106,17 @@ serve(async (req) => {
         },
         body: JSON.stringify({
           url: 'https://example.com',
-          crawlerOptions: { limit: 1 }
-        })
+          limit: 1,
+          formats: ['markdown']
+        }),
+        signal: AbortSignal.timeout(10000) // 10 second timeout for health check
       });
       
       if (healthCheck.ok) {
         console.log('Firecrawl API is accessible');
       } else {
-        console.log(`Firecrawl API health check failed: ${healthCheck.status}`);
+        const errorText = await healthCheck.text().catch(() => 'Unknown error');
+        console.log(`Firecrawl API health check failed: ${healthCheck.status} - ${errorText}`);
       }
     } catch (healthError) {
       console.log('Firecrawl API health check error:', healthError);
@@ -124,19 +127,19 @@ serve(async (req) => {
       // Strategy A: Direct event platform scraping
       {
         name: 'Eventbrite Search',
-        url: 'https://www.eventbrite.com/d/us--' + (city || 'new-york') + '/events/',
-        method: 'crawl'
+        url: 'https://www.eventbrite.com/d/' + (city || 'new-york').toLowerCase().replace(/\s+/g, '-') + '/events/',
+        method: 'scrape'
       },
       // Strategy B: General search
       {
         name: 'General Events Search',
-        query: `"${city}" events this week concerts shows festivals`,
+        query: `events ${city} concerts shows festivals entertainment`,
         method: 'search'
       },
       // Strategy C: Cultural events
       {
         name: 'Cultural Events',
-        query: `"${city}" music art theater cultural events`,
+        query: `${city} music art theater cultural events today weekend`,
         method: 'search'
       }
     ];
@@ -149,9 +152,9 @@ serve(async (req) => {
       try {
         let firecrawlResponse;
         
-        if (strategy.method === 'crawl' && strategy.url) {
-          // Try direct crawling of event sites
-          firecrawlResponse = await fetch('https://api.firecrawl.dev/v0/crawl', {
+        if (strategy.method === 'scrape' && strategy.url) {
+          // Try direct scraping of event sites using v1 API
+          firecrawlResponse = await fetch('https://api.firecrawl.dev/v1/scrape', {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${firecrawlApiKey}`,
@@ -159,18 +162,13 @@ serve(async (req) => {
             },
             body: JSON.stringify({
               url: strategy.url,
-              crawlerOptions: {
-                limit: 5,
-                timeout: 30000 // 30 seconds timeout
-              },
-              pageOptions: {
-                formats: ['markdown']
-              }
-            })
+              formats: ['markdown']
+            }),
+            signal: AbortSignal.timeout(20000) // 20 second timeout
           });
         } else {
-          // Use search method
-          firecrawlResponse = await fetch('https://api.firecrawl.dev/v0/search', {
+          // Use search method with v1 API
+          firecrawlResponse = await fetch('https://api.firecrawl.dev/v1/search', {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${firecrawlApiKey}`,
@@ -178,10 +176,10 @@ serve(async (req) => {
             },
             body: JSON.stringify({
               query: strategy.query,
-              limit: 10,
-              formats: ['markdown'],
-              timeout: 30000 // 30 seconds timeout
-            })
+              limit: 5,
+              location: city || undefined
+            }),
+            signal: AbortSignal.timeout(15000) // 15 second timeout
           });
         }
 
@@ -194,34 +192,48 @@ serve(async (req) => {
         const firecrawlData = await firecrawlResponse.json();
         console.log(`${strategy.name} response:`, firecrawlData.success ? 'Success' : 'Failed');
 
-        if (firecrawlData.success && firecrawlData.data && Array.isArray(firecrawlData.data)) {
-          console.log(`${strategy.name} found ${firecrawlData.data.length} results`);
+        if (firecrawlData.success) {
+          let dataToProcess = [];
+          
+          // Handle different response structures for scrape vs search
+          if (strategy.method === 'scrape' && firecrawlData.data) {
+            // Single scrape result
+            dataToProcess = [firecrawlData.data];
+          } else if (firecrawlData.data && Array.isArray(firecrawlData.data)) {
+            // Search results array
+            dataToProcess = firecrawlData.data;
+          }
+          
+          console.log(`${strategy.name} found ${dataToProcess.length} results`);
           
           // Process results
-          for (const result of firecrawlData.data.slice(0, 5)) {
-            if (result.markdown && result.url) {
-              const title = extractTitle(result.markdown) || result.title || 'Event';
-              const eventDate = extractDate(result.markdown) || getDefaultEventDate();
+          for (const result of dataToProcess.slice(0, 5)) {
+            if (result.markdown || result.content) {
+              const content = result.markdown || result.content;
+              const url = result.url || result.sourceURL;
+              
+              const title = extractTitle(content) || result.title || 'Event';
+              const eventDate = extractDate(content) || getDefaultEventDate();
               
               // Skip if we already have this event
               const existingEvent = events.find(e => 
                 e.title.toLowerCase() === title.toLowerCase() || 
-                e.external_id === `firecrawl-${encodeURIComponent(result.url)}`
+                (url && e.external_id === `firecrawl-${encodeURIComponent(url)}`)
               );
               
-              if (!existingEvent) {
+              if (!existingEvent && title.length > 5) {
                 const eventData: EventData = {
                   title: title,
-                  description: extractDescription(result.markdown),
+                  description: extractDescription(content),
                   start_date: eventDate,
-                  location_name: city || extractLocation(result.markdown) || 'Unknown Location',
-                  price: extractPrice(result.markdown) || 'See website',
-                  organizer: extractOrganizer(result.markdown) || 'Various',
-                  category: categorizeEvent(title, result.markdown),
-                  website_url: result.url,
+                  location_name: city || extractLocation(content) || 'Unknown Location',
+                  price: extractPrice(content) || 'See website',
+                  organizer: extractOrganizer(content) || 'Various',
+                  category: categorizeEvent(title, content),
+                  website_url: url || `https://example.com/events/${encodeURIComponent(title)}`,
                   image_url: null,
                   source: 'firecrawl',
-                  external_id: `firecrawl-${encodeURIComponent(result.url)}`
+                  external_id: url ? `firecrawl-${encodeURIComponent(url)}` : `firecrawl-${Date.now()}-${encodeURIComponent(title)}`
                 };
                 
                 events.push(eventData);
@@ -230,6 +242,8 @@ serve(async (req) => {
           }
           
           console.log(`${strategy.name} extracted ${events.length} total events so far`);
+        } else {
+          console.log(`${strategy.name} failed with error:`, firecrawlData.error || 'Unknown error');
         }
 
         // Add delay between strategies to avoid rate limiting
