@@ -453,13 +453,6 @@ export type Database = {
             referencedRelation: "game_cards"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "fk_card_responses_session"
-            columns: ["session_id"]
-            isOneToOne: false
-            referencedRelation: "game_sessions"
-            referencedColumns: ["id"]
-          },
         ]
       }
       cities: {
