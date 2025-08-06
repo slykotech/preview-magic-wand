@@ -98,8 +98,8 @@ export const GameCard: React.FC<GameCardProps> = ({
 
     fetchPartnerResponse();
 
-    // Subscribe to new responses - use a broader subscription
-    const channelName = `card-responses-${sessionId}`;
+    // Subscribe to new responses - use real-time postgres changes
+    const channelName = `card-responses-${sessionId}-${card.id}`;
     console.log(`🔔 Creating subscription channel: ${channelName}`);
     
     const channel = supabase
@@ -108,7 +108,8 @@ export const GameCard: React.FC<GameCardProps> = ({
         { 
           event: 'INSERT', 
           schema: 'public', 
-          table: 'card_responses'
+          table: 'card_responses',
+          filter: `session_id=eq.${sessionId}`
         }, 
         (payload) => {
           console.log('🎉 Real-time response received:', payload);
@@ -116,6 +117,7 @@ export const GameCard: React.FC<GameCardProps> = ({
             sessionId: payload.new.session_id,
             cardId: payload.new.card_id,
             userId: payload.new.user_id,
+            responseType: payload.new.response_type,
             currentSessionId: sessionId,
             currentCardId: card.id,
             currentUserId: userId
@@ -130,16 +132,19 @@ export const GameCard: React.FC<GameCardProps> = ({
             setPartnerResponse(payload.new);
             setShowResponse(true);
             
-            // Auto-dismiss after 10 seconds
+            // Auto-dismiss after 15 seconds for better visibility
             if (responseDismissTimer) clearTimeout(responseDismissTimer);
             const timer = setTimeout(() => {
               console.log('⏰ Auto-dismissing partner response');
               setShowResponse(false);
-            }, 10000);
+            }, 15000);
             setResponseDismissTimer(timer);
             
             // Show toast notification
-            toast.success("Partner completed the task! 🎉");
+            const responseTypeText = payload.new.response_type === 'text' ? 'sent a message' : 
+                                   payload.new.response_type === 'photo' ? 'shared a photo' : 
+                                   'completed the task';
+            toast.success(`Partner ${responseTypeText}! 🎉`);
           } else {
             console.log('❌ Response does not match current context');
           }
@@ -391,11 +396,11 @@ export const GameCard: React.FC<GameCardProps> = ({
               ✕
             </Button>
           </div>
-          {partnerResponse.response_type === 'text' && (
+          {partnerResponse.response_type === 'text' && partnerResponse.response_text && (
           <div className="bg-white p-3 rounded-md border border-green-100">
             <p className="text-green-700 whitespace-pre-wrap">{partnerResponse.response_text}</p>
             <div className="mt-2 text-xs text-green-600">
-              Auto-dismiss in 10s
+              Auto-dismiss in 15s • Click × to close
             </div>
           </div>
           )}

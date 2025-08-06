@@ -445,15 +445,7 @@ export type Database = {
           time_taken_seconds?: number | null
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "fk_card_responses_card"
-            columns: ["card_id"]
-            isOneToOne: false
-            referencedRelation: "game_cards"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       cities: {
         Row: {
