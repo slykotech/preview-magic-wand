@@ -10,6 +10,7 @@ import { useCoupleData } from '@/hooks/useCoupleData';
 import { usePresence } from '@/hooks/usePresence';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { DebugInfo } from '@/components/CardGame/DebugInfo';
 
 // Enhanced move interface for tracking
 interface GameMove {
@@ -1168,6 +1169,27 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
           </CardContent>
         </Card>
       )}
+
+      {/* Debug Info - Similar to Card Game */}
+      <DebugInfo 
+        gameState={{
+          id: sessionId,
+          session_id: sessionId,
+          game_id: gameState?.id,
+          user1_id: coupleData?.user1_id,
+          user2_id: coupleData?.user2_id,
+          current_turn: gameState?.current_player_id,
+          status: gameState?.game_status,
+          moves_count: gameState?.moves_count,
+          connection_status: connectionStatus,
+          partner_online: isPartnerOnline,
+          user_symbol: userSymbol,
+          partner_symbol: partnerSymbol,
+          partner_id: partnerId
+        }}
+        currentUserId={user?.id || ''}
+        isMyTurn={isUserTurn}
+      />
     </div>
   );
 };
