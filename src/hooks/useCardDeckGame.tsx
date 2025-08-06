@@ -7,12 +7,13 @@ interface CardGameSession {
   id: string;
   couple_id: string;
   game_id: string;
-  session_mode: 'shuffle' | 'category';
-  selected_categories: string[];
   current_card_id?: string;
-  answered_cards: string[];
-  current_player_id?: string;
+  player_turn?: string;
   status: string;
+  started_at: string;
+  completed_at?: string;
+  total_cards_played: number;
+  session_data?: any;
   created_at: string;
   updated_at: string;
 }
@@ -32,7 +33,7 @@ export const useCardDeckGame = () => {
     try {
       // Get the card game ID
       const { data: gameData, error: gameError } = await supabase
-        .from('couple_card_games')
+        .from('card_games')
         .select('id')
         .eq('game_type', gameType)
         .eq('is_active', true)
@@ -42,12 +43,11 @@ export const useCardDeckGame = () => {
 
       // Create new session
       const { data: sessionData, error: sessionError } = await supabase
-        .from('card_game_sessions')
+        .from('game_sessions')
         .insert({
           couple_id: coupleData.id,
           game_id: gameData.id,
-          session_mode: 'shuffle',
-          current_player_id: user.id,
+          player_turn: user.id,
           status: 'active'
         })
         .select()
@@ -69,7 +69,7 @@ export const useCardDeckGame = () => {
 
     try {
       const { data, error } = await supabase
-        .from('card_game_sessions')
+        .from('game_sessions')
         .select('*')
         .eq('couple_id', coupleData.id)
         .eq('status', 'active')
@@ -85,7 +85,7 @@ export const useCardDeckGame = () => {
   const completeSession = async (sessionId: string) => {
     try {
       const { error } = await supabase
-        .from('card_game_sessions')
+        .from('game_sessions')
         .update({
           status: 'completed',
           completed_at: new Date().toISOString()
