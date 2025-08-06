@@ -144,12 +144,21 @@ Respond in valid JSON format as an array of events.`;
     const aiResponse = await response.json();
     const generatedContent = aiResponse.choices[0].message.content;
 
-    // Parse JSON response
+    // Parse JSON response - handle markdown code blocks
     let aiEvents;
     try {
-      aiEvents = JSON.parse(generatedContent);
+      // Remove markdown code blocks if present
+      let cleanedContent = generatedContent.trim();
+      if (cleanedContent.startsWith('```json')) {
+        cleanedContent = cleanedContent.replace(/^```json\s*/i, '').replace(/\s*```$/, '');
+      } else if (cleanedContent.startsWith('```')) {
+        cleanedContent = cleanedContent.replace(/^```\s*/, '').replace(/\s*```$/, '');
+      }
+      
+      aiEvents = JSON.parse(cleanedContent);
     } catch (parseError) {
       console.error('Failed to parse AI response:', generatedContent);
+      console.error('Parse error details:', parseError);
       throw new Error('Invalid JSON response from AI');
     }
 
