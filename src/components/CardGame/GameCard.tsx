@@ -16,6 +16,7 @@ interface CardData {
   requires_physical_presence: boolean;
   mood_tags: string[];
   relationship_stage: string[];
+  response_type: 'action' | 'text' | 'photo';
 }
 
 interface GameCardProps {
@@ -24,7 +25,7 @@ interface GameCardProps {
   isMyTurn: boolean;
   isRevealed: boolean;
   onReveal: () => void;
-  onComplete: (response?: string, timedOut?: boolean) => void;
+  onComplete: (response?: string | File, timedOut?: boolean) => void;
   onSkip: () => void;
   onFavorite: () => void;
   skipsRemaining: number;
@@ -42,6 +43,7 @@ export const GameCard: React.FC<GameCardProps> = ({
   skipsRemaining
 }) => {
   const [response, setResponse] = useState('');
+  const [photoResponse, setPhotoResponse] = useState<File | null>(null);
 
   const handleReveal = () => {
     console.log('=== CARD REVEAL CLICKED ===');
@@ -53,8 +55,20 @@ export const GameCard: React.FC<GameCardProps> = ({
   };
 
   const handleComplete = (timedOut = false) => {
-    onComplete(response, timedOut);
+    switch (card?.response_type) {
+      case 'text':
+        onComplete(response, timedOut);
+        break;
+      case 'photo':
+        onComplete(photoResponse || undefined, timedOut);
+        break;
+      case 'action':
+      default:
+        onComplete(undefined, timedOut);
+        break;
+    }
     setResponse('');
+    setPhotoResponse(null);
   };
 
   const handleTimerExpire = () => {
@@ -165,23 +179,17 @@ export const GameCard: React.FC<GameCardProps> = ({
       />
 
       {/* Response Area - Only for active player */}
-      {!card.requires_action && isMyTurn && (
-        <div className="mt-4">
-          <Textarea
-            value={response}
-            onChange={(e) => setResponse(e.target.value)}
-            placeholder="Share your thoughts... (optional)"
-            className="resize-none"
-            rows={3}
-          />
-        </div>
-      )}
+      {isMyTurn && renderResponseInput()}
 
       {/* Action Buttons - Only for active player */}
       {isMyTurn && (
         <div className="flex gap-3 justify-center">
           <Button
             onClick={() => handleComplete(false)}
+            disabled={
+              (card.response_type === 'text' && !response.trim()) ||
+              (card.response_type === 'photo' && !photoResponse)
+            }
             className="px-6 py-3 bg-gradient-to-r from-primary to-purple-500 font-semibold"
             size="lg"
           >
@@ -220,4 +228,81 @@ export const GameCard: React.FC<GameCardProps> = ({
 
     </div>
   );
+
+  // Render different input types based on response_type
+  function renderResponseInput() {
+    if (!isMyTurn) return null;
+
+    switch (card?.response_type) {
+      case 'text':
+        return (
+          <div className="mt-4 space-y-2">
+            <label className="text-sm text-muted-foreground">Your Response:</label>
+            <Textarea
+              value={response}
+              onChange={(e) => setResponse(e.target.value)}
+              placeholder="Type your answer here..."
+              className="resize-none focus:ring-2 focus:ring-primary"
+              rows={4}
+              maxLength={500}
+            />
+            <p className="text-xs text-muted-foreground text-right">
+              {response.length}/500 characters
+            </p>
+          </div>
+        );
+
+      case 'photo':
+        return (
+          <div className="mt-4 space-y-2">
+            <label className="text-sm text-muted-foreground">Upload Photo:</label>
+            <div className="border-2 border-dashed border-border rounded-lg p-4">
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={(e) => setPhotoResponse(e.target.files?.[0] || null)}
+                className="hidden"
+                id="photo-upload"
+              />
+              <label
+                htmlFor="photo-upload"
+                className="cursor-pointer flex flex-col items-center"
+              >
+                {photoResponse ? (
+                  <>
+                    <img
+                      src={URL.createObjectURL(photoResponse)}
+                      alt="Response"
+                      className="max-h-40 rounded"
+                    />
+                    <p className="text-sm text-muted-foreground mt-2">
+                      Click to change photo
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-4xl mb-2">📷</span>
+                    <p className="text-sm text-muted-foreground">
+                      Tap to take photo or upload
+                    </p>
+                  </>
+                )}
+              </label>
+            </div>
+          </div>
+        );
+
+      case 'action':
+      default:
+        return (
+          <div className="mt-4 p-3 bg-yellow-50 rounded-lg">
+            <p className="text-sm text-yellow-800 flex items-center">
+              <span className="mr-2">⚡</span>
+              Complete this action with your partner
+            </p>
+          </div>
+        );
+    }
+  }
 };

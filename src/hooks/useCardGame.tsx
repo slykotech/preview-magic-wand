@@ -37,6 +37,7 @@ interface CardData {
   mood_tags: string[];
   relationship_stage: string[];
   usage_count?: number;
+  response_type: 'action' | 'text' | 'photo';
 }
 
 export function useCardGame(sessionId: string | null) {
@@ -109,7 +110,7 @@ export function useCardGame(sessionId: string | null) {
             .single();
           
           if (cardData) {
-            setCurrentCard(cardData);
+            setCurrentCard(cardData as CardData);
           }
         }
 
@@ -176,7 +177,7 @@ export function useCardGame(sessionId: string | null) {
                 console.error('Failed to fetch card from real-time:', cardError);
               } else {
                 console.log('Card fetched successfully from real-time:', cardData);
-                setCurrentCard(cardData);
+                setCurrentCard(cardData as CardData);
               }
               
               // Show notification if it's now my turn
@@ -303,7 +304,7 @@ export function useCardGame(sessionId: string | null) {
       console.log('🎲 Selected random card:', randomCard);
       
       // Set the card locally immediately for better UX
-      setCurrentCard(randomCard);
+      setCurrentCard(randomCard as CardData);
       
       // Update game state with the new card
       console.log('💾 Updating game state with card:', randomCard.id);
@@ -348,20 +349,39 @@ export function useCardGame(sessionId: string | null) {
   }, [isMyTurn, gameState, sessionId, toast]);
 
   // Complete turn and switch to partner
-  const completeTurn = useCallback(async (response?: string, reactionTime?: number) => {
+  const completeTurn = useCallback(async (response?: string | File, reactionTime?: number) => {
     if (!isMyTurn || !gameState || !currentCard || !sessionId || !user) return;
 
     try {
       // Save response if provided
       if (response || currentCard.requires_action) {
+        let responseText = '';
+        let responseType = currentCard.response_type || 'action';
+        
+        if (response instanceof File) {
+          // Handle file upload to Supabase Storage
+          const fileName = `${sessionId}/${currentCard.id}/${Date.now()}.jpg`;
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('card-responses')
+            .upload(fileName, response);
+          
+          if (!uploadError && uploadData) {
+            responseText = fileName; // Store file path
+            responseType = 'photo';
+          }
+        } else if (typeof response === 'string') {
+          responseText = response;
+          responseType = 'text';
+        }
+
         await supabase
           .from("card_responses")
           .insert({
             session_id: sessionId,
             card_id: currentCard.id,
             user_id: user.id,
-            response_text: response,
-            response_type: currentCard.requires_action ? 'action' : 'text',
+            response_text: responseText,
+            response_type: responseType,
             time_taken_seconds: reactionTime
           });
       }
