@@ -70,7 +70,7 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onSave }) => {
 
   const getSourceColor = (source: string) => {
     switch (source) {
-      case 'eventbrite': return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200';
+      
       case 'meetup': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
       case 'webscraping': return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
       case 'ai_generated': return 'bg-gradient-to-r from-blue-100 to-purple-100 text-blue-800 dark:from-blue-900 dark:to-purple-900 dark:text-blue-200';
@@ -81,7 +81,7 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onSave }) => {
   const getSourceLabel = (source: string) => {
     switch (source) {
       case 'ai_generated': return '✨ AI Generated';
-      case 'eventbrite': return 'Eventbrite';
+      
       case 'meetup': return 'Meetup';
       case 'webscraping': return 'Web Search';
       default: return source;

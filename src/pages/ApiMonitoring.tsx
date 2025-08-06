@@ -85,7 +85,7 @@ const ApiMonitoring = () => {
                   <ul className="text-sm space-y-1 text-muted-foreground">
                     <li>• Google Places: $0.017/request</li>
                     <li>• Ticketmaster: $0.025/request</li>
-                    <li>• Eventbrite: $0.01/request</li>
+                    
                     <li>• SeatGeek: $0.005/request</li>
                     <li>• PredictHQ: $0.02/request</li>
                   </ul>

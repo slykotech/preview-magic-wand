@@ -49,7 +49,7 @@ export const EventDiscovery: React.FC<EventDiscoveryProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [selectedTimeFrame, setSelectedTimeFrame] = useState("this_week");
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const [lastFetchSource, setLastFetchSource] = useState<'cache' | 'fresh' | null>(null);
+  const [lastFetchSource, setLastFetchSource] = useState<'cache' | 'fresh' | 'sample' | null>(null);
 
   // Automatically get location and fetch events on mount
   useEffect(() => {
@@ -96,54 +96,42 @@ export const EventDiscovery: React.FC<EventDiscoveryProps> = ({
         return;
       }
 
-      // Fallback to Firecrawl if AI fails
-      console.log('AI events failed, trying Firecrawl:', aiError);
-      const { data: firecrawlData, error: firecrawlError } = await supabase.functions.invoke('firecrawl-events', {
-        body: {
-          latitude: location.latitude,
-          longitude: location.longitude,
-          radiusKm: location.searchRadius || 25,
-          city: location.city,
-          query: `events in ${location.city}`
-        }
+      // If AI fails, show sample events instead of scraping
+      console.log('AI events failed, showing sample events:', aiError);
+      toast({
+        title: "Unable to find events",
+        description: "Showing sample events for your area",
+        duration: 3000,
       });
-
-      if (firecrawlData?.success && firecrawlData.events?.length > 0) {
-        setEvents(firecrawlData.events);
-        setLastFetchSource(firecrawlData.source);
-        toast({
-          title: `Found ${firecrawlData.events.length} events`,
-          description: firecrawlData.source === 'cache' 
-            ? "Showing cached events" 
-            : `Fetched ${firecrawlData.newEventsFetched || 0} fresh events with Firecrawl`,
-        });
-        return;
-      }
-
-      // Final fallback to original fetch-events
-      console.log('Firecrawl failed, falling back to original method:', firecrawlError);
-      const { data, error } = await supabase.functions.invoke('fetch-events', {
-        body: {
-          latitude: location.latitude,
-          longitude: location.longitude,
-          radiusKm: location.searchRadius || 25,
-          city: location.city,
-          sources: ['eventbrite', 'meetup']
+      
+      // Generate sample events
+      const sampleEvents = [
+        {
+          id: `sample-1-${Date.now()}`,
+          title: "Local Coffee Shop Music Night",
+          start_date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          location_name: location.city || "Your City",
+          price: "Free",
+          category: "music",
+          description: "Enjoy live acoustic music at your local coffee shop",
+          source: "sample",
+          organizer: "Community Events"
+        },
+        {
+          id: `sample-2-${Date.now()}`,
+          title: "Weekend Farmers Market",
+          start_date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          location_name: location.city || "Your City",
+          price: "Free",
+          category: "food",
+          description: "Fresh local produce and artisan goods",
+          source: "sample",
+          organizer: "Local Farmers"
         }
-      });
-
-      if (error) throw error;
-
-      if (data?.success) {
-        setEvents(data.events || []);
-        setLastFetchSource(data.source);
-        toast({
-          title: `Found ${data.events?.length || 0} events`,
-          description: data.source === 'cache' 
-            ? "Showing cached events" 
-            : `Fetched ${data.newEventsFetched || 0} events via fallback`,
-        });
-      }
+      ];
+      
+      setEvents(sampleEvents);
+      setLastFetchSource('sample');
     } catch (error) {
       console.error('Error fetching events:', error);
       toast({
