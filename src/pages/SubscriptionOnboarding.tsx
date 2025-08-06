@@ -44,6 +44,7 @@ export const SubscriptionOnboarding = () => {
   // Redirect to dashboard if user already has premium access
   useEffect(() => {
     if (!loading && premiumAccess.has_access) {
+      console.log('User already has premium access, redirecting to dashboard');
       navigate('/dashboard');
     }
   }, [loading, premiumAccess.has_access, navigate]);
@@ -64,6 +65,8 @@ export const SubscriptionOnboarding = () => {
   };
 
   const handlePaymentSubmit = async () => {
+    console.log('Starting payment submission process...');
+    
     // Clear previous errors
     setCardErrors([]);
     
@@ -71,6 +74,7 @@ export const SubscriptionOnboarding = () => {
     const validation = validateCard(paymentDetails);
     
     if (!validation.isValid) {
+      console.log('Card validation failed:', validation.errors);
       setCardErrors(validation.errors);
       toast({
         variant: "destructive",
@@ -80,7 +84,10 @@ export const SubscriptionOnboarding = () => {
     }
 
     setIsProcessing(true);
+    
     try {
+      console.log('Card validation passed, starting trial...');
+      
       // Get card brand for better integration
       const cardBrand = getCardBrandName(paymentDetails.cardNumber);
       
@@ -89,16 +96,30 @@ export const SubscriptionOnboarding = () => {
         brand: cardBrand.toLowerCase()
       };
       
+      console.log('Calling startTrial with card details:', cardDetails);
+      
       const result = await startTrial(cardDetails);
-      if (result.success) {
+      
+      console.log('StartTrial result:', result);
+      
+      if (result && result.success) {
+        console.log('Trial started successfully, showing success toast');
         toast({
-          description: "Welcome to Love Sync Premium! Your 7-day free trial has started."
+          description: "Welcome to Love Sync Premium! Your 7-day free trial has started.",
+          duration: 3000
         });
-        navigate('/dashboard');
+        
+        // Wait a moment for the toast to show, then navigate
+        setTimeout(() => {
+          console.log('Navigating to dashboard after successful trial start');
+          navigate('/dashboard');
+        }, 1500);
       } else {
+        console.error('Trial start failed:', result?.error);
+        const errorMessage = result?.error || "Failed to start trial. Please try again.";
         toast({
           variant: "destructive",
-          description: result.error || "Failed to start trial. Please try again."
+          description: errorMessage
         });
       }
     } catch (error) {
@@ -149,6 +170,14 @@ export const SubscriptionOnboarding = () => {
     );
   };
 
+  // Check if all fields are valid for form submission
+  const isFormValid = () => {
+    return Object.values(fieldValidation).every(field => field.isValid && field.touched) &&
+           paymentDetails.cardNumber.trim() !== '' &&
+           paymentDetails.expiryDate.trim() !== '' &&
+           paymentDetails.cvv.trim() !== '' &&
+           paymentDetails.cardholderName.trim() !== '';
+  };
 
   if (loading) {
     return (
@@ -373,7 +402,7 @@ export const SubscriptionOnboarding = () => {
                 <div className="space-y-3">
                   <Button 
                     onClick={handlePaymentSubmit}
-                    disabled={isProcessing}
+                    disabled={isProcessing || !isFormValid()}
                     className="w-full bg-gradient-primary text-white hover:shadow-glow transition-all py-3"
                     size="lg"
                   >
