@@ -181,13 +181,13 @@ serve(async (req) => {
     
     // Get place types for the category, filtered for date-appropriate venues
     const placeTypes = category && PLACE_TYPES[category as keyof typeof PLACE_TYPES] 
-      ? PLACE_TYPES[category as keyof typeof PLACE_TYPES] 
-      : DATE_APPROPRIATE_TYPES.slice(0, 5); // Limit to first 5 for API efficiency
+      ? PLACE_TYPES[category as keyof typeof PLACE_TYPES].slice(0, 3) // Limit category searches to 3 types
+      : DATE_APPROPRIATE_TYPES.slice(0, 3); // Reduced to 3 for faster loading
 
     const allPlaces: any[] = [];
 
-    // Search for multiple place types to get comprehensive results
-    for (const placeType of placeTypes) {
+    // Use Promise.all for parallel API calls to improve speed
+    const apiCalls = placeTypes.map(async (placeType) => {
       const params = new URLSearchParams({
         key: apiKey,
         location: `${latitude},${longitude}`,
@@ -202,64 +202,85 @@ serve(async (req) => {
         const data = await response.json();
         
         if (data.status === 'OK' && data.results) {
-          for (const place of data.results) {
-            // Extract city information from place details
-            let cityInfo = '';
-            let regionInfo = '';
-            
-            if (place.vicinity) {
-              const locationParts = place.vicinity.split(',').map((s: string) => s.trim());
-              cityInfo = locationParts[locationParts.length - 1] || '';
-              regionInfo = locationParts.length > 1 ? locationParts[locationParts.length - 2] : '';
-            }
-
-            // Store place in database with location context
-            await supabase.from('places').upsert({
-              google_place_id: place.place_id,
-              name: place.name,
-              address: place.vicinity || place.formatted_address,
-              latitude: place.geometry.location.lat,
-              longitude: place.geometry.location.lng,
-              place_types: place.types,
-              rating: place.rating,
-              price_level: place.price_level,
-              photo_references: place.photos?.map((p: any) => p.photo_reference) || [],
-              phone: place.formatted_phone_number,
-              website: place.website,
-              opening_hours: place.opening_hours ? { open_now: place.opening_hours.open_now } : null,
-              is_open: place.opening_hours?.open_now,
-              location_context: {
-                city: cityInfo || cityName || 'Unknown',
-                region: regionInfo,
-                search_city: cityName?.toLowerCase(),
-                coordinates: { lat: latitude, lng: longitude }
-              },
-              google_data: place,
-              last_updated: new Date().toISOString()
-            }, { onConflict: 'google_place_id' });
-
-            // Add to results if meets criteria and is date-appropriate
-            if (place.name && (place.rating || 0) >= 3.0 && 
-                place.types.some((type: string) => DATE_APPROPRIATE_TYPES.includes(type))) {
-              allPlaces.push({
-                id: place.place_id,
-                name: place.name,
-                address: place.vicinity || place.formatted_address,
-                rating: place.rating || 0,
-                priceLevel: place.price_level,
-                latitude: place.geometry.location.lat,
-                longitude: place.geometry.location.lng,
-                types: place.types,
-                photoReference: place.photos?.[0]?.photo_reference,
-                isOpen: place.opening_hours?.open_now,
-                distance: calculateDistance(latitude, longitude, place.geometry.location.lat, place.geometry.location.lng)
-              });
-            }
-          }
+          return data.results.slice(0, 20); // Limit each type to 20 results for faster processing
         }
+        return [];
       } catch (error) {
         console.error(`Error fetching ${placeType}:`, error);
+        return [];
       }
+    });
+
+    // Wait for all API calls to complete
+    const apiResults = await Promise.all(apiCalls);
+    const allApiPlaces = apiResults.flat();
+
+    console.log(`Fetched ${allApiPlaces.length} total places from ${placeTypes.length} API calls`);
+
+    // Process places in batches for database operations
+    const batchSize = 10;
+    for (let i = 0; i < allApiPlaces.length; i += batchSize) {
+      const batch = allApiPlaces.slice(i, i + batchSize);
+      
+      // Process batch in parallel
+      await Promise.all(batch.map(async (place) => {
+        try {
+          // Extract city information from place details
+          let cityInfo = '';
+          let regionInfo = '';
+          
+          if (place.vicinity) {
+            const locationParts = place.vicinity.split(',').map((s: string) => s.trim());
+            cityInfo = locationParts[locationParts.length - 1] || '';
+            regionInfo = locationParts.length > 1 ? locationParts[locationParts.length - 2] : '';
+          }
+
+          // Store place in database with location context
+          await supabase.from('places').upsert({
+            google_place_id: place.place_id,
+            name: place.name,
+            address: place.vicinity || place.formatted_address,
+            latitude: place.geometry.location.lat,
+            longitude: place.geometry.location.lng,
+            place_types: place.types,
+            rating: place.rating,
+            price_level: place.price_level,
+            photo_references: place.photos?.map((p: any) => p.photo_reference) || [],
+            phone: place.formatted_phone_number,
+            website: place.website,
+            opening_hours: place.opening_hours ? { open_now: place.opening_hours.open_now } : null,
+            is_open: place.opening_hours?.open_now,
+            location_context: {
+              city: cityInfo || cityName || 'Unknown',
+              region: regionInfo,
+              search_city: cityName?.toLowerCase(),
+              coordinates: { lat: latitude, lng: longitude }
+            },
+            google_data: place,
+            last_updated: new Date().toISOString()
+          }, { onConflict: 'google_place_id' });
+
+          // Add to results if meets criteria and is date-appropriate
+          if (place.name && (place.rating || 0) >= 3.0 && 
+              place.types.some((type: string) => DATE_APPROPRIATE_TYPES.includes(type))) {
+            allPlaces.push({
+              id: place.place_id,
+              name: place.name,
+              address: place.vicinity || place.formatted_address,
+              rating: place.rating || 0,
+              priceLevel: place.price_level,
+              latitude: place.geometry.location.lat,
+              longitude: place.geometry.location.lng,
+              types: place.types,
+              photoReference: place.photos?.[0]?.photo_reference,
+              isOpen: place.opening_hours?.open_now,
+              distance: calculateDistance(latitude, longitude, place.geometry.location.lat, place.geometry.location.lng)
+            });
+          }
+        } catch (error) {
+          console.error(`Error processing place ${place.name}:`, error);
+        }
+      }));
     }
 
     // Remove duplicates and sort by priority first, then by distance
