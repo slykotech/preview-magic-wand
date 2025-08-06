@@ -188,6 +188,7 @@ export function useCardGame(sessionId: string | null) {
     }
   }, [user, coupleData, sessionId]);
 
+
   // This function is no longer needed as game creation is handled in Games.tsx
   const createNewSession = async () => {
     console.log('createNewSession called - this should not happen anymore');
@@ -195,9 +196,16 @@ export function useCardGame(sessionId: string | null) {
 
   // Draw next card
   const drawCard = useCallback(async () => {
-    if (!isMyTurn || !gameState || !sessionId) return;
+    console.log('drawCard called:', { isMyTurn, gameState: !!gameState, sessionId });
+    
+    if (!isMyTurn || !gameState || !sessionId) {
+      console.log('drawCard early return:', { isMyTurn, gameState: !!gameState, sessionId });
+      return;
+    }
 
     try {
+      console.log('Fetching available cards...');
+      
       // Get random available card
       const { data: availableCards, error } = await supabase
         .from("deck_cards")
@@ -206,9 +214,12 @@ export function useCardGame(sessionId: string | null) {
         .not("id", "in", `(${gameState.played_cards.length > 0 ? gameState.played_cards.join(",") : "'00000000-0000-0000-0000-000000000000'"})`)
         .limit(100);
 
+      console.log('Available cards result:', { availableCards, error });
+
       if (error) throw error;
 
       if (!availableCards || availableCards.length === 0) {
+        console.log('No more cards available, ending game');
         // No more cards - end game
         await endGame();
         return;
@@ -216,8 +227,10 @@ export function useCardGame(sessionId: string | null) {
 
       // Select random card
       const randomCard = availableCards[Math.floor(Math.random() * availableCards.length)];
+      console.log('Selected random card:', randomCard);
       
       // Update game state
+      console.log('Updating game state with card:', randomCard.id);
       const { error: updateError } = await supabase
         .from("card_deck_game_sessions")
         .update({
@@ -227,7 +240,12 @@ export function useCardGame(sessionId: string | null) {
         })
         .eq("id", sessionId);
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error('Update error:', updateError);
+        throw updateError;
+      }
+      
+      console.log('Card drawn successfully!');
 
     } catch (error) {
       console.error("Failed to draw card:", error);
@@ -401,6 +419,21 @@ export function useCardGame(sessionId: string | null) {
       toast.error("Failed to end game");
     }
   }, [gameState, sessionId]);
+
+  // Auto-draw card when it's my turn and no current card
+  useEffect(() => {
+    console.log('Auto-draw check:', {
+      isMyTurn,
+      currentCard: !!currentCard,
+      gameStatus: gameState?.status,
+      sessionId
+    });
+    
+    if (isMyTurn && !currentCard && gameState?.status === 'active' && sessionId) {
+      console.log('Auto-drawing card...');
+      drawCard();
+    }
+  }, [isMyTurn, currentCard, gameState?.status, sessionId, drawCard]);
 
   return {
     gameState,
