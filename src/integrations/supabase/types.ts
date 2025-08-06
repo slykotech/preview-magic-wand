@@ -100,6 +100,56 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_generation_jobs: {
+        Row: {
+          city_id: string | null
+          city_name: string
+          completed_at: string | null
+          cost_estimate: number | null
+          created_at: string | null
+          error_message: string | null
+          events_generated: number | null
+          generation_batch_id: string
+          id: string
+          started_at: string | null
+          status: string | null
+        }
+        Insert: {
+          city_id?: string | null
+          city_name: string
+          completed_at?: string | null
+          cost_estimate?: number | null
+          created_at?: string | null
+          error_message?: string | null
+          events_generated?: number | null
+          generation_batch_id: string
+          id?: string
+          started_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          city_id?: string | null
+          city_name?: string
+          completed_at?: string | null
+          cost_estimate?: number | null
+          created_at?: string | null
+          error_message?: string | null
+          events_generated?: number | null
+          generation_batch_id?: string
+          id?: string
+          started_at?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_generation_jobs_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       api_cost_config: {
         Row: {
           api_source: string
@@ -402,6 +452,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      cities: {
+        Row: {
+          country: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          latitude: number
+          longitude: number
+          name: string
+          population: number | null
+          state: string | null
+          timezone: string
+          updated_at: string | null
+        }
+        Insert: {
+          country?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          latitude: number
+          longitude: number
+          name: string
+          population?: number | null
+          state?: string | null
+          timezone?: string
+          updated_at?: string | null
+        }
+        Update: {
+          country?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          latitude?: number
+          longitude?: number
+          name?: string
+          population?: number | null
+          state?: string | null
+          timezone?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       conversations: {
         Row: {
@@ -786,12 +878,15 @@ export type Database = {
       }
       events: {
         Row: {
+          ai_generated: boolean | null
           category: string | null
+          city_name: string | null
           created_at: string
           description: string | null
           end_date: string | null
           expires_at: string
           external_id: string
+          generation_batch_id: string | null
           id: string
           image_url: string | null
           latitude: number | null
@@ -806,12 +901,15 @@ export type Database = {
           website_url: string | null
         }
         Insert: {
+          ai_generated?: boolean | null
           category?: string | null
+          city_name?: string | null
           created_at?: string
           description?: string | null
           end_date?: string | null
           expires_at?: string
           external_id: string
+          generation_batch_id?: string | null
           id?: string
           image_url?: string | null
           latitude?: number | null
@@ -826,12 +924,15 @@ export type Database = {
           website_url?: string | null
         }
         Update: {
+          ai_generated?: boolean | null
           category?: string | null
+          city_name?: string | null
           created_at?: string
           description?: string | null
           end_date?: string | null
           expires_at?: string
           external_id?: string
+          generation_batch_id?: string | null
           id?: string
           image_url?: string | null
           latitude?: number | null
@@ -2362,6 +2463,10 @@ export type Database = {
         Returns: undefined
       }
       cleanup_expired_verifications: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      cleanup_old_ai_events: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }

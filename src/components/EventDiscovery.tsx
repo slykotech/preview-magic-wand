@@ -26,6 +26,9 @@ interface Event {
   image_url?: string;
   source: string;
   distance_km?: number;
+  ai_generated?: boolean;
+  generation_batch_id?: string;
+  city_name?: string;
 }
 
 interface EventDiscoveryProps {
@@ -71,7 +74,30 @@ export const EventDiscovery: React.FC<EventDiscoveryProps> = ({
 
     setIsLoading(true);
     try {
-      // Try Firecrawl first as primary solution
+      // Try AI-generated events first (fastest and most reliable)
+      const { data: aiData, error: aiError } = await supabase.functions.invoke('generate-ai-events', {
+        body: {
+          cityName: location.city,
+          latitude: location.latitude,
+          longitude: location.longitude,
+          forceRefresh: false
+        }
+      });
+
+      if (aiData?.success && aiData.events?.length > 0) {
+        setEvents(aiData.events);
+        setLastFetchSource(aiData.source);
+        toast({
+          title: `Found ${aiData.events.length} events`,
+          description: aiData.source === 'cache' 
+            ? "Showing cached AI events" 
+            : `Generated ${aiData.events.length} fresh AI events`,
+        });
+        return;
+      }
+
+      // Fallback to Firecrawl if AI fails
+      console.log('AI events failed, trying Firecrawl:', aiError);
       const { data: firecrawlData, error: firecrawlError } = await supabase.functions.invoke('firecrawl-events', {
         body: {
           latitude: location.latitude,
@@ -94,7 +120,7 @@ export const EventDiscovery: React.FC<EventDiscoveryProps> = ({
         return;
       }
 
-      // Fallback to original fetch-events if Firecrawl fails
+      // Final fallback to original fetch-events
       console.log('Firecrawl failed, falling back to original method:', firecrawlError);
       const { data, error } = await supabase.functions.invoke('fetch-events', {
         body: {
