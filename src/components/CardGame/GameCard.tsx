@@ -134,6 +134,8 @@ export const GameCard: React.FC<GameCardProps> = ({
     // This ensures User 2 sees User 1's response IMMEDIATELY when sent
     const channelName = `session-responses-${sessionId}`;
     console.log(`🔔 Creating session-wide subscription channel: ${channelName}`);
+    console.log(`🎯 USER 2 SETUP: Listening for responses from User 1 immediately!`);
+    console.log(`📋 Current User ID: ${userId}, Session: ${sessionId}`);
     
     const channel = supabase
       .channel(channelName)
@@ -145,7 +147,8 @@ export const GameCard: React.FC<GameCardProps> = ({
           filter: `session_id=eq.${sessionId}`
         }, 
         (payload) => {
-          console.log('🎉 REAL-TIME RESPONSE RECEIVED FOR SESSION:', payload);
+          console.log('🚨🚨🚨 REAL-TIME EVENT TRIGGERED! 🚨🚨🚨');
+          console.log('📡 FULL PAYLOAD:', JSON.stringify(payload, null, 2));
           console.log('📊 Response details:', {
             sessionId: payload.new.session_id,
             cardId: payload.new.card_id,
