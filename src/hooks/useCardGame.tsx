@@ -223,7 +223,7 @@ export function useCardGame(sessionId: string | null) {
         const validPlayedCards = gameState.played_cards.filter(id => id && typeof id === 'string');
         if (validPlayedCards.length > 0) {
           console.log('🚫 Filtering out played cards:', validPlayedCards);
-          query = query.not("id", "in", `(${validPlayedCards.map(id => `'${id}'`).join(",")})`);
+          query = query.not("id", "in", `(${validPlayedCards.join(",")})`);
         }
       }
 
