@@ -40,6 +40,7 @@ import CompleteSignup from "./pages/CompleteSignup";
 
 import GooglePlacesTestPage from "./pages/GooglePlacesTest";
 import EventScraper from "./pages/EventScraper";
+import EventMonitoring from "./pages/EventMonitoring";
 
 const queryClient = new QueryClient();
 
@@ -83,6 +84,7 @@ const App = () => {
                 
                 <Route path="/test-google-places" element={<GooglePlacesTestPage />} />
                 <Route path="/event-scraper" element={<EventScraper />} />
+                <Route path="/event-monitoring" element={<EventMonitoring />} />
               <Route path="/vault" element={<MemoryVault />} />
               <Route path="/profile" element={<Profile />} />
                 <Route path="/couple-setup" element={<CoupleSetup />} />
