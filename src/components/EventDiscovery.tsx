@@ -71,6 +71,31 @@ export const EventDiscovery: React.FC<EventDiscoveryProps> = ({
 
     setIsLoading(true);
     try {
+      // Try Firecrawl first as primary solution
+      const { data: firecrawlData, error: firecrawlError } = await supabase.functions.invoke('firecrawl-events', {
+        body: {
+          latitude: location.latitude,
+          longitude: location.longitude,
+          radiusKm: location.searchRadius || 25,
+          city: location.city,
+          query: `events in ${location.city}`
+        }
+      });
+
+      if (firecrawlData?.success && firecrawlData.events?.length > 0) {
+        setEvents(firecrawlData.events);
+        setLastFetchSource(firecrawlData.source);
+        toast({
+          title: `Found ${firecrawlData.events.length} events`,
+          description: firecrawlData.source === 'cache' 
+            ? "Showing cached events" 
+            : `Fetched ${firecrawlData.newEventsFetched || 0} fresh events with Firecrawl`,
+        });
+        return;
+      }
+
+      // Fallback to original fetch-events if Firecrawl fails
+      console.log('Firecrawl failed, falling back to original method:', firecrawlError);
       const { data, error } = await supabase.functions.invoke('fetch-events', {
         body: {
           latitude: location.latitude,
@@ -90,7 +115,7 @@ export const EventDiscovery: React.FC<EventDiscoveryProps> = ({
           title: `Found ${data.events?.length || 0} events`,
           description: data.source === 'cache' 
             ? "Showing cached events" 
-            : `Fetched ${data.newEventsFetched || 0} new events`,
+            : `Fetched ${data.newEventsFetched || 0} events via fallback`,
         });
       }
     } catch (error) {
