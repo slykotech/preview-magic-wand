@@ -61,24 +61,75 @@ interface LoveGrant {
   created_at: string;
 }
 
-// Confetti effect component
-const Confetti = () => {
+// Winner Celebration Animation Component
+const WinnerCelebration = ({ winnerSymbol }: { winnerSymbol: CellValue }) => {
+  if (!winnerSymbol) return null;
+
   return (
     <div className="fixed inset-0 pointer-events-none z-50">
-      {[...Array(50)].map((_, i) => (
+      {/* Floating Hearts - Winner's Symbol Only */}
+      {[...Array(30)].map((_, i) => (
         <div
-          key={i}
+          key={`floating-${i}`}
+          className="absolute animate-bounce"
+          style={{
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+            animationDelay: `${Math.random() * 2}s`,
+            animationDuration: `${1.5 + Math.random() * 2}s`,
+            fontSize: `${1.5 + Math.random() * 1.5}rem`
+          }}
+        >
+          {winnerSymbol}
+        </div>
+      ))}
+      
+      {/* Pulsing Hearts - Larger */}
+      {[...Array(15)].map((_, i) => (
+        <div
+          key={`pulse-${i}`}
           className="absolute animate-ping"
           style={{
             left: `${Math.random() * 100}%`,
             top: `${Math.random() * 100}%`,
             animationDelay: `${Math.random() * 3}s`,
-            animationDuration: `${2 + Math.random() * 3}s`
+            animationDuration: `${2 + Math.random() * 2}s`,
+            fontSize: `${2 + Math.random() * 2}rem`
           }}
         >
-          {Math.random() > 0.5 ? '💖' : '💘'}
+          {winnerSymbol}
         </div>
       ))}
+      
+      {/* Sparkle Effect with Winner Symbol */}
+      {[...Array(20)].map((_, i) => (
+        <div
+          key={`sparkle-${i}`}
+          className="absolute animate-spin"
+          style={{
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+            animationDelay: `${Math.random() * 1.5}s`,
+            animationDuration: `${1 + Math.random() * 2}s`,
+            fontSize: `${0.8 + Math.random() * 1}rem`,
+            opacity: 0.7
+          }}
+        >
+          ✨{winnerSymbol}✨
+        </div>
+      ))}
+
+      {/* Center Burst Effect */}
+      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+        <div className="animate-pulse">
+          <div 
+            className="text-6xl animate-bounce"
+            style={{ animationDuration: '0.5s' }}
+          >
+            {winnerSymbol}
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
@@ -1041,8 +1092,12 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Confetti for winners */}
-      {showCelebration && gameState.winner_id && <Confetti />}
+      {/* Winner Celebration Animation */}
+      {showCelebration && gameState.winner_id && (
+        <WinnerCelebration 
+          winnerSymbol={getUserSymbol(gameState.winner_id)} 
+        />
+      )}
 
       {/* Live Avatars & Status */}
       <Card className="border-primary/20 animate-fade-in">
