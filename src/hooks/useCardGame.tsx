@@ -79,14 +79,24 @@ export function useCardGame(sessionId: string | null) {
           skipped_cards: Array.isArray(gameData.skipped_cards) ? gameData.skipped_cards : [],
           favorite_cards: Array.isArray(gameData.favorite_cards) ? gameData.favorite_cards : []
         });
+        
+        // Debug logging
+        console.log('Game initialized:', {
+          gameData,
+          currentUserId: user.id,
+          currentTurn: gameData.current_turn,
+          isMyTurn: gameData.current_turn === user.id,
+          user1_id: gameData.user1_id,
+          user2_id: gameData.user2_id
+        });
+        
         setIsMyTurn(gameData.current_turn === user.id);
 
         // Set partner info
         const partnerId = gameData.user1_id === user.id ? gameData.user2_id : gameData.user1_id;
-        // For demo mode where both users are the same, just use the current user info
         setPartnerInfo({
           id: partnerId,
-          name: "Your Partner" // In a real app, you'd fetch this from profiles
+          name: partnerId === gameData.user1_id ? "User 1" : "User 2"
         });
 
         // Fetch current card if exists
@@ -135,6 +145,14 @@ export function useCardGame(sessionId: string | null) {
               favorite_cards: Array.isArray(newState.favorite_cards) ? newState.favorite_cards : []
             };
             
+            // Debug logging for real-time updates
+            console.log('Real-time turn update:', {
+              newCurrentTurn: newState.current_turn,
+              myUserId: user.id,
+              isNowMyTurn: newState.current_turn === user.id,
+              payload
+            });
+            
             setGameState(processedState);
             setIsMyTurn(newState.current_turn === user.id);
             
@@ -175,15 +193,27 @@ export function useCardGame(sessionId: string | null) {
     if (!user || !coupleData) return;
 
     try {
+      // Use the exact user IDs from the couple record
+      const player1Id = coupleData.user1_id;
+      const player2Id = coupleData.user2_id;
+      
       // Randomly select first player
-      const firstPlayer = Math.random() < 0.5 ? coupleData.user1_id : coupleData.user2_id;
+      const firstPlayer = Math.random() < 0.5 ? player1Id : player2Id;
+      
+      console.log('Creating new game session:', {
+        player1Id,
+        player2Id,
+        firstPlayer,
+        currentUserId: user.id,
+        coupleId: coupleData.id
+      });
 
       const { data: newSession, error } = await supabase
         .from("card_deck_game_sessions")
         .insert({
           couple_id: coupleData.id,
-          user1_id: coupleData.user1_id,
-          user2_id: coupleData.user2_id,
+          user1_id: player1Id,
+          user2_id: player2Id,
           current_turn: firstPlayer,
           game_mode: 'classic'
         })

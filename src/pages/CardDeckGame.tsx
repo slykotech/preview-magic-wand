@@ -4,13 +4,16 @@ import { useCardGame } from '@/hooks/useCardGame';
 import { GameCard } from '@/components/CardGame/GameCard';
 import { TurnIndicator } from '@/components/CardGame/TurnIndicator';
 import { GameStats } from '@/components/CardGame/GameStats';
+import { DebugInfo } from '@/components/CardGame/DebugInfo';
 import { Button } from '@/components/ui/button';
 import { GradientHeader } from '@/components/GradientHeader';
+import { useAuth } from '@/hooks/useAuth';
 import { ArrowLeft } from 'lucide-react';
 
 export const CardDeckGame: React.FC = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   
   const {
     gameState,
@@ -129,6 +132,13 @@ export const CardDeckGame: React.FC = () => {
             End Game
           </Button>
         </div>
+
+        {/* Debug Info - Remove this in production */}
+        <DebugInfo 
+          gameState={gameState} 
+          currentUserId={user?.id || ''} 
+          isMyTurn={isMyTurn} 
+        />
 
         {/* Game Completed Modal */}
         {gameState.status === 'completed' && (
