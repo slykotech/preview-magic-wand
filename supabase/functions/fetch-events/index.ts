@@ -45,13 +45,14 @@ serve(async (req) => {
 
     const { latitude, longitude, radiusKm = 25, city, sources = ['eventbrite', 'meetup', 'webscraping'] }: FetchEventsRequest = await req.json();
 
-    console.log(`Fetching events for location: ${latitude}, ${longitude}, radius: ${radiusKm}km`);
+    console.log(`Fetching events for location: ${latitude}, ${longitude}, radius: ${radiusKm}km, city: ${city}`);
 
-    // Check if we have recent events cached for this location
+    // Check if we have recent events cached for this specific location (within 10km radius)
     const { data: cachedEvents, error: cacheError } = await supabase
       .from('events')
       .select('*')
       .gte('expires_at', new Date().toISOString())
+      .gt('created_at', new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString()) // Only events from last 6 hours
       .order('created_at', { ascending: false })
       .limit(50);
 
@@ -59,15 +60,22 @@ serve(async (req) => {
       console.error('Error checking cached events:', cacheError);
     }
 
-    // If we have sufficient cached events (>= 10) that are recent, return them
-    if (cachedEvents && cachedEvents.length >= 10) {
-      console.log(`Found ${cachedEvents.length} cached events`);
+    // Filter cached events by location proximity (within specified radius)
+    const nearbyEvents = cachedEvents?.filter(event => {
+      if (!event.latitude || !event.longitude) return false;
+      const distance = calculateDistance(latitude, longitude, event.latitude, event.longitude);
+      return distance <= radiusKm;
+    }) || [];
+
+    // Only return cached events if we have sufficient recent events for this specific location
+    if (nearbyEvents.length >= 8) {
+      console.log(`Found ${nearbyEvents.length} cached events near location`);
       return new Response(
         JSON.stringify({ 
           success: true, 
-          events: cachedEvents,
+          events: nearbyEvents,
           source: 'cache',
-          count: cachedEvents.length 
+          count: nearbyEvents.length 
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -144,14 +152,15 @@ serve(async (req) => {
       }
     }
 
-    // Web scraping as fallback for local venues
-    if (sources.includes('webscraping') && allEvents.length < 20) {
+    // Only use sample events if NO real events were found from any source
+    if (sources.includes('webscraping') && allEvents.length === 0) {
       try {
+        console.log('No real events found, falling back to sample events');
         const scrapedEvents = await fetchLocalEvents(latitude, longitude, city);
         allEvents.push(...scrapedEvents);
-        console.log(`Fetched ${scrapedEvents.length} events from web scraping`);
+        console.log(`Generated ${scrapedEvents.length} sample events as fallback`);
       } catch (error) {
-        console.error('Web scraping error:', error);
+        console.error('Sample events generation error:', error);
       }
     }
 
@@ -189,13 +198,20 @@ serve(async (req) => {
       })
       .eq('id', newJob.id);
 
-    // Get final events list (including any existing cached events)
-    const { data: finalEvents } = await supabase
+    // Get final events list filtered by location proximity
+    const { data: allFinalEvents } = await supabase
       .from('events')
       .select('*')
       .gte('expires_at', new Date().toISOString())
       .order('start_date', { ascending: true })
-      .limit(100);
+      .limit(200);
+
+    // Filter by location proximity and prioritize recent events
+    const finalEvents = allFinalEvents?.filter(event => {
+      if (!event.latitude || !event.longitude) return false;
+      const distance = calculateDistance(latitude, longitude, event.latitude, event.longitude);
+      return distance <= radiusKm + 10; // Allow slightly larger radius for final results
+    }).slice(0, 50) || [];
 
     console.log(`Successfully fetched and stored ${allEvents.length} new events`);
 
@@ -227,6 +243,19 @@ serve(async (req) => {
     );
   }
 });
+
+// Calculate distance between two coordinates using Haversine formula
+function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371; // Earth's radius in kilometers
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+}
 
 async function fetchEventbriteEvents(lat: number, lng: number, radiusKm: number, city?: string): Promise<EventData[]> {
   if (!city) {
