@@ -427,6 +427,12 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
               toast.success(`💌 Love Grant completed!`);
             } else if (updatedGrant.partner_response && updatedGrant.partner_response.includes('rejected')) {
               toast.error(`💔 Your Love Grant was rejected. ${updatedGrant.rejection_reason || 'Try another request!'}`);
+              
+              // Automatically show grant creation popup for winner when rejected
+              setTimeout(() => {
+                setShowLoveGrant(true);
+                setWinnerReward('');
+              }, 2000); // Show after 2 seconds to let the user see the rejection message
             }
           }
         }
