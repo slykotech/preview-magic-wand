@@ -131,35 +131,51 @@ serve(async (req) => {
 
     // Strategy 2: Try multiple targeted searches with retry logic
     const searchStrategies = [
-      // Strategy A: Indian Event Platforms - Direct scraping
+      // Strategy A: Indian Event Platforms - Updated URLs to avoid 404s
       {
         name: 'BookMyShow Events',
-        url: `https://in.bookmyshow.com/${(city || 'mumbai').toLowerCase().replace(/\s+/g, '-')}/events`,
+        url: `https://in.bookmyshow.com/explore/events-${(city || 'mumbai').toLowerCase().replace(/\s+/g, '')}`,
         method: 'scrape',
-        query: `site:bookmyshow.com events ${city} concerts shows movies entertainment`
+        query: `site:bookmyshow.com events ${city} concerts shows movies entertainment`,
+        fallbackUrl: 'https://in.bookmyshow.com/explore/events'
+      },
+      {
+        name: 'District Events (Zomato)',
+        url: `https://www.district.in/${(city || 'mumbai').toLowerCase()}/events`,
+        method: 'scrape',
+        query: `site:district.in ${city} events parties dining nightlife`,
+        fallbackUrl: 'https://www.district.in/events'
       },
       {
         name: 'Paytm Insider Events',
         url: `https://insider.in/${(city || 'mumbai').toLowerCase()}`,
         method: 'scrape',
-        query: `site:insider.in ${city} events parties workshops experiences`
+        query: `site:insider.in ${city} events parties workshops experiences`,
+        fallbackUrl: 'https://insider.in/events'
       },
       {
-        name: 'Zomato District Events',
-        url: `https://www.zomato.com/${(city || 'mumbai').toLowerCase()}/events`,
+        name: 'Townscript Events',
+        url: `https://www.townscript.com/e/${(city || 'mumbai').toLowerCase()}-events`,
         method: 'scrape',
-        query: `site:zomato.com ${city} events food festivals dining experiences`
+        query: `site:townscript.com ${city} events workshops seminars`,
+        fallbackUrl: 'https://www.townscript.com/events'
       },
-      // Strategy B: International Platforms
+      {
+        name: 'Explara Events',
+        url: `https://www.explara.com/events/${(city || 'mumbai').toLowerCase()}`,
+        method: 'scrape',
+        query: `site:explara.com ${city} events conferences`,
+        fallbackUrl: 'https://www.explara.com/events'
+      },
+      // Strategy B: Search-only strategies (safer from 404s)
       {
         name: 'Eventbrite Search',
-        url: 'https://www.eventbrite.com/d/' + (city || 'new-york').toLowerCase().replace(/\s+/g, '-') + '/events/',
-        method: 'scrape',
-        query: `site:eventbrite.com events ${city} concerts shows workshops`
+        query: `site:eventbrite.com events ${city} concerts shows workshops tickets`,
+        method: 'search'
       },
       {
         name: 'Meetup Events',
-        query: `site:meetup.com ${city} events meetups networking community`,
+        query: `site:meetup.com ${city} events meetups networking community groups`,
         method: 'search'
       },
       {
@@ -167,28 +183,26 @@ serve(async (req) => {
         query: `site:facebook.com/events ${city} local events community gatherings`,
         method: 'search'
       },
-      // Strategy C: Local Event Apps Search
       {
-        name: 'Local Event Apps',
-        query: `${city} events tickets booking allevents townscript explara meraevents`,
+        name: 'AllEvents Search',
+        query: `site:allevents.in ${city} events tickets booking`,
         method: 'search'
       },
-      // Strategy D: General search
+      // Strategy C: General event searches
       {
-        name: 'General Events Search',
-        query: `events ${city} concerts shows festivals entertainment today weekend`,
+        name: 'Local Event Platforms',
+        query: `${city} events tickets booking concerts shows festivals entertainment`,
         method: 'search'
       },
-      // Strategy E: Cultural events
       {
-        name: 'Cultural Events',
-        query: `${city} music art theater cultural events exhibitions performances`,
+        name: 'Cultural Events Search',
+        query: `${city} music art theater cultural events exhibitions performances today weekend`,
         method: 'search'
       },
-      // Strategy F: Platform-specific searches
+      // Strategy D: Date-specific searches
       {
-        name: 'All Events Search',
-        query: `${city} events happening today weekend concerts shows workshops festivals`,
+        name: 'Upcoming Events',
+        query: `${city} events happening today tomorrow this weekend upcoming concerts shows`,
         method: 'search'
       }
     ];
@@ -202,19 +216,50 @@ serve(async (req) => {
         let firecrawlResponse;
         
         if (strategy.method === 'scrape' && strategy.url) {
-          // Try direct scraping of event sites using v1 API
-          firecrawlResponse = await fetch('https://api.firecrawl.dev/v1/scrape', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${firecrawlApiKey}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              url: strategy.url,
-              formats: ['markdown']
-            }),
-            signal: AbortSignal.timeout(20000) // 20 second timeout
-          });
+          // Try direct scraping with fallback URL support
+          let urlToTry = strategy.url;
+          let attemptCount = 0;
+          const maxAttempts = strategy.fallbackUrl ? 2 : 1;
+          
+          while (attemptCount < maxAttempts) {
+            attemptCount++;
+            
+            try {
+              console.log(`Attempting ${strategy.name} with URL: ${urlToTry} (attempt ${attemptCount})`);
+              
+              firecrawlResponse = await fetch('https://api.firecrawl.dev/v1/scrape', {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${firecrawlApiKey}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  url: urlToTry,
+                  formats: ['markdown'],
+                  timeout: 15000
+                }),
+                signal: AbortSignal.timeout(20000) // 20 second timeout
+              });
+              
+              // If we get 404 and have a fallback URL, try it
+              if (!firecrawlResponse.ok && firecrawlResponse.status === 404 && strategy.fallbackUrl && attemptCount === 1) {
+                console.log(`404 error for ${urlToTry}, trying fallback: ${strategy.fallbackUrl}`);
+                urlToTry = strategy.fallbackUrl;
+                continue;
+              }
+              
+              // For other errors or if we're on the last attempt, break
+              break;
+              
+            } catch (fetchError) {
+              console.log(`Network error for ${urlToTry} (attempt ${attemptCount}):`, fetchError.message);
+              if (strategy.fallbackUrl && attemptCount === 1) {
+                urlToTry = strategy.fallbackUrl;
+                continue;
+              }
+              throw fetchError;
+            }
+          }
         } else {
           // Use search method with v1 API
           firecrawlResponse = await fetch('https://api.firecrawl.dev/v1/search', {
@@ -226,15 +271,23 @@ serve(async (req) => {
             body: JSON.stringify({
               query: strategy.query,
               limit: 5,
-              location: city || undefined
+              location: city || undefined,
+              timeout: 10000
             }),
             signal: AbortSignal.timeout(15000) // 15 second timeout
           });
         }
 
         if (!firecrawlResponse.ok) {
-          const errorText = await firecrawlResponse.text();
+          const errorText = await firecrawlResponse.text().catch(() => 'Unknown error');
           console.log(`${strategy.name} failed: ${firecrawlResponse.status} - ${errorText}`);
+          
+          // If it's a rate limit (429), wait longer before next strategy
+          if (firecrawlResponse.status === 429) {
+            console.log('Rate limited, waiting 3 seconds...');
+            await new Promise(resolve => setTimeout(resolve, 3000));
+          }
+          
           continue; // Try next strategy
         }
 
@@ -264,13 +317,29 @@ serve(async (req) => {
               const title = extractTitle(content) || result.title || 'Event';
               const eventDate = extractDate(content) || getDefaultEventDate();
               
+              // Skip old events (more than 30 days ago)
+              const eventTime = new Date(eventDate).getTime();
+              const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
+              if (eventTime < thirtyDaysAgo) {
+                console.log(`Skipping old event: ${title} (${eventDate})`);
+                continue;
+              }
+              
               // Skip if we already have this event
               const existingEvent = events.find(e => 
                 e.title.toLowerCase() === title.toLowerCase() || 
                 (url && e.external_id === `firecrawl-${encodeURIComponent(url)}`)
               );
               
-              if (!existingEvent && title.length > 5) {
+              // Enhanced validation
+              const isValidEvent = title.length > 5 && 
+                                   !title.toLowerCase().includes('404') &&
+                                   !title.toLowerCase().includes('not found') &&
+                                   !title.toLowerCase().includes('error') &&
+                                   !title.toLowerCase().includes('page not found') &&
+                                   !content.toLowerCase().includes('artificial intelligence (ai) for community groups'); // Filter out AI training events
+              
+              if (!existingEvent && isValidEvent) {
                 const eventData: EventData = {
                   title: title,
                   description: extractDescription(content),
