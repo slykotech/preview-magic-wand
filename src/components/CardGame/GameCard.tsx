@@ -121,6 +121,7 @@ export const GameCard: React.FC<GameCardProps> = ({
         
         setPartnerResponse(latestResponse);
         setShowResponse(true);
+        console.log('🔥 PARTNER RESPONSE SET - SHOULD BE VISIBLE NOW!');
       } else {
         console.log('📭 No partner responses found for this card');
         // Don't clear existing responses here - only clear when card changes
@@ -442,6 +443,19 @@ export const GameCard: React.FC<GameCardProps> = ({
           )}
         </div>
       )}
+
+      {/* DEBUG: Response State Display (remove this later) */}
+      <div className="fixed top-2 right-2 bg-black text-white p-2 rounded text-xs z-50 max-w-xs">
+        <div>showResponse: {showResponse.toString()}</div>
+        <div>partnerResponse: {partnerResponse ? 'YES' : 'NO'}</div>
+        <div>Response Type: {partnerResponse?.response_type || 'none'}</div>
+        <div>Response Text: {partnerResponse?.response_text || 'none'}</div>
+        <div>Current Card: {card.id.slice(-8)}</div>
+        <div>Response Card: {partnerResponse?.card_id?.slice(-8) || 'none'}</div>
+        <div>Is My Turn: {isMyTurn.toString()}</div>
+        <div>User ID: {userId.slice(-8)}</div>
+        <div>Response User: {partnerResponse?.user_id?.slice(-8) || 'none'}</div>
+      </div>
 
       {/* Partner Response Display - Fixed positioning and styling */}
       {showResponse && partnerResponse && (
