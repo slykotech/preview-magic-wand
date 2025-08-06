@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { SharedTimer } from './SharedTimer';
+import { supabase } from '@/integrations/supabase/client';
 
 interface CardData {
   id: string;
@@ -29,6 +30,8 @@ interface GameCardProps {
   onSkip: () => void;
   onFavorite: () => void;
   skipsRemaining: number;
+  sessionId: string;
+  userId: string;
 }
 
 export const GameCard: React.FC<GameCardProps> = ({ 
@@ -40,10 +43,59 @@ export const GameCard: React.FC<GameCardProps> = ({
   onComplete, 
   onSkip, 
   onFavorite, 
-  skipsRemaining
+  skipsRemaining,
+  sessionId,
+  userId
 }) => {
   const [response, setResponse] = useState('');
   const [photoResponse, setPhotoResponse] = useState<File | null>(null);
+  const [partnerResponse, setPartnerResponse] = useState<any>(null);
+  const [showResponse, setShowResponse] = useState(false);
+
+  // Fetch partner response when card changes
+  useEffect(() => {
+    if (!card || !sessionId) return;
+    
+    const fetchPartnerResponse = async () => {
+      const { data } = await supabase
+        .from('card_responses')
+        .select('*')
+        .eq('session_id', sessionId)
+        .eq('card_id', card.id)
+        .neq('user_id', userId)
+        .single();
+      
+      if (data) {
+        setPartnerResponse(data);
+        setShowResponse(true);
+      }
+    };
+
+    fetchPartnerResponse();
+
+    // Subscribe to new responses
+    const channel = supabase
+      .channel(`responses-${sessionId}-${card.id}`)
+      .on('postgres_changes', 
+        { 
+          event: 'INSERT', 
+          schema: 'public', 
+          table: 'card_responses',
+          filter: `session_id=eq.${sessionId}`
+        }, 
+        (payload) => {
+          if (payload.new.card_id === card.id && payload.new.user_id !== userId) {
+            setPartnerResponse(payload.new);
+            setShowResponse(true);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [card?.id, sessionId, userId]);
 
   const handleReveal = () => {
     console.log('=== CARD REVEAL CLICKED ===');
@@ -217,8 +269,30 @@ export const GameCard: React.FC<GameCardProps> = ({
         </div>
       )}
 
+      {/* Partner Response Display */}
+      {showResponse && partnerResponse && (
+        <div className="mt-4 p-4 bg-green-50 rounded-lg border border-green-200">
+          <h3 className="font-semibold text-green-800 mb-2">Partner's Response:</h3>
+          {partnerResponse.response_type === 'text' && (
+            <p className="text-green-700">{partnerResponse.response_text}</p>
+          )}
+          {partnerResponse.response_type === 'photo' && (
+            <div className="mt-2">
+              <img
+                src={`${supabase.storage.from('card-responses').getPublicUrl(partnerResponse.response_text).data.publicUrl}`}
+                alt="Partner's response"
+                className="max-h-40 rounded-lg"
+              />
+            </div>
+          )}
+          {partnerResponse.response_type === 'action' && (
+            <p className="text-green-700">✅ Completed the action</p>
+          )}
+        </div>
+      )}
+
       {/* Waiting message for non-active player */}
-      {!isMyTurn && (
+      {!isMyTurn && !showResponse && (
         <div className="text-center p-4 bg-purple-50 rounded-lg">
           <p className="text-purple-700">
             👀 Watch your partner complete this challenge!

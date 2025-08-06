@@ -10,6 +10,7 @@ import { CoupleMoodDisplay } from "@/components/CoupleMoodDisplay";
 import { MoodCheckin } from "@/components/MoodCheckin";
 import { DailyCheckinFlow } from "@/components/DailyCheckinFlow";
 import { StoryViewer } from "@/components/StoryViewer";
+import { RecentTasks } from "@/components/RecentTasks";
 import { useEnhancedSyncScore } from "@/hooks/useEnhancedSyncScore";
 import { usePresence } from "@/hooks/usePresence";
 import { useCardGames } from "@/hooks/useCardGames";
@@ -698,6 +699,13 @@ export const Dashboard = () => {
               <Play className="mr-2" size={18} />
               Relationship Games
             </Button> : <div className="w-full h-12 bg-muted animate-pulse rounded-xl"></div>}
+        </div>
+
+        {/* Recent Tasks */}
+        <div className={`${isLoaded ? 'animate-fade-in' : 'opacity-0'}`} style={{
+          animationDelay: '800ms'
+        }}>
+          {isLoaded ? <RecentTasks /> : <div className="w-full h-32 bg-muted animate-pulse rounded-xl"></div>}
         </div>
         </div>
       </div>

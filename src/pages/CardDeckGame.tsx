@@ -131,6 +131,8 @@ export const CardDeckGame: React.FC = () => {
               onSkip={actions.skipCard}
               onFavorite={actions.favoriteCard}
               skipsRemaining={stats.skipsRemaining}
+              sessionId={sessionId || ''}
+              userId={user?.id || ''}
             />
           ) : (
             <div className="text-center p-8 bg-muted rounded-lg">
