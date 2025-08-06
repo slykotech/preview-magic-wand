@@ -165,7 +165,13 @@ export const GameCard: React.FC<GameCardProps> = ({
 
   const handleReveal = () => {
     console.log('=== CARD REVEAL CLICKED ===');
-    console.log('Current state:', { isRevealed, isMyTurn });
+    console.log('Current state:', { 
+      isRevealed, 
+      isMyTurn, 
+      userId: userId,
+      currentTurn: gameState?.current_turn,
+      userIsCurrentTurn: userId === gameState?.current_turn
+    });
     
     if (isMyTurn && !isRevealed) {
       onReveal();
@@ -300,7 +306,16 @@ export const GameCard: React.FC<GameCardProps> = ({
       {isMyTurn && renderResponseInput()}
 
       {/* Action Buttons - Only for active player */}
-      {isMyTurn && (
+      {(() => {
+        console.log('🎯 Button render check:', {
+          isMyTurn,
+          userId,
+          currentTurn: gameState?.current_turn,
+          userIsCurrentTurn: userId === gameState?.current_turn,
+          cardResponseType: card.response_type
+        });
+        return isMyTurn;
+      })() && (
         <div className="flex gap-3 justify-center">
           {card.response_type === 'action' ? (
             <Button
