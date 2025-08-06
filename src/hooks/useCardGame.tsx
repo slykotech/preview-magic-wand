@@ -358,6 +358,8 @@ export function useCardGame(sessionId: string | null) {
         let responseText = '';
         let responseType = currentCard.response_type || 'action';
         
+        console.log('💾 Saving response:', { response, responseType, cardId: currentCard.id });
+        
         if (response instanceof File) {
           // Handle file upload to Supabase Storage
           const fileName = `${sessionId}/${currentCard.id}/${Date.now()}.jpg`;
@@ -374,16 +376,29 @@ export function useCardGame(sessionId: string | null) {
           responseType = 'text';
         }
 
-        await supabase
+        const responseData = {
+          session_id: sessionId,
+          card_id: currentCard.id,
+          user_id: user.id,
+          response_text: responseText,
+          response_type: responseType,
+          time_taken_seconds: reactionTime
+        };
+        
+        console.log('📝 Inserting response to database:', responseData);
+        
+        const { data: insertedResponse, error: responseError } = await supabase
           .from("card_responses")
-          .insert({
-            session_id: sessionId,
-            card_id: currentCard.id,
-            user_id: user.id,
-            response_text: responseText,
-            response_type: responseType,
-            time_taken_seconds: reactionTime
-          });
+          .insert(responseData)
+          .select()
+          .single();
+          
+        if (responseError) {
+          console.error('❌ Failed to insert response:', responseError);
+          throw responseError;
+        }
+        
+        console.log('✅ Response inserted successfully:', insertedResponse);
       }
 
       // Update game state
