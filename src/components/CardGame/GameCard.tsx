@@ -58,40 +58,32 @@ export const GameCard: React.FC<GameCardProps> = ({
   const [showResponsePopup, setShowResponsePopup] = useState(false);
   const [blockAutoAdvance, setBlockAutoAdvance] = useState(false);
 
-  // Check if current user has dismissed the popup
-  const isUser1 = userId === gameState?.user1_id;
-  const hasDismissed = isUser1 
-    ? gameState?.response_dismissed_by_user1 
-    : gameState?.response_dismissed_by_user2;
-  
-  const hasResponse = !!gameState?.current_card_response;
-  const bothDismissed = gameState?.response_dismissed_by_user1 && gameState?.response_dismissed_by_user2;
+  // Check if there's an unseen response from the previous turn
+  const hasUnseenResponse = gameState?.last_response_text && 
+                           !gameState?.last_response_seen &&
+                           gameState?.last_response_author_id !== userId;
 
-  // Show popup when there's a new response and user hasn't dismissed it
+  // Show popup when it's my turn and there's an unseen response
   useEffect(() => {
-    if (hasResponse && !hasDismissed && gameState?.current_card_id === card?.id) {
-      console.log('🎉 Showing response popup:', {
-        hasResponse,
-        hasDismissed,
-        cardMatch: gameState?.current_card_id === card?.id
+    if (isMyTurn && hasUnseenResponse) {
+      console.log('🎉 Showing response popup for unseen response:', {
+        hasUnseenResponse,
+        isMyTurn,
+        responseText: gameState?.last_response_text
       });
       setShowResponsePopup(true);
     } else {
       setShowResponsePopup(false);
     }
-  }, [hasResponse, hasDismissed, gameState?.current_card_id, card?.id]);
+  }, [isMyTurn, hasUnseenResponse]);
     
   const handleDismissPopup = async () => {
     console.log('💬 Dismissing response popup...');
     
-    const dismissField = isUser1 
-      ? 'response_dismissed_by_user1' 
-      : 'response_dismissed_by_user2';
-    
     const { error } = await supabase
       .from("card_deck_game_sessions")
       .update({
-        [dismissField]: true,
+        last_response_seen: true,
         updated_at: new Date().toISOString()
       })
       .eq("id", sessionId);
@@ -103,6 +95,11 @@ export const GameCard: React.FC<GameCardProps> = ({
       console.log('✅ Response popup dismissed');
     }
   };
+
+  // Get author name for popup
+  const responseAuthorName = gameState?.last_response_author_id === gameState?.user1_id
+    ? 'Partner'  // Since we're showing this to the other player
+    : 'Partner';
 
   const handleReveal = () => {
     console.log('=== CARD REVEAL CLICKED ===');
@@ -171,10 +168,9 @@ export const GameCard: React.FC<GameCardProps> = ({
         {/* Response Popup */}
         <ResponsePopup
           isOpen={showResponsePopup}
-          response={gameState?.current_card_response || ''}
-          authorName={gameState?.current_turn !== userId ? 'You' : 'Partner'}
-          timestamp={gameState?.current_card_responded_at || ''}
-          isMyResponse={gameState?.current_turn !== userId}
+          response={gameState?.last_response_text || ''}
+          authorName={responseAuthorName}
+          timestamp={gameState?.last_response_timestamp || ''}
           onDismiss={handleDismissPopup}
         />
 
@@ -189,8 +185,18 @@ export const GameCard: React.FC<GameCardProps> = ({
                   <path d="M50,10 A40,40 0 0,1 50,90 A20,20 0 0,1 50,50 A20,20 0 0,0 50,10 Z"/>
                 </svg>
                 <div className="tap-prompt">
-                  {isMyTurn && !showResponsePopup ? 'Tap to Reveal' : 'Waiting for reveal...'}
+                  {!isMyTurn 
+                    ? 'Waiting for partner...'
+                    : showResponsePopup 
+                      ? 'Read the response first!'
+                      : 'Tap to Reveal'
+                  }
                 </div>
+                {showResponsePopup && (
+                  <p className="text-sm mt-2 opacity-80">
+                    Dismiss the popup to continue
+                  </p>
+                )}
                 
                 {/* Category hint on back */}
                 <div className="category-hint">
@@ -211,10 +217,9 @@ export const GameCard: React.FC<GameCardProps> = ({
       {/* Response Popup */}
       <ResponsePopup
         isOpen={showResponsePopup}
-        response={gameState?.current_card_response || ''}
-        authorName={gameState?.current_turn !== userId ? 'You' : 'Partner'}
-        timestamp={gameState?.current_card_responded_at || ''}
-        isMyResponse={gameState?.current_turn !== userId}
+        response={gameState?.last_response_text || ''}
+        authorName={responseAuthorName}
+        timestamp={gameState?.last_response_timestamp || ''}
         onDismiss={handleDismissPopup}
       />
 
@@ -265,12 +270,12 @@ export const GameCard: React.FC<GameCardProps> = ({
           isActive={true}
         />
 
-        {/* Show response status if exists and both dismissed */}
-        {hasResponse && bothDismissed && (
+        {/* Show response status if exists and seen */}
+        {gameState?.last_response_text && gameState?.last_response_seen && (
           <div className="mb-4 p-3 bg-green-50 rounded-lg">
             <p className="text-sm text-green-700 flex items-center gap-2">
               <span>✅</span>
-              Response submitted and read by both players
+              Previous response read successfully
             </p>
           </div>
         )}
@@ -291,8 +296,16 @@ export const GameCard: React.FC<GameCardProps> = ({
           <div className="flex gap-3 justify-center">
             {isMyTurn && (
               <>
-                {/* Show complete button only after response is read by both or for action cards */}
-                {((hasResponse && bothDismissed) || card.response_type === 'action') && (
+                {card.response_type === 'text' ? (
+                  <Button
+                    onClick={() => handleComplete(false)}
+                    disabled={!response.trim()}
+                    className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold"
+                    size="lg"
+                  >
+                    Submit & End Turn
+                  </Button>
+                ) : card.response_type === 'action' ? (
                   <Button
                     onClick={() => handleComplete(false)}
                     className="px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold"
@@ -300,70 +313,45 @@ export const GameCard: React.FC<GameCardProps> = ({
                   >
                     Complete Turn
                   </Button>
+                ) : (
+                  <Button
+                    onClick={() => handleComplete(false)}
+                    disabled={
+                      (card.response_type === 'photo' && !photoResponse)
+                    }
+                    className="px-6 py-3 bg-gradient-to-r from-primary to-purple-500 font-semibold"
+                    size="lg"
+                  >
+                    Send Response
+                  </Button>
                 )}
                 
-                {/* Show regular action buttons only if no response yet */}
-                {!hasResponse && (
-                  <>
-                    {card.response_type === 'action' ? (
-                      <Button
-                        onClick={() => handleComplete(false)}
-                        className="px-6 py-3 bg-gradient-to-r from-primary to-purple-500 font-semibold"
-                        size="lg"
-                      >
-                        Mark Complete
-                      </Button>
-                    ) : (
-                      <Button
-                        onClick={() => handleComplete(false)}
-                        disabled={
-                          (card.response_type === 'text' && !response.trim()) ||
-                          (card.response_type === 'photo' && !photoResponse)
-                        }
-                        className="px-6 py-3 bg-gradient-to-r from-primary to-purple-500 font-semibold"
-                        size="lg"
-                      >
-                        Send Response
-                      </Button>
-                    )}
-                    
-                    <Button
-                      variant="ghost"
-                      size="lg"
-                      onClick={onFavorite}
-                      className="text-2xl hover:scale-110 transition p-3"
-                    >
-                      💖
-                    </Button>
-                    
-                    {skipsRemaining > 0 && (
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={onSkip}
-                      >
-                        Skip ({skipsRemaining})
-                      </Button>
-                    )}
-                  </>
+                <Button
+                  variant="ghost"
+                  size="lg"
+                  onClick={onFavorite}
+                  className="text-2xl hover:scale-110 transition p-3"
+                >
+                  💖
+                </Button>
+                
+                {skipsRemaining > 0 && (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={onSkip}
+                  >
+                    Skip ({skipsRemaining})
+                  </Button>
                 )}
               </>
             )}
             
-            {/* Waiting messages */}
-            {!isMyTurn && !hasResponse && (
+            {/* Waiting message */}
+            {!isMyTurn && (
               <div className="text-center p-4 bg-purple-50 rounded-lg">
                 <p className="text-purple-700">
-                  ⏳ Waiting for partner to respond...
-                </p>
-              </div>
-            )}
-            
-            {/* Waiting for dismissals */}
-            {hasResponse && !bothDismissed && (
-              <div className="text-center p-4 bg-yellow-50 rounded-lg">
-                <p className="text-yellow-700">
-                  📖 Waiting for both players to read the response...
+                  ⏳ Waiting for partner...
                 </p>
               </div>
             )}

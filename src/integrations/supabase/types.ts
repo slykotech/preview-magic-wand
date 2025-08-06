@@ -305,6 +305,10 @@ export type Database = {
           game_mode: string | null
           id: string
           last_activity_at: string | null
+          last_response_author_id: string | null
+          last_response_seen: boolean | null
+          last_response_text: string | null
+          last_response_timestamp: string | null
           played_cards: Json | null
           response_dismissed_by_user1: boolean | null
           response_dismissed_by_user2: boolean | null
@@ -335,6 +339,10 @@ export type Database = {
           game_mode?: string | null
           id?: string
           last_activity_at?: string | null
+          last_response_author_id?: string | null
+          last_response_seen?: boolean | null
+          last_response_text?: string | null
+          last_response_timestamp?: string | null
           played_cards?: Json | null
           response_dismissed_by_user1?: boolean | null
           response_dismissed_by_user2?: boolean | null
@@ -365,6 +373,10 @@ export type Database = {
           game_mode?: string | null
           id?: string
           last_activity_at?: string | null
+          last_response_author_id?: string | null
+          last_response_seen?: boolean | null
+          last_response_text?: string | null
+          last_response_timestamp?: string | null
           played_cards?: Json | null
           response_dismissed_by_user1?: boolean | null
           response_dismissed_by_user2?: boolean | null

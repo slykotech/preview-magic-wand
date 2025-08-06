@@ -5,7 +5,6 @@ interface ResponsePopupProps {
   response: string;
   authorName: string;
   timestamp: string;
-  isMyResponse: boolean;
   onDismiss: () => void;
 }
 
@@ -14,28 +13,23 @@ export const ResponsePopup: React.FC<ResponsePopupProps> = ({
   response, 
   authorName, 
   timestamp, 
-  isMyResponse, 
   onDismiss 
 }) => {
   if (!isOpen) return null;
 
   return (
     <>
-      {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/60 z-40 animate-fade-in" />
+      {/* Backdrop - blocks all interaction */}
+      <div className="fixed inset-0 bg-black/60 z-40" />
       
       {/* Popup */}
       <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full animate-scale-in">
           {/* Header */}
-          <div className={`p-4 rounded-t-2xl ${
-            isMyResponse 
-              ? 'bg-gradient-to-r from-primary to-purple-500' 
-              : 'bg-gradient-to-r from-pink-500 to-rose-500'
-          }`}>
+          <div className="p-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-t-2xl">
             <h3 className="text-white font-semibold text-lg flex items-center gap-2">
               <span className="text-2xl">💬</span>
-              {isMyResponse ? 'Your Response' : `${authorName}'s Response`}
+              {authorName}'s Response
             </h3>
           </div>
           
@@ -49,17 +43,17 @@ export const ResponsePopup: React.FC<ResponsePopupProps> = ({
             
             {/* Timestamp */}
             <p className="text-sm text-gray-500 text-center">
-              Submitted at {new Date(timestamp).toLocaleTimeString()}
+              {new Date(timestamp).toLocaleTimeString()}
             </p>
           </div>
           
-          {/* Actions */}
+          {/* Dismiss Button */}
           <div className="p-4 border-t border-gray-200">
             <button
               onClick={onDismiss}
-              className="w-full px-6 py-3 bg-gradient-to-r from-primary to-purple-500 text-white rounded-lg font-semibold hover:opacity-90 transition"
+              className="w-full px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-semibold hover:opacity-90 transition"
             >
-              {isMyResponse ? 'Continue' : 'Got it!'}
+              Got it! Let me play my turn
             </button>
           </div>
         </div>
