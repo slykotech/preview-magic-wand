@@ -295,6 +295,9 @@ export type Database = {
           created_at: string | null
           current_card_completed: boolean | null
           current_card_id: string | null
+          current_card_responded_at: string | null
+          current_card_response: string | null
+          current_card_response_type: string | null
           current_card_revealed: boolean | null
           current_card_started_at: string | null
           current_turn: string
@@ -320,6 +323,9 @@ export type Database = {
           created_at?: string | null
           current_card_completed?: boolean | null
           current_card_id?: string | null
+          current_card_responded_at?: string | null
+          current_card_response?: string | null
+          current_card_response_type?: string | null
           current_card_revealed?: boolean | null
           current_card_started_at?: string | null
           current_turn: string
@@ -345,6 +351,9 @@ export type Database = {
           created_at?: string | null
           current_card_completed?: boolean | null
           current_card_id?: string | null
+          current_card_responded_at?: string | null
+          current_card_response?: string | null
+          current_card_response_type?: string | null
           current_card_revealed?: boolean | null
           current_card_started_at?: string | null
           current_turn?: string

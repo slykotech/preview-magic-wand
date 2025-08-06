@@ -435,8 +435,30 @@ export function useCardGame(sessionId: string | null) {
           responseType = 'text';
         } else {
           // For action cards, save a default response
-          responseText = '';
+          responseText = 'Task completed';
           responseType = 'action';
+        }
+
+        // First, update the game session with response for real-time sharing
+        if (responseText) {
+          console.log('💬 Updating game session with response for real-time sharing');
+          const { error: sessionUpdateError } = await supabase
+            .from("card_deck_game_sessions")
+            .update({
+              current_card_response: responseText,
+              current_card_response_type: responseType,
+              current_card_responded_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            })
+            .eq("id", sessionId);
+
+          if (sessionUpdateError) {
+            console.error('❌ Error updating session with response:', sessionUpdateError);
+          } else {
+            console.log('✅ Game session updated with response for real-time sharing');
+            // Give a moment for the partner to see the response before proceeding
+            await new Promise(resolve => setTimeout(resolve, 1500));
+          }
         }
 
         const responseData = {
@@ -540,6 +562,9 @@ export function useCardGame(sessionId: string | null) {
         current_card_revealed: false,
         current_card_started_at: null,
         current_card_completed: false, // Reset for next turn
+        current_card_response: null, // Clear response for next turn
+        current_card_response_type: null,
+        current_card_responded_at: null,
         played_cards: updatedPlayedCards,
         total_cards_played: gameState.total_cards_played + 1,
         last_activity_at: new Date().toISOString(),

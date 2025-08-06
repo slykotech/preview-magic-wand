@@ -445,18 +445,23 @@ export const GameCard: React.FC<GameCardProps> = ({
         </div>
       )}
 
-      {/* DEBUG: Response State Display (remove this later) */}
-      <div className="fixed top-2 right-2 bg-black text-white p-2 rounded text-xs z-50 max-w-xs">
-        <div>showResponse: {showResponse.toString()}</div>
-        <div>partnerResponse: {partnerResponse ? 'YES' : 'NO'}</div>
-        <div>Response Type: {partnerResponse?.response_type || 'none'}</div>
-        <div>Response Text: {partnerResponse?.response_text || 'none'}</div>
-        <div>Current Card: {card.id.slice(-8)}</div>
-        <div>Response Card: {partnerResponse?.card_id?.slice(-8) || 'none'}</div>
-        <div>Is My Turn: {isMyTurn.toString()}</div>
-        <div>User ID: {userId.slice(-8)}</div>
-        <div>Response User: {partnerResponse?.user_id?.slice(-8) || 'none'}</div>
-      </div>
+      {/* Current Game Response Display - Real-time shared response from game session */}
+      {gameState?.current_card_response && gameState?.current_card_id === card.id && (
+        <div className="mb-4 p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-200">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-2xl">💬</span>
+            <p className="text-sm font-semibold text-purple-700">
+              {isMyTurn ? "Your response:" : "Partner's response:"}
+            </p>
+            <span className="text-xs text-purple-600 bg-purple-100 px-2 py-1 rounded-full ml-auto">
+              {new Date(gameState.current_card_responded_at).toLocaleTimeString()}
+            </span>
+          </div>
+          <p className="text-lg text-gray-800 italic leading-relaxed">
+            "{gameState.current_card_response}"
+          </p>
+        </div>
+      )}
 
       {/* Partner Response Display - Fixed positioning and styling */}
       {showResponse && partnerResponse && (
