@@ -72,27 +72,50 @@ export const GameCard: React.FC<GameCardProps> = ({
       
       if (error) {
         console.error('❌ Error fetching partner responses:', error);
-        // Don't show error toast for this as it's not critical
+        console.error('Response fetch error details:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        });
         return;
       }
       
       console.log('📨 Fetched partner responses:', data);
+      console.log('📋 Current state before processing:', {
+        sessionId,
+        cardId: card.id,
+        userId,
+        responseCount: data?.length || 0,
+        showResponse,
+        partnerResponse: !!partnerResponse
+      });
       
       if (data && data.length > 0) {
         const latestResponse = data[data.length - 1]; // Get latest response
         console.log('✅ Found partner response:', latestResponse);
+        console.log('🎯 Setting partner response state:', {
+          responseId: latestResponse.id,
+          responseType: latestResponse.response_type,
+          responseText: latestResponse.response_text,
+          userId: latestResponse.user_id,
+          timestamp: latestResponse.responded_at
+        });
+        
         setPartnerResponse(latestResponse);
         setShowResponse(true);
         
-        // Auto-dismiss after 10 seconds
+        // Auto-dismiss after 15 seconds
         if (responseDismissTimer) clearTimeout(responseDismissTimer);
         const timer = setTimeout(() => {
           console.log('⏰ Auto-dismissing partner response');
           setShowResponse(false);
-        }, 10000);
+        }, 15000);
         setResponseDismissTimer(timer);
       } else {
         console.log('📭 No partner responses found');
+        setPartnerResponse(null);
+        setShowResponse(false);
       }
     };
 
