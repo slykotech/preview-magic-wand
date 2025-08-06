@@ -69,10 +69,10 @@ export const GameCard: React.FC<GameCardProps> = ({
       willClearResponse: currentCardId && currentCardId !== card.id
     });
     
-    // Only update current card ID, don't clear any response state
-    // Responses should persist until manually dismissed
+    // DON'T clear previous response when card changes - let it persist until manually dismissed
+    // This allows responses to stay visible across card transitions
     if (currentCardId && currentCardId !== card.id) {
-      console.log(`📋 Card changed from ${currentCardId} to ${card.id}, keeping all response state intact`);
+      console.log(`📋 Card changed from ${currentCardId} to ${card.id}, but keeping response visible`);
     }
     setCurrentCardId(card.id);
     
@@ -122,10 +122,10 @@ export const GameCard: React.FC<GameCardProps> = ({
         setPartnerResponse(latestResponse);
         setShowResponse(true);
         console.log('🔥 PARTNER RESPONSE SET - SHOULD BE VISIBLE NOW!');
-        } else {
-          console.log('📭 No partner responses found for this card');
-          // Keep existing response state intact - don't clear anything
-        }
+      } else {
+        console.log('📭 No partner responses found for this card');
+        // Don't clear existing responses here - only clear when card changes
+      }
     };
 
     fetchPartnerResponse();
@@ -245,7 +245,7 @@ export const GameCard: React.FC<GameCardProps> = ({
       clearInterval(pollInterval);
       if (responseDismissTimer) clearTimeout(responseDismissTimer);
     };
-  }, [sessionId, userId]); // CRITICAL: Only depend on session and user, NOT card ID to prevent response clearing
+  }, [sessionId, userId]); // Only depend on session and user, NOT card ID
 
   // Clean up timer on unmount
   useEffect(() => {
