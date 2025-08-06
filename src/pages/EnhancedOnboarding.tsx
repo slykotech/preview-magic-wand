@@ -33,7 +33,7 @@ const EnhancedOnboarding = () => {
     skipPartnerInvite: false
   });
 
-  const totalSteps = 5; // Welcome, Relationship, Goals, Subscription, Partner Invite, Complete
+  const totalSteps = 6; // Welcome, Relationship, Goals, Subscription, Partner Invite, Complete
 
   const relationshipTypes = [
     { id: "dating", label: "Dating", icon: <Heart size={24} className="text-pink-500" /> },
