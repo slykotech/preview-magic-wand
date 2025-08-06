@@ -263,7 +263,10 @@ export type Database = {
           completed_at: string | null
           couple_id: string
           created_at: string | null
+          current_card_completed: boolean | null
           current_card_id: string | null
+          current_card_revealed: boolean | null
+          current_card_started_at: string | null
           current_turn: string
           favorite_cards: Json | null
           game_mode: string | null
@@ -285,7 +288,10 @@ export type Database = {
           completed_at?: string | null
           couple_id: string
           created_at?: string | null
+          current_card_completed?: boolean | null
           current_card_id?: string | null
+          current_card_revealed?: boolean | null
+          current_card_started_at?: string | null
           current_turn: string
           favorite_cards?: Json | null
           game_mode?: string | null
@@ -307,7 +313,10 @@ export type Database = {
           completed_at?: string | null
           couple_id?: string
           created_at?: string | null
+          current_card_completed?: boolean | null
           current_card_id?: string | null
+          current_card_revealed?: boolean | null
+          current_card_started_at?: string | null
           current_turn?: string
           favorite_cards?: Json | null
           game_mode?: string | null

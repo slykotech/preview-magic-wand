@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { CardTimer } from './CardTimer';
+import { SharedTimer } from './SharedTimer';
 
 interface CardData {
   id: string;
@@ -20,51 +20,47 @@ interface CardData {
 
 interface GameCardProps {
   card: CardData | null;
+  gameState: any;
+  isMyTurn: boolean;
   isRevealed: boolean;
   onReveal: () => void;
-  onComplete: (response?: string, reactionTime?: number) => void;
+  onComplete: (response?: string, timedOut?: boolean) => void;
   onSkip: () => void;
   onFavorite: () => void;
-  disabled: boolean;
   skipsRemaining: number;
-  canInteract: boolean;
 }
 
 export const GameCard: React.FC<GameCardProps> = ({ 
   card, 
+  gameState,
+  isMyTurn,
   isRevealed, 
   onReveal, 
   onComplete, 
   onSkip, 
   onFavorite, 
-  disabled, 
-  skipsRemaining,
-  canInteract = true
+  skipsRemaining
 }) => {
   const [response, setResponse] = useState('');
-  const [showTimer, setShowTimer] = useState(false);
-  const [timerPaused, setTimerPaused] = useState(false);
-  const [startTime] = useState(Date.now());
 
   const handleReveal = () => {
     console.log('=== CARD REVEAL CLICKED ===');
-    console.log('Current state:', { isRevealed, disabled, canInteract });
+    console.log('Current state:', { isRevealed, isMyTurn });
     
-    onReveal();
-    if (canInteract) {
-      setShowTimer(true);
+    if (isMyTurn && !isRevealed) {
+      onReveal();
     }
   };
 
-  const handleComplete = () => {
-    const timeTaken = Math.floor((Date.now() - startTime) / 1000);
-    onComplete(response, timeTaken);
+  const handleComplete = (timedOut = false) => {
+    onComplete(response, timedOut);
     setResponse('');
-    setShowTimer(false);
   };
 
   const handleTimerExpire = () => {
-    setTimeout(() => handleComplete(), 10000);
+    if (isMyTurn) {
+      handleComplete(true);
+    }
   };
 
   const getCategoryStyle = (category: string) => {
@@ -90,12 +86,41 @@ export const GameCard: React.FC<GameCardProps> = ({
     );
   }
 
+  // Show card back if not revealed
+  if (!isRevealed) {
+    return (
+      <div className="space-y-4 max-w-2xl mx-auto">
+        <div className="card-scene">
+          <div className="sync-card">
+            <div 
+              className="card-face card-face--back"
+              onClick={handleReveal}
+            >
+              <svg className="logo" viewBox="0 0 100 100">
+                <path d="M50,10 A40,40 0 0,1 50,90 A20,20 0 0,1 50,50 A20,20 0 0,0 50,10 Z"/>
+              </svg>
+              <div className="tap-prompt">
+                {isMyTurn ? 'Tap to Reveal' : 'Waiting for reveal...'}
+              </div>
+              
+              {/* Category hint on back */}
+              <div className="category-hint">
+                <span className="category-text">{card.category}</span>
+                <span className="timer-text">{card.timer_seconds}s</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show revealed card (visible to BOTH players)
   return (
     <div className="space-y-4 max-w-2xl mx-auto">
-      {/* 3D Card Animation */}
+      {/* Revealed Card Content */}
       <div className="card-scene">
-        <div className={`sync-card ${isRevealed ? 'is-flipped' : ''}`}>
-          {/* Card Front (Revealed Content) */}
+        <div className="sync-card is-flipped">
           <div className="card-face card-face--front">
             <h2 className="card-title">Today's Sync</h2>
             <p className="card-subtitle">Conversation Starter</p>
@@ -118,10 +143,6 @@ export const GameCard: React.FC<GameCardProps> = ({
               
               <div className="card-stats">
                 <div className="stat-item">
-                  <span className="stat-label">Timer:</span>
-                  <span className="stat-value">{card.timer_seconds}s</span>
-                </div>
-                <div className="stat-item">
                   <span className="stat-label">Difficulty:</span>
                   <span className="stat-value">{'⭐'.repeat(card.difficulty_level)}</span>
                 </div>
@@ -132,35 +153,19 @@ export const GameCard: React.FC<GameCardProps> = ({
               </div>
             </div>
           </div>
-          
-          {/* Card Back (Tap to Reveal) */}
-          <div 
-            className="card-face card-face--back"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              console.log('Card back clicked!');
-              if (!disabled && !isRevealed) {
-                handleReveal();
-              }
-            }}
-          >
-            <svg className="logo" viewBox="0 0 100 100">
-              <path d="M50,10 A40,40 0 0,1 50,90 A20,20 0 0,1 50,50 A20,20 0 0,0 50,10 Z"/>
-            </svg>
-            <div className="tap-prompt">Tap to Reveal</div>
-            
-            {/* Category hint on back */}
-            <div className="category-hint">
-              <span className="category-text">{card.category}</span>
-              <span className="timer-text">{card.timer_seconds}s</span>
-            </div>
-          </div>
         </div>
       </div>
 
-      {/* Response Area (if not action-based and revealed) */}
-      {!card.requires_action && isRevealed && canInteract && (
+      {/* Shared Timer - Visible to both players */}
+      <SharedTimer 
+        startTime={gameState?.current_card_started_at}
+        duration={card.timer_seconds}
+        onExpire={handleTimerExpire}
+        isActive={true}
+      />
+
+      {/* Response Area - Only for active player */}
+      {!card.requires_action && isMyTurn && (
         <div className="mt-4">
           <Textarea
             value={response}
@@ -172,58 +177,44 @@ export const GameCard: React.FC<GameCardProps> = ({
         </div>
       )}
 
-      {/* Timer and Controls - Only show for active player */}
-      {isRevealed && showTimer && canInteract && (
-        <div className="space-y-4">
-          {/* Timer */}
-          <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
-            <CardTimer 
-              seconds={card.timer_seconds}
-              onExpire={handleTimerExpire}
-              isPaused={timerPaused}
-              category={card.timer_category}
-            />
-            
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setTimerPaused(!timerPaused)}
-              >
-                {timerPaused ? '▶️ Resume' : '⏸️ Pause'}
-              </Button>
-              
-              {card.intimacy_level >= 4 && skipsRemaining > 0 && canInteract && (
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={onSkip}
-                >
-                  Skip ({skipsRemaining} left)
-                </Button>
-              )}
-            </div>
-          </div>
+      {/* Action Buttons - Only for active player */}
+      {isMyTurn && (
+        <div className="flex gap-3 justify-center">
+          <Button
+            onClick={() => handleComplete(false)}
+            className="px-6 py-3 bg-gradient-to-r from-primary to-purple-500 font-semibold"
+            size="lg"
+          >
+            Complete Turn
+          </Button>
+          
+          <Button
+            variant="ghost"
+            size="lg"
+            onClick={onFavorite}
+            className="text-2xl hover:scale-110 transition p-3"
+          >
+            💖
+          </Button>
+          
+          {skipsRemaining > 0 && (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={onSkip}
+            >
+              Skip ({skipsRemaining})
+            </Button>
+          )}
+        </div>
+      )}
 
-          {/* Action Buttons */}
-          <div className="flex gap-3 justify-center">
-            <Button
-              onClick={handleComplete}
-              className="px-6 py-3 bg-gradient-to-r from-primary to-purple-500 font-semibold"
-              size="lg"
-            >
-              Complete Turn
-            </Button>
-            
-            <Button
-              variant="ghost"
-              size="lg"
-              onClick={onFavorite}
-              className="text-2xl hover:scale-110 transition p-3"
-            >
-              💖
-            </Button>
-          </div>
+      {/* Waiting message for non-active player */}
+      {!isMyTurn && (
+        <div className="text-center p-4 bg-purple-50 rounded-lg">
+          <p className="text-purple-700">
+            👀 Watch your partner complete this challenge!
+          </p>
         </div>
       )}
 

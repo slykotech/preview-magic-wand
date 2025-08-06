@@ -23,10 +23,9 @@ export const CardDeckGame: React.FC = () => {
     connectionStatus,
     partnerInfo,
     stats,
-    actions
+    actions,
+    cardRevealed
   } = useCardGame(sessionId || null);
-
-  const [cardRevealed, setCardRevealed] = useState(false);
 
   // Auto-draw card when it's my turn and no current card
   useEffect(() => {
@@ -43,11 +42,6 @@ export const CardDeckGame: React.FC = () => {
     }
   }, [isMyTurn, currentCard, gameState?.status, actions, sessionId]);
 
-  // Reset card revealed state when turn changes
-  useEffect(() => {
-    console.log('Card changed, resetting reveal state. New card ID:', currentCard?.id);
-    setCardRevealed(false);
-  }, [currentCard?.id]);
 
   if (loading) {
     return (
@@ -129,17 +123,13 @@ export const CardDeckGame: React.FC = () => {
           {currentCard ? (
             <GameCard
               card={currentCard}
+              gameState={gameState}
+              isMyTurn={isMyTurn}
               isRevealed={cardRevealed}
-              onReveal={() => {
-                console.log('=== REVEAL CALLED FROM PARENT ===');
-                console.log('Setting cardRevealed to true');
-                setCardRevealed(true);
-              }}
-              onComplete={actions.completeTurn}
+              onReveal={actions.revealCard}
+              onComplete={(response, timedOut) => actions.completeTurn(response)}
               onSkip={actions.skipCard}
               onFavorite={actions.favoriteCard}
-              disabled={!isMyTurn || gameState.status !== 'active'}
-              canInteract={isMyTurn && gameState.status === 'active'}
               skipsRemaining={stats.skipsRemaining}
             />
           ) : (

@@ -48,6 +48,7 @@ export function useCardGame(sessionId: string | null) {
   const [loading, setLoading] = useState(true);
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'connecting' | 'error'>('connecting');
   const [partnerInfo, setPartnerInfo] = useState<{id: string, name: string} | null>(null);
+  const [cardRevealed, setCardRevealed] = useState(false);
 
   // Initialize game
   useEffect(() => {
@@ -156,6 +157,11 @@ export function useCardGame(sessionId: string | null) {
             setGameState(processedState);
             setIsMyTurn(newState.current_turn === user.id);
             
+            // Sync card reveal state
+            if (newState.current_card_revealed !== undefined) {
+              setCardRevealed(newState.current_card_revealed);
+            }
+            
             // IMPORTANT: Fetch the card data when current_card_id changes
             if (newState.current_card_id) {
               console.log('Fetching card from real-time update:', newState.current_card_id);
@@ -181,6 +187,7 @@ export function useCardGame(sessionId: string | null) {
               // Clear card when no current_card_id
               console.log('No current_card_id, clearing card');
               setCurrentCard(null);
+              setCardRevealed(false);
             }
           }
         )
@@ -195,6 +202,35 @@ export function useCardGame(sessionId: string | null) {
     }
   }, [user, coupleData, sessionId]);
 
+
+  // Reveal card function - syncs with database
+  const revealCard = useCallback(async (): Promise<void> => {
+    if (!isMyTurn || !gameState || !currentCard || cardRevealed) {
+      console.log('Cannot reveal card:', { isMyTurn, gameState: !!gameState, currentCard: !!currentCard, cardRevealed });
+      return;
+    }
+
+    console.log('Revealing card for both players...');
+    
+    try {
+      const { error } = await supabase
+        .from("card_deck_game_sessions")
+        .update({
+          current_card_revealed: true,
+          current_card_started_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", sessionId);
+
+      if (error) throw error;
+      
+      console.log('Card revealed in database');
+      
+    } catch (error) {
+      console.error('Failed to reveal card:', error);
+      toast.error('Failed to reveal card');
+    }
+  }, [isMyTurn, gameState, currentCard, cardRevealed, sessionId]);
 
   // This function is no longer needed as game creation is handled in Games.tsx
   const createNewSession = async () => {
@@ -273,6 +309,9 @@ export function useCardGame(sessionId: string | null) {
       console.log('💾 Updating game state with card:', randomCard.id);
       const updateData = {
         current_card_id: randomCard.id,
+        current_card_revealed: false,
+        current_card_started_at: null,
+        current_card_completed: false,
         last_activity_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
@@ -339,6 +378,9 @@ export function useCardGame(sessionId: string | null) {
         .update({
           current_turn: nextTurn,
           current_card_id: null,
+          current_card_revealed: false,
+          current_card_started_at: null,
+          current_card_completed: true,
           played_cards: updatedPlayedCards,
           total_cards_played: gameState.total_cards_played + 1,
           last_activity_at: new Date().toISOString(),
@@ -511,7 +553,9 @@ export function useCardGame(sessionId: string | null) {
       skipCard,
       favoriteCard,
       togglePause,
-      endGame
-    }
+      endGame,
+      revealCard
+    },
+    cardRevealed
   };
 }
