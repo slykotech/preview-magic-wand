@@ -279,7 +279,7 @@ serve(async (req) => {
         // If same priority, sort by distance
         return a.distance - b.distance;
       })
-      .slice(0, 50);
+      .slice(0, 100); // Increased limit to 100 places
 
     console.log(`Found ${uniquePlaces.length} places from Google Places API`);
 
