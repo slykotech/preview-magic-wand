@@ -91,28 +91,41 @@ serve(async (req) => {
       console.error('Error creating job record:', jobError);
     }
 
-    // Generate events using OpenAI
-    const prompt = `Generate exactly 15 realistic local events for ${cityName}. Include a mix of:
-- Cultural events (concerts, art shows, theater)
-- Food & dining (restaurant openings, food festivals, farmers markets)  
-- Outdoor activities (hiking meetups, sports, park events)
-- Entertainment (comedy shows, live music, trivia nights)
-- Community events (workshops, classes, networking)
-- Family-friendly activities
-- Date night options
+    // Generate events using OpenAI with enhanced location and theme focus
+    const prompt = `Generate exactly 25-30 realistic local events for ${cityName} (coordinates: ${latitude}, ${longitude}). Create a comprehensive mix of:
+
+REQUIRED CATEGORIES (create multiple events for each):
+- Cultural & Arts (concerts, art shows, theater, galleries, cultural festivals)
+- Food & Dining (restaurant openings, food festivals, farmers markets, cooking classes, wine tastings)  
+- Outdoor & Sports (hiking meetups, cycling groups, sports events, park activities, adventure tours)
+- Entertainment & Nightlife (comedy shows, live music, trivia nights, karaoke, dance events)
+- Community & Social (workshops, classes, networking events, book clubs, volunteer activities)
+- Family & Kids (family festivals, children's shows, educational activities, park events)
+- Date & Romance (romantic dinners, couple activities, sunset events, intimate concerts)
+- Learning & Growth (workshops, seminars, skill-building, language exchange, tech meetups)
+- Health & Wellness (yoga classes, meditation, fitness bootcamps, health fairs)
+- Shopping & Markets (local markets, craft fairs, pop-up shops, vintage sales)
 
 For each event, provide:
-- title: Clear, engaging event name
-- description: 2-3 sentences describing the event
-- start_date: Date/time in next 2 weeks (format: YYYY-MM-DDTHH:MM:SS)
-- location_name: Specific venue or area in ${cityName}
-- category: One of: music, food, art, sports, social, outdoor, learning, entertainment
-- price: Realistic price (Free, $5, $10-20, etc.)
-- organizer: Realistic business/organization name
+- title: Clear, engaging event name that feels authentic to ${cityName}
+- description: 2-3 detailed sentences describing the event experience
+- start_date: Date/time in next 3 weeks (format: YYYY-MM-DDTHH:MM:SS)
+- location_name: Specific venue, landmark, or well-known area in ${cityName}
+- latitude: Realistic coordinates within ${cityName} area (vary around ${latitude})
+- longitude: Realistic coordinates within ${cityName} area (vary around ${longitude})
+- category: One of: music, food, art, sports, social, outdoor, learning, entertainment, family, wellness
+- price: Realistic local pricing (Free, $5, $10-20, $25-50, etc.)
+- organizer: Authentic-sounding local business, organization, or community group
 
-Make events feel authentic to ${cityName} culture and venues. Vary times throughout the week including evenings and weekends.
+IMPORTANT GUIDELINES:
+- Make events feel completely authentic to ${cityName}'s culture, landmarks, and local scene
+- Include both popular tourist areas AND local neighborhood venues
+- Vary event times: mornings, afternoons, evenings, weekends
+- Include both free and paid events with realistic local pricing
+- Reference actual types of venues that would exist in ${cityName}
+- Create events that locals would actually attend and enjoy
 
-Respond in valid JSON format as an array of events.`;
+Respond with valid JSON array only - no markdown formatting.`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -168,15 +181,30 @@ Respond in valid JSON format as an array of events.`;
 
     console.log(`Generated ${aiEvents.length} events for ${cityName}`);
 
-    // Transform and insert events into database with enhanced data
+    // Transform and insert events into database with enhanced location data
     const eventsToInsert = aiEvents.map((event: any, index: number) => {
-      // Create more realistic coordinate distribution around the city center
-      const radiusKm = 0.05; // ~5km radius
-      const angle = (index / aiEvents.length) * 2 * Math.PI; // Distribute evenly in circle
-      const distance = Math.random() * radiusKm; // Random distance within radius
+      // Use AI-provided coordinates if available, otherwise distribute around city center
+      let eventLat, eventLng;
       
-      const deltaLat = distance * Math.cos(angle) / 111; // 111 km per degree latitude
-      const deltaLng = distance * Math.sin(angle) / (111 * Math.cos(latitude * Math.PI / 180));
+      if (event.latitude && event.longitude && 
+          typeof event.latitude === 'number' && typeof event.longitude === 'number') {
+        // Use AI-provided coordinates
+        eventLat = event.latitude;
+        eventLng = event.longitude;
+        console.log(`Using AI coordinates for ${event.title}: ${eventLat}, ${eventLng}`);
+      } else {
+        // Fallback: Create realistic coordinate distribution around the city center
+        const radiusKm = 15; // ~15km radius for better area coverage
+        const angle = (index / aiEvents.length) * 2 * Math.PI; // Distribute evenly in circle
+        const distance = Math.random() * radiusKm; // Random distance within radius
+        
+        const deltaLat = distance * Math.cos(angle) / 111; // 111 km per degree latitude
+        const deltaLng = distance * Math.sin(angle) / (111 * Math.cos(latitude * Math.PI / 180));
+        
+        eventLat = latitude + deltaLat;
+        eventLng = longitude + deltaLng;
+        console.log(`Generated coordinates for ${event.title}: ${eventLat}, ${eventLng}`);
+      }
 
       return {
         external_id: `ai-${generationBatchId}-${crypto.randomUUID()}`,
@@ -184,8 +212,8 @@ Respond in valid JSON format as an array of events.`;
         description: event.description || '',
         start_date: event.start_date || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
         location_name: event.location_name || `${cityName} Area`,
-        latitude: latitude + deltaLat,
-        longitude: longitude + deltaLng,
+        latitude: eventLat,
+        longitude: eventLng,
         price: event.price || 'Free',
         organizer: event.organizer || 'Local Organization',
         category: event.category || 'social',
@@ -193,7 +221,7 @@ Respond in valid JSON format as an array of events.`;
         ai_generated: true,
         generation_batch_id: generationBatchId,
         city_name: cityName,
-        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days
+        expires_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString() // 14 days
       };
     });
 
