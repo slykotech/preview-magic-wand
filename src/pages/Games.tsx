@@ -7,17 +7,6 @@ import { useCardGames } from "@/hooks/useCardGames";
 
 const gameTypes = [
   {
-    id: "couples_cards",
-    title: "Card Deck Game",
-    subtitle: "Deep Connection",
-    icon: Heart,
-    secondaryIcon: MessageCircle,
-    gradient: "from-pink-400 to-red-400",
-    bgGradient: "from-pink-50 to-red-50",
-    darkBgGradient: "from-pink-950/30 to-red-950/30",
-    description: "500+ meaningful questions to spark intimate conversations and laughter"
-  },
-  {
     id: "tic_toe_heart",
     title: "Tic Toe Heart",
     subtitle: "Playful Competition",
