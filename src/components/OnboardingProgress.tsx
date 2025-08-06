@@ -65,7 +65,7 @@ export const OnboardingProgress: React.FC<OnboardingProgressProps> = ({
 
   const completedSteps = steps.filter(step => step.completed).length;
   const progressPercentage = (completedSteps / steps.length) * 100;
-  const isOnboardingComplete = userProfile?.onboarding_completed && completedSteps === steps.length;
+  const isOnboardingComplete = userProfile?.onboarding_completed || (premiumAccess.has_access && completedSteps >= 2);
 
   if (isOnboardingComplete) {
     return (

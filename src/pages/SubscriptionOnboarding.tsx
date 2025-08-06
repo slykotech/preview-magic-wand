@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -31,11 +31,12 @@ export const SubscriptionOnboarding = () => {
   });
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // If user already has premium access, redirect to dashboard
-  if (!loading && premiumAccess.has_access) {
-    navigate('/dashboard');
-    return null;
-  }
+  // Redirect to dashboard if user already has premium access
+  useEffect(() => {
+    if (!loading && premiumAccess.has_access) {
+      navigate('/dashboard');
+    }
+  }, [loading, premiumAccess.has_access, navigate]);
 
   const features = [
     "AI-powered relationship insights",
