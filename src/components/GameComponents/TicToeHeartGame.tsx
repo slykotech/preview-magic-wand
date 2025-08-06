@@ -877,13 +877,15 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
     );
   }
 
-  if (!gameState) {
+  if (!gameState || !gameState.board || !Array.isArray(gameState.board)) {
     return (
       <div className="space-y-6">
         <Card className="border-primary/20">
           <CardContent className="p-4">
             <div className="text-center">
-              <p className="text-muted-foreground">Failed to load game</p>
+              <p className="text-muted-foreground">
+                {!gameState ? 'Failed to load game' : 'Invalid game board'}
+              </p>
               <Button onClick={onExit} variant="outline" className="mt-2">
                 Exit Game
               </Button>
