@@ -22,6 +22,11 @@ import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { PremiumBadge } from '@/components/subscription/PremiumBadge';
+import { TrialStatus } from '@/components/subscription/TrialStatus';
+import { SubscriptionNotifications } from '@/components/subscription/SubscriptionNotifications';
+import { SubscriptionPromptModal } from '@/components/subscription/SubscriptionPromptModal';
+import { useSubscriptionGate } from '@/hooks/useSubscriptionGate';
 const getTimeBasedMessage = () => {
   const hour = new Date().getHours();
   if (hour >= 5 && hour < 12) {
@@ -50,6 +55,7 @@ const getMoodEmoji = (mood: string): string => {
   return moodEmojis[mood] || '😐';
 };
 export const Dashboard = () => {
+  const { checkFeatureAccess, showPrompt, promptFeature, closePrompt } = useSubscriptionGate();
   const [isLoading, setIsLoading] = useState(true);
   const [isLoaded, setIsLoaded] = useState(false);
   const [showSplash, setShowSplash] = useState(() => {
@@ -708,6 +714,13 @@ export const Dashboard = () => {
           {isLoaded ? <RecentTasks /> : <div className="w-full h-32 bg-muted animate-pulse rounded-xl"></div>}
         </div>
         </div>
+
+        {/* Subscription Prompt Modal */}
+        <SubscriptionPromptModal
+          isOpen={showPrompt}
+          onClose={closePrompt}
+          feature={promptFeature}
+        />
       </div>
 
       {/* Daily Check-in Flow Modal */}

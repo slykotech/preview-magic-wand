@@ -1475,6 +1475,50 @@ export type Database = {
         }
         Relationships: []
       }
+      partner_subscriptions: {
+        Row: {
+          access_type: string
+          created_at: string
+          granted_at: string
+          id: string
+          is_active: boolean
+          partner_user_id: string | null
+          premium_user_id: string | null
+          revoked_at: string | null
+          subscription_id: string | null
+        }
+        Insert: {
+          access_type?: string
+          created_at?: string
+          granted_at?: string
+          id?: string
+          is_active?: boolean
+          partner_user_id?: string | null
+          premium_user_id?: string | null
+          revoked_at?: string | null
+          subscription_id?: string | null
+        }
+        Update: {
+          access_type?: string
+          created_at?: string
+          granted_at?: string
+          id?: string
+          is_active?: boolean
+          partner_user_id?: string | null
+          premium_user_id?: string | null
+          revoked_at?: string | null
+          subscription_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_subscriptions_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pending_verifications: {
         Row: {
           completed_at: string | null
@@ -1901,6 +1945,96 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      subscription_notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          message: string
+          notification_type: string
+          scheduled_for: string | null
+          sent_at: string | null
+          title: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message: string
+          notification_type: string
+          scheduled_for?: string | null
+          sent_at?: string | null
+          title: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          notification_type?: string
+          scheduled_for?: string | null
+          sent_at?: string | null
+          title?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      subscriptions: {
+        Row: {
+          auto_charge_date: string | null
+          card_brand: string | null
+          card_last_four: string | null
+          created_at: string
+          current_period_end: string | null
+          current_period_start: string | null
+          id: string
+          plan_type: string
+          status: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          trial_end_date: string | null
+          trial_start_date: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          auto_charge_date?: string | null
+          card_brand?: string | null
+          card_last_four?: string | null
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          plan_type?: string
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          trial_end_date?: string | null
+          trial_start_date?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          auto_charge_date?: string | null
+          card_brand?: string | null
+          card_last_four?: string | null
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          plan_type?: string
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          trial_end_date?: string | null
+          trial_start_date?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
       }
       sync_scores: {
         Row: {
@@ -2904,6 +3038,10 @@ export type Database = {
           needs_refresh: boolean
         }[]
       }
+      get_premium_access_details: {
+        Args: { p_user_id: string }
+        Returns: Json
+      }
       get_proj4_from_srid: {
         Args: { "": number }
         Returns: string
@@ -2939,6 +3077,10 @@ export type Database = {
       gtrgm_out: {
         Args: { "": unknown }
         Returns: unknown
+      }
+      has_premium_access: {
+        Args: { p_user_id: string }
+        Returns: boolean
       }
       hash_password: {
         Args: { password: string }

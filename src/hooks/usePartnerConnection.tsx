@@ -123,6 +123,76 @@ export const usePartnerConnection = () => {
     }
   };
 
+  // Invite partner with enhanced subscription logic
+  const invitePartner = async (partnerEmail: string, displayName: string) => {
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to invite a partner",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsProcessing(true);
+      console.log('Inviting partner:', partnerEmail);
+
+      const { data, error } = await supabase.functions.invoke('invite-partner', {
+        body: {
+          partnerEmail,
+          userDisplayName: displayName,
+        },
+      });
+
+      if (error) {
+        console.error('Edge function error:', error);
+        throw error;
+      }
+
+      console.log('Invite response:', data);
+
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to send invitation');
+      }
+
+      // Update local state based on response
+      await loadConnectionData();
+
+      // If partner was found and couple created, grant premium access if we have a subscription
+      if (data.partnerFound && data.couple) {
+        // Check if we have premium access and grant it to partner
+        const { data: premiumCheck } = await supabase.rpc('has_premium_access', {
+          p_user_id: user.id
+        });
+
+        if (premiumCheck) {
+          await supabase.functions.invoke('grant-partner-access', {
+            body: {
+              partnerUserId: data.partner_user_id,
+              subscriptionId: data.subscription_id
+            }
+          });
+        }
+      }
+
+      toast({
+        title: "Success!",
+        description: data.message,
+      });
+
+    } catch (error: any) {
+      console.error('Invitation error:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send invitation. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   // Send partner request
   const sendPartnerRequest = async (partnerEmail: string): Promise<boolean> => {
     if (!user?.id || !partnerEmail.trim()) return false;
@@ -394,6 +464,7 @@ export const usePartnerConnection = () => {
     getPartnerId,
     
     // Actions
+    invitePartner,
     sendPartnerRequest,
     acceptPartnerRequest,
     declinePartnerRequest,
