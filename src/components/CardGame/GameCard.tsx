@@ -303,7 +303,15 @@ export const GameCard: React.FC<GameCardProps> = ({
       />
 
       {/* Response Area - Only for active player */}
-      {isMyTurn && renderResponseInput()}
+      {(() => {
+        console.log('💬 Response area render check:', {
+          isMyTurn,
+          userId,
+          currentTurn: gameState?.current_turn,
+          userIsCurrentTurn: userId === gameState?.current_turn
+        });
+        return isMyTurn;
+      })() && renderResponseInput()}
 
       {/* Action Buttons - Only for active player */}
       {(() => {
