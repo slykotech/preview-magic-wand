@@ -4,12 +4,12 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Crown, Check, Shield, CreditCard, Star, Gift, AlertCircle } from 'lucide-react';
+import { Crown, Check, Shield, CreditCard, Star, Gift, AlertCircle, CheckCircle2, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useEnhancedSubscription } from '@/hooks/useEnhancedSubscription';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { validateCard, formatCardNumber, formatExpiryDate, getCardBrandName } from '@/utils/cardValidation';
+import { validateCard, formatCardNumber, formatExpiryDate, getCardBrandName, isValidCardNumber, isValidExpiryDate, isValidCVV, isValidCardholderName } from '@/utils/cardValidation';
 
 interface PaymentDetails {
   cardNumber: string;
@@ -32,6 +32,14 @@ export const SubscriptionOnboarding = () => {
   });
   const [isProcessing, setIsProcessing] = useState(false);
   const [cardErrors, setCardErrors] = useState<string[]>([]);
+
+  // Real-time validation states
+  const [fieldValidation, setFieldValidation] = useState({
+    cardNumber: { isValid: false, touched: false },
+    expiryDate: { isValid: false, touched: false },
+    cvv: { isValid: false, touched: false },
+    cardholderName: { isValid: false, touched: false }
+  });
 
   // Redirect to dashboard if user already has premium access
   useEffect(() => {
@@ -81,8 +89,8 @@ export const SubscriptionOnboarding = () => {
         brand: cardBrand.toLowerCase()
       };
       
-      const success = await startTrial(cardDetails);
-      if (success) {
+      const result = await startTrial(cardDetails);
+      if (result.success) {
         toast({
           description: "Welcome to Love Sync Premium! Your 7-day free trial has started."
         });
@@ -90,7 +98,7 @@ export const SubscriptionOnboarding = () => {
       } else {
         toast({
           variant: "destructive",
-          description: "Failed to start trial. Please try again."
+          description: result.error || "Failed to start trial. Please try again."
         });
       }
     } catch (error) {
@@ -102,6 +110,43 @@ export const SubscriptionOnboarding = () => {
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  // Real-time field validation
+  const validateField = (fieldName: keyof PaymentDetails, value: string) => {
+    let isValid = false;
+    
+    switch (fieldName) {
+      case 'cardNumber':
+        isValid = value.trim() !== '' && isValidCardNumber(value);
+        break;
+      case 'expiryDate':
+        isValid = value.trim() !== '' && isValidExpiryDate(value);
+        break;
+      case 'cvv':
+        isValid = value.trim() !== '' && isValidCVV(value, paymentDetails.cardNumber);
+        break;
+      case 'cardholderName':
+        isValid = value.trim() !== '' && isValidCardholderName(value);
+        break;
+    }
+    
+    setFieldValidation(prev => ({
+      ...prev,
+      [fieldName]: { isValid, touched: true }
+    }));
+  };
+
+  // Helper function to get field icon
+  const getFieldIcon = (fieldName: keyof PaymentDetails) => {
+    const field = fieldValidation[fieldName];
+    if (!field.touched) return null;
+    
+    return field.isValid ? (
+      <CheckCircle2 className="w-4 h-4 text-green-500" />
+    ) : (
+      <X className="w-4 h-4 text-red-500" />
+    );
   };
 
 
@@ -231,13 +276,22 @@ export const SubscriptionOnboarding = () => {
                 <div className="space-y-4">
                   <div>
                     <Label htmlFor="cardholderName">Cardholder Name</Label>
-                    <Input
-                      id="cardholderName"
-                      placeholder="John Doe"
-                      value={paymentDetails.cardholderName}
-                      onChange={(e) => setPaymentDetails(prev => ({ ...prev, cardholderName: e.target.value }))}
-                      className="mt-1"
-                    />
+                    <div className="relative">
+                      <Input
+                        id="cardholderName"
+                        placeholder="John Doe"
+                        value={paymentDetails.cardholderName}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          setPaymentDetails(prev => ({ ...prev, cardholderName: value }));
+                          validateField('cardholderName', value);
+                        }}
+                        className="mt-1 pr-10"
+                      />
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                        {getFieldIcon('cardholderName')}
+                      </div>
+                    </div>
                   </div>
 
                   <div>
@@ -247,50 +301,66 @@ export const SubscriptionOnboarding = () => {
                         id="cardNumber"
                         placeholder="1234 5678 9012 3456"
                         value={paymentDetails.cardNumber}
-                        onChange={(e) => setPaymentDetails(prev => ({ 
-                          ...prev, 
-                          cardNumber: formatCardNumber(e.target.value) 
-                        }))}
+                        onChange={(e) => {
+                          const value = formatCardNumber(e.target.value);
+                          setPaymentDetails(prev => ({ ...prev, cardNumber: value }));
+                          validateField('cardNumber', value);
+                        }}
                         maxLength={23} // Increased for formatting
-                        className="mt-1"
+                        className="mt-1 pr-20"
                       />
-                      {paymentDetails.cardNumber && (
-                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-muted-foreground">
-                          {getCardBrandName(paymentDetails.cardNumber)}
-                        </div>
-                      )}
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
+                        {getFieldIcon('cardNumber')}
+                        {paymentDetails.cardNumber && (
+                          <span className="text-xs text-muted-foreground">
+                            {getCardBrandName(paymentDetails.cardNumber)}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="expiryDate">Expiry Date</Label>
-                      <Input
-                        id="expiryDate"
-                        placeholder="MM/YY"
-                        value={paymentDetails.expiryDate}
-                        onChange={(e) => setPaymentDetails(prev => ({ 
-                          ...prev, 
-                          expiryDate: formatExpiryDate(e.target.value) 
-                        }))}
-                        maxLength={5}
-                        className="mt-1"
-                      />
+                      <div className="relative">
+                        <Input
+                          id="expiryDate"
+                          placeholder="MM/YY"
+                          value={paymentDetails.expiryDate}
+                          onChange={(e) => {
+                            const value = formatExpiryDate(e.target.value);
+                            setPaymentDetails(prev => ({ ...prev, expiryDate: value }));
+                            validateField('expiryDate', value);
+                          }}
+                          maxLength={5}
+                          className="mt-1 pr-10"
+                        />
+                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                          {getFieldIcon('expiryDate')}
+                        </div>
+                      </div>
                     </div>
 
                     <div>
                       <Label htmlFor="cvv">CVV</Label>
-                      <Input
-                        id="cvv"
-                        placeholder="123"
-                        value={paymentDetails.cvv}
-                        onChange={(e) => setPaymentDetails(prev => ({ 
-                          ...prev, 
-                          cvv: e.target.value.replace(/\D/g, '') 
-                        }))}
-                        maxLength={4}
-                        className="mt-1"
-                      />
+                      <div className="relative">
+                        <Input
+                          id="cvv"
+                          placeholder="123"
+                          value={paymentDetails.cvv}
+                          onChange={(e) => {
+                            const value = e.target.value.replace(/\D/g, '');
+                            setPaymentDetails(prev => ({ ...prev, cvv: value }));
+                            validateField('cvv', value);
+                          }}
+                          maxLength={4}
+                          className="mt-1 pr-10"
+                        />
+                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                          {getFieldIcon('cvv')}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
