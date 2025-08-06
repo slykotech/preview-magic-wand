@@ -249,6 +249,9 @@ async function fetchEventbriteEvents(lat: number, lng: number, radiusKm: number)
       }
     });
 
+    console.log(`Eventbrite API response status: ${response.status}`);
+    console.log(`Eventbrite API response headers:`, Object.fromEntries(response.headers.entries()));
+    
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`Eventbrite API error ${response.status}: ${errorText}`);
@@ -258,8 +261,6 @@ async function fetchEventbriteEvents(lat: number, lng: number, radiusKm: number)
     }
 
     const data = await response.json();
-    console.log(`Eventbrite response status: ${response.status}`);
-    console.log(`Eventbrite response headers:`, Object.fromEntries(response.headers.entries()));
     console.log(`Eventbrite response data:`, JSON.stringify(data, null, 2));
     
     if (!data.events || data.events.length === 0) {
