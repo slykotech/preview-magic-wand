@@ -150,8 +150,38 @@ export function useCardGame(sessionId: string | null) {
             filter: `id=eq.${sessionId}`
           },
           async (payload) => {
-            console.log("Game update received:", payload);
+            console.group("📨 REAL-TIME UPDATE RECEIVED");
+            console.log("Event Type:", payload.eventType);
+            console.log("Full Payload:", payload);
+            
             const newState = payload.new as any;
+            const oldState = payload.old as any;
+            
+            // Check for response updates specifically
+            const responseChanged = newState.current_card_response !== oldState?.current_card_response;
+            const cardChanged = newState.current_card_id !== oldState?.current_card_id;
+            const turnChanged = newState.current_turn !== oldState?.current_turn;
+            
+            console.log("🔍 Change Detection:", {
+              responseChanged,
+              cardChanged,
+              turnChanged,
+              oldResponse: oldState?.current_card_response,
+              newResponse: newState.current_card_response,
+              oldTurn: oldState?.current_turn,
+              newTurn: newState.current_turn
+            });
+            
+            if (responseChanged) {
+              console.log("🎉 RESPONSE UPDATE DETECTED!");
+              console.log("Response Details:", {
+                text: newState.current_card_response,
+                type: newState.current_card_response_type,
+                timestamp: newState.current_card_responded_at,
+                cardId: newState.current_card_id
+              });
+            }
+            
             const processedState = {
               ...newState,
               played_cards: Array.isArray(newState.played_cards) ? newState.played_cards : [],
@@ -169,6 +199,7 @@ export function useCardGame(sessionId: string | null) {
             
             setGameState(processedState);
             setIsMyTurn(newState.current_turn === user.id);
+            console.groupEnd();
             
             // Sync card reveal state
             if (newState.current_card_revealed !== undefined) {
@@ -441,8 +472,16 @@ export function useCardGame(sessionId: string | null) {
 
         // First, update the game session with response for real-time sharing
         if (responseText) {
-          console.log('💬 Updating game session with response for real-time sharing');
-          const { error: sessionUpdateError } = await supabase
+          console.group('💬 UPDATING GAME SESSION WITH RESPONSE');
+          console.log('Response details:', {
+            responseText,
+            responseType,
+            sessionId,
+            cardId: currentCard.id,
+            userId: user.id
+          });
+          
+          const { data: sessionData, error: sessionUpdateError } = await supabase
             .from("card_deck_game_sessions")
             .update({
               current_card_response: responseText,
@@ -450,14 +489,20 @@ export function useCardGame(sessionId: string | null) {
               current_card_responded_at: new Date().toISOString(),
               updated_at: new Date().toISOString()
             })
-            .eq("id", sessionId);
+            .eq("id", sessionId)
+            .select()
+            .single();
 
           if (sessionUpdateError) {
             console.error('❌ Error updating session with response:', sessionUpdateError);
+            console.groupEnd();
           } else {
-            console.log('✅ Game session updated with response for real-time sharing');
+            console.log('✅ Game session updated successfully:', sessionData);
+            console.log('🔄 Real-time event should now fire for partner');
+            console.log('⏳ Waiting 3 seconds for partner to see response...');
+            console.groupEnd();
             // Give a moment for the partner to see the response before proceeding
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            await new Promise(resolve => setTimeout(resolve, 3000));
           }
         }
 

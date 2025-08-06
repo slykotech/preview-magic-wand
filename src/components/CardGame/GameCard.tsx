@@ -445,21 +445,47 @@ export const GameCard: React.FC<GameCardProps> = ({
         </div>
       )}
 
+      {/* DEBUG: Response state logging */}
+      {(() => {
+        console.log('💬 RESPONSE DISPLAY CHECK:', {
+          hasGameState: !!gameState,
+          hasResponse: !!gameState?.current_card_response,
+          responseText: gameState?.current_card_response,
+          gameStateCardId: gameState?.current_card_id,
+          currentCardId: card.id,
+          cardIdsMatch: gameState?.current_card_id === card.id,
+          shouldShow: gameState?.current_card_response && gameState?.current_card_id === card.id,
+          timestamp: gameState?.current_card_responded_at,
+          isMyTurn
+        });
+        return null;
+      })()}
+
       {/* Current Game Response Display - Real-time shared response from game session */}
       {gameState?.current_card_response && gameState?.current_card_id === card.id && (
-        <div className="mb-4 p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-200">
+        <div className="mb-4 p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border-2 border-purple-400 shadow-lg">
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-2xl">💬</span>
+            <span className="text-2xl animate-pulse">💬</span>
             <p className="text-sm font-semibold text-purple-700">
               {isMyTurn ? "Your response:" : "Partner's response:"}
             </p>
             <span className="text-xs text-purple-600 bg-purple-100 px-2 py-1 rounded-full ml-auto">
-              {new Date(gameState.current_card_responded_at).toLocaleTimeString()}
+              {gameState.current_card_responded_at && new Date(gameState.current_card_responded_at).toLocaleTimeString()}
             </span>
           </div>
-          <p className="text-lg text-gray-800 italic leading-relaxed">
+          <p className="text-lg text-gray-800 italic leading-relaxed font-medium">
             "{gameState.current_card_response}"
           </p>
+          <div className="mt-2 text-xs text-purple-600">
+            🔄 Real-time response sharing active
+          </div>
+        </div>
+      )}
+
+      {/* DEBUG: Show when no response to display */}
+      {!gameState?.current_card_response && (
+        <div className="mb-2 p-2 bg-gray-100 rounded text-xs text-gray-600">
+          🔍 DEBUG: No response to display (response: {gameState?.current_card_response || 'none'}, card match: {gameState?.current_card_id === card.id ? 'yes' : 'no'})
         </div>
       )}
 
