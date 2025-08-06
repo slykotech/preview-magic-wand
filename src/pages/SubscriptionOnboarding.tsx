@@ -240,7 +240,7 @@ export const SubscriptionOnboarding = () => {
                     
                      <div className="flex items-center justify-between">
                        <div>
-                         <h3 className="text-lg font-bold text-foreground">{plan.name}</h3>
+                         <h3 className="text-lg font-bold text-gray-900">{plan.name}</h3>
                          <p className="text-sm text-muted-foreground">Billed {plan.period}</p>
                        </div>
                       <div className="text-right">
