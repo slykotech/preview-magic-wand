@@ -8,7 +8,7 @@ import { useLocation } from '@/hooks/useLocation';
 import { PlaceCard } from './PlaceCard';
 import { CitySearchInput } from './CitySearchInput';
 import { supabase } from '@/integrations/supabase/client';
-import { MapPin, Loader2, Search } from 'lucide-react';
+import { MapPin, Loader2, Search, RotateCcw } from 'lucide-react';
 interface Place {
   id: string;
   name: string;
@@ -41,6 +41,7 @@ export const SweetSuggestions: React.FC<SweetSuggestionsProps> = ({
     getCurrentLocation,
     setManualLocation
   } = useLocation();
+  const [isManualLocation, setIsManualLocation] = useState(false);
   const [places, setPlaces] = useState<Place[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -141,6 +142,13 @@ export const SweetSuggestions: React.FC<SweetSuggestionsProps> = ({
     // Clear existing places when location changes
     setPlaces([]);
     setManualLocation(cityName, coordinates);
+    setIsManualLocation(true);
+  };
+
+  const handleCurrentLocationRefresh = () => {
+    setPlaces([]);
+    setIsManualLocation(false);
+    getCurrentLocation();
   };
   const handleAddToDatePlan = (place: Place) => {
     const dateData = {
@@ -215,7 +223,21 @@ export const SweetSuggestions: React.FC<SweetSuggestionsProps> = ({
             <div className="flex-1">
               <CitySearchInput onLocationSet={handleLocationSet} onCurrentLocation={getCurrentLocation} className="w-full" />
             </div>
-            
+            {isManualLocation && (
+              <Button 
+                variant="outline" 
+                onClick={handleCurrentLocationRefresh}
+                disabled={isGettingLocation}
+                className="flex items-center gap-2"
+              >
+                {isGettingLocation ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RotateCcw className="h-4 w-4" />
+                )}
+                Use Current Location
+              </Button>
+            )}
           </div>
           
           {location && <div className="text-sm text-muted-foreground">
