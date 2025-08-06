@@ -64,7 +64,7 @@ verify_jwt = false
 [functions.scrape-ticketmaster]
 verify_jwt = false
 
-[functions.test-google-places]
+[functions.scrape-targeted-cities]
 verify_jwt = false
 
 [auth]

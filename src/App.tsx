@@ -39,6 +39,7 @@ import SignupResolver from "./pages/SignupResolver";
 import CompleteSignup from "./pages/CompleteSignup";
 
 import GooglePlacesTestPage from "./pages/GooglePlacesTest";
+import EventScraper from "./pages/EventScraper";
 
 const queryClient = new QueryClient();
 
@@ -79,7 +80,9 @@ const App = () => {
                 <Route path="/games/card-deck/:sessionId" element={<CardDeckGame />} />
                 <Route path="/games/card-deck/new" element={<CardDeckGame />} />
                 
+                
                 <Route path="/test-google-places" element={<GooglePlacesTestPage />} />
+                <Route path="/event-scraper" element={<EventScraper />} />
               <Route path="/vault" element={<MemoryVault />} />
               <Route path="/profile" element={<Profile />} />
                 <Route path="/couple-setup" element={<CoupleSetup />} />
