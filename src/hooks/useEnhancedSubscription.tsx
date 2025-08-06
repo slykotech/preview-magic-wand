@@ -107,7 +107,7 @@ export const useEnhancedSubscription = () => {
       let revenueCatStatus = null;
       if (Capacitor.isNativePlatform()) {
         try {
-          const customerInfo = await Purchases.getCustomerInfo();
+          const customerInfo: any = await Purchases.getCustomerInfo();
           revenueCatStatus = {
             hasActiveSubscription: customerInfo.entitlements?.active && Object.keys(customerInfo.entitlements.active).length > 0,
             customerInfo
@@ -122,7 +122,7 @@ export const useEnhancedSubscription = () => {
         p_user_id: user.id,
         p_revenue_cat_status: revenueCatStatus,
         p_device_id: await getDeviceId()
-      });
+      }) as { data: any; error: any };
 
       if (error) throw error;
 
@@ -149,14 +149,23 @@ export const useEnhancedSubscription = () => {
   const getDeviceId = async (): Promise<string> => {
     if (Capacitor.isNativePlatform()) {
       try {
-        const { Device } = await import('@capacitor/device');
-        const info = await Device.getId();
-        return info.identifier;
+        // Use Capacitor Device API if available
+        const deviceIdModule = await import('@capacitor/device').catch(() => null);
+        if (deviceIdModule) {
+          const info = await deviceIdModule.Device.getId();
+          return info.identifier;
+        }
       } catch {
-        return 'web-' + Date.now();
+        // Fallback to timestamp if device API fails
       }
     }
-    return 'web-' + (localStorage.getItem('deviceId') || Date.now());
+    // Fallback for web or if device API not available
+    let deviceId = localStorage.getItem('deviceId');
+    if (!deviceId) {
+      deviceId = 'web-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+      localStorage.setItem('deviceId', deviceId);
+    }
+    return deviceId;
   };
 
   // Check for billing issues and payment recovery
@@ -168,9 +177,9 @@ export const useEnhancedSubscription = () => {
         const response = await supabase.rpc('check_billing_status', {
           p_user_id: user.id,
           p_subscription_id: subscription.id
-        });
+        }) as { data: any; error: any };
         if (response.error) throw new Error(response.error.message);
-        return response.data;
+        return response;
       });
 
       if (data?.billing_issue) {
@@ -216,15 +225,16 @@ export const useEnhancedSubscription = () => {
       const { data, error } = await retryWithBackoff(async () => {
         const response = await supabase.rpc('get_premium_access_details', {
           p_user_id: user.id
-        });
+        }) as { data: any; error: any };
         if (response.error) throw new Error(response.error.message);
         return response;
       });
 
-      setPremiumAccess((data as any) || { has_access: false });
+      const accessDetails = (data as any) || { has_access: false };
+      setPremiumAccess(accessDetails);
       
       // Check billing status if user has access
-      if (data?.has_access) {
+      if (accessDetails.has_access) {
         await checkBillingStatus();
       }
     } catch (error) {

@@ -1646,6 +1646,7 @@ export type Database = {
           onboarding_completed: boolean | null
           relationship_goals: Json | null
           relationship_type: string | null
+          revenue_cat_customer_id: string | null
           subscription_plan: string | null
           updated_at: string
           user_id: string
@@ -1659,6 +1660,7 @@ export type Database = {
           onboarding_completed?: boolean | null
           relationship_goals?: Json | null
           relationship_type?: string | null
+          revenue_cat_customer_id?: string | null
           subscription_plan?: string | null
           updated_at?: string
           user_id: string
@@ -1672,6 +1674,7 @@ export type Database = {
           onboarding_completed?: boolean | null
           relationship_goals?: Json | null
           relationship_type?: string | null
+          revenue_cat_customer_id?: string | null
           subscription_plan?: string | null
           updated_at?: string
           user_id?: string
@@ -1945,6 +1948,7 @@ export type Database = {
       }
       subscription_notifications: {
         Row: {
+          action_required: boolean | null
           created_at: string
           id: string
           is_read: boolean
@@ -1956,6 +1960,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          action_required?: boolean | null
           created_at?: string
           id?: string
           is_read?: boolean
@@ -1967,6 +1972,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          action_required?: boolean | null
           created_at?: string
           id?: string
           is_read?: boolean
@@ -1982,20 +1988,33 @@ export type Database = {
       subscriptions: {
         Row: {
           auto_charge_date: string | null
+          billing_issue: boolean | null
+          cancelled_at: string | null
           card_brand: string | null
           card_last_four: string | null
           created_at: string
           current_period_end: string | null
           current_period_start: string | null
+          device_id: string | null
           discount_applied: number | null
           discount_code: string | null
+          expired_at: string | null
+          grace_period_end: string | null
           id: string
+          last_synced_at: string | null
           original_price: number | null
           plan_period: string | null
           plan_price: number | null
           plan_type: string
+          product_id: string | null
+          refund_reason: string | null
+          refunded_at: string | null
+          revenue_cat_customer_id: string | null
+          revenue_cat_original_transaction_id: string | null
+          revenue_cat_transaction_id: string | null
           selected_plan_name: string | null
           status: string
+          store: string | null
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
           trial_end_date: string | null
@@ -2005,20 +2024,33 @@ export type Database = {
         }
         Insert: {
           auto_charge_date?: string | null
+          billing_issue?: boolean | null
+          cancelled_at?: string | null
           card_brand?: string | null
           card_last_four?: string | null
           created_at?: string
           current_period_end?: string | null
           current_period_start?: string | null
+          device_id?: string | null
           discount_applied?: number | null
           discount_code?: string | null
+          expired_at?: string | null
+          grace_period_end?: string | null
           id?: string
+          last_synced_at?: string | null
           original_price?: number | null
           plan_period?: string | null
           plan_price?: number | null
           plan_type?: string
+          product_id?: string | null
+          refund_reason?: string | null
+          refunded_at?: string | null
+          revenue_cat_customer_id?: string | null
+          revenue_cat_original_transaction_id?: string | null
+          revenue_cat_transaction_id?: string | null
           selected_plan_name?: string | null
           status?: string
+          store?: string | null
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
           trial_end_date?: string | null
@@ -2028,20 +2060,33 @@ export type Database = {
         }
         Update: {
           auto_charge_date?: string | null
+          billing_issue?: boolean | null
+          cancelled_at?: string | null
           card_brand?: string | null
           card_last_four?: string | null
           created_at?: string
           current_period_end?: string | null
           current_period_start?: string | null
+          device_id?: string | null
           discount_applied?: number | null
           discount_code?: string | null
+          expired_at?: string | null
+          grace_period_end?: string | null
           id?: string
+          last_synced_at?: string | null
           original_price?: number | null
           plan_period?: string | null
           plan_price?: number | null
           plan_type?: string
+          product_id?: string | null
+          refund_reason?: string | null
+          refunded_at?: string | null
+          revenue_cat_customer_id?: string | null
+          revenue_cat_original_transaction_id?: string | null
+          revenue_cat_transaction_id?: string | null
           selected_plan_name?: string | null
           status?: string
+          store?: string | null
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
           trial_end_date?: string | null
@@ -2623,6 +2668,10 @@ export type Database = {
       calculate_sync_score: {
         Args: { p_couple_id: string }
         Returns: number
+      }
+      check_billing_status: {
+        Args: { p_user_id: string; p_subscription_id: string }
+        Returns: Json
       }
       check_user_quota: {
         Args: { p_user_id: string; p_estimated_cost?: number }
@@ -4447,6 +4496,14 @@ export type Database = {
       st_zmin: {
         Args: { "": unknown }
         Returns: number
+      }
+      sync_subscription_status: {
+        Args: {
+          p_user_id: string
+          p_revenue_cat_status?: Json
+          p_device_id?: string
+        }
+        Returns: Json
       }
       text: {
         Args: { "": unknown }
