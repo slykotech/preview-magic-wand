@@ -37,18 +37,31 @@ export const CardDeckGame: React.FC = () => {
       currentCard: !!currentCard,
       gameStatus: gameState?.status,
       sessionId,
-      loading
+      loading,
+      blockAutoAdvance
     });
     
-    if (isMyTurn && !currentCard && gameState?.status === 'active' && !loading && !blockAutoAdvance) {
+    if (isMyTurn && !currentCard && gameState?.status === 'active' && !loading && !blockAutoAdvance && sessionId) {
       console.log('Auto-drawing card for user turn');
       const timer = setTimeout(() => {
+        console.log('Executing auto-draw card action');
         actions.drawCard();
-      }, 100); // Small delay to avoid conflicts
+      }, 250); // Slightly longer delay for stability
       
       return () => clearTimeout(timer);
     }
   }, [isMyTurn, currentCard, gameState?.status, sessionId, loading, blockAutoAdvance, actions.drawCard]);
+
+  // Additional effect to trigger auto-draw immediately when game loads for current turn
+  useEffect(() => {
+    if (gameState && isMyTurn && !currentCard && !loading && gameState.status === 'active' && gameState.total_cards_played === 0) {
+      console.log('First card auto-draw for new game');
+      const timer = setTimeout(() => {
+        actions.drawCard();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [gameState, isMyTurn, currentCard, loading, actions.drawCard]);
 
 
   if (loading) {
