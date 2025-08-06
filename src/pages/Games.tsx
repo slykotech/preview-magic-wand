@@ -51,8 +51,8 @@ export const Games = () => {
   const handleGameSelect = async (gameType: string) => {
     try {
       if (gameType === 'card_deck') {
-        // For card deck game, redirect to create a new session
-        window.location.href = '/games/card-deck/new';
+        // Navigate to the card deck game page
+        navigate('/games/card-deck/new');
         return;
       }
       
