@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,17 +13,107 @@ export const PhotoInput: React.FC<PhotoInputProps> = ({ onPhotoSelected, isSubmi
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [caption, setCaption] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+  const [captureMode, setCaptureMode] = useState<'camera' | 'upload' | null>(null);
+  const [deviceType, setDeviceType] = useState<'mobile' | 'desktop'>('desktop');
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileSelect = (file: File) => {
+  useEffect(() => {
+    const checkDevice = () => {
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ||
+                      window.innerWidth < 768;
+      setDeviceType(isMobile ? 'mobile' : 'desktop');
+    };
+
+    checkDevice();
+    window.addEventListener('resize', checkDevice);
+    return () => window.removeEventListener('resize', checkDevice);
+  }, []);
+
+  const handleFileSelect = (file: File, mode: 'camera' | 'upload') => {
     if (file && file.type.startsWith('image/')) {
       setSelectedFile(file);
+      setCaptureMode(mode);
+      
       const reader = new FileReader();
       reader.onloadend = () => {
         setPreviewUrl(reader.result as string);
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleCameraClick = () => {
+    if (deviceType === 'mobile' && cameraInputRef.current) {
+      cameraInputRef.current.click();
+    } else {
+      // On desktop, try webcam or fallback
+      if ('mediaDevices' in navigator && 'getUserMedia' in navigator.mediaDevices) {
+        openWebcam();
+      } else {
+        alert('Camera not available on this device. Please upload a photo instead.');
+      }
+    }
+  };
+
+  const openWebcam = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: 'environment' } 
+      });
+      
+      const modal = document.createElement('div');
+      modal.className = 'fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4';
+      modal.innerHTML = `
+        <div class="bg-white rounded-lg p-4 max-w-2xl w-full">
+          <div class="relative">
+            <video id="webcam-video" class="w-full rounded" autoplay></video>
+            <div class="mt-4 flex gap-3 justify-center">
+              <button id="capture-btn" class="px-6 py-3 bg-purple-500 text-white rounded-lg font-semibold">
+                📸 Capture
+              </button>
+              <button id="close-btn" class="px-6 py-3 bg-gray-500 text-white rounded-lg font-semibold">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      document.body.appendChild(modal);
+      
+      const modalVideo = modal.querySelector('#webcam-video') as HTMLVideoElement;
+      modalVideo.srcObject = stream;
+      
+      const captureBtn = modal.querySelector('#capture-btn');
+      captureBtn?.addEventListener('click', () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = modalVideo.videoWidth;
+        canvas.height = modalVideo.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(modalVideo, 0, 0);
+        
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const file = new File([blob], `camera-${Date.now()}.jpg`, { type: 'image/jpeg' });
+            handleFileSelect(file, 'camera');
+          }
+        }, 'image/jpeg', 0.9);
+        
+        stream.getTracks().forEach(track => track.stop());
+        document.body.removeChild(modal);
+      });
+      
+      const closeBtn = modal.querySelector('#close-btn');
+      closeBtn?.addEventListener('click', () => {
+        stream.getTracks().forEach(track => track.stop());
+        document.body.removeChild(modal);
+      });
+      
+    } catch (error) {
+      console.error('Webcam error:', error);
+      alert('Unable to access camera. Please check permissions or use upload instead.');
     }
   };
 
@@ -67,6 +157,7 @@ export const PhotoInput: React.FC<PhotoInputProps> = ({ onPhotoSelected, isSubmi
     setSelectedFile(null);
     setPreviewUrl(null);
     setCaption('');
+    setCaptureMode(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
     if (cameraInputRef.current) cameraInputRef.current.value = '';
   };
@@ -77,7 +168,7 @@ export const PhotoInput: React.FC<PhotoInputProps> = ({ onPhotoSelected, isSubmi
         // Photo selection options
         <div className="grid grid-cols-2 gap-3">
           {/* Camera option */}
-          <label className="cursor-pointer">
+          <div>
             <input
               ref={cameraInputRef}
               type="file"
@@ -85,16 +176,20 @@ export const PhotoInput: React.FC<PhotoInputProps> = ({ onPhotoSelected, isSubmi
               capture="environment"
               onChange={(e) => {
                 const file = e.target.files?.[0];
-                if (file) handleFileSelect(file);
+                if (file) handleFileSelect(file, 'camera');
               }}
               className="hidden"
               disabled={isSubmitting}
             />
-            <div className="p-4 bg-gradient-to-br from-primary/10 to-purple-100 rounded-lg text-center hover:from-primary/20 hover:to-purple-200 transition">
+            <button
+              onClick={handleCameraClick}
+              disabled={isSubmitting}
+              className="w-full p-4 bg-gradient-to-br from-primary/10 to-purple-100 rounded-lg text-center hover:from-primary/20 hover:to-purple-200 transition"
+            >
               <span className="text-4xl block mb-2">📷</span>
               <span className="text-sm font-medium text-primary">Take Photo</span>
-            </div>
-          </label>
+            </button>
+          </div>
 
           {/* Upload option */}
           <label className="cursor-pointer">
@@ -104,7 +199,7 @@ export const PhotoInput: React.FC<PhotoInputProps> = ({ onPhotoSelected, isSubmi
               accept="image/*"
               onChange={(e) => {
                 const file = e.target.files?.[0];
-                if (file) handleFileSelect(file);
+                if (file) handleFileSelect(file, 'upload');
               }}
               className="hidden"
               disabled={isSubmitting}
@@ -131,6 +226,11 @@ export const PhotoInput: React.FC<PhotoInputProps> = ({ onPhotoSelected, isSubmi
             >
               ✕
             </button>
+            
+            {/* Show capture mode */}
+            <div className="absolute top-2 left-2 px-3 py-1 bg-background/80 rounded-full text-xs font-medium">
+              {captureMode === 'camera' ? '📷 Camera' : '🖼️ Uploaded'}
+            </div>
           </div>
 
           {/* Optional caption */}
