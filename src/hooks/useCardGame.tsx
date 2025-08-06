@@ -367,13 +367,21 @@ export function useCardGame(sessionId: string | null) {
       hasCurrentCard: !!currentCard,
       sessionId,
       userId: user?.id,
-      currentTurn: gameState?.current_turn
+      currentTurn: gameState?.current_turn,
+      userIsCurrentTurn: user?.id === gameState?.current_turn
     });
     
-    if (!isMyTurn || !gameState || !currentCard || !sessionId || !user) {
-      const errorMsg = `Cannot complete turn: ${!isMyTurn ? 'Not your turn' : !gameState ? 'No game state' : !currentCard ? 'No current card' : !sessionId ? 'No session ID' : 'No user'}`;
+    if (!gameState || !currentCard || !sessionId || !user) {
+      const errorMsg = `Cannot complete turn: ${!gameState ? 'No game state' : !currentCard ? 'No current card' : !sessionId ? 'No session ID' : 'No user'}`;
       console.error('❌ ' + errorMsg);
       toast.error(errorMsg);
+      return;
+    }
+    
+    // Check if user is actually the current turn holder (more reliable than isMyTurn)
+    if (user.id !== gameState.current_turn) {
+      console.error('❌ Not your turn - current turn:', gameState.current_turn, 'user id:', user.id);
+      toast.error("It's not your turn yet!");
       return;
     }
 
