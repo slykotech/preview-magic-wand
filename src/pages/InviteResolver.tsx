@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { Loader2 } from 'lucide-react';
 import NewUserInvite from './NewUserInvite';
 import ExistingUserConnect from './ExistingUserConnect';
@@ -9,6 +10,7 @@ type FlowType = 'loading' | 'signup' | 'connect' | 'error';
 
 const InviteResolver = () => {
   const [searchParams] = useSearchParams();
+  const { user, loading: authLoading } = useAuth();
   const [flow, setFlow] = useState<FlowType>('loading');
   const [error, setError] = useState<string>('');
 
@@ -19,8 +21,14 @@ const InviteResolver = () => {
   useEffect(() => {
     const resolveFlow = async () => {
       console.log('InviteResolver: Starting flow resolution with params:', {
-        email, senderId, type
+        email, senderId, type, user: user?.id, authLoading
       });
+
+      // Wait for auth to complete loading
+      if (authLoading) {
+        console.log('Auth still loading, waiting...');
+        return;
+      }
 
       // Validate required parameters
       if (!email || !senderId) {
@@ -31,6 +39,21 @@ const InviteResolver = () => {
       }
 
       try {
+        // If user is authenticated and email matches, go to connect flow
+        if (user && user.email?.toLowerCase() === email.toLowerCase()) {
+          console.log('User authenticated with matching email, routing to connect flow');
+          setFlow('connect');
+          return;
+        }
+
+        // If user is authenticated but email doesn't match, show error
+        if (user && user.email?.toLowerCase() !== email.toLowerCase()) {
+          console.log('User authenticated but email mismatch');
+          setFlow('error');
+          setError(`You're signed in as ${user.email}, but this invitation is for ${email}. Please sign out and sign in with the correct email.`);
+          return;
+        }
+
         // If type is explicitly set, use it
         if (type === 'invite') {
           console.log('Type=invite detected, routing to signup flow');
@@ -70,7 +93,7 @@ const InviteResolver = () => {
     };
 
     resolveFlow();
-  }, [email, senderId, type]);
+  }, [email, senderId, type, user, authLoading]);
 
   // Loading state
   if (flow === 'loading') {

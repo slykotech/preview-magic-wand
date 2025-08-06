@@ -52,7 +52,28 @@ const ExistingUserConnect = () => {
 
       if (error) {
         console.error('Accept connection error:', error);
-        throw error;
+        let errorMessage = error.message || 'Failed to accept invitation';
+        
+        // Handle specific error cases
+        if (errorMessage.includes('Authentication required') || errorMessage.includes('sign in')) {
+          setStatus('error');
+          setMessage('Please sign in to accept this invitation.');
+          // Redirect to auth page with return URL after a delay
+          setTimeout(() => {
+            navigate('/auth?returnTo=' + encodeURIComponent(window.location.href));
+          }, 2000);
+          return;
+        } else if (errorMessage.includes('Email mismatch')) {
+          setMessage('Please sign in with the correct email address for this invitation.');
+        } else if (errorMessage.includes('already connected')) {
+          setMessage('You are already connected with this person.');
+          setStatus('success'); // Treat as success since they're already connected
+          return;
+        }
+        
+        setStatus('error');
+        setMessage(errorMessage);
+        return;
       }
 
       if (data.success) {
@@ -63,6 +84,11 @@ const ExistingUserConnect = () => {
           title: "Connection Successful! 💕",
           description: "You are now connected with your partner.",
         });
+        
+        // Redirect to dashboard after success
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 2000);
       } else {
         setStatus('error');
         setMessage(data.error || 'Failed to accept connection');

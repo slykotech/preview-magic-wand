@@ -43,7 +43,15 @@ Deno.serve(async (req) => {
 
     if (authError || !user) {
       console.error('Auth error:', authError)
-      throw new Error(`Authentication failed: ${authError?.message || 'Auth session missing!'}`)
+      
+      // Provide more specific error messages based on the error type
+      if (authError?.message?.includes('invalid claim') || authError?.message?.includes('missing sub claim')) {
+        throw new Error('Invalid or expired authentication token. Please sign in again.')
+      } else if (authError?.message?.includes('jwt')) {
+        throw new Error('Authentication token is malformed. Please sign in again.')
+      } else {
+        throw new Error(`Authentication failed: ${authError?.message || 'Please sign in to continue.'}`)
+      }
     }
 
     console.log('Authenticated user:', user.id)

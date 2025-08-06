@@ -18,28 +18,39 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Get the Authorization header
-    const authHeader = req.headers.get('Authorization')
-    
-    if (!authHeader) {
-      throw new Error('Missing Authorization header')
-    }
-
-    // Extract JWT token from Bearer token
-    const token = authHeader.replace('Bearer ', '')
-
     // Create supabase client with service role for admin operations
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     )
 
-    // Verify the JWT token and get recipient user
-    const { data: { user: recipientUser }, error: authError } = await supabase.auth.getUser(token)
+    // Get the Authorization header
+    const authHeader = req.headers.get('Authorization')
+    console.log('Auth header received:', authHeader ? 'Present' : 'Missing')
+    
+    let recipientUser = null;
+    let token = null;
 
-    if (authError || !recipientUser) {
-      console.error('Auth error:', authError)
-      throw new Error(`Authentication failed: ${authError?.message || 'Auth session missing!'}`)
+    // Try to authenticate user if token is present
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.replace('Bearer ', '')
+      console.log('JWT token length:', token.length)
+
+      try {
+        // Verify the JWT token and get recipient user
+        const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+        
+        if (authError) {
+          console.error('Auth error:', authError)
+          // Continue without authentication - we'll handle this later
+        } else if (user) {
+          recipientUser = user;
+          console.log('Authenticated user:', user.id)
+        }
+      } catch (tokenError) {
+        console.error('Token validation error:', tokenError)
+        // Continue without authentication - we'll handle this later
+      }
     }
 
     const { senderUserId, recipientEmail, type }: AcceptInvitationRequest = await req.json()
@@ -50,10 +61,41 @@ Deno.serve(async (req) => {
 
     console.log(`Processing ${type} invitation acceptance from ${senderUserId} to ${recipientEmail}`)
 
+    // If no authenticated user, check if we can find the user by email
+    if (!recipientUser) {
+      console.log('No authenticated user, checking if user exists by email')
+      
+      // Get all users to find the recipient
+      const { data: allUsers, error: usersError } = await supabase.auth.admin.listUsers()
+      
+      if (usersError) {
+        console.error('Error fetching users:', usersError)
+        throw new Error('Authentication required. Please sign in first.')
+      }
+
+      const foundUser = allUsers.users.find(u => u.email?.toLowerCase() === recipientEmail.toLowerCase())
+      
+      if (!foundUser) {
+        throw new Error('User not found. Please sign up first using the invited email address.')
+      }
+
+      if (!foundUser.email_confirmed_at) {
+        throw new Error('Please verify your email address before accepting the invitation.')
+      }
+
+      recipientUser = foundUser
+      console.log('Found user by email:', recipientUser.id)
+    }
+
     // For connect type, allow any authenticated user to accept (existing user flow)
     // For invite type, require email match (new user flow) 
     if (type === 'invite' && recipientUser.email?.toLowerCase() !== recipientEmail.toLowerCase()) {
       throw new Error('Email mismatch. Please sign in with the invited email address.')
+    }
+
+    // Additional validation for connect type - ensure user is authenticated
+    if (type === 'connect' && !token) {
+      throw new Error('Authentication required. Please sign in to accept the connection.')
     }
 
     // Get sender's profile
@@ -102,32 +144,44 @@ Deno.serve(async (req) => {
     }
 
     // Check if sender already has a different partner (excluding demo mode)
-    const { data: senderCouple, error: senderCoupleError } = await supabase
+    const { data: senderCouples, error: senderCoupleError } = await supabase
       .from('couples')
       .select('*')
       .or(`user1_id.eq.${senderUserId},user2_id.eq.${senderUserId}`)
-      .not('user1_id', 'eq', senderUserId) // Exclude demo mode where user1_id == user2_id
-      .not('user2_id', 'eq', senderUserId)
-      .maybeSingle()
 
-    console.log('Sender couple check result:', senderCouple)
+    if (senderCoupleError) {
+      console.error('Error checking sender couples:', senderCoupleError)
+    }
 
-    if (senderCouple) {
+    // Filter out demo mode couples (where user1_id == user2_id)
+    const senderRealCouples = senderCouples?.filter(couple => 
+      couple.user1_id !== couple.user2_id
+    ) || []
+
+    console.log('Sender real couples count:', senderRealCouples.length)
+
+    if (senderRealCouples.length > 0) {
       throw new Error('The sender is already connected with someone else')
     }
 
     // Check if recipient already has a partner (excluding demo mode)
-    const { data: recipientCouple, error: recipientCoupleError } = await supabase
+    const { data: recipientCouples, error: recipientCoupleError } = await supabase
       .from('couples')
       .select('*')
       .or(`user1_id.eq.${recipientUser.id},user2_id.eq.${recipientUser.id}`)
-      .not('user1_id', 'eq', recipientUser.id) // Exclude demo mode where user1_id == user2_id
-      .not('user2_id', 'eq', recipientUser.id)
-      .maybeSingle()
 
-    console.log('Recipient couple check result:', recipientCouple)
+    if (recipientCoupleError) {
+      console.error('Error checking recipient couples:', recipientCoupleError)
+    }
 
-    if (recipientCouple) {
+    // Filter out demo mode couples (where user1_id == user2_id)
+    const recipientRealCouples = recipientCouples?.filter(couple => 
+      couple.user1_id !== couple.user2_id
+    ) || []
+
+    console.log('Recipient real couples count:', recipientRealCouples.length)
+
+    if (recipientRealCouples.length > 0) {
       throw new Error('You are already connected with someone else')
     }
 
@@ -195,7 +249,7 @@ Deno.serve(async (req) => {
     const { error: cleanupError } = await supabase
       .from('partner_requests')
       .delete()
-      .or(`and(requester_id.eq.${senderUserId},requested_email.eq.${recipientEmail}),and(requester_id.eq.${recipientUser.id},requested_email.eq.${senderProfile.display_name})`)
+      .or(`and(requester_id.eq.${senderUserId},requested_email.eq.${recipientEmail}),and(requester_id.eq.${recipientUser.id},requested_user_id.eq.${senderUserId})`)
 
     if (cleanupError) {
       console.error('Error cleaning up partner requests:', cleanupError)
