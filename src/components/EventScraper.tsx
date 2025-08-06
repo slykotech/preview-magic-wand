@@ -5,8 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { FirecrawlService } from '@/utils/FirecrawlService';
-import { Globe, Calendar, MapPin, DollarSign, ExternalLink } from 'lucide-react';
+import { Globe, Calendar, MapPin, DollarSign, ExternalLink, RefreshCw } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ScrapedEvent {
   title: string;
@@ -18,56 +18,14 @@ interface ScrapedEvent {
   url?: string;
 }
 
-const EVENT_SITES = [
-  'https://www.eventbrite.com/d/india--mumbai/events/',
-  'https://in.bookmyshow.com/explore/events-mumbai',
-  'https://paytminsider.com/events/mumbai',
-  'https://www.meetup.com/find/?location=mumbai--in',
-];
-
 export const EventScraper = () => {
   const { toast } = useToast();
-  const [apiKey, setApiKey] = useState('');
-  const [isApiKeySet, setIsApiKeySet] = useState(!!FirecrawlService.getApiKey());
   const [customUrl, setCustomUrl] = useState('');
+  const [city, setCity] = useState('mumbai');
+  const [country, setCountry] = useState('india');
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [scrapedEvents, setScrapedEvents] = useState<ScrapedEvent[]>([]);
-
-  const handleSaveApiKey = async () => {
-    if (!apiKey.trim()) {
-      toast({
-        title: "Error",
-        description: "Please enter your Firecrawl API key",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      const isValid = await FirecrawlService.testApiKey(apiKey);
-      if (isValid) {
-        FirecrawlService.saveApiKey(apiKey);
-        setIsApiKeySet(true);
-        toast({
-          title: "Success",
-          description: "API key saved and validated successfully",
-        });
-      } else {
-        toast({
-          title: "Error", 
-          description: "Invalid API key. Please check and try again.",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to validate API key",
-        variant: "destructive",
-      });
-    }
-  };
 
   const handleScrapeEventSites = async () => {
     setIsLoading(true);
@@ -75,33 +33,28 @@ export const EventScraper = () => {
     setScrapedEvents([]);
 
     try {
-      const result = await FirecrawlService.scrapeEventSites(EVENT_SITES);
-      
-      if (result.success && result.data) {
-        const allEvents: ScrapedEvent[] = [];
-        
-        result.data.forEach((siteResult: any) => {
-          if (siteResult.success && siteResult.data) {
-            // Extract events from the scraped data
-            try {
-              const events = Array.isArray(siteResult.data) ? siteResult.data : [siteResult.data];
-              allEvents.push(...events);
-            } catch (error) {
-              console.error('Error parsing events from site:', siteResult.url, error);
-            }
-          }
-        });
+      const { data, error } = await supabase.functions.invoke('firecrawl-scraper', {
+        body: { 
+          city: city.toLowerCase(),
+          country: country.toLowerCase()
+        }
+      });
 
-        setScrapedEvents(allEvents);
+      if (error) {
+        throw error;
+      }
+      
+      if (data?.success && data?.events) {
+        setScrapedEvents(data.events);
         
         toast({
           title: "Success",
-          description: `Scraped ${allEvents.length} events from event sites`,
+          description: `Scraped ${data.events.length} events from major event sites`,
         });
       } else {
         toast({
           title: "Error",
-          description: result.error || "Failed to scrape event sites",
+          description: data?.error || "Failed to scrape event sites",
           variant: "destructive",
         });
       }
@@ -118,11 +71,11 @@ export const EventScraper = () => {
     }
   };
 
-  const handleScrapeCustomUrl = async () => {
+  const handleScrapeCustomUrls = async () => {
     if (!customUrl.trim()) {
       toast({
         title: "Error",
-        description: "Please enter a URL to scrape",
+        description: "Please enter URLs to scrape",
         variant: "destructive",
       });
       return;
@@ -132,28 +85,39 @@ export const EventScraper = () => {
     setProgress(0);
 
     try {
-      const result = await FirecrawlService.scrapeEventSites([customUrl]);
+      const urls = customUrl.split('\n').map(url => url.trim()).filter(Boolean);
       
-      if (result.success && result.data) {
-        const events = result.data[0]?.data || [];
-        setScrapedEvents(Array.isArray(events) ? events : [events]);
+      const { data, error } = await supabase.functions.invoke('firecrawl-scraper', {
+        body: { 
+          urls,
+          city: city.toLowerCase(),
+          country: country.toLowerCase()
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+      
+      if (data?.success && data?.events) {
+        setScrapedEvents(data.events);
         
         toast({
           title: "Success",
-          description: `Scraped events from ${customUrl}`,
+          description: `Scraped ${data.events.length} events from custom URLs`,
         });
       } else {
         toast({
           title: "Error",
-          description: result.error || "Failed to scrape URL",
+          description: data?.error || "Failed to scrape custom URLs",
           variant: "destructive",
         });
       }
     } catch (error) {
-      console.error('Error scraping custom URL:', error);
+      console.error('Error scraping custom URLs:', error);
       toast({
         title: "Error",
-        description: "Failed to scrape URL",
+        description: "Failed to scrape custom URLs",
         variant: "destructive",
       });
     } finally {
@@ -161,44 +125,6 @@ export const EventScraper = () => {
       setProgress(100);
     }
   };
-
-  if (!isApiKeySet) {
-    return (
-      <Card className="w-full max-w-md mx-auto">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Globe className="h-5 w-5" />
-            Setup Firecrawl
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Enter your Firecrawl API key to start scraping events from websites.
-          </p>
-          <Input
-            type="password"
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
-            placeholder="Firecrawl API Key"
-          />
-          <Button onClick={handleSaveApiKey} className="w-full">
-            Save API Key
-          </Button>
-          <p className="text-xs text-muted-foreground">
-            Get your API key from{' '}
-            <a 
-              href="https://firecrawl.dev" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-primary hover:underline"
-            >
-              firecrawl.dev
-            </a>
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
 
   return (
     <div className="space-y-6">
@@ -211,29 +137,56 @@ export const EventScraper = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              placeholder="City (e.g., mumbai, delhi, bangalore)"
+              className="flex-1"
+            />
+            <Input
+              value={country}
+              onChange={(e) => setCountry(e.target.value)}
+              placeholder="Country (e.g., india, usa, uk)"
+              className="flex-1"
+            />
+          </div>
+          
+          <Button 
+            onClick={handleScrapeEventSites}
+            disabled={isLoading}
+            className="w-full h-12"
+          >
+            {isLoading ? (
+              <>
+                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                Scraping Events...
+              </>
+            ) : (
+              <>
+                <Globe className="w-4 h-4 mr-2" />
+                Scrape Events from Major Sites
+              </>
+            )}
+          </Button>
+          
+          <div className="border-t pt-4">
+            <h3 className="text-sm font-medium mb-2">Custom URLs (one per line):</h3>
+            <textarea
+              value={customUrl}
+              onChange={(e) => setCustomUrl(e.target.value)}
+              placeholder={`Enter custom event site URLs to scrape:
+https://example-events.com/city-events
+https://local-venue.com/upcoming-shows`}
+              className="w-full h-24 p-3 border rounded-md resize-none"
+            />
             <Button 
-              onClick={handleScrapeEventSites}
-              disabled={isLoading}
-              className="h-12"
+              onClick={handleScrapeCustomUrls}
+              disabled={isLoading || !customUrl.trim()}
+              variant="outline"
+              className="mt-2 w-full"
             >
-              {isLoading ? "Scraping..." : "Scrape Major Event Sites"}
+              Scrape Custom URLs
             </Button>
-            
-            <div className="flex gap-2">
-              <Input
-                value={customUrl}
-                onChange={(e) => setCustomUrl(e.target.value)}
-                placeholder="Enter custom URL to scrape"
-                className="flex-1"
-              />
-              <Button 
-                onClick={handleScrapeCustomUrl}
-                disabled={isLoading || !customUrl.trim()}
-                variant="outline"
-              >
-                Scrape
-              </Button>
-            </div>
           </div>
           
           {isLoading && (
@@ -307,7 +260,8 @@ export const EventScraper = () => {
         <Card>
           <CardContent className="py-8 text-center text-muted-foreground">
             <Globe className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>No events scraped yet. Click "Scrape Major Event Sites" to get started.</p>
+            <p>No events scraped yet. Select a city and click "Scrape Events" to get started.</p>
+            <p className="text-xs mt-2">Supports: Eventbrite, BookMyShow, Paytm Insider, Meetup, and custom URLs</p>
           </CardContent>
         </Card>
       )}
