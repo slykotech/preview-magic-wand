@@ -129,22 +129,43 @@ serve(async (req) => {
         const scrapeResponse = method === 'search' 
           ? await firecrawl.search(url, { limit: 10 })
           : await firecrawl.scrapeUrl(url, {
-              formats: ['markdown', 'html'],
-              extractorOptions: {
-                mode: 'llm-extraction',
-                extractionPrompt: basePrompt
+              formats: ['markdown'],
+              extract: {
+                schema: {
+                  type: "object",
+                  properties: {
+                    events: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          title: { type: "string" },
+                          date: { type: "string" },
+                          location: { type: "string" },
+                          price: { type: "string" },
+                          description: { type: "string" },
+                          category: { type: "string" },
+                          url: { type: "string" }
+                        }
+                      }
+                    }
+                  }
+                },
+                prompt: basePrompt
               }
             })
 
         if (scrapeResponse.success && scrapeResponse.data) {
           let extractedEvents = []
           
-          // Handle different response formats
-          if (typeof scrapeResponse.data === 'string') {
+          // Handle different response formats from new API
+          if (scrapeResponse.data.extract) {
+            // New extract format
+            extractedEvents = scrapeResponse.data.extract.events || [];
+          } else if (typeof scrapeResponse.data === 'string') {
             try {
               extractedEvents = JSON.parse(scrapeResponse.data)
             } catch {
-              // If not JSON, try to extract events from text
               extractedEvents = []
             }
           } else if (Array.isArray(scrapeResponse.data)) {
