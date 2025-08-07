@@ -47,7 +47,7 @@ export const ResponsePopup: React.FC<ResponsePopupProps> = ({
           
           {/* Content */}
           <div className="p-6">
-            <div className="bg-muted/50 border border-border rounded-xl p-4 mb-6">
+            <div className="bg-muted/50 border border-border rounded-xl p-4 mb-6 max-h-60 overflow-y-auto">
               <p className="text-foreground text-lg leading-relaxed">
                 "{response}"
               </p>
