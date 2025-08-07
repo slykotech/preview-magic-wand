@@ -12,10 +12,7 @@ export const GameStats: React.FC<GameStatsProps> = ({
 }) => {
   return (
     <div className="grid grid-cols-2 gap-3 mb-6">
-      <Card>
-        <Card>
-        </Card>
-      </Card>
+      
       
     </div>
   );
