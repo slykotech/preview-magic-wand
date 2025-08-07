@@ -57,10 +57,10 @@ export const SubscriptionGate = ({ children }: SubscriptionGateProps) => {
               
               <Button 
                 variant="outline"
-                onClick={() => navigate('/dashboard')}
+                onClick={() => navigate(-1)}
                 className="w-full"
               >
-                Continue with Limited Access
+                Back
               </Button>
               
               <div className="text-xs text-muted-foreground">

@@ -180,15 +180,32 @@ export const PaymentDetails: React.FC = () => {
         </div>
 
         {/* Plan Summary */}
-        <Card className="p-4 mb-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-semibold text-foreground">{selectedPlan.name}</h3>
-              <p className="text-sm text-muted-foreground">7-day free trial, then {selectedPlan.price}/{selectedPlan.period}</p>
+        <Card className="p-6 mb-6">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-bold text-foreground">{selectedPlan.name}</h3>
+                <p className="text-sm text-muted-foreground">Selected Plan</p>
+              </div>
+              <div className="text-right">
+                <span className="text-2xl font-bold text-primary">FREE</span>
+                <p className="text-sm text-muted-foreground">for 7 days</p>
+              </div>
             </div>
-            <div className="text-right">
-              <span className="text-lg font-bold text-primary">FREE</span>
-              <p className="text-xs text-muted-foreground">for 7 days</p>
+            
+            <div className="border-t pt-4">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm text-muted-foreground">7-day free trial</span>
+                <span className="text-sm font-medium">$0.00</span>
+              </div>
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm text-muted-foreground">Then {selectedPlan.price}/{selectedPlan.period}</span>
+                <span className="text-sm font-medium">{selectedPlan.price}</span>
+              </div>
+              <div className="flex justify-between items-center pt-2 border-t">
+                <span className="font-medium">Total today</span>
+                <span className="text-lg font-bold text-primary">$0.00</span>
+              </div>
             </div>
           </div>
         </Card>

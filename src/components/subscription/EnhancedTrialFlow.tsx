@@ -100,36 +100,15 @@ export const EnhancedTrialFlow = ({ onTrialStarted, onSkip }: EnhancedTrialFlowP
             </div>
           </div>
 
-          <div className="space-y-4">
-            <div className="flex items-center space-x-2">
-              <Checkbox 
-                id="skip-payment" 
-                checked={skipPayment}
-                onCheckedChange={(checked) => setSkipPayment(checked === true)}
-              />
-              <Label htmlFor="skip-payment" className="text-sm">
-                Start trial without payment method (you can add it later)
-              </Label>
-            </div>
-            
-            {skipPayment && (
-              <div className="p-4 bg-warning/10 rounded-lg border border-warning/20">
-                <p className="text-sm text-warning-foreground">
-                  <strong>Note:</strong> Without a payment method, your trial will end automatically after 7 days. 
-                  You can upgrade anytime during your trial.
-                </p>
-              </div>
-            )}
-          </div>
 
           <div className="flex flex-col gap-3">
             <Button 
               size="lg" 
               className="w-full bg-gradient-to-r from-primary to-primary-glow"
-              onClick={skipPayment ? handleStartTrial : () => setStep(2)}
+              onClick={() => setStep(2)}
               disabled={loading}
             >
-              {loading ? 'Starting...' : skipPayment ? 'Start Free Trial' : 'Continue'}
+              Continue
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
             
