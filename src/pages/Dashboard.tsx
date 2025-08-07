@@ -99,12 +99,21 @@ export const Dashboard = () => {
   const {
     syncScoreData,
     loading: syncScoreLoading,
+    error: syncScoreError,
     logActivity,
     refreshSyncScore
   } = useEnhancedSyncScore(coupleId);
 
-  // Ensure we have a safe score value
-  const currentSyncScore = syncScoreData?.score ?? 0;
+  // Ensure we have a safe score value with better fallback
+  const currentSyncScore = syncScoreData?.score ?? (syncScoreLoading ? undefined : 0);
+  
+  console.log('🎯 Dashboard sync score state:', {
+    syncScoreData,
+    loading: syncScoreLoading,
+    error: syncScoreError,
+    currentSyncScore,
+    coupleId
+  });
 
   // Use presence tracking hook
   const {
@@ -527,7 +536,7 @@ export const Dashboard = () => {
           animation: 'zoom-to-position 1.2s ease-out 0.8s forwards',
           transform: 'scale(2.5)'
         }}>
-              <SyncScoreCircle score={currentSyncScore} animated={true} />
+              <SyncScoreCircle score={currentSyncScore || 0} animated={true} />
             </div>
           </div>
           
@@ -576,9 +585,13 @@ export const Dashboard = () => {
           <div className={`${isLoaded ? 'animate-fade-in' : 'opacity-0'}`} style={{
           animationDelay: '100ms'
         }}>
-            {isLoaded ? <div className="space-y-4">
+            {isLoaded && currentSyncScore !== undefined ? (
+              <div className="space-y-4">
                 <SyncScoreCircle score={currentSyncScore} animated={true} />
-              </div> : <SyncScoreSkeleton />}
+              </div>
+            ) : (
+              <SyncScoreSkeleton />
+            )}
           </div>
 
         {/* Couple Avatars with Good Sync Status */}
