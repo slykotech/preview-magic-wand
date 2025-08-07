@@ -122,7 +122,7 @@ export const CardDeckGame: React.FC = () => {
         />
 
         {/* Game Status - Shows failed tasks and skips */}
-        <div className="mt-8">
+        <div className="mt-4">
           <GameStatus 
             gameState={gameState}
             currentUserId={user?.id || ''}
