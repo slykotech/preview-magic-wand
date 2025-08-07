@@ -4,7 +4,8 @@ import { SyncScoreBreakdown } from "@/components/SyncScoreBreakdown";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { GradientHeader } from "@/components/GradientHeader";
 import { SubscriptionManager } from "@/components/subscription/SubscriptionManager";
-import { User, Heart, Settings, Award, Calendar, LogOut, ChevronRight, Crown } from "lucide-react";
+import { FeedbackModal } from "@/components/FeedbackModal";
+import { User, Heart, Settings, Award, Calendar, LogOut, ChevronRight, Crown, Star, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -65,6 +66,8 @@ export const Profile = () => {
   const [showSyncBreakdown, setShowSyncBreakdown] = useState(false);
   const [showDateHistory, setShowDateHistory] = useState(false);
   const [showSubscription, setShowSubscription] = useState(false);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [feedbackType, setFeedbackType] = useState<'rating' | 'feedback'>('feedback');
   
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -314,6 +317,24 @@ export const Profile = () => {
               onClick={() => setShowSyncBreakdown(true)}
             />
             <ProfileMenuItem
+              icon={<Star size={20} />}
+              title="Rate Us ⭐"
+              subtitle="Love LoveSync? Share your experience"
+              onClick={() => {
+                setFeedbackType('rating');
+                setShowFeedbackModal(true);
+              }}
+            />
+            <ProfileMenuItem
+              icon={<MessageSquare size={20} />}
+              title="Send Feedback 📝"
+              subtitle="Help us improve your experience"
+              onClick={() => {
+                setFeedbackType('feedback');
+                setShowFeedbackModal(true);
+              }}
+            />
+            <ProfileMenuItem
               icon={<Settings size={20} />}
               title="App Settings"
               subtitle="Notifications, privacy & more"
@@ -361,6 +382,13 @@ export const Profile = () => {
           </div>
         </div>
       )}
+
+      {/* Feedback Modal */}
+      <FeedbackModal
+        isOpen={showFeedbackModal}
+        onClose={() => setShowFeedbackModal(false)}
+        initialType={feedbackType}
+      />
 
       <BottomNavigation />
     </div>
