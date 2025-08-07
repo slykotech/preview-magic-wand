@@ -11,7 +11,7 @@ interface PlanOption {
   id: string;
   name: string;
   price: number;
-  period: 'month' | 'year';
+  period: 'month' | 'quarter' | 'half-year' | 'year';
   originalPrice?: number;
   features: string[];
   popular?: boolean;
@@ -22,7 +22,7 @@ const plans: PlanOption[] = [
   {
     id: 'monthly',
     name: 'Monthly Plan',
-    price: 9.99,
+    price: 8.99,
     period: 'month',
     description: 'Perfect for trying out all features',
     features: [
@@ -37,16 +37,45 @@ const plans: PlanOption[] = [
     ]
   },
   {
-    id: 'yearly',
-    name: 'Yearly Plan',
-    price: 79.99,
-    period: 'year',
-    originalPrice: 119.88,
-    popular: true,
-    description: 'Save 33% with annual billing',
+    id: 'quarterly',
+    name: 'Quarterly Plan',
+    price: 23.99,
+    period: 'quarter',
+    originalPrice: 26.97,
+    description: 'Save 11% with quarterly billing',
     features: [
       'Everything in monthly plan',
-      'Save $40 per year',
+      'Save $3 per quarter',
+      'Priority support',
+      'Early feature access'
+    ]
+  },
+  {
+    id: 'half_yearly',
+    name: 'Half-Yearly Plan',
+    price: 44.99,
+    period: 'half-year',
+    originalPrice: 53.94,
+    description: 'Save 17% with 6-month billing',
+    features: [
+      'Everything in monthly plan',
+      'Save $9 per 6 months',
+      'Priority customer support',
+      'Early access to new features',
+      'Exclusive relationship content'
+    ]
+  },
+  {
+    id: 'yearly',
+    name: 'Yearly Plan',
+    price: 68.99,
+    period: 'year',
+    originalPrice: 107.88,
+    popular: true,
+    description: 'Save 36% with annual billing',
+    features: [
+      'Everything in monthly plan',
+      'Save $39 per year',
       'Priority customer support',
       'Early access to new features',
       'Exclusive relationship content',
@@ -113,7 +142,7 @@ export const SubscriptionPlans: React.FC = () => {
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           {/* Plans Grid */}
-          <div className="grid md:grid-cols-2 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             {plans.map((plan) => (
               <Card 
                 key={plan.id}
