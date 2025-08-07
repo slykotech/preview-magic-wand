@@ -12,9 +12,15 @@ import { toast } from '@/hooks/use-toast';
 interface EnhancedTrialFlowProps {
   onTrialStarted?: () => void;
   onSkip?: () => void;
+  selectedPlan?: {
+    id: string;
+    name: string;
+    price: string;
+    period: string;
+  };
 }
 
-export const EnhancedTrialFlow = ({ onTrialStarted, onSkip }: EnhancedTrialFlowProps) => {
+export const EnhancedTrialFlow = ({ onTrialStarted, onSkip, selectedPlan }: EnhancedTrialFlowProps) => {
   const { startTrial, loading } = useEnhancedSubscription();
   const [step, setStep] = useState(1);
   const [skipPayment, setSkipPayment] = useState(false);
@@ -134,7 +140,7 @@ export const EnhancedTrialFlow = ({ onTrialStarted, onSkip }: EnhancedTrialFlowP
           Secure your trial - no charges for 7 days
         </p>
         <Badge variant="secondary" className="mx-auto">
-          $9.99/month after trial
+          {selectedPlan ? `${selectedPlan.price}/${selectedPlan.period} after trial` : '$9.99/month after trial'}
         </Badge>
       </CardHeader>
       
