@@ -323,7 +323,7 @@ export const AnimatedGameCard: React.FC<AnimatedGameCardProps> = ({
                 <div className="flex items-center justify-center gap-3">
                 </div>
                 <div className="flex items-center justify-center gap-3">
-                  <span>💕 {'❤️'.repeat(card.intimacy_level)}</span>
+                  <span>{'❤️'.repeat(card.intimacy_level)}</span>
                 </div>
                 {card.response_type && (
                   <div className="flex items-center justify-center">
