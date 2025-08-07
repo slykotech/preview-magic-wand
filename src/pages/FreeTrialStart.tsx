@@ -42,6 +42,9 @@ export const FreeTrialStart: React.FC = () => {
           <p className="text-muted-foreground text-lg">
             Experience all premium features for <span className="font-bold text-primary">7 days free</span>
           </p>
+          <p className="text-sm text-muted-foreground">
+            <span className="font-semibold">Card required to start trial</span> - No charges until trial ends
+          </p>
         </div>
 
         {/* Benefits */}
@@ -64,6 +67,7 @@ export const FreeTrialStart: React.FC = () => {
           <div className="text-center space-y-3">
             <h3 className="font-semibold text-foreground">What to Expect</h3>
             <div className="space-y-2 text-sm text-muted-foreground">
+              <p>✓ Valid payment method required</p>
               <p>✓ 7 days completely free</p>
               <p>✓ No charges until trial ends</p>
               <p>✓ Cancel anytime in settings</p>

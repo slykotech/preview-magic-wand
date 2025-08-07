@@ -172,10 +172,13 @@ export const AppFlowRouter: React.FC = () => {
         return false;
       }
 
-      // If partner has access, check if they can share with this user
+      // If partner has access (either active subscription or valid trial with card), allow sharing
       const accessDetails = data as any;
-      if (accessDetails?.has_access && accessDetails?.plan_type === 'family') {
-        return true;
+      if (accessDetails?.has_access) {
+        // Check if partner has active subscription OR trial with verified payment
+        const hasValidAccess = accessDetails.status === 'active' || 
+                               (accessDetails.status === 'trial' && accessDetails.card_last_four);
+        return hasValidAccess;
       }
 
       return false;
@@ -217,34 +220,31 @@ export const AppFlowRouter: React.FC = () => {
         } else {
           // Authentication complete - check subscription requirements
           
-          // Case 1: User already has direct premium access
-          if (userData.hasSubscription) {
+          // Check if user came via invitation link (has partner with subscription)
+          const hasPartnerWithSubscription = userData.hasPartner ? await checkPartnerSubscriptionLink() : false;
+          
+          // Case 1: User already has direct premium access OR partner with valid subscription
+          if (userData.hasSubscription || hasPartnerWithSubscription) {
             if (!userData.hasPartner && !completedSteps.includes('partner-invitation')) {
               nextStep = 'partner-invitation';
             } else {
               nextStep = 'dashboard';
             }
           }
-          // Case 2: User has partner connection - check if partner has subscription
-          else if (userData.hasPartner) {
-            const hasPartnerAccess = await checkPartnerSubscriptionLink();
-            if (hasPartnerAccess) {
-              // Partner has family plan, skip subscription
-              nextStep = 'dashboard';
+          // Case 2: User has partner connection but partner doesn't have valid subscription
+          else if (userData.hasPartner && !hasPartnerWithSubscription) {
+            // Partner exists but no valid subscription - user needs own subscription
+            if (!completedSteps.includes('free-trial')) {
+              nextStep = 'free-trial';
+            } else if (!completedSteps.includes('plan-selection')) {
+              nextStep = 'plan-selection';
+            } else if (!completedSteps.includes('payment-details')) {
+              nextStep = 'payment-details';
             } else {
-              // Partner doesn't have family plan, user needs own subscription
-              if (!completedSteps.includes('free-trial')) {
-                nextStep = 'free-trial';
-              } else if (!completedSteps.includes('plan-selection')) {
-                nextStep = 'plan-selection';
-              } else if (!completedSteps.includes('payment-details')) {
-                nextStep = 'payment-details';
-              } else {
-                nextStep = 'partner-invitation';
-              }
+              nextStep = 'dashboard';
             }
           }
-          // Case 3: Fresh user without partner - needs subscription
+          // Case 3: Fresh sign-up (no invitation) - must complete subscription flow
           else {
             if (!completedSteps.includes('free-trial')) {
               nextStep = 'free-trial';

@@ -42,7 +42,7 @@ export const SubscriptionGate = ({ children }: SubscriptionGateProps) => {
               <Crown className="w-12 h-12 text-primary mx-auto" />
               <h1 className="text-2xl font-bold">Premium Required</h1>
               <p className="text-muted-foreground">
-                Get access to all premium features with your 7-day free trial.
+                Complete your subscription setup to access premium features.
               </p>
             </div>
 
@@ -52,7 +52,7 @@ export const SubscriptionGate = ({ children }: SubscriptionGateProps) => {
                 className="w-full"
               >
                 <Crown className="w-4 h-4 mr-2" />
-                Get Premium Access
+                Start Free Trial
               </Button>
               
               <Button 
@@ -60,11 +60,11 @@ export const SubscriptionGate = ({ children }: SubscriptionGateProps) => {
                 onClick={() => navigate('/dashboard')}
                 className="w-full"
               >
-                Continue with Free
+                Continue with Limited Access
               </Button>
               
               <div className="text-xs text-muted-foreground">
-                ✓ 7-day free trial • ✓ Cancel anytime • ✓ No commitment
+                ✓ Card required for trial • ✓ 7 days free • ✓ Cancel anytime
               </div>
             </div>
           </div>
