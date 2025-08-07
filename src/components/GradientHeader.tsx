@@ -35,7 +35,7 @@ export const GradientHeader = ({
       <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full blur-2xl transform -translate-x-12 translate-y-12" />
       
       {/* Curved bottom accent */}
-      <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-r from-white/10 via-white/5 to-white/10 rounded-b-[2rem]" />
+      <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-r from-white/10 via-white/5 to-white/10 rounded-b-[2rem] mb-4" />
       
       <div className="relative z-10">
         <div className="flex items-center gap-3 mb-4">
