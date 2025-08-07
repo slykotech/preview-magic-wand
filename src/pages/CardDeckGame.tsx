@@ -4,7 +4,6 @@ import { useCardGame } from '@/hooks/useCardGame';
 import { GameCard } from '@/components/CardGame/GameCard';
 import { TurnIndicator } from '@/components/CardGame/TurnIndicator';
 import { GameStats } from '@/components/CardGame/GameStats';
-import { GameStatus } from '@/components/CardGame/GameStatus';
 import { GameEndModal } from '@/components/CardGame/GameEndModal';
 import { DebugInfo } from '@/components/CardGame/DebugInfo';
 import { TaskHistory } from '@/components/CardGame/TaskHistory';
@@ -144,17 +143,13 @@ export const CardDeckGame: React.FC = () => {
           {currentCard && <p>Card Prompt: {currentCard.prompt?.substring(0, 50)}...</p>}
         </div>
 
-        {/* Game Status - Shows failed tasks and skips */}
-        <GameStatus 
-          gameState={gameState}
-          currentUserId={user?.id || ''}
-          partnerInfo={partnerInfo}
-        />
-
-        {/* Legacy Game Stats for other info */}
+        {/* Unified Game Stats */}
         <GameStats 
           cardsPlayed={stats.cardsPlayed}
           skipsRemaining={stats.skipsRemaining}
+          gameState={gameState}
+          currentUserId={user?.id || ''}
+          partnerInfo={partnerInfo}
         />
 
         {/* Turn Indicator */}
