@@ -854,6 +854,24 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
               <p className="text-sm bg-black/50 p-2 rounded">{currentStory.caption}</p>
             </div>
           )}
+
+          {/* Story Reactions Display */}
+          {responses.length > 0 && (
+            <div className="absolute bottom-2 left-4 right-4 text-white">
+              <div className="bg-black/50 backdrop-blur-sm rounded-lg p-3 max-h-32 overflow-y-auto space-y-2">
+                {responses.map((response, index) => (
+                  <div key={response.id} className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">{response.response_text}</span>
+                      <span className="text-xs text-white/70">
+                        {formatDistanceToNow(new Date(response.created_at), { addSuffix: true })}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Response Section (only for partner's stories) */}
