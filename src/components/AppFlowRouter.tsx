@@ -96,8 +96,6 @@ export const AppFlowRouter: React.FC = () => {
     const { userData, completedSteps } = flowState;
     let nextStep: AppFlowStep = 'splash';
 
-    console.log('Flow determination - userData:', userData, 'completedSteps:', completedSteps);
-
     // Skip directly to dashboard if bypassing flow (e.g., direct URL access)
     const isDirectAccess = location.pathname !== '/' && 
                           location.pathname !== '/splash' &&
@@ -129,8 +127,6 @@ export const AppFlowRouter: React.FC = () => {
       }
     }
 
-    console.log('Determined next step:', nextStep, 'current step:', flowState.currentStep);
-
     if (nextStep !== flowState.currentStep) {
       setFlowState(prev => ({
         ...prev,
@@ -140,16 +136,11 @@ export const AppFlowRouter: React.FC = () => {
   }, [flowState, location.pathname, authLoading, subscriptionLoading, coupleLoading]);
 
   const completeStep = (step: AppFlowStep, userData?: Partial<AppFlowState['userData']>) => {
-    console.log('completeStep called with:', step, userData);
-    setFlowState(prev => {
-      const newState = {
-        ...prev,
-        completedSteps: [...prev.completedSteps, step],
-        userData: userData ? { ...prev.userData, ...userData } : prev.userData
-      };
-      console.log('New flow state:', newState);
-      return newState;
-    });
+    setFlowState(prev => ({
+      ...prev,
+      completedSteps: [...prev.completedSteps, step],
+      userData: userData ? { ...prev.userData, ...userData } : prev.userData
+    }));
   };
 
   const handleSplashComplete = () => {
@@ -157,7 +148,6 @@ export const AppFlowRouter: React.FC = () => {
   };
 
   const handleMottoComplete = () => {
-    console.log('handleMottoComplete called');
     completeStep('motto', { hasSeenMotto: true });
   };
 

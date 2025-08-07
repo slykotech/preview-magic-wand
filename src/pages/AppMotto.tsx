@@ -60,10 +60,7 @@ const AppMottoPage = ({ onNext, onBack }: AppMottoProps) => {
           <div className="flex justify-end">
             <Button 
               variant="ghost" 
-              onClick={() => {
-                console.log('Skip button clicked, calling onNext');
-                onNext();
-              }}
+              onClick={onNext}
               className="text-muted-foreground hover:text-foreground"
             >
               Skip
@@ -126,16 +123,7 @@ const AppMottoPage = ({ onNext, onBack }: AppMottoProps) => {
             <div className="space-y-3 mt-8">
               {isLastSlide ? (
                 <Button 
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    console.log('Start Your Journey clicked, onNext type:', typeof onNext);
-                    if (typeof onNext === 'function') {
-                      onNext();
-                    } else {
-                      console.error('onNext is not a function:', onNext);
-                    }
-                  }}
+                  onClick={onNext}
                   className="w-full py-4 text-lg bg-gradient-primary text-white shadow-primary hover:shadow-glow transform hover:scale-105 transition-all"
                 >
                   Start Your Journey
