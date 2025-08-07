@@ -29,6 +29,7 @@ export type AppFlowStep =
 interface AppFlowState {
   currentStep: AppFlowStep;
   completedSteps: AppFlowStep[];
+  userId?: string;
   userData: {
     hasSeenMotto: boolean;
     hasCompletedOnboarding: boolean;
@@ -77,6 +78,43 @@ export const AppFlowRouter: React.FC = () => {
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(flowState));
   }, [flowState]);
+
+  // Reset flow when auth state changes (new user login)
+  useEffect(() => {
+    if (authLoading) return;
+    
+    // Clear localStorage flow when user changes or logs out
+    const currentUserId = user?.id;
+    const storedFlowData = localStorage.getItem(STORAGE_KEY);
+    let shouldReset = false;
+    
+    if (storedFlowData) {
+      try {
+        const parsed = JSON.parse(storedFlowData);
+        const storedUserId = parsed.userId;
+        
+        // Reset if user changed or no user when we expect one
+        if (storedUserId !== currentUserId) {
+          shouldReset = true;
+        }
+      } catch {
+        shouldReset = true;
+      }
+    }
+    
+    if (shouldReset || !user) {
+      console.log('Resetting flow for new user or logout');
+      resetFlow();
+    }
+    
+    // Store current user ID in flow state
+    if (user) {
+      setFlowState(prev => ({
+        ...prev,
+        userId: user.id
+      }));
+    }
+  }, [user?.id, authLoading]);
 
   // Update user data based on auth and subscription state
   useEffect(() => {
@@ -132,21 +170,18 @@ export const AppFlowRouter: React.FC = () => {
       const { userData, completedSteps } = flowState;
       let nextStep: AppFlowStep = 'splash';
 
-      // Skip directly to dashboard if bypassing flow (e.g., direct URL access)
-      const isDirectAccess = location.pathname !== '/' && 
-                            location.pathname !== '/splash' &&
-                            location.pathname !== '/motto' &&
-                            location.pathname !== '/onboarding' &&
-                            location.pathname !== '/auth' &&
-                            location.pathname !== '/subscription' &&
-                            location.pathname !== '/subscription/trial' &&
-                            location.pathname !== '/subscription/plans' &&
-                            location.pathname !== '/subscription/payment' &&
-                            location.pathname !== '/subscription/partner-invite';
+      // For authenticated users accessing specific flow URLs, respect those
+      const isFlowUrl = location.pathname === '/subscription/trial' ||
+                       location.pathname === '/subscription/plans' ||
+                       location.pathname === '/subscription/payment' ||
+                       location.pathname === '/subscription/partner-invite';
 
-      if (isDirectAccess && userData.isAuthenticated) {
-        nextStep = 'dashboard';
-      } else {
+      if (isFlowUrl && userData.isAuthenticated) {
+        // Let specific subscription pages handle their own state
+        return;
+      }
+
+      // Normal flow logic
         // Follow the proper flow sequence
         if (!completedSteps.includes('splash')) {
           nextStep = 'splash';
@@ -157,11 +192,11 @@ export const AppFlowRouter: React.FC = () => {
         } else if (!userData.isAuthenticated) {
           nextStep = 'auth';
         } else {
-          // NEW LOGIC: Check subscription requirements after authentication
+          // Authentication complete - check subscription requirements
           
           // Case 1: User already has direct premium access
           if (userData.hasSubscription) {
-            if (!userData.hasPartner) {
+            if (!userData.hasPartner && !completedSteps.includes('partner-invitation')) {
               nextStep = 'partner-invitation';
             } else {
               nextStep = 'dashboard';
@@ -175,15 +210,32 @@ export const AppFlowRouter: React.FC = () => {
               nextStep = 'dashboard';
             } else {
               // Partner doesn't have family plan, user needs own subscription
-              nextStep = 'free-trial';
+              if (!completedSteps.includes('free-trial')) {
+                nextStep = 'free-trial';
+              } else if (!completedSteps.includes('plan-selection')) {
+                nextStep = 'plan-selection';
+              } else if (!completedSteps.includes('payment-details')) {
+                nextStep = 'payment-details';
+              } else {
+                nextStep = 'partner-invitation';
+              }
             }
           }
-          // Case 3: Fresh user - needs subscription
+          // Case 3: Fresh user without partner - needs subscription
           else {
-            nextStep = 'free-trial';
+            if (!completedSteps.includes('free-trial')) {
+              nextStep = 'free-trial';
+            } else if (!completedSteps.includes('plan-selection')) {
+              nextStep = 'plan-selection';
+            } else if (!completedSteps.includes('payment-details')) {
+              nextStep = 'payment-details';
+            } else if (!completedSteps.includes('partner-invitation')) {
+              nextStep = 'partner-invitation';
+            } else {
+              nextStep = 'dashboard';
+            }
           }
         }
-      }
 
       if (nextStep !== flowState.currentStep) {
         setFlowState(prev => ({
@@ -246,6 +298,7 @@ export const AppFlowRouter: React.FC = () => {
     setFlowState({
       currentStep: 'splash',
       completedSteps: [],
+      userId: user?.id,
       userData: {
         hasSeenMotto: false,
         hasCompletedOnboarding: false,
