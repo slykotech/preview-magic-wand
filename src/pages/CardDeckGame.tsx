@@ -155,7 +155,6 @@ export const CardDeckGame: React.FC = () => {
         <GameStats 
           cardsPlayed={stats.cardsPlayed}
           skipsRemaining={stats.skipsRemaining}
-          gameMode={gameState.game_mode}
         />
 
         {/* Turn Indicator */}
