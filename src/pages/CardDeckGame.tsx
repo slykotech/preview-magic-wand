@@ -234,7 +234,7 @@ export const CardDeckGame: React.FC = () => {
                 variant="secondary"
                 className="min-w-[140px] h-10"
               >
-                🔧 Debug
+                📸 Photo
               </Button>
             )}
           </div>
