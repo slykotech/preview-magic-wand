@@ -2066,6 +2066,30 @@ export type Database = {
           },
         ]
       }
+      subscription_events: {
+        Row: {
+          created_at: string | null
+          event_data: Json | null
+          event_type: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          event_data?: Json | null
+          event_type: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          event_data?: Json | null
+          event_type?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       subscription_notifications: {
         Row: {
           action_required: boolean | null
@@ -2109,6 +2133,8 @@ export type Database = {
         Row: {
           auto_charge_date: string | null
           billing_issue: boolean | null
+          billing_issue_resolved: boolean | null
+          billing_issue_type: string | null
           cancelled_at: string | null
           card_brand: string | null
           card_last_four: string | null
@@ -2121,8 +2147,10 @@ export type Database = {
           expired_at: string | null
           grace_period_end: string | null
           id: string
+          is_trial: boolean | null
           last_synced_at: string | null
           original_price: number | null
+          payment_method_collected: boolean | null
           plan_period: string | null
           plan_price: number | null
           plan_type: string
@@ -2137,6 +2165,7 @@ export type Database = {
           store: string | null
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
+          trial_days_remaining: number | null
           trial_end_date: string | null
           trial_start_date: string | null
           updated_at: string
@@ -2145,6 +2174,8 @@ export type Database = {
         Insert: {
           auto_charge_date?: string | null
           billing_issue?: boolean | null
+          billing_issue_resolved?: boolean | null
+          billing_issue_type?: string | null
           cancelled_at?: string | null
           card_brand?: string | null
           card_last_four?: string | null
@@ -2157,8 +2188,10 @@ export type Database = {
           expired_at?: string | null
           grace_period_end?: string | null
           id?: string
+          is_trial?: boolean | null
           last_synced_at?: string | null
           original_price?: number | null
+          payment_method_collected?: boolean | null
           plan_period?: string | null
           plan_price?: number | null
           plan_type?: string
@@ -2173,6 +2206,7 @@ export type Database = {
           store?: string | null
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
+          trial_days_remaining?: number | null
           trial_end_date?: string | null
           trial_start_date?: string | null
           updated_at?: string
@@ -2181,6 +2215,8 @@ export type Database = {
         Update: {
           auto_charge_date?: string | null
           billing_issue?: boolean | null
+          billing_issue_resolved?: boolean | null
+          billing_issue_type?: string | null
           cancelled_at?: string | null
           card_brand?: string | null
           card_last_four?: string | null
@@ -2193,8 +2229,10 @@ export type Database = {
           expired_at?: string | null
           grace_period_end?: string | null
           id?: string
+          is_trial?: boolean | null
           last_synced_at?: string | null
           original_price?: number | null
+          payment_method_collected?: boolean | null
           plan_period?: string | null
           plan_price?: number | null
           plan_type?: string
@@ -2209,6 +2247,7 @@ export type Database = {
           store?: string | null
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
+          trial_days_remaining?: number | null
           trial_end_date?: string | null
           trial_start_date?: string | null
           updated_at?: string
