@@ -5,13 +5,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, Link } from "react-router-dom";
-import { Heart, Mail, Lock, User, ArrowLeft, CheckCircle2 } from "lucide-react";
+import { Heart, Mail, Lock, User, ArrowLeft, CheckCircle2, Eye, EyeOff } from "lucide-react";
 
 export const Signup = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [verificationSent, setVerificationSent] = useState(false);
   const { toast } = useToast();
@@ -259,13 +260,21 @@ export const Signup = () => {
                   <div className="relative">
                     <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input
-                      type="password"
+                      type={showPassword ? "text" : "password"}
                       placeholder="Create password (min 6 characters)"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="pl-10 font-medium h-11 text-sm"
+                      className="pl-10 pr-10 font-medium h-11 text-sm"
                       disabled={loading}
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-3 h-4 w-4 text-muted-foreground hover:text-foreground transition-colors"
+                      disabled={loading}
+                    >
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
                   </div>
                 </div>
                 
