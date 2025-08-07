@@ -13,7 +13,13 @@ export const usePresence = (coupleId?: string) => {
   const { user } = useAuth();
 
   useEffect(() => {
-    if (!coupleId || !user) {
+    if (!user) {
+      return;
+    }
+
+    // For single users (no couple), just set them as online
+    if (!coupleId) {
+      setIsUserOnline(true);
       return;
     }
 
