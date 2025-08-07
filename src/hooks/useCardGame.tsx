@@ -534,15 +534,24 @@ export function useCardGame(sessionId: string | null) {
       let winReason = null;
       let newFailedTasks = currentFailedTasks;
 
-      // Handle failed task (timed out)
+      // Handle failed task (timed out) - CRITICAL DEBUGGING
       if (timedOut) {
         newFailedTasks = currentFailedTasks + 1;
-        console.log(`⏰ Task failed due to timeout! Failed tasks: ${currentFailedTasks} → ${newFailedTasks}/3`);
+        console.log('🚨 TIMER EXPIRED - PROCESSING FAILED TASK:');
+        console.log(`  - Current failed tasks: ${currentFailedTasks}`);
+        console.log(`  - New failed tasks: ${newFailedTasks}`);
+        console.log(`  - Is User1: ${isUser1}`);
+        console.log(`  - Failed tasks field: ${failedTasksField}`);
+        console.log(`  - User1 ID: ${gameState.user1_id}`);
+        console.log(`  - User2 ID: ${gameState.user2_id}`);
+        console.log(`  - Current User ID: ${user.id}`);
         
-        // Show immediate notification
-        toast.error(`⏰ Time's up! Failed tasks: ${newFailedTasks}/3`, {
-          duration: 3000,
-          style: { backgroundColor: '#fee2e2', color: '#dc2626' }
+        // Show immediate notification with detailed info
+        const errorMsg = `⏰ Time's up! Failed tasks: ${newFailedTasks}/3 (User ${isUser1 ? '1' : '2'})`;
+        console.log('🚨 SHOWING ERROR MESSAGE:', errorMsg);
+        toast.error(errorMsg, {
+          duration: 5000,
+          style: { backgroundColor: '#fee2e2', color: '#dc2626', fontSize: '16px' }
         });
         
         // Check if game should end due to failed tasks
@@ -550,13 +559,18 @@ export function useCardGame(sessionId: string | null) {
           gameEnded = true;
           winnerId = isUser1 ? gameState.user2_id : gameState.user1_id;
           winReason = 'failed_tasks';
-          console.log('💀 Game Over! Too many failed tasks. Winner:', winnerId);
+          console.log('💀 GAME ENDING DUE TO FAILED TASKS:');
+          console.log(`  - Winner ID: ${winnerId}`);
+          console.log(`  - Win Reason: ${winReason}`);
+          console.log(`  - Loser: ${isUser1 ? 'User1' : 'User2'}`);
           
           toast.error('💀 Game Over! You failed too many tasks!', {
-            duration: 5000,
-            style: { backgroundColor: '#fecaca', color: '#dc2626' }
+            duration: 8000,
+            style: { backgroundColor: '#fecaca', color: '#dc2626', fontSize: '18px', fontWeight: 'bold' }
           });
         }
+      } else {
+        console.log('✅ Task completed successfully (not timed out)');
       }
 
       // Save response for action cards or if response is provided
@@ -792,24 +806,29 @@ export function useCardGame(sessionId: string | null) {
         updateData.last_response_seen = true;
       }
 
-      const { data: updatedData, error: updateError } = await supabase
+      console.log('📤 UPDATING GAME WITH FAILED TASK DATA:');
+      console.log('Update object:', updateData);
+      console.log(`Setting ${failedTasksField} = ${newFailedTasks}`);
+
+      const { data, error } = await supabase
         .from("card_deck_game_sessions")
         .update(updateData)
         .eq("id", sessionId)
         .select()
         .single();
 
-      if (updateError) {
-        console.error('❌ Game state update failed:', updateError);
-        throw updateError;
+      if (error) {
+        console.error('❌ Failed to update game state:', error);
+        console.groupEnd();
+        throw error;
       }
-      
-      console.log('✅ Game state updated successfully:', updatedData);
-      console.log('Response fields after update:', {
-        last_response_text: updatedData?.last_response_text,
-        last_response_author_id: updatedData?.last_response_author_id,
-        last_response_seen: updatedData?.last_response_seen
+
+      console.log('✅ Game state updated successfully:', data);
+      console.log('✅ Failed task count in DB:', {
+        user1_failed_tasks: data.user1_failed_tasks,
+        user2_failed_tasks: data.user2_failed_tasks
       });
+      console.groupEnd();
 
       // Update card usage count for the completed card
       await supabase

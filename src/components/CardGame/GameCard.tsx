@@ -125,15 +125,25 @@ export const GameCard: React.FC<GameCardProps> = ({
   };
 
   const handleComplete = (timedOut = false) => {
+    console.log('🎯 handleComplete called in GameCard:', {
+      timedOut,
+      responseType: card?.response_type,
+      hasResponse: !!response || !!photoResponse,
+      isMyTurn
+    });
+    
     switch (card?.response_type) {
       case 'text':
+        console.log('📝 Completing text response:', { response: response?.substring(0, 50), timedOut });
         onComplete(response, undefined, timedOut);
         break;
       case 'photo':
+        console.log('📸 Completing photo response:', { hasPhoto: !!photoResponse, timedOut });
         onComplete(photoResponse || undefined, undefined, timedOut);
         break;
       case 'action':
       default:
+        console.log('🎬 Completing action response:', { timedOut });
         onComplete(undefined, undefined, timedOut);
         break;
     }
@@ -148,9 +158,16 @@ export const GameCard: React.FC<GameCardProps> = ({
   };
 
   const handleTimerExpire = () => {
-    console.log('⏰ Timer expired! Handling timeout...');
+    console.log('🚨🚨🚨 TIMER EXPIRED HANDLER CALLED 🚨🚨🚨');
+    console.log('Timer expiry details:', {
+      isMyTurn,
+      userId: userId,
+      cardId: card?.id,
+      gameState: !!gameState
+    });
+    
     if (isMyTurn) {
-      console.log('⏰ My turn - completing with timeout flag');
+      console.log('⏰ My turn - completing with timeout flag TRUE');
       handleComplete(true); // Pass true for timedOut
     } else {
       console.log('⏰ Not my turn - ignoring timer expiry');

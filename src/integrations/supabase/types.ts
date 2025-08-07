@@ -477,6 +477,7 @@ export type Database = {
       card_responses: {
         Row: {
           card_id: string
+          completed_on_time: boolean | null
           created_at: string
           id: string
           meaningful_response: boolean | null
@@ -496,6 +497,7 @@ export type Database = {
         }
         Insert: {
           card_id: string
+          completed_on_time?: boolean | null
           created_at?: string
           id?: string
           meaningful_response?: boolean | null
@@ -515,6 +517,7 @@ export type Database = {
         }
         Update: {
           card_id?: string
+          completed_on_time?: boolean | null
           created_at?: string
           id?: string
           meaningful_response?: boolean | null
