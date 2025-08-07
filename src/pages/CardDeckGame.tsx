@@ -80,10 +80,10 @@ export const CardDeckGame: React.FC = () => {
     console.log('⏰ Timer expired in CardDeckGame - handled by GameTimer');
   };
 
-  // Handle rematch
+  // Handle rematch - calls the shared rematch function
   const handleRematch = async () => {
-    // Navigate back to games to create new session
-    navigate('/games');
+    setShowGameEndModal(false);
+    await actions.rematchGame();
   };
 
   if (loading) {

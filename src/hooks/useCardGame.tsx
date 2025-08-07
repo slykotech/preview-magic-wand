@@ -1085,6 +1085,45 @@ export function useCardGame(sessionId: string | null) {
     }
   }, [gameState, sessionId]);
 
+  // Rematch function - creates a new game session for both partners
+  const rematchGame = useCallback(async () => {
+    if (!gameState || !user) return;
+
+    try {
+      console.log("Starting rematch for session:", sessionId);
+      
+      // Create a new game session with the same partners
+      const { data: newSession, error } = await supabase
+        .from('card_deck_game_sessions')
+        .insert({
+          couple_id: gameState.couple_id,
+          user1_id: gameState.user1_id,
+          user2_id: gameState.user2_id,
+          current_turn: gameState.user1_id, // Start with user1 again
+          status: 'active',
+          game_mode: gameState.game_mode || 'classic'
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Failed to create rematch session:", error);
+        toast.error("Failed to create rematch");
+        return;
+      }
+
+      console.log("Created new rematch session:", newSession.id);
+      toast.success("Rematch started! 🎮");
+
+      // Navigate both players to the new game session
+      // This will happen automatically via realtime updates, but we can also navigate directly
+      window.location.href = `/games/card-deck/${newSession.id}`;
+
+    } catch (error) {
+      console.error("Failed to start rematch:", error);
+      toast.error("Failed to start rematch");
+    }
+  }, [gameState, sessionId, user]);
 
   return {
     gameState,
@@ -1109,7 +1148,8 @@ export function useCardGame(sessionId: string | null) {
       togglePause,
       endGame,
       revealCard,
-      setBlockAutoAdvance
+      setBlockAutoAdvance,
+      rematchGame
     },
     cardRevealed,
     blockAutoAdvance
