@@ -581,8 +581,9 @@ export function useCardGame(sessionId: string | null) {
           [failedTasksField]: newFailedTasks
         } : prev);
         
-        // Check if game should end due to failed tasks
+        // Check if game should end due to failed tasks - cap at 3
         if (newFailedTasks >= 3) {
+          newFailedTasks = 3; // Cap at maximum
           gameEnded = true;
           winnerId = isUser1 ? gameState.user2_id : gameState.user1_id;
           winReason = 'failed_tasks';
