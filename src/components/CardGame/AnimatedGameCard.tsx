@@ -321,7 +321,6 @@ export const AnimatedGameCard: React.FC<AnimatedGameCardProps> = ({
               {/* Card metadata */}
               <div className="space-y-2 text-center text-sm opacity-80">
                 <div className="flex items-center justify-center gap-3">
-                  <span>{card.category}</span>
                   <span>⏱️ {card.timer_seconds}s</span>
                 </div>
                 <div className="flex items-center justify-center gap-3">
