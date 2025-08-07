@@ -984,6 +984,11 @@ export function useCardGame(sessionId: string | null) {
         // Clear any pending response data
         updateData.last_response_text = null;
         updateData.last_response_seen = true;
+      } else {
+        // Switch turns after skip if game is still active
+        const nextTurn = isUser1 ? gameState.user2_id : gameState.user1_id;
+        updateData.current_turn = nextTurn;
+        console.log(`🔄 Switching turn after skip from ${user.id} to ${nextTurn}`);
       }
 
       console.log('📝 Updating game with skip data:', updateData);
@@ -1009,8 +1014,8 @@ export function useCardGame(sessionId: string | null) {
         // Don't draw new card since game has ended
       } else {
         toast.success(`Card skipped! ${newSkipsRemaining} skip${newSkipsRemaining !== 1 ? 's' : ''} left`);
-        // Draw new card after skip if game is still active
-        setTimeout(() => drawCard(), 500);
+        // Turn has been switched, so the other player will need to draw a new card
+        // No need to call drawCard() here since it's no longer this player's turn
       }
 
     } catch (error) {
