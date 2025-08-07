@@ -30,8 +30,8 @@ export const Auth = () => {
     // Check if user is already logged in
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session) {
-        // Let AppFlowRouter handle the proper flow determination
-        navigate('/');
+        // Simply go to dashboard - SubscriptionGate will handle subscription check
+        navigate('/dashboard');
       }
     });
 
