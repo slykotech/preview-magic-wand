@@ -324,7 +324,6 @@ export const AnimatedGameCard: React.FC<AnimatedGameCardProps> = ({
                   <span>⏱️ {card.timer_seconds}s</span>
                 </div>
                 <div className="flex items-center justify-center gap-3">
-                  <span>⭐ {'★'.repeat(card.difficulty_level)}</span>
                   <span>💕 {'❤️'.repeat(card.intimacy_level)}</span>
                 </div>
                 {card.response_type && (
