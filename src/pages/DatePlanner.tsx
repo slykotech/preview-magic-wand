@@ -41,14 +41,14 @@ interface DateIdea {
 export const DatePlanner = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { coupleData } = useCoupleData();
+  const { coupleData, loading: coupleLoading } = useCoupleData();
   const { toast } = useToast();
   
   const [plannedDates, setPlannedDates] = useState<DateIdea[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingDate, setEditingDate] = useState<DateIdea | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -83,16 +83,10 @@ export const DatePlanner = () => {
       return;
     }
     
-    // Handle case when user doesn't have a couple setup
-    if (user && !coupleData && !loading) {
-      setLoading(false);
-      return;
-    }
-    
     if (user && coupleId) {
       fetchPlannedDates();
     }
-  }, [user, navigate, coupleId, coupleData, loading]);
+  }, [user, navigate, coupleId]);
 
   // Real-time subscription for date_ideas changes
   useEffect(() => {
@@ -147,6 +141,7 @@ export const DatePlanner = () => {
     try {
       if (!coupleData?.id) return;
       
+      setLoading(true);
       const { data, error } = await supabase
         .from('date_ideas')
         .select('*')
@@ -388,7 +383,8 @@ export const DatePlanner = () => {
   const categories = ['romantic', 'adventure', 'cultural', 'food', 'sports', 'entertainment', 'outdoor', 'relaxation'];
 
 
-  if (loading) {
+  // Show loading while couple data is being fetched
+  if (coupleLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 flex items-center justify-center">
         <div className="text-center">Loading...</div>
@@ -419,6 +415,15 @@ export const DatePlanner = () => {
           </div>
         </div>
         <BottomNavigation />
+      </div>
+    );
+  }
+
+  // Show loading while dates are being fetched
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 flex items-center justify-center">
+        <div className="text-center">Loading your dates...</div>
       </div>
     );
   }
