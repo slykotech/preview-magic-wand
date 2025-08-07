@@ -332,25 +332,80 @@ export const AnimatedGameCard: React.FC<AnimatedGameCardProps> = ({
                 WebkitBackfaceVisibility: 'hidden'
               }}
             >
-              {/* Couple Illustration */}
+              {/* Love Sync Themed Illustration */}
               <svg className="absolute top-0 left-0 w-full h-full" viewBox="0 0 200 280">
-                <g className="stroke-current stroke-2 fill-none">
-                  <path fill="hsl(var(--accent))" d="M0 280 L 200 280 L 200 100 A 100 100 0 0 0 0 100 Z"/>
-                  <circle fill="hsl(var(--primary))" cx="170" cy="80" r="15"/>
-                  <g transform="translate(-10, 40)">
-                    <path style={{fill: 'hsl(var(--muted-foreground))'}} d="M20,238 V 140 c 0,-15 10,-25 25,-25 h 10"/>
-                    <path style={{fill: '#4a312a'}} d="M38,75 C 20,75 15,110 45,112 C 75,115 70,75 52,75 "/>
-                    <path style={{fill: '#f2d5b1'}} d="M45,112 c 20,0 25,-40 5,-40 C 30,72 25,112 45,112 Z"/>
-                    <path style={{fill: '#4a312a'}} d="M45,112 c -5,5 -5,15 0,18 c 5,3 15,3 20,0 c 5,-5 5,-15 0,-18"/>
-                    <path fill="none" d="M48,100 q 2,2 4,0 M62,100 q 2,2 4,0"/>
+                <defs>
+                  <linearGradient id="heartGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="hsl(var(--primary))" />
+                    <stop offset="100%" stopColor="hsl(var(--accent))" />
+                  </linearGradient>
+                  <linearGradient id="skyGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#FFE4E1" />
+                    <stop offset="100%" stopColor="#E6E6FA" />
+                  </linearGradient>
+                </defs>
+                
+                {/* Background sky */}
+                <rect width="200" height="280" fill="url(#skyGradient)" />
+                
+                {/* Floating hearts */}
+                <g className="opacity-20">
+                  <path d="M30,60 C25,50 15,50 15,65 C15,50 5,50 0,60 C0,75 15,90 15,90 C15,90 30,75 30,60 Z" fill="url(#heartGradient)" />
+                  <path d="M180,40 C177,35 172,35 172,45 C172,35 167,35 164,40 C164,50 172,60 172,60 C172,60 180,50 180,40 Z" fill="url(#heartGradient)" />
+                  <path d="M60,200 C58,197 55,197 55,202 C55,197 52,197 50,200 C50,205 55,210 55,210 C55,210 60,205 60,200 Z" fill="url(#heartGradient)" />
+                </g>
+                
+                {/* Sync connection lines */}
+                <g className="stroke-primary/30" fill="none" strokeWidth="2" strokeDasharray="5,5">
+                  <path d="M50,120 Q100,100 150,120" />
+                  <path d="M40,140 Q100,160 160,140" />
+                  <path d="M70,180 Q100,170 130,180" />
+                </g>
+                
+                {/* Central love sync symbol */}
+                <g transform="translate(100, 140)">
+                  {/* Outer circle */}
+                  <circle cx="0" cy="0" r="25" fill="none" stroke="hsl(var(--primary))" strokeWidth="3" opacity="0.6" />
+                  
+                  {/* Inner hearts forming sync symbol */}
+                  <g transform="scale(0.6)">
+                    <path d="M-15,-5 C-20,-15 -30,-15 -30,0 C-30,-15 -40,-15 -45,-5 C-45,10 -30,25 -30,25 C-30,25 -15,10 -15,-5 Z" 
+                          fill="url(#heartGradient)" transform="rotate(-15)" />
+                    <path d="M15,-5 C10,-15 0,-15 0,0 C0,-15 -10,-15 -15,-5 C-15,10 0,25 0,25 C0,25 15,10 15,-5 Z" 
+                          fill="url(#heartGradient)" transform="rotate(15)" />
                   </g>
-                  <g transform="translate(10, 40)">
-                    <path style={{fill: 'hsl(var(--primary))'}} d="M55,115 C 80,125 110,120 130,105"/>
-                    <path style={{fill: 'hsl(var(--primary))'}} d="M180,238 V 140 c 0,-20 -10,-30 -30,-30"/>
-                    <path style={{fill: '#b55239'}} d="M125,70 C 110,70 100,120 145,120 C 190,120 180,70 165,70 "/>
-                    <path style={{fill: '#e5ab83'}} d="M145,120 c 25,0 30,-40 5,-45 C 120,70 120,120 145,120 Z"/>
-                    <path fill="none" d="M138,102 q 2,2 4,0 M152,102 q 2,2 4,0"/>
+                  
+                  {/* Sync arrows */}
+                  <g className="stroke-primary" fill="none" strokeWidth="2" strokeLinecap="round">
+                    <path d="M-35,0 L-25,0 M-30,-5 L-25,0 L-30,5" />
+                    <path d="M25,0 L35,0 M30,-5 L35,0 L30,5" />
                   </g>
+                </g>
+                
+                {/* Card game elements */}
+                <g transform="translate(50, 50)">
+                  <rect x="0" y="0" width="20" height="28" rx="3" fill="white" stroke="hsl(var(--primary))" strokeWidth="1.5" />
+                  <circle cx="10" cy="14" r="3" fill="url(#heartGradient)" />
+                </g>
+                
+                <g transform="translate(130, 70)">
+                  <rect x="0" y="0" width="20" height="28" rx="3" fill="white" stroke="hsl(var(--primary))" strokeWidth="1.5" />
+                  <circle cx="10" cy="14" r="3" fill="url(#heartGradient)" />
+                </g>
+                
+                {/* Message bubbles */}
+                <g transform="translate(70, 220)">
+                  <ellipse cx="0" cy="0" rx="15" ry="10" fill="white" stroke="hsl(var(--primary))" strokeWidth="1.5" />
+                  <path d="M-5,8 L0,15 L5,8" fill="white" stroke="hsl(var(--primary))" strokeWidth="1.5" strokeLinejoin="round" />
+                  <circle cx="-3" cy="-2" r="1.5" fill="hsl(var(--primary))" />
+                  <circle cx="3" cy="-2" r="1.5" fill="hsl(var(--primary))" />
+                </g>
+                
+                <g transform="translate(130, 210)">
+                  <ellipse cx="0" cy="0" rx="15" ry="10" fill="white" stroke="hsl(var(--accent))" strokeWidth="1.5" />
+                  <path d="M-5,8 L0,15 L5,8" fill="white" stroke="hsl(var(--accent))" strokeWidth="1.5" strokeLinejoin="round" />
+                  <circle cx="-3" cy="-2" r="1.5" fill="hsl(var(--accent))" />
+                  <circle cx="3" cy="-2" r="1.5" fill="hsl(var(--accent))" />
                 </g>
               </svg>
               
