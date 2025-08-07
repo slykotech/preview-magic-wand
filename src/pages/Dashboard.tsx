@@ -104,16 +104,11 @@ export const Dashboard = () => {
     refreshSyncScore
   } = useEnhancedSyncScore(coupleId);
 
-  // Ensure we have a safe score value with better fallback
-  const currentSyncScore = syncScoreData?.score ?? (syncScoreLoading ? undefined : 0);
+  // Ensure we have a safe score value - always provide a number for animation
+  const currentSyncScore = syncScoreData?.score ?? 0;
   
-  console.log('🎯 Dashboard sync score state:', {
-    syncScoreData,
-    loading: syncScoreLoading,
-    error: syncScoreError,
-    currentSyncScore,
-    coupleId
-  });
+  // Only show animation if we have valid couple data
+  const shouldShowAnimation = coupleId && !syncScoreLoading;
 
   // Use presence tracking hook
   const {
@@ -531,14 +526,16 @@ export const Dashboard = () => {
     }}>
           
           {/* Sync Score - starts center, zooms to exact dashboard position */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="sync-score-container" style={{
-          animation: 'zoom-to-position 1.2s ease-out 0.8s forwards',
-          transform: 'scale(2.5)'
-        }}>
-              <SyncScoreCircle score={currentSyncScore || 0} animated={true} />
+          {shouldShowAnimation && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="sync-score-container" style={{
+            animation: 'zoom-to-position 1.2s ease-out 0.8s forwards',
+            transform: 'scale(2.5)'
+          }}>
+                <SyncScoreCircle score={currentSyncScore} animated={true} />
+              </div>
             </div>
-          </div>
+          )}
           
           {/* Floating Partner Mood Emojis */}
           {partnerMood && <div className="absolute inset-0 pointer-events-none">
@@ -585,7 +582,7 @@ export const Dashboard = () => {
           <div className={`${isLoaded ? 'animate-fade-in' : 'opacity-0'}`} style={{
           animationDelay: '100ms'
         }}>
-            {isLoaded && currentSyncScore !== undefined ? (
+            {isLoaded && coupleId ? (
               <div className="space-y-4">
                 <SyncScoreCircle score={currentSyncScore} animated={true} />
               </div>
