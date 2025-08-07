@@ -49,8 +49,8 @@ export const GameEndModal: React.FC<GameEndModalProps> = ({
           {/* Result Header */}
           <div className={`p-6 rounded-lg mb-6 ${
             isWinner 
-              ? 'bg-gradient-to-r from-success to-emerald-500' 
-              : 'bg-gradient-to-r from-destructive to-orange-500'
+              ? 'bg-gradient-to-r from-emerald-500 to-green-600' 
+              : 'bg-gradient-to-r from-red-500 to-orange-600'
           }`}>
             <div className="text-6xl mb-2">
               {isWinner ? '🏆' : '😢'}
