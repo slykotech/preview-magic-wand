@@ -48,7 +48,7 @@ export const SubscriptionGate = ({ children }: SubscriptionGateProps) => {
 
             <div className="space-y-3">
               <Button 
-                onClick={() => navigate('/subscription-onboarding')}
+                onClick={() => navigate('/subscription/trial')}
                 className="w-full"
               >
                 <Crown className="w-4 h-4 mr-2" />

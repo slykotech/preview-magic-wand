@@ -83,42 +83,59 @@ export const AppFlowRouter: React.FC = () => {
   useEffect(() => {
     if (authLoading) return;
     
-    // Clear localStorage flow when user changes or logs out
-    const currentUserId = user?.id;
-    const storedFlowData = localStorage.getItem(STORAGE_KEY);
-    let shouldReset = false;
+    console.log('AppFlowRouter: Auth state change check', { userId: user?.id, authLoading });
     
-    if (storedFlowData) {
-      try {
-        const parsed = JSON.parse(storedFlowData);
-        const storedUserId = parsed.userId;
-        
-        // Reset if user changed or no user when we expect one
-        if (storedUserId !== currentUserId) {
-          shouldReset = true;
-        }
-      } catch {
-        shouldReset = true;
-      }
-    }
-    
-    if (shouldReset || !user) {
-      console.log('Resetting flow for new user or logout');
+    // Always reset flow for fresh signups to ensure proper subscription flow
+    if (user?.id) {
+      console.log('AppFlowRouter: User authenticated, resetting flow to ensure proper subscription check');
+      resetFlow();
+      
+      // Clean up any demo couples for this user
+      cleanupDemoCouples();
+    } else if (!user) {
+      console.log('AppFlowRouter: User logged out, resetting flow');
       resetFlow();
     }
-    
-    // Store current user ID in flow state
-    if (user) {
-      setFlowState(prev => ({
-        ...prev,
-        userId: user.id
-      }));
-    }
   }, [user?.id, authLoading]);
+
+  // Function to clean up demo couples (self-paired couples)
+  const cleanupDemoCouples = async () => {
+    if (!user?.id) return;
+    
+    try {
+      const { data: demoCouples, error } = await supabase
+        .from('couples')
+        .select('id')
+        .eq('user1_id', user.id)
+        .eq('user2_id', user.id);
+        
+      if (demoCouples && demoCouples.length > 0) {
+        console.log('AppFlowRouter: Cleaning up demo couples', demoCouples);
+        await supabase
+          .from('couples')
+          .delete()
+          .eq('user1_id', user.id)
+          .eq('user2_id', user.id);
+      }
+    } catch (error) {
+      console.error('Error cleaning up demo couples:', error);
+    }
+  };
 
   // Update user data based on auth and subscription state
   useEffect(() => {
     if (authLoading || subscriptionLoading || coupleLoading) return;
+
+    // Check if coupleData represents a real partnership or demo mode
+    const hasRealPartner = coupleData && coupleData.user1_id !== coupleData.user2_id;
+    
+    console.log('AppFlowRouter: User data update:', {
+      user: !!user,
+      coupleData: !!coupleData,
+      hasRealPartner,
+      selfPaired: coupleData ? coupleData.user1_id === coupleData.user2_id : false,
+      premiumAccess: premiumAccess.has_access
+    });
 
     setFlowState(prev => ({
       ...prev,
@@ -126,7 +143,7 @@ export const AppFlowRouter: React.FC = () => {
         ...prev.userData,
         isAuthenticated: !!user,
         hasSubscription: premiumAccess.has_access,
-        hasPartner: !!coupleData,
+        hasPartner: hasRealPartner, // Only true for real partnerships
         isVerified: !!user?.email_confirmed_at,
       }
     }));
@@ -135,6 +152,12 @@ export const AppFlowRouter: React.FC = () => {
   // Check if user is connected to someone with subscription (partner linking)
   const checkPartnerSubscriptionLink = useCallback(async (): Promise<boolean> => {
     if (!user || !coupleData) return false;
+    
+    // Skip check for demo couples (self-paired)
+    if (coupleData.user1_id === coupleData.user2_id) {
+      console.log('AppFlowRouter: Skipping partner subscription check for demo couple');
+      return false;
+    }
 
     try {
       // Check if partner has premium access that could cover this user

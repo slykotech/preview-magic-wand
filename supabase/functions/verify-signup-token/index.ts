@@ -106,25 +106,9 @@ Deno.serve(async (req) => {
 
     console.log('Verification marked as completed');
 
-    // For standalone signup, create a demo couple relationship (self-relationship)
-    console.log('Creating demo couple relationship for standalone user...');
-    const { data: demoCouple, error: demoCoupleError } = await supabase
-      .from('couples')
-      .insert({
-        user1_id: authData.user.id,
-        user2_id: authData.user.id, // Self-relationship for demo mode
-        relationship_status: 'dating',
-        created_at: new Date().toISOString()
-      })
-      .select()
-      .single()
-
-    if (demoCoupleError) {
-      console.error('Failed to create demo couple:', demoCoupleError);
-      // Don't fail the whole signup process
-    } else {
-      console.log('Demo couple created successfully:', demoCouple.id);
-    }
+    // Skip creating demo couple relationship for standalone signup
+    // Let the user go through proper subscription flow first
+    console.log('Skipping demo couple creation - user will go through subscription flow');
 
     console.log('=== SIGNUP TOKEN VERIFICATION COMPLETED SUCCESSFULLY ===');
 
@@ -135,8 +119,7 @@ Deno.serve(async (req) => {
         success: true, 
         message: successMessage,
         user_id: authData.user.id,
-        is_standalone_signup: true,
-        demo_couple_id: demoCouple?.id
+        is_standalone_signup: true
       }),
       { 
         status: 200, 

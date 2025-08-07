@@ -84,9 +84,14 @@ export const useCoupleData = (): UseCoupleDataReturn => {
       if (couples && couples.length > 0) {
         // First try to find a real partnership (user1_id !== user2_id)
         couple = couples.find(c => c.user1_id !== c.user2_id);
-        // If no real partnership, use the most recent record
+        // Only return demo couples as fallback if explicitly needed
+        // For subscription flow, we want to return null for demo couples
         if (!couple) {
-          couple = couples[0];
+          const demoCouple = couples.find(c => c.user1_id === c.user2_id);
+          if (demoCouple) {
+            console.log('Found demo couple, considering as no real partner for subscription flow');
+            couple = null; // Treat demo couples as no partner for subscription purposes
+          }
         }
       }
 
