@@ -114,7 +114,7 @@ export const EnhancedTrialFlow = ({ onTrialStarted, onSkip }: EnhancedTrialFlowP
             
             {onSkip && (
               <Button variant="ghost" onClick={onSkip}>
-                Continue with limited access instead
+                Back
               </Button>
             )}
           </div>

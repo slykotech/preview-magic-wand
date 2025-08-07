@@ -185,7 +185,7 @@ export const PaymentDetails: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-xl font-bold text-foreground">{selectedPlan.name}</h3>
-                <p className="text-sm text-muted-foreground">Selected Plan</p>
+                <p className="text-sm text-muted-foreground">{selectedPlan.description || 'Selected Plan'}</p>
               </div>
               <div className="text-right">
                 <span className="text-2xl font-bold text-primary">FREE</span>
