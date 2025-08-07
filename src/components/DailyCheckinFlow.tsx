@@ -113,13 +113,14 @@ export const DailyCheckinFlow: React.FC<DailyCheckinFlowProps> = ({
     try {
       const today = new Date().toISOString().split('T')[0];
 
-      // Check if checkin already exists for today
+      // Check if checkin already exists for today and get existing mood
       const {
         data: existingCheckin
-      } = await supabase.from('daily_checkins').select('id').eq('user_id', userId).eq('couple_id', coupleId).eq('checkin_date', today).maybeSingle();
+      } = await supabase.from('daily_checkins').select('id, mood').eq('user_id', userId).eq('couple_id', coupleId).eq('checkin_date', today).maybeSingle();
+      
       const checkinData = {
-        mood: 'content' as MoodType,
-        // Default mood for simplified check-in
+        // Only set mood if the user doesn't already have one, otherwise preserve existing mood
+        mood: existingCheckin?.mood || 'content' as MoodType,
         energy_level: null,
         // Not used in simplified version
         relationship_feeling: connectionLevel,
@@ -127,8 +128,14 @@ export const DailyCheckinFlow: React.FC<DailyCheckinFlowProps> = ({
         // Store tomorrow's intention in gratitude field
         notes: null
       };
+      
       if (existingCheckin) {
-        await supabase.from('daily_checkins').update(checkinData).eq('id', existingCheckin.id);
+        // For updates, only update the daily checkin fields, preserve existing mood
+        await supabase.from('daily_checkins').update({
+          relationship_feeling: connectionLevel,
+          gratitude: tomorrowIntention,
+          notes: null
+        }).eq('id', existingCheckin.id);
       } else {
         await supabase.from('daily_checkins').insert({
           user_id: userId,
