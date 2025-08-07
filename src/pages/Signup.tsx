@@ -6,7 +6,6 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, Link } from "react-router-dom";
 import { Heart, Mail, Lock, User, ArrowLeft, CheckCircle2, Eye, EyeOff } from "lucide-react";
-
 export const Signup = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -15,20 +14,23 @@ export const Signup = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [verificationSent, setVerificationSent] = useState(false);
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const navigate = useNavigate();
-
   useEffect(() => {
     // Check if user is already logged in
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const {
+      data: {
+        subscription
+      }
+    } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session) {
         navigate('/dashboard');
       }
     });
-
     return () => subscription.unsubscribe();
   }, [navigate]);
-
   const handleSignUp = async () => {
     if (!email || !password || !firstName || !lastName) {
       toast({
@@ -38,7 +40,6 @@ export const Signup = () => {
       });
       return;
     }
-
     if (password.length < 6) {
       toast({
         title: "Password too short",
@@ -58,12 +59,9 @@ export const Signup = () => {
       });
       return;
     }
-
     setLoading(true);
-
     try {
       console.log('Sending verification email request...');
-      
       try {
         // Call the standalone signup invite function
         const response = await supabase.functions.invoke('send-signup-invite', {
@@ -74,7 +72,6 @@ export const Signup = () => {
             password
           }
         });
-
         console.log('Function response received:', response);
 
         // Handle successful response
@@ -103,19 +100,17 @@ export const Signup = () => {
 
         // This shouldn't happen, but handle unexpected responses
         throw new Error('Unexpected response from signup service. Please try again.');
-
       } catch (functionError: any) {
         console.error('Function call error:', functionError);
         throw functionError; // Re-throw to be caught by outer try-catch
       }
-
     } catch (error: any) {
       console.error('Signup error details:', {
         message: error.message,
         name: error.name,
         stack: error.stack
       });
-      
+
       // Show user-friendly error message
       toast({
         title: "Sign up failed",
@@ -126,9 +121,7 @@ export const Signup = () => {
       setLoading(false);
     }
   };
-
-  return (
-    <div className="min-h-screen bg-gradient-romance flex items-center justify-center p-3 sm:p-4">
+  return <div className="min-h-screen bg-gradient-romance flex items-center justify-center p-3 sm:p-4">
       <div className="w-full max-w-sm sm:max-w-md">
         <div className="text-center mb-6 sm:mb-8">
           <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 animate-pulse">
@@ -143,8 +136,7 @@ export const Signup = () => {
         </div>
 
         <Card className="shadow-romantic mx-2 sm:mx-0">
-          {verificationSent ? (
-            <>
+          {verificationSent ? <>
               <CardHeader className="pb-4 sm:pb-6">
                 <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-romance rounded-full flex items-center justify-center mx-auto mb-4">
                   <Mail size={24} className="text-white sm:w-8 sm:h-8" />
@@ -170,7 +162,7 @@ export const Signup = () => {
                     <span className="font-semibold text-sm">Important Steps:</span>
                   </div>
                   <ol className="text-xs text-blue-700 space-y-1 text-left">
-                    <li>1. Check your email inbox (and spam folder)</li>
+                    <li>1. Check your email inbox (or spam folder)</li>
                     <li>2. Click the "Verify Email Address" button</li>
                     <li>3. Your account will be created automatically</li>
                     <li>4. You can then sign in with your credentials</li>
@@ -183,25 +175,15 @@ export const Signup = () => {
                 </div>
                 
                 <div className="flex gap-2">
-                  <Button 
-                    onClick={() => setVerificationSent(false)}
-                    variant="outline"
-                    className="flex-1 text-sm"
-                  >
+                  <Button onClick={() => setVerificationSent(false)} variant="outline" className="flex-1 text-sm">
                     Back to Form
                   </Button>
-                  <Button 
-                    onClick={() => navigate('/auth')}
-                    variant="romantic"
-                    className="flex-1 text-sm"
-                  >
+                  <Button onClick={() => navigate('/auth')} variant="romantic" className="flex-1 text-sm">
                     Go to Sign In
                   </Button>
                 </div>
               </CardContent>
-            </>
-          ) : (
-            <>
+            </> : <>
               <CardHeader className="pb-4 sm:pb-6">
                 <div className="flex items-center gap-2 mb-4">
                   <Link to="/auth">
@@ -225,54 +207,23 @@ export const Signup = () => {
                   <div className="grid grid-cols-2 gap-2">
                     <div className="relative">
                       <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        placeholder="First name"
-                        value={firstName}
-                        onChange={(e) => setFirstName(e.target.value)}
-                        className="pl-10 font-medium h-11 text-sm"
-                        disabled={loading}
-                      />
+                      <Input placeholder="First name" value={firstName} onChange={e => setFirstName(e.target.value)} className="pl-10 font-medium h-11 text-sm" disabled={loading} />
                     </div>
                     <div className="relative">
                       <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Last name"
-                        value={lastName}
-                        onChange={(e) => setLastName(e.target.value)}
-                        className="pl-10 font-medium h-11 text-sm"
-                        disabled={loading}
-                      />
+                      <Input placeholder="Last name" value={lastName} onChange={e => setLastName(e.target.value)} className="pl-10 font-medium h-11 text-sm" disabled={loading} />
                     </div>
                   </div>
                   
                   <div className="relative">
                     <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      type="email"
-                      placeholder="Email address"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="pl-10 font-medium h-11 text-sm"
-                      disabled={loading}
-                    />
+                    <Input type="email" placeholder="Email address" value={email} onChange={e => setEmail(e.target.value)} className="pl-10 font-medium h-11 text-sm" disabled={loading} />
                   </div>
                   
                   <div className="relative">
                     <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      type={showPassword ? "text" : "password"}
-                      placeholder="Create password (min 6 characters)"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="pl-10 pr-10 font-medium h-11 text-sm"
-                      disabled={loading}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-3 h-4 w-4 text-muted-foreground hover:text-foreground transition-colors"
-                      disabled={loading}
-                    >
+                    <Input type={showPassword ? "text" : "password"} placeholder="Create password (min 6 characters)" value={password} onChange={e => setPassword(e.target.value)} className="pl-10 pr-10 font-medium h-11 text-sm" disabled={loading} />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3 h-4 w-4 text-muted-foreground hover:text-foreground transition-colors" disabled={loading}>
                       {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   </div>
@@ -288,12 +239,7 @@ export const Signup = () => {
                   </p>
                 </div>
                 
-                <Button 
-                  onClick={handleSignUp}
-                  disabled={loading}
-                  variant="romantic"
-                  className="w-full h-11 text-sm font-bold mt-6"
-                >
+                <Button onClick={handleSignUp} disabled={loading} variant="romantic" className="w-full h-11 text-sm font-bold mt-6">
                   {loading ? "Sending verification email..." : "Send Verification Email"}
                 </Button>
                 
@@ -306,10 +252,8 @@ export const Signup = () => {
                   </p>
                 </div>
               </CardContent>
-            </>
-          )}
+            </>}
         </Card>
       </div>
-    </div>
-  );
+    </div>;
 };
