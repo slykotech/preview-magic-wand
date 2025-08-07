@@ -99,11 +99,19 @@ export function useCardGame(sessionId: string | null) {
         
         setIsMyTurn(gameData.current_turn === user.id);
 
-        // Set partner info
+        // Set partner info with actual name from profiles
         const partnerId = gameData.user1_id === user.id ? gameData.user2_id : gameData.user1_id;
+        
+        // Fetch partner's profile to get their display name
+        const { data: partnerProfile } = await supabase
+          .from('profiles')
+          .select('display_name')
+          .eq('user_id', partnerId)
+          .single();
+        
         setPartnerInfo({
           id: partnerId,
-          name: partnerId === gameData.user1_id ? "User 1" : "User 2"
+          name: partnerProfile?.display_name || 'Your Partner'
         });
 
         // Fetch current card if exists
