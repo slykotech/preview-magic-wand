@@ -209,13 +209,15 @@ export const PhotoInput: React.FC<PhotoInputProps> = ({ onPhotoSelected, isSubmi
               className="hidden"
               disabled={isSubmitting}
             />
-            <div className="w-full p-6 bg-card border-2 border-accent/20 rounded-xl text-center hover:border-accent/40 hover:bg-accent/5 transition-all duration-200 shadow-sm hover:shadow-lg group">
-              <div className="flex flex-col items-center space-y-2">
-                <div className="p-3 bg-accent/10 rounded-full group-hover:bg-accent/20 transition-colors">
-                  <span className="text-2xl">🖼️</span>
+            <div className="w-full p-6 bg-gradient-to-br from-card to-muted/50 border border-border rounded-xl text-center hover:bg-gradient-to-br hover:from-muted hover:to-muted/80 transition-all duration-300 shadow-md hover:shadow-xl group cursor-pointer">
+              <div className="flex flex-col items-center space-y-3">
+                <div className="p-4 bg-gradient-to-br from-accent/20 to-accent/10 rounded-full group-hover:from-accent/30 group-hover:to-accent/20 transition-all duration-300 shadow-sm">
+                  <span className="text-3xl">🖼️</span>
                 </div>
-                <span className="text-sm font-semibold text-foreground">Upload Photo</span>
-                <span className="text-xs text-muted-foreground">From gallery</span>
+                <div className="space-y-1">
+                  <span className="text-sm font-semibold text-foreground block">Upload Photo</span>
+                  <span className="text-xs text-muted-foreground">From your gallery</span>
+                </div>
               </div>
             </div>
           </label>
