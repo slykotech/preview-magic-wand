@@ -188,54 +188,59 @@ export const CardDeckGame: React.FC = () => {
         </div>
 
         {/* Game Controls */}
-        <div className="mt-8 flex justify-center gap-4">
-          <Button
-            variant="outline"
-            onClick={() => setShowHistory(true)}
-            className="flex items-center gap-2"
-          >
-            📝 History
-          </Button>
-          
-          
-          <Button
-            variant="destructive"
-            onClick={actions.endGame}
-          >
-            End Game
-          </Button>
-          
-          {/* Debug button to force photo card */}
-          {process.env.NODE_ENV === 'development' && (
+        <div className="mt-8 space-y-4">
+          {/* Primary Actions */}
+          <div className="flex justify-center gap-3">
             <Button
-              onClick={async () => {
-                const playedCardIds = [...(gameState.played_cards || []), ...(gameState.skipped_cards || [])];
-                const { data: photoCards } = await supabase
-                  .from("deck_cards")
-                  .select("id")
-                  .eq("response_type", "photo")
-                  .eq("is_active", true)
-                  .not("id", "in", playedCardIds.length > 0 ? `(${playedCardIds.join(",")})` : "()")
-                  .limit(1);
-                
-                if (photoCards && photoCards.length > 0) {
-                  await supabase
-                    .from("card_deck_game_sessions")
-                    .update({
-                      current_card_id: photoCards[0].id,
-                      last_activity_at: new Date().toISOString()
-                    })
-                    .eq("id", sessionId);
-                  
-                  console.log('Forced photo card:', photoCards[0].id);
-                }
-              }}
-              variant="secondary"
-              size="sm"
-              className="bg-purple-500 text-white hover:bg-purple-600"
+              variant="outline"
+              onClick={() => setShowHistory(true)}
+              className="flex items-center gap-2 min-w-[120px]"
             >
-              Force Photo
+              📝 History
             </Button>
+            
+            <Button
+              variant="destructive"
+              onClick={actions.endGame}
+              className="min-w-[120px]"
+            >
+              End Game
+            </Button>
+          </div>
+          
+          {/* Debug Controls - Development Only */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className="flex justify-center">
+              <Button
+                onClick={async () => {
+                  const playedCardIds = [...(gameState.played_cards || []), ...(gameState.skipped_cards || [])];
+                  const { data: photoCards } = await supabase
+                    .from("deck_cards")
+                    .select("id")
+                    .eq("response_type", "photo")
+                    .eq("is_active", true)
+                    .not("id", "in", playedCardIds.length > 0 ? `(${playedCardIds.join(",")})` : "()")
+                    .limit(1);
+                  
+                  if (photoCards && photoCards.length > 0) {
+                    await supabase
+                      .from("card_deck_game_sessions")
+                      .update({
+                        current_card_id: photoCards[0].id,
+                        last_activity_at: new Date().toISOString()
+                      })
+                      .eq("id", sessionId);
+                    
+                    console.log('Forced photo card:', photoCards[0].id);
+                  }
+                }}
+                variant="secondary"
+                size="sm"
+                className="bg-purple-500 text-white hover:bg-purple-600"
+              >
+                🔧 Force Photo Card
+              </Button>
+            </div>
           )}
         </div>
 
