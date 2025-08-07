@@ -460,7 +460,7 @@ export const AnimatedGameCard: React.FC<AnimatedGameCardProps> = ({
         </div>
 
         {/* Shuffle Button */}
-        {onShuffle && (
+        {onShuffle && !isRevealed && (
           <div className="flex justify-center">
             <Button
               onClick={handleShuffle}
