@@ -43,6 +43,7 @@ export const PartnerConnectionSection = () => {
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [showDeclineDialog, setShowDeclineDialog] = useState(false);
   const [selectedRequestId, setSelectedRequestId] = useState<string>("");
+  const [inviteCooldown, setInviteCooldown] = useState<number>(0);
   const [emailValidation, setEmailValidation] = useState<{
     isValid: boolean;
     exists: boolean;
@@ -63,7 +64,10 @@ export const PartnerConnectionSection = () => {
   };
 
   const handleSendRequest = async () => {
-    if (!partnerEmail.trim() || !emailValidation.isValid || !emailValidation.exists || !emailValidation.available) return;
+    if (!partnerEmail.trim() || !emailValidation.isValid || !emailValidation.exists || !emailValidation.available || inviteCooldown > 0) return;
+    
+    // Start 1-minute cooldown
+    setInviteCooldown(60);
     
     try {
       // Send connection email first
@@ -88,6 +92,9 @@ export const PartnerConnectionSection = () => {
         setPartnerEmail("");
         setIsEditing(false);
         setEmailValidation({ isValid: false, exists: false, available: false, message: "", isChecking: false, showInviteToJoin: false });
+      } else {
+        // If failed, reset cooldown
+        setInviteCooldown(0);
       }
     } catch (error) {
       console.error('Error in send request flow:', error);
@@ -97,6 +104,9 @@ export const PartnerConnectionSection = () => {
         setPartnerEmail("");
         setIsEditing(false);
         setEmailValidation({ isValid: false, exists: false, available: false, message: "", isChecking: false, showInviteToJoin: false });
+      } else {
+        // If failed, reset cooldown
+        setInviteCooldown(0);
       }
     }
   };
@@ -279,6 +289,27 @@ export const PartnerConnectionSection = () => {
     return () => clearTimeout(timeoutId);
   }, [partnerEmail]);
 
+  // Cooldown timer effect
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (inviteCooldown > 0) {
+      interval = setInterval(() => {
+        setInviteCooldown(prev => {
+          if (prev <= 1) {
+            clearInterval(interval);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [inviteCooldown]);
+
   const handleDisconnectConfirm = async () => {
     const success = await disconnectFromPartner();
     if (success) {
@@ -440,7 +471,7 @@ export const PartnerConnectionSection = () => {
                   <div className="flex gap-2">
                     <Button 
                       onClick={handleSendRequest}
-                      disabled={isProcessing || !partnerEmail.trim() || !emailValidation.isValid || !emailValidation.exists || !emailValidation.available || emailValidation.isChecking}
+                      disabled={isProcessing || !partnerEmail.trim() || !emailValidation.isValid || !emailValidation.exists || !emailValidation.available || emailValidation.isChecking || inviteCooldown > 0}
                       className="flex-1 bg-gradient-secondary hover:opacity-90 text-white"
                       size="sm"
                     >
@@ -448,6 +479,11 @@ export const PartnerConnectionSection = () => {
                         <>
                           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                           Sending...
+                        </>
+                      ) : inviteCooldown > 0 ? (
+                        <>
+                          <Clock size={14} className="mr-1" />
+                          Wait {inviteCooldown}s
                         </>
                       ) : (
                         <>
