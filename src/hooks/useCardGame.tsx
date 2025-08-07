@@ -491,7 +491,10 @@ export function useCardGame(sessionId: string | null) {
       cardType: currentCard?.response_type,
       isMyTurn,
       currentUserId: user?.id,
-      sessionId
+      sessionId,
+      timedOut: timedOut, // CRITICAL: Log timedOut parameter
+      caption,
+      reactionTime
     });
     
     if (!gameState || !currentCard || !sessionId || !user) {

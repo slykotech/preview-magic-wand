@@ -31,7 +31,7 @@ interface GameCardProps {
   isMyTurn: boolean;
   isRevealed: boolean;
   onReveal: () => void;
-  onComplete: (response?: string | File, caption?: string, timedOut?: boolean) => void;
+  onComplete: (response?: string | File, caption?: string, reactionTime?: number, timedOut?: boolean) => void;
   onSkip: () => void;
   onFavorite: () => void;
   skipsRemaining: number;
@@ -125,16 +125,17 @@ export const GameCard: React.FC<GameCardProps> = ({
   };
 
   const handleComplete = (timedOut = false) => {
+    console.log('🎯 GameCard handleComplete called with timedOut:', timedOut);
     switch (card?.response_type) {
       case 'text':
-        onComplete(response, undefined, timedOut);
+        onComplete(response, undefined, undefined, timedOut); // Added reactionTime param
         break;
       case 'photo':
-        onComplete(photoResponse || undefined, undefined, timedOut);
+        onComplete(photoResponse || undefined, undefined, undefined, timedOut); // Added reactionTime param
         break;
       case 'action':
       default:
-        onComplete(undefined, undefined, timedOut);
+        onComplete(undefined, undefined, undefined, timedOut); // Added reactionTime param
         break;
     }
     setResponse('');
@@ -142,7 +143,7 @@ export const GameCard: React.FC<GameCardProps> = ({
   };
 
   const handlePhotoSubmit = async (photoUrl: string, caption?: string) => {
-    onComplete(photoUrl, caption, false);
+    onComplete(photoUrl, caption, undefined, false); // Added reactionTime param
     setResponse('');
     setPhotoResponse(null);
   };
