@@ -12,6 +12,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useCoupleData } from '@/hooks/useCoupleData';
 import { useEnhancedSyncScore } from "@/hooks/useEnhancedSyncScore";
 import { DateHistory } from "@/components/DateHistory";
+import { ProfileImageUpload } from "@/components/ProfileImageUpload";
 import { supabase } from "@/integrations/supabase/client";
 import coupleImage from "@/assets/couple-avatars.jpg";
 
@@ -72,7 +73,15 @@ export const Profile = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { getUserDisplayName, getPartnerDisplayName, coupleData, loading: coupleLoading } = useCoupleData();
+  const { 
+    getUserDisplayName, 
+    getPartnerDisplayName, 
+    coupleData, 
+    userProfile, 
+    partnerProfile, 
+    loading: coupleLoading,
+    fetchCoupleData 
+  } = useCoupleData();
   
   // Use enhanced sync score hook
   const { 
@@ -236,25 +245,8 @@ export const Profile = () => {
         icon={<User size={24} />}
         showBackButton={false}
       >
-        {/* Couple Avatars */}
-        <div className="flex items-center justify-center mt-4">
-          <div className="flex -space-x-4">
-            <div className="w-16 h-16 rounded-full border-4 border-white overflow-hidden shadow-lg">
-              <img 
-                src={coupleImage} 
-                alt="Your Avatar" 
-                className="w-full h-full object-cover object-left"
-              />
-            </div>
-            <div className="w-16 h-16 rounded-full border-4 border-white overflow-hidden shadow-lg">
-              <img 
-                src={coupleImage} 
-                alt="Partner Avatar" 
-                className="w-full h-full object-cover object-right"
-              />
-            </div>
-          </div>
-        </div>
+        {/* Profile Avatars - Conditional display based on partner connection */}
+        <ProfileAvatarSection />
       </GradientHeader>
 
       {/* Content */}
@@ -395,4 +387,53 @@ export const Profile = () => {
       <BottomNavigation />
     </div>
   );
+};
+
+// Profile Avatar Section Component
+const ProfileAvatarSection = () => {
+  const { 
+    coupleData, 
+    userProfile, 
+    partnerProfile, 
+    fetchCoupleData 
+  } = useCoupleData();
+
+  const handleImageUploaded = (imageUrl: string) => {
+    // Refresh couple data to get updated profile
+    fetchCoupleData();
+  };
+
+  // Check if partner is connected (different user IDs)
+  const hasPartner = coupleData && coupleData.user1_id !== coupleData.user2_id;
+
+  if (hasPartner) {
+    // Show two avatars when partner is connected
+    return (
+      <div className="flex items-center justify-center mt-4">
+        <div className="flex -space-x-4">
+          <ProfileImageUpload
+            currentImageUrl={userProfile?.avatar_url || coupleImage}
+            onImageUploaded={handleImageUploaded}
+          />
+          <div className="w-16 h-16 rounded-full border-4 border-white overflow-hidden shadow-lg">
+            <img 
+              src={partnerProfile?.avatar_url || coupleImage} 
+              alt="Partner Avatar" 
+              className="w-full h-full object-cover"
+            />
+          </div>
+        </div>
+      </div>
+    );
+  } else {
+    // Show single avatar when no partner is connected
+    return (
+      <div className="flex items-center justify-center mt-4">
+        <ProfileImageUpload
+          currentImageUrl={userProfile?.avatar_url || coupleImage}
+          onImageUploaded={handleImageUploaded}
+        />
+      </div>
+    );
+  }
 };

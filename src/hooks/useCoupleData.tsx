@@ -31,6 +31,7 @@ interface UseCoupleDataReturn {
   getUserDisplayName: () => string;
   getPartnerDisplayName: () => string;
   updateNicknames: (userNickname: string, partnerNickname: string) => Promise<void>;
+  fetchCoupleData: () => Promise<void>;
   loading: boolean;
 }
 
@@ -167,6 +168,7 @@ export const useCoupleData = (): UseCoupleDataReturn => {
     getUserDisplayName,
     getPartnerDisplayName,
     updateNicknames,
+    fetchCoupleData,
     loading
   };
 };

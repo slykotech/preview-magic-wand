@@ -12,6 +12,8 @@ interface CoupleAvatarsProps {
   hasPartnerStory?: boolean;
   isUserOnline?: boolean;
   isPartnerOnline?: boolean;
+  userAvatarUrl?: string;
+  partnerAvatarUrl?: string;
 }
 
 export const CoupleAvatars = ({ 
@@ -23,7 +25,9 @@ export const CoupleAvatars = ({
   hasUserStory = false,
   hasPartnerStory = false,
   isUserOnline = false,
-  isPartnerOnline = false
+  isPartnerOnline = false,
+  userAvatarUrl,
+  partnerAvatarUrl
 }: CoupleAvatarsProps) => {
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -68,9 +72,9 @@ export const CoupleAvatars = ({
               <div className="w-full h-full rounded-full bg-white p-1">
                 <div className="w-full h-full rounded-full overflow-hidden shadow-romantic">
                   <img 
-                    src={coupleImage}
+                    src={userAvatarUrl || coupleImage}
                     alt="User Avatar"
-                    className={`w-full h-full object-cover object-left ${getAvatarMood(syncScore)} ${
+                    className={`w-full h-full object-cover ${getAvatarMood(syncScore)} ${
                       animated ? 'hover:scale-110' : ''
                     } transition-all duration-300`}
                   />
@@ -80,9 +84,9 @@ export const CoupleAvatars = ({
           ) : (
             <div className="w-24 h-24 rounded-full overflow-hidden shadow-romantic ring-4 ring-sunrise-coral/20">
               <img 
-                src={coupleImage}
+                src={userAvatarUrl || coupleImage}
                 alt="User Avatar"
-                className={`w-full h-full object-cover object-left ${getAvatarMood(syncScore)} transition-all duration-300`}
+                className={`w-full h-full object-cover ${getAvatarMood(syncScore)} transition-all duration-300`}
               />
             </div>
           )}
@@ -104,9 +108,9 @@ export const CoupleAvatars = ({
               <div className="w-full h-full rounded-full bg-white p-1">
                 <div className="w-full h-full rounded-full overflow-hidden shadow-romantic">
                   <img 
-                    src={coupleImage}
+                    src={partnerAvatarUrl || coupleImage}
                     alt="Partner Avatar"
-                    className={`w-full h-full object-cover object-right ${getAvatarMood(syncScore)} ${
+                    className={`w-full h-full object-cover ${getAvatarMood(syncScore)} ${
                       animated ? 'hover:scale-110' : ''
                     } transition-all duration-300`}
                   />
@@ -116,9 +120,9 @@ export const CoupleAvatars = ({
           ) : (
             <div className="w-24 h-24 rounded-full overflow-hidden shadow-romantic ring-4 ring-sunrise-coral/20">
               <img 
-                src={coupleImage}
+                src={partnerAvatarUrl || coupleImage}
                 alt="Partner Avatar"
-                className={`w-full h-full object-cover object-right ${getAvatarMood(syncScore)} transition-all duration-300`}
+                className={`w-full h-full object-cover ${getAvatarMood(syncScore)} transition-all duration-300`}
               />
             </div>
           )}
