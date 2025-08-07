@@ -16,6 +16,10 @@ interface GameState {
   favorite_cards: any;
   user1_skips_remaining: number;
   user2_skips_remaining: number;
+  user1_failed_tasks?: number;
+  user2_failed_tasks?: number;
+  winner_id?: string;
+  win_reason?: string;
   game_mode: string;
   status: string;
   total_cards_played: number;
@@ -476,8 +480,8 @@ export function useCardGame(sessionId: string | null) {
     }
   }, [isMyTurn, gameState, sessionId]);
 
-  // Complete turn and switch to partner
-  const completeTurn = useCallback(async (response?: string | File, caption?: string, reactionTime?: number) => {
+  // Complete turn and switch to partner - now with failed task tracking
+  const completeTurn = useCallback(async (response?: string | File, caption?: string, reactionTime?: number, timedOut: boolean = false) => {
     console.group('🎯 COMPLETE TURN FLOW');
     console.log('Starting completeTurn with:', {
       response,
@@ -520,6 +524,30 @@ export function useCardGame(sessionId: string | null) {
     console.log('✅ Player validation passed, proceeding with turn completion');
 
     try {
+      // Check for failed task and handle win conditions
+      const isUser1 = user.id === gameState.user1_id;
+      const failedTasksField = isUser1 ? 'user1_failed_tasks' : 'user2_failed_tasks';
+      const currentFailedTasks = isUser1 ? (gameState.user1_failed_tasks || 0) : (gameState.user2_failed_tasks || 0);
+
+      let gameEnded = false;
+      let winnerId = null;
+      let winReason = null;
+      let newFailedTasks = currentFailedTasks;
+
+      // Handle failed task (timed out)
+      if (timedOut) {
+        newFailedTasks = currentFailedTasks + 1;
+        console.log(`Task failed! Failed tasks: ${newFailedTasks}/3`);
+        
+        // Check if game should end due to failed tasks
+        if (newFailedTasks >= 3) {
+          gameEnded = true;
+          winnerId = isUser1 ? gameState.user2_id : gameState.user1_id;
+          winReason = 'failed_tasks';
+          console.log('🎮 Game Over! Too many failed tasks.');
+        }
+      }
+
       // Save response for action cards or if response is provided
       console.log('💾 Response saving logic:', {
         hasResponse: !!response,
@@ -599,7 +627,8 @@ export function useCardGame(sessionId: string | null) {
           user_id: user.id,
           response_text: responseText,
           response_type: responseType,
-          time_taken_seconds: reactionTime || null
+          time_taken_seconds: reactionTime || null,
+          completed_on_time: !timedOut
         };
         
         console.log('📝 Inserting response to database:', responseData);
@@ -689,8 +718,8 @@ export function useCardGame(sessionId: string | null) {
       }
 
       const updateData: any = {
-        current_turn: nextTurn,
-        current_card_id: nextCardId, // Set the next card immediately
+        current_turn: gameEnded ? null : nextTurn,
+        current_card_id: gameEnded ? null : nextCardId, // Set the next card immediately
         current_card_revealed: false,
         current_card_started_at: null,
         current_card_completed: false, // Reset for next turn
@@ -700,8 +729,17 @@ export function useCardGame(sessionId: string | null) {
         played_cards: updatedPlayedCards,
         total_cards_played: gameState.total_cards_played + 1,
         last_activity_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
+        status: gameEnded ? 'completed' : 'active',
+        [failedTasksField]: newFailedTasks
       };
+
+      // Add winner info if game ended
+      if (gameEnded) {
+        updateData.winner_id = winnerId;
+        updateData.win_reason = winReason;
+        updateData.completed_at = new Date().toISOString();
+      }
 
       // Add response data for text responses to show next player
       if (response && typeof response === 'string' && currentCard.response_type === 'text') {
@@ -768,7 +806,20 @@ export function useCardGame(sessionId: string | null) {
         .update({ usage_count: (currentCard.usage_count || 0) + 1 })
         .eq("id", currentCard.id);
 
-      toast.success("Turn completed! 💕");
+      // Show appropriate notification
+      if (timedOut) {
+        if (gameEnded) {
+          toast.error("⏰ Task failed! Game Over!");
+        } else {
+          toast.error(`⏰ Task failed! ${3 - newFailedTasks} chances left.`);
+        }
+      } else {
+        toast.success("Turn completed! 💕");
+      }
+
+      if (gameEnded) {
+        console.log('🎮 Game ended!', { winnerId, winReason });
+      }
 
     } catch (error) {
       console.error("Failed to complete turn:", error);
@@ -778,14 +829,12 @@ export function useCardGame(sessionId: string | null) {
     }
   }, [isMyTurn, gameState, currentCard, sessionId, user]);
 
-  // Skip card (limited uses)
+  // Skip card (limited uses) - now with win condition check
   const skipCard = useCallback(async () => {
     if (!isMyTurn || !gameState || !currentCard || !sessionId || !user) return;
 
-    const skipsField = user.id === gameState.user1_id 
-      ? 'user1_skips_remaining' 
-      : 'user2_skips_remaining';
-    
+    const isUser1 = user.id === gameState.user1_id;
+    const skipsField = isUser1 ? 'user1_skips_remaining' : 'user2_skips_remaining';
     const skipsRemaining = gameState[skipsField];
 
     if (skipsRemaining <= 0) {
@@ -794,24 +843,51 @@ export function useCardGame(sessionId: string | null) {
     }
 
     try {
+      const newSkipsRemaining = skipsRemaining - 1;
+      let gameEnded = false;
+      let winnerId = null;
+      let winReason = null;
+
+      // Check if game should end due to no skips left
+      if (newSkipsRemaining === 0) {
+        gameEnded = true;
+        winnerId = isUser1 ? gameState.user2_id : gameState.user1_id;
+        winReason = 'no_skips';
+        console.log('🎮 Game Over! No skips remaining.');
+      }
+
       const updatedSkippedCards = [...gameState.skipped_cards, currentCard.id];
       
+      const updateData: any = {
+        [skipsField]: newSkipsRemaining,
+        skipped_cards: updatedSkippedCards,
+        current_card_id: null,
+        updated_at: new Date().toISOString()
+      };
+
+      if (gameEnded) {
+        updateData.status = 'completed';
+        updateData.winner_id = winnerId;
+        updateData.win_reason = winReason;
+        updateData.completed_at = new Date().toISOString();
+        updateData.current_turn = null;
+      }
+
       const { error } = await supabase
         .from("card_deck_game_sessions")
-        .update({
-          [skipsField]: skipsRemaining - 1,
-          skipped_cards: updatedSkippedCards,
-          current_card_id: null,
-          updated_at: new Date().toISOString()
-        })
+        .update(updateData)
         .eq("id", sessionId);
 
       if (error) throw error;
       
-      toast.success(`Card skipped! ${skipsRemaining - 1} skips left`);
-      
-      // Draw new card after skip
-      setTimeout(() => drawCard(), 500);
+      // Show appropriate notification
+      if (gameEnded) {
+        toast.error("🎮 Game Over! You've used all your skips.");
+      } else {
+        toast.success(`Card skipped! ${newSkipsRemaining} skips left`);
+        // Draw new card after skip if game hasn't ended
+        setTimeout(() => drawCard(), 500);
+      }
 
     } catch (error) {
       console.error("Failed to skip card:", error);

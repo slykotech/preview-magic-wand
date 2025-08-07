@@ -4,6 +4,8 @@ import { useCardGame } from '@/hooks/useCardGame';
 import { GameCard } from '@/components/CardGame/GameCard';
 import { TurnIndicator } from '@/components/CardGame/TurnIndicator';
 import { GameStats } from '@/components/CardGame/GameStats';
+import { GameStatus } from '@/components/CardGame/GameStatus';
+import { GameEndModal } from '@/components/CardGame/GameEndModal';
 import { DebugInfo } from '@/components/CardGame/DebugInfo';
 import { TaskHistory } from '@/components/CardGame/TaskHistory';
 import CardDistribution from '@/components/CardGame/CardDistribution';
@@ -18,6 +20,7 @@ export const CardDeckGame: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [showHistory, setShowHistory] = useState(false);
+  const [showGameEndModal, setShowGameEndModal] = useState(false);
   
   const {
     gameState,
@@ -65,6 +68,26 @@ export const CardDeckGame: React.FC = () => {
     }
   }, [gameState, isMyTurn, currentCard, loading, actions.drawCard]);
 
+  // Check for game end
+  useEffect(() => {
+    if (gameState?.status === 'completed' && gameState?.winner_id) {
+      setShowGameEndModal(true);
+    }
+  }, [gameState?.status, gameState?.winner_id]);
+
+  // Handle timer expiry - this will mark task as failed
+  const handleTimerExpire = () => {
+    if (isMyTurn) {
+      console.log('Timer expired! Marking as failed task...');
+      actions.completeTurn(undefined, undefined, undefined, true); // true = timed out
+    }
+  };
+
+  // Handle rematch
+  const handleRematch = async () => {
+    // Navigate back to games to create new session
+    navigate('/games');
+  };
 
   if (loading) {
     return (
@@ -124,7 +147,14 @@ export const CardDeckGame: React.FC = () => {
           {currentCard && <p>Card Prompt: {currentCard.prompt?.substring(0, 50)}...</p>}
         </div>
 
-        {/* Game Stats */}
+        {/* Game Status - Shows failed tasks and skips */}
+        <GameStatus 
+          gameState={gameState}
+          currentUserId={user?.id || ''}
+          partnerInfo={partnerInfo}
+        />
+
+        {/* Legacy Game Stats for other info */}
         <GameStats 
           cardsPlayed={stats.cardsPlayed}
           skipsRemaining={stats.skipsRemaining}
@@ -150,7 +180,7 @@ export const CardDeckGame: React.FC = () => {
               isMyTurn={isMyTurn}
               isRevealed={cardRevealed}
               onReveal={actions.revealCard}
-              onComplete={(response, timedOut) => actions.completeTurn(response)}
+              onComplete={(response) => actions.completeTurn(response)}
               onSkip={actions.skipCard}
               onFavorite={actions.favoriteCard}
               skipsRemaining={stats.skipsRemaining}
@@ -273,6 +303,16 @@ export const CardDeckGame: React.FC = () => {
           </div>
         )}
         
+        {/* Game End Modal */}
+        <GameEndModal
+          isOpen={showGameEndModal}
+          gameState={gameState}
+          currentUserId={user?.id || ''}
+          partnerInfo={partnerInfo}
+          onRematch={handleRematch}
+          onExit={() => navigate('/games')}
+        />
+
         {/* Task History Modal */}
         {showHistory && (
           <TaskHistory 

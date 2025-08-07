@@ -320,10 +320,14 @@ export type Database = {
           status: string | null
           total_cards_played: number | null
           updated_at: string | null
+          user1_failed_tasks: number | null
           user1_id: string
           user1_skips_remaining: number | null
+          user2_failed_tasks: number | null
           user2_id: string
           user2_skips_remaining: number | null
+          win_reason: string | null
+          winner_id: string | null
         }
         Insert: {
           completed_at?: string | null
@@ -356,10 +360,14 @@ export type Database = {
           status?: string | null
           total_cards_played?: number | null
           updated_at?: string | null
+          user1_failed_tasks?: number | null
           user1_id: string
           user1_skips_remaining?: number | null
+          user2_failed_tasks?: number | null
           user2_id: string
           user2_skips_remaining?: number | null
+          win_reason?: string | null
+          winner_id?: string | null
         }
         Update: {
           completed_at?: string | null
@@ -392,10 +400,14 @@ export type Database = {
           status?: string | null
           total_cards_played?: number | null
           updated_at?: string | null
+          user1_failed_tasks?: number | null
           user1_id?: string
           user1_skips_remaining?: number | null
+          user2_failed_tasks?: number | null
           user2_id?: string
           user2_skips_remaining?: number | null
+          win_reason?: string | null
+          winner_id?: string | null
         }
         Relationships: [
           {
@@ -424,7 +436,9 @@ export type Database = {
           id: string
           is_active: boolean
           lgbtq_inclusive: boolean
+          max_failed_tasks: number | null
           max_players: number
+          max_skips: number | null
           name: string
           updated_at: string
         }
@@ -437,7 +451,9 @@ export type Database = {
           id?: string
           is_active?: boolean
           lgbtq_inclusive?: boolean
+          max_failed_tasks?: number | null
           max_players?: number
+          max_skips?: number | null
           name: string
           updated_at?: string
         }
@@ -450,7 +466,9 @@ export type Database = {
           id?: string
           is_active?: boolean
           lgbtq_inclusive?: boolean
+          max_failed_tasks?: number | null
           max_players?: number
+          max_skips?: number | null
           name?: string
           updated_at?: string
         }
