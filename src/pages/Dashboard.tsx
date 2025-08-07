@@ -585,25 +585,59 @@ export const Dashboard = () => {
         <div className={`${isLoaded ? 'animate-fade-in' : 'opacity-0'}`} style={{
           animationDelay: '200ms'
         }}>
-          {isLoaded ? <CoupleAvatars 
-            syncScore={currentSyncScore} 
-            animated={true} 
-            onUserAvatarClick={handleUserAvatarClick} 
-            onPartnerAvatarClick={handlePartnerAvatarClick} 
-            onCameraClick={handleCameraClick} 
-            hasUserStory={hasUserStory} 
-            hasPartnerStory={hasPartnerStory} 
-            isUserOnline={isUserOnline} 
-            isPartnerOnline={isPartnerOnline}
-            userAvatarUrl={userProfile?.avatar_url}
-            partnerAvatarUrl={partnerProfile?.avatar_url}
-          /> : <div className="flex justify-center">
+          {isLoaded ? (
+            // Check if partner is connected (different from user ID and has partner profile)
+            partnerId && partnerId !== user?.id ? (
+              // Show couple avatars when partner is connected
+              <CoupleAvatars 
+                syncScore={currentSyncScore} 
+                animated={true} 
+                onUserAvatarClick={handleUserAvatarClick} 
+                onPartnerAvatarClick={handlePartnerAvatarClick} 
+                onCameraClick={handleCameraClick} 
+                hasUserStory={hasUserStory} 
+                hasPartnerStory={hasPartnerStory} 
+                isUserOnline={isUserOnline} 
+                isPartnerOnline={isPartnerOnline}
+                userAvatarUrl={userProfile?.avatar_url}
+                partnerAvatarUrl={partnerProfile?.avatar_url}
+              />
+            ) : (
+              // Show single avatar when no partner is connected
+              <div className="flex justify-center">
+                <div className="relative">
+                  <div className="w-24 h-24 rounded-full border-4 border-white overflow-hidden shadow-lg">
+                    <img 
+                      src={userProfile?.avatar_url || '/placeholder.svg'} 
+                      alt="Your Avatar" 
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  {/* Camera button for uploading stories */}
+                  <div className="absolute top-0 left-0">
+                    <button
+                      onClick={handleCameraClick}
+                      className="bg-gradient-to-br from-primary to-primary/80 text-white rounded-full p-2 shadow-lg hover:scale-110 transition-all duration-300 border-2 border-white"
+                    >
+                      <Sparkles className="h-4 w-4" />
+                    </button>
+                  </div>
+                  {/* Online status indicator */}
+                  <div className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-2 border-white ${
+                    isUserOnline ? 'bg-green-500' : 'bg-red-500'
+                  }`}></div>
+                </div>
+              </div>
+            )
+          ) : (
+            <div className="flex justify-center">
               <div className="flex items-center gap-4">
                 <div className="w-16 h-16 bg-muted animate-pulse rounded-full"></div>
                 <div className="w-8 h-8 bg-accent animate-pulse rounded-full"></div>
                 <div className="w-16 h-16 bg-muted animate-pulse rounded-full"></div>
               </div>
-            </div>}
+            </div>
+          )}
         </div>
 
         <div className={`${isLoaded ? 'animate-fade-in' : 'opacity-0'}`} style={{
