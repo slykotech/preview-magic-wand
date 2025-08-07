@@ -32,7 +32,7 @@ export const GradientHeader = ({
       {/* Background Pattern with curved overlay */}
       <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-black/10 rounded-b-[2rem]" />
       <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl transform translate-x-24 -translate-y-24" />
-      <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full blur-2xl transform -translate-x-12 translate-y-12" />
+      <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full blur-2xl transform -translate-x-12 translate-y-12 mb-8" />
       
       {/* Curved bottom accent */}
       <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-r from-white/10 via-white/5 to-white/10 rounded-b-[2rem] mb-4" />
