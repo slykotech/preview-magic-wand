@@ -40,6 +40,10 @@ import { VerifyEmail } from "./pages/VerifyEmail";
 import SignupResolver from "./pages/SignupResolver";
 import CompleteSignup from "./pages/CompleteSignup";
 import { SubscriptionOnboarding } from "./pages/SubscriptionOnboarding";
+import { SubscriptionTrial } from "./pages/SubscriptionTrial";
+import { SubscriptionPlans } from "./pages/SubscriptionPlans";
+import { SubscriptionPayment } from "./pages/SubscriptionPayment";
+import { SubscriptionPartnerInvite } from "./pages/SubscriptionPartnerInvite";
 import { SubscriptionGate } from "./components/SubscriptionGate";
 
 import GooglePlacesTestPage from "./pages/GooglePlacesTest";
@@ -78,6 +82,10 @@ const App = () => {
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/subscription" element={<SubscriptionOnboarding />} />
+                <Route path="/subscription/trial" element={<SubscriptionTrial />} />
+                <Route path="/subscription/plans" element={<SubscriptionPlans />} />
+                <Route path="/subscription/payment" element={<SubscriptionPayment />} />
+                <Route path="/subscription/partner-invite" element={<SubscriptionPartnerInvite />} />
                 <Route path="/dashboard" element={<SubscriptionGate><Dashboard /></SubscriptionGate>} />
                 <Route path="/messages" element={<SubscriptionGate><Messages /></SubscriptionGate>} />
                 <Route path="/coach" element={<SubscriptionGate><AICoach /></SubscriptionGate>} />
