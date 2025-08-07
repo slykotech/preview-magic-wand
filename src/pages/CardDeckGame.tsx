@@ -9,6 +9,7 @@ import { GameEndModal } from '@/components/CardGame/GameEndModal';
 import { DebugInfo } from '@/components/CardGame/DebugInfo';
 import { TaskHistory } from '@/components/CardGame/TaskHistory';
 import CardDistribution from '@/components/CardGame/CardDistribution';
+import { ShuffleAnimation } from '@/components/CardGame/ShuffleAnimation';
 import { Button } from '@/components/ui/button';
 import { GradientHeader } from '@/components/GradientHeader';
 import { useAuth } from '@/hooks/useAuth';
@@ -219,6 +220,14 @@ export const CardDeckGame: React.FC = () => {
             📝 History
           </Button>
           
+          <ShuffleAnimation
+            onShuffle={() => {
+              console.log('Shuffle animation triggered!');
+              // Optional: Add any shuffle logic here (like reshuffling the deck)
+            }}
+            disabled={loading || !currentCard}
+            className="z-10"
+          />
           
           <Button
             variant="destructive"
