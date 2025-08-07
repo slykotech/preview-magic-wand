@@ -193,7 +193,7 @@ export const CardDeckGame: React.FC = () => {
             <Button
               variant="outline"
               onClick={() => setShowHistory(true)}
-              className="flex items-center gap-2 min-w-[120px]"
+              className="flex items-center gap-2 min-w-[140px] h-10"
             >
               📝 History
             </Button>
@@ -201,7 +201,7 @@ export const CardDeckGame: React.FC = () => {
             <Button
               variant="destructive"
               onClick={actions.endGame}
-              className="min-w-[120px]"
+              className="min-w-[140px] h-10"
             >
               End Game
             </Button>
@@ -232,10 +232,9 @@ export const CardDeckGame: React.FC = () => {
                   }
                 }}
                 variant="secondary"
-                size="sm"
-                className="bg-purple-500 text-white hover:bg-purple-600"
+                className="min-w-[140px] h-10"
               >
-                🔧 Force Photo Card
+                🔧 Debug
               </Button>
             )}
           </div>
