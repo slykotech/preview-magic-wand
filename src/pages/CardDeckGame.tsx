@@ -220,12 +220,6 @@ export const CardDeckGame: React.FC = () => {
             📝 History
           </Button>
           
-          <Button
-            variant="outline"
-            onClick={actions.togglePause}
-          >
-            {gameState.status === 'paused' ? '▶️ Resume' : '⏸️ Pause'}
-          </Button>
           
           <Button
             variant="destructive"

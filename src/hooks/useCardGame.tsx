@@ -1019,28 +1019,6 @@ export function useCardGame(sessionId: string | null) {
   }, [isMyTurn, gameState, currentCard, sessionId, user, drawCard]);
 
 
-  // Pause/Resume game
-  const togglePause = useCallback(async () => {
-    if (!gameState || !sessionId) return;
-
-    const newStatus = gameState.status === 'active' ? 'paused' : 'active';
-    
-    try {
-      await supabase
-        .from("card_deck_game_sessions")
-        .update({
-          status: newStatus,
-          updated_at: new Date().toISOString()
-        })
-        .eq("id", sessionId);
-
-      toast.success(newStatus === 'paused' ? "Game paused ⏸️" : "Game resumed ▶️");
-
-    } catch (error) {
-      console.error("Failed to toggle pause:", error);
-      toast.error("Failed to update game status");
-    }
-  }, [gameState, sessionId]);
 
   // End game
   const endGame = useCallback(async () => {
@@ -1126,7 +1104,7 @@ export function useCardGame(sessionId: string | null) {
       drawCard,
       completeTurn,
       skipCard,
-      togglePause,
+      
       endGame,
       revealCard,
       setBlockAutoAdvance,
