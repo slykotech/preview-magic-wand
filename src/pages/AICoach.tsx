@@ -264,23 +264,9 @@ export const AICoach = () => {
   return <div className="min-h-screen bg-background flex flex-col pb-20">
       {/* Gradient Header */}
       <GradientHeader title="AI Relationship Coach" subtitle="Always here to help your love grow" icon={<Sparkles size={24} />} showBackButton={false}>
-        {/* Session Info and Controls */}
-        <div className="flex justify-between items-center mt-4">
-          {sessionInfo && (
-            <div className="flex items-center gap-2 text-white/80 text-xs">
-              <Clock size={12} />
-              <span>
-                {sessionInfo.timeLeft.expired 
-                  ? "Session expired" 
-                  : `${sessionInfo.timeLeft.hours}h ${sessionInfo.timeLeft.minutes}m left`
-                }
-              </span>
-              <span>•</span>
-              <span>{sessionInfo.messageCount} messages</span>
-            </div>
-          )}
-          
-          {messages.length > 1 && (
+        {/* Clear Chat Button */}
+        {messages.length > 1 && (
+          <div className="flex justify-end mt-4">
             <Button
               onClick={handleClearChat}
               variant="ghost"
@@ -290,8 +276,8 @@ export const AICoach = () => {
               <Trash2 size={14} className="mr-1" />
               Clear
             </Button>
-          )}
-        </div>
+          </div>
+        )}
       </GradientHeader>
 
       {/* Messages */}
@@ -343,22 +329,6 @@ export const AICoach = () => {
           </div>
         </div>}
       
-      {/* Token Usage Display */}
-      {tokenUsage && !isOutOfTokens && <div className="px-4 pb-2">
-          <div className="bg-card/50 rounded-lg p-3 border border-muted/20">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">Daily Usage</span>
-              <span className="text-xs font-medium">
-                {tokenUsage.tokensUsed.toLocaleString()} / {tokenUsage.dailyLimit.toLocaleString()} tokens
-              </span>
-            </div>
-            <div className="w-full bg-muted rounded-full h-1.5 mt-2">
-              <div className="bg-primary h-1.5 rounded-full transition-all duration-300" style={{
-              width: `${(tokenUsage.tokensUsed / tokenUsage.dailyLimit) * 100}%`
-            }} />
-            </div>
-          </div>
-        </div>}
 
       {/* Suggestions */}
       {suggestions.length > 0 && !isOutOfTokens && <div className="px-4 pb-2">
