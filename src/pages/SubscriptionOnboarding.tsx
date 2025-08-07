@@ -16,11 +16,11 @@ export const SubscriptionOnboarding = () => {
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Redirect to dashboard if user already has premium access
+  // Redirect to root if user already has premium access - let AppFlowRouter handle the flow
   useEffect(() => {
     if (!subscriptionInfo.isLoading && subscriptionInfo.isActive) {
-      console.log('User already has premium access, redirecting to dashboard');
-      navigate('/dashboard');
+      console.log('User already has premium access, redirecting to follow the flow');
+      navigate('/');
     }
   }, [subscriptionInfo.isLoading, subscriptionInfo.isActive, navigate]);
 
@@ -52,8 +52,8 @@ export const SubscriptionOnboarding = () => {
         
         // Wait a moment for the toast to show, then navigate
         setTimeout(() => {
-          console.log('Navigating to dashboard after successful subscription');
-          navigate('/dashboard');
+          console.log('Navigating to root after successful subscription');
+          navigate('/');
         }, 1500);
       } else {
         toast({
@@ -183,7 +183,7 @@ export const SubscriptionOnboarding = () => {
           <div className="text-center">
               <Button 
                 variant="ghost" 
-                onClick={() => navigate('/dashboard')}
+                onClick={() => navigate('/')}
                 className="text-white hover:text-white hover:bg-white/10"
                 disabled={isProcessing}
               >
