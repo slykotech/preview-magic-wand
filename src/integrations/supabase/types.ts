@@ -4934,6 +4934,14 @@ export type Database = {
         Args: { "": unknown }
         Returns: number
       }
+      sync_revenue_cat_customer: {
+        Args: {
+          p_user_id: string
+          p_revenue_cat_user_id: string
+          p_customer_info?: Json
+        }
+        Returns: undefined
+      }
       sync_subscription_status: {
         Args: {
           p_user_id: string
