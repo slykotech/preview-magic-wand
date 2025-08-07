@@ -35,6 +35,7 @@ import NewUserInvite from "./pages/NewUserInvite";
 import ExistingUserConnect from "./pages/ExistingUserConnect";
 import VerificationSuccess from "./pages/VerificationSuccess";
 import { Signup } from "./pages/Signup";
+import { ResetPassword } from "./pages/ResetPassword";
 import { VerifyEmail } from "./pages/VerifyEmail";
 import SignupResolver from "./pages/SignupResolver";
 import CompleteSignup from "./pages/CompleteSignup";
@@ -75,6 +76,7 @@ const App = () => {
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/subscription" element={<SubscriptionOnboarding />} />
                 <Route path="/dashboard" element={<SubscriptionGate><Dashboard /></SubscriptionGate>} />
                 <Route path="/messages" element={<SubscriptionGate><Messages /></SubscriptionGate>} />

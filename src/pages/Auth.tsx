@@ -12,12 +12,21 @@ export const Auth = () => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmailSent, setResetEmailSent] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirectUrl = searchParams.get('redirect');
 
   useEffect(() => {
+    // Check if this is a password reset redirect
+    const isPasswordReset = searchParams.get('reset') === 'true';
+    if (isPasswordReset) {
+      navigate('/reset-password');
+      return;
+    }
+
     // Check if user is already logged in
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session) {
@@ -27,7 +36,7 @@ export const Auth = () => {
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, searchParams]);
 
   const handleSignIn = async () => {
     if (!email || !password) {
@@ -63,6 +72,38 @@ export const Auth = () => {
     }
   };
 
+  const handleForgotPassword = async () => {
+    if (!email) {
+      toast({
+        title: "Email required",
+        description: "Please enter your email address",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth?reset=true`
+    });
+
+    setLoading(false);
+
+    if (error) {
+      toast({
+        title: "Reset failed",
+        description: error.message,
+        variant: "destructive"
+      });
+    } else {
+      setResetEmailSent(true);
+      toast({
+        title: "Reset email sent! 📧",
+        description: "Check your email for password reset instructions"
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-romance flex items-center justify-center p-3 sm:p-4">
       <div className="w-full max-w-sm sm:max-w-md">
@@ -79,14 +120,96 @@ export const Auth = () => {
         </div>
 
         <Card className="shadow-romantic mx-2 sm:mx-0">
-          <CardHeader className="pb-4 sm:pb-6">
-            <CardTitle className="text-center font-poppins font-bold text-lg sm:text-xl">
-              Welcome Back
-            </CardTitle>
-            <CardDescription className="text-center font-inter font-semibold text-sm">
-              Sign in to continue your love journey
-            </CardDescription>
-          </CardHeader>
+          {showForgotPassword ? (
+            <>
+              <CardHeader className="pb-4 sm:pb-6">
+                <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-romance rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Mail size={24} className="text-white sm:w-8 sm:h-8" />
+                </div>
+                <CardTitle className="text-center font-poppins font-bold text-lg sm:text-xl">
+                  {resetEmailSent ? "Check Your Email" : "Reset Password"}
+                </CardTitle>
+                <CardDescription className="text-center font-inter font-semibold text-sm">
+                  {resetEmailSent 
+                    ? "We've sent password reset instructions to your email"
+                    : "Enter your email to receive reset instructions"
+                  }
+                </CardDescription>
+              </CardHeader>
+              
+              <CardContent className="px-4 sm:px-6">
+                {resetEmailSent ? (
+                  <div className="text-center space-y-4">
+                    <p className="text-sm text-muted-foreground">
+                      A password reset link has been sent to:
+                    </p>
+                    <p className="font-bold text-primary text-sm break-all">{email}</p>
+                    <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 p-4 rounded-lg">
+                      <p className="text-xs text-blue-700">
+                        Click the link in your email to reset your password. The link will expire in 1 hour.
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button 
+                        onClick={() => {
+                          setShowForgotPassword(false);
+                          setResetEmailSent(false);
+                        }}
+                        variant="outline"
+                        className="flex-1 text-sm"
+                      >
+                        Back to Sign In
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="space-y-4">
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          type="email"
+                          placeholder="Enter your email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          className="pl-10 font-medium h-11 text-sm"
+                          disabled={loading}
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-2 mt-6">
+                      <Button 
+                        onClick={() => setShowForgotPassword(false)}
+                        variant="outline"
+                        className="flex-1 text-sm"
+                        disabled={loading}
+                      >
+                        Cancel
+                      </Button>
+                      <Button 
+                        onClick={handleForgotPassword}
+                        disabled={loading}
+                        variant="romantic"
+                        className="flex-1 text-sm font-bold"
+                      >
+                        {loading ? "Sending..." : "Send Reset Email"}
+                      </Button>
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </>
+          ) : (
+            <>
+              <CardHeader className="pb-4 sm:pb-6">
+                <CardTitle className="text-center font-poppins font-bold text-lg sm:text-xl">
+                  Welcome Back
+                </CardTitle>
+                <CardDescription className="text-center font-inter font-semibold text-sm">
+                  Sign in to continue your love journey
+                </CardDescription>
+              </CardHeader>
           
           <CardContent className="px-4 sm:px-6">
             <div className="space-y-3 sm:space-y-4">
@@ -131,6 +254,17 @@ export const Auth = () => {
               {loading ? "Signing in..." : "Sign In"}
             </Button>
             
+            <div className="text-center mt-4">
+              <button
+                type="button"
+                onClick={() => setShowForgotPassword(true)}
+                className="text-sm text-primary hover:underline font-medium"
+                disabled={loading}
+              >
+                Forgot your password?
+              </button>
+            </div>
+            
             <div className="text-center mt-6 space-y-3">
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
@@ -157,6 +291,8 @@ export const Auth = () => {
               </div>
             </div>
           </CardContent>
+          </>
+          )}
         </Card>
       </div>
     </div>
