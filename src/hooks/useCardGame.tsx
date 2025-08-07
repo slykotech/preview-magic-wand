@@ -167,6 +167,40 @@ export function useCardGame(sessionId: string | null) {
             const newState = payload.new as any;
             const oldState = payload.old as any;
             
+            // Check for rematch initiation
+            if (newState.status === 'rematch_started' && oldState?.status !== 'rematch_started') {
+              console.log("🎮 REMATCH DETECTED! Redirecting to new game...");
+              toast.success("Your partner started a rematch! Redirecting... 🎮");
+              
+              // Find the new game session created for this rematch
+              setTimeout(async () => {
+                try {
+                  const { data: newSessions } = await supabase
+                    .from('card_deck_game_sessions')
+                    .select('id')
+                    .eq('couple_id', newState.couple_id)
+                    .eq('status', 'active')
+                    .eq('user1_id', newState.user1_id)
+                    .eq('user2_id', newState.user2_id)
+                    .order('created_at', { ascending: false })
+                    .limit(1);
+                  
+                  if (newSessions && newSessions.length > 0) {
+                    const newSessionId = newSessions[0].id;
+                    console.log("Found new rematch session:", newSessionId);
+                    window.location.href = `/games/card-deck/${newSessionId}`;
+                  }
+                } catch (error) {
+                  console.error("Failed to find rematch session:", error);
+                  // Fallback to games page
+                  window.location.href = '/games';
+                }
+              }, 1500);
+              
+              console.groupEnd();
+              return;
+            }
+            
             // Check for response updates specifically
             const responseChanged = newState.current_card_response !== oldState?.current_card_response;
             const cardChanged = newState.current_card_id !== oldState?.current_card_id;
@@ -1074,11 +1108,23 @@ export function useCardGame(sessionId: string | null) {
       }
 
       console.log("Created new rematch session:", newSession.id);
-      toast.success("Rematch started! 🎮");
+      
+      // Update the old session to indicate rematch was initiated
+      await supabase
+        .from('card_deck_game_sessions')
+        .update({
+          status: 'rematch_started',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', sessionId);
+
+      toast.success("Rematch started! Redirecting both players... 🎮");
 
       // Navigate both players to the new game session
-      // This will happen automatically via realtime updates, but we can also navigate directly
-      window.location.href = `/games/card-deck/${newSession.id}`;
+      // Use a small delay to ensure the toast is shown
+      setTimeout(() => {
+        window.location.href = `/games/card-deck/${newSession.id}`;
+      }, 1000);
 
     } catch (error) {
       console.error("Failed to start rematch:", error);
