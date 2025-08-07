@@ -326,11 +326,6 @@ export const AnimatedGameCard: React.FC<AnimatedGameCardProps> = ({
                 </div>
                 {card.response_type && (
                   <div className="flex items-center justify-center">
-                    <span>
-                      {card.response_type === 'photo' ? '📸' : 
-                       card.response_type === 'text' ? '💬' : '⚡'} 
-                      {card.response_type}
-                    </span>
                   </div>
                 )}
               </div>
