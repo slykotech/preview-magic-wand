@@ -483,6 +483,7 @@ export function useCardGame(sessionId: string | null) {
   // Complete turn and switch to partner - now with failed task tracking
   const completeTurn = useCallback(async (response?: string | File, caption?: string, reactionTime?: number, timedOut: boolean = false) => {
     console.group('🎯 COMPLETE TURN FLOW');
+    console.log('🚨 CRITICAL - TIMEOUT FLAG:', timedOut);
     console.log('Starting completeTurn with:', {
       response,
       hasResponse: !!response,
@@ -491,7 +492,8 @@ export function useCardGame(sessionId: string | null) {
       cardType: currentCard?.response_type,
       isMyTurn,
       currentUserId: user?.id,
-      sessionId
+      sessionId,
+      TIMEOUT_FLAG: timedOut
     });
     
     if (!gameState || !currentCard || !sessionId || !user) {
@@ -805,6 +807,14 @@ export function useCardGame(sessionId: string | null) {
         updateData.last_response_seen = true;
       }
 
+      console.log('🚨 CRITICAL DATABASE UPDATE:', updateData);
+      console.log('🚨 FAILED TASKS FIELD UPDATE:', {
+        fieldName: failedTasksField,
+        fieldValue: updateData[failedTasksField],
+        timedOut,
+        includesFailedTaskField: failedTasksField in updateData
+      });
+
       const { data: updatedData, error: updateError } = await supabase
         .from("card_deck_game_sessions")
         .update(updateData)
@@ -818,6 +828,12 @@ export function useCardGame(sessionId: string | null) {
       }
       
       console.log('✅ Game state updated successfully:', updatedData);
+      console.log('🚨 FAILED TASKS AFTER UPDATE:', {
+        user1_failed_tasks: updatedData?.user1_failed_tasks,
+        user2_failed_tasks: updatedData?.user2_failed_tasks,
+        requestedField: failedTasksField,
+        requestedValue: updateData[failedTasksField]
+      });
       console.log('Response fields after update:', {
         last_response_text: updatedData?.last_response_text,
         last_response_author_id: updatedData?.last_response_author_id,

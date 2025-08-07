@@ -39,8 +39,12 @@ export const SharedTimer: React.FC<SharedTimerProps> = ({
 
     if (initialTimeLeft === 0 && !timerExpired) {
       console.log('⏰ SharedTimer already expired on initialization');
+      console.log('⏰ Calling onExpire from initialization...');
       setTimerExpired(true);
-      setTimeout(() => onExpire(), 100);
+      setTimeout(() => {
+        console.log('⏰ EXECUTING onExpire from initialization');
+        onExpire();
+      }, 100);
       return;
     }
 
@@ -51,8 +55,12 @@ export const SharedTimer: React.FC<SharedTimerProps> = ({
       
       if (remaining === 0 && !timerExpired) {
         console.log('⏰ SharedTimer expired during countdown');
+        console.log('⏰ Calling onExpire from countdown...');
         setTimerExpired(true);
-        setTimeout(() => onExpire(), 100);
+        setTimeout(() => {
+          console.log('⏰ EXECUTING onExpire from countdown');
+          onExpire();
+        }, 100);
       }
     }, 1000);
 
