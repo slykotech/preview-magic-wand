@@ -321,6 +321,7 @@ export const Profile = () => {
               title="Rate Us ⭐"
               subtitle="Love LoveSync? Share your experience"
               onClick={() => {
+                console.log('Rate Us clicked');
                 setFeedbackType('rating');
                 setShowFeedbackModal(true);
               }}
@@ -330,6 +331,7 @@ export const Profile = () => {
               title="Send Feedback 📝"
               subtitle="Help us improve your experience"
               onClick={() => {
+                console.log('Send Feedback clicked');
                 setFeedbackType('feedback');
                 setShowFeedbackModal(true);
               }}
