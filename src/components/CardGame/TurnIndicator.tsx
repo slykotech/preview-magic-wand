@@ -14,8 +14,8 @@ export const TurnIndicator: React.FC<TurnIndicatorProps> = ({
   return (
     <div className={`p-4 rounded-lg transition-all duration-300 ${
       isMyTurn 
-        ? 'bg-gradient-to-r from-primary/90 to-purple-500/90 text-primary-foreground' 
-        : 'bg-muted'
+        ? 'bg-gradient-to-r from-primary/90 to-purple-500/90 text-primary-foreground shadow-lg border border-primary/20' 
+        : 'bg-gradient-to-r from-slate-100 to-gray-100 dark:from-slate-800 dark:to-gray-800 text-foreground shadow-md border border-border/50'
     }`}>
       <div className="flex items-center justify-between">
         <div>
