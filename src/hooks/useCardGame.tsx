@@ -445,6 +445,9 @@ export function useCardGame(sessionId: string | null) {
         current_card_revealed: false,
         current_card_started_at: null,
         current_card_completed: false,
+        current_card_response: null,
+        current_card_response_type: null,
+        current_card_responded_at: null,
         last_activity_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
@@ -764,6 +767,7 @@ export function useCardGame(sessionId: string | null) {
       if (timedOut) {
         updateData[failedTasksField] = newFailedTasks;
         console.log(`🔄 Database update will include: ${failedTasksField} = ${newFailedTasks}`);
+        console.log(`🚨 Full updateData for timeout:`, JSON.stringify(updateData, null, 2));
       }
 
       // Add winner info if game ended
@@ -773,8 +777,17 @@ export function useCardGame(sessionId: string | null) {
         updateData.completed_at = new Date().toISOString();
       }
 
-      // Add response data for text responses to show next player
-      if (response && typeof response === 'string' && currentCard.response_type === 'text') {
+      // Handle response data (only if there's a response or action was completed)
+      if (timedOut) {
+        // For timeouts, don't save response data but clear previous
+        console.log('⏰ Timeout - clearing response data');
+        updateData.last_response_text = null;
+        updateData.last_response_photo_url = null;
+        updateData.last_response_photo_caption = null;
+        updateData.last_response_author_id = null;
+        updateData.last_response_timestamp = null;
+        updateData.last_response_seen = true;
+      } else if (response && typeof response === 'string' && currentCard.response_type === 'text') {
         console.log('💬 Adding text response data for next player...');
         updateData.last_response_text = response;
         updateData.last_response_photo_url = null;
@@ -813,17 +826,14 @@ export function useCardGame(sessionId: string | null) {
         updateData.last_response_seen = true;
       }
 
-      console.log('🚨 CRITICAL DATABASE UPDATE:', updateData);
-      console.log('🚨 FAILED TASKS FIELD UPDATE:', {
-        fieldName: failedTasksField,
-        fieldValue: updateData[failedTasksField],
+      console.log('🚨 CRITICAL DATABASE UPDATE:', {
+        sessionId,
         timedOut,
-        includesFailedTaskField: failedTasksField in updateData,
-        originalValue: gameState[failedTasksField],
-        newValue: newFailedTasks,
-        currentUser: isUser1 ? 'User1' : 'User2'
+        failedTasksField,
+        newFailedTasks,
+        updateIncludesFailedField: failedTasksField in updateData,
+        updateValue: updateData[failedTasksField]
       });
-      console.log('🚨 ABOUT TO UPDATE DATABASE WITH:', JSON.stringify(updateData, null, 2));
 
       const { data: updatedData, error: updateError } = await supabase
         .from("card_deck_game_sessions")

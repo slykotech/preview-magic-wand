@@ -30,6 +30,17 @@ export const SharedTimer: React.FC<SharedTimerProps> = ({
       const now = Date.now();
       const elapsed = now - startTimeMs;
       const remaining = Math.max(0, timerDuration - elapsed);
+      
+      // Debug logging for timestamp issues
+      console.log('⏰ Timer calculation debug:', {
+        startTime,
+        startTimeMs,
+        now,
+        elapsed: elapsed / 1000,
+        remaining: remaining / 1000,
+        duration
+      });
+      
       return Math.floor(remaining / 1000);
     };
 

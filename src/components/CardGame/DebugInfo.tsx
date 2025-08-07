@@ -107,7 +107,10 @@ export const DebugInfo: React.FC<DebugInfoProps> = ({
         <div>Timer Active: {gameState?.current_card_started_at ? '✅' : '❌'}</div>
         {gameState?.current_card_started_at && (
           <div>
-            Elapsed: {Math.floor((Date.now() - new Date(gameState.current_card_started_at).getTime()) / 1000)}s
+            <div>Start Time (parsed): {new Date(gameState.current_card_started_at).toISOString()}</div>
+            <div>Current Time: {new Date().toISOString()}</div>
+            <div>Time Diff (ms): {Date.now() - new Date(gameState.current_card_started_at).getTime()}</div>
+            <div>Elapsed: {Math.floor((Date.now() - new Date(gameState.current_card_started_at).getTime()) / 1000)}s</div>
           </div>
         )}
       </div>
