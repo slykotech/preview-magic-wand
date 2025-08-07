@@ -188,9 +188,8 @@ export const CardDeckGame: React.FC = () => {
         </div>
 
         {/* Game Controls */}
-        <div className="mt-8 space-y-4">
-          {/* Primary Actions */}
-          <div className="flex justify-center gap-3">
+        <div className="mt-8">
+          <div className="flex justify-center items-center gap-4 flex-wrap">
             <Button
               variant="outline"
               onClick={() => setShowHistory(true)}
@@ -206,11 +205,9 @@ export const CardDeckGame: React.FC = () => {
             >
               End Game
             </Button>
-          </div>
-          
-          {/* Debug Controls - Development Only */}
-          {process.env.NODE_ENV === 'development' && (
-            <div className="flex justify-center">
+            
+            {/* Debug Controls - Development Only */}
+            {process.env.NODE_ENV === 'development' && (
               <Button
                 onClick={async () => {
                   const playedCardIds = [...(gameState.played_cards || []), ...(gameState.skipped_cards || [])];
@@ -240,8 +237,8 @@ export const CardDeckGame: React.FC = () => {
               >
                 🔧 Force Photo Card
               </Button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         {/* Card Distribution Tracking */}
