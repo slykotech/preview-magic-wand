@@ -190,6 +190,11 @@ export const CardDeckGame: React.FC = () => {
         {/* Game Controls */}
         <div className="mt-8">
           <div className="flex justify-center items-center gap-4 flex-wrap">
+            <div className="flex items-center gap-2 px-3 py-2 bg-muted rounded-lg">
+              <span className="text-sm font-medium text-muted-foreground">Cards Played:</span>
+              <span className="text-sm font-bold">{stats.cardsPlayed}</span>
+            </div>
+            
             <Button
               variant="outline"
               onClick={() => setShowHistory(true)}
