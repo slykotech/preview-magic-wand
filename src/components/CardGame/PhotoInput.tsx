@@ -184,10 +184,15 @@ export const PhotoInput: React.FC<PhotoInputProps> = ({ onPhotoSelected, isSubmi
             <button
               onClick={handleCameraClick}
               disabled={isSubmitting}
-              className="w-full p-4 bg-gradient-to-br from-primary/10 to-purple-100 rounded-lg text-center hover:from-primary/20 hover:to-purple-200 transition"
+              className="w-full p-6 bg-card border-2 border-primary/20 rounded-xl text-center hover:border-primary/40 hover:bg-primary/5 transition-all duration-200 shadow-sm hover:shadow-lg group"
             >
-              <span className="text-4xl block mb-2">📷</span>
-              <span className="text-sm font-medium text-primary">Take Photo</span>
+              <div className="flex flex-col items-center space-y-2">
+                <div className="p-3 bg-primary/10 rounded-full group-hover:bg-primary/20 transition-colors">
+                  <span className="text-2xl">📷</span>
+                </div>
+                <span className="text-sm font-semibold text-foreground">Take Photo</span>
+                <span className="text-xs text-muted-foreground">Use camera</span>
+              </div>
             </button>
           </div>
 
@@ -204,9 +209,14 @@ export const PhotoInput: React.FC<PhotoInputProps> = ({ onPhotoSelected, isSubmi
               className="hidden"
               disabled={isSubmitting}
             />
-            <div className="p-4 bg-gradient-to-br from-secondary/10 to-pink-100 rounded-lg text-center hover:from-secondary/20 hover:to-pink-200 transition">
-              <span className="text-4xl block mb-2">🖼️</span>
-              <span className="text-sm font-medium text-secondary">Upload Photo</span>
+            <div className="w-full p-6 bg-card border-2 border-accent/20 rounded-xl text-center hover:border-accent/40 hover:bg-accent/5 transition-all duration-200 shadow-sm hover:shadow-lg group">
+              <div className="flex flex-col items-center space-y-2">
+                <div className="p-3 bg-accent/10 rounded-full group-hover:bg-accent/20 transition-colors">
+                  <span className="text-2xl">🖼️</span>
+                </div>
+                <span className="text-sm font-semibold text-foreground">Upload Photo</span>
+                <span className="text-xs text-muted-foreground">From gallery</span>
+              </div>
             </div>
           </label>
         </div>
