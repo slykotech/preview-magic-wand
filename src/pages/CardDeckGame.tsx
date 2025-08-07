@@ -118,6 +118,7 @@ export const CardDeckGame: React.FC = () => {
           title="Card Deck Game 💕" 
           subtitle={partnerInfo ? `Playing with ${partnerInfo.name}` : "Loading..."}
           icon="💕"
+          backRoute="/games"
         />
         
         <div className="mb-6">
