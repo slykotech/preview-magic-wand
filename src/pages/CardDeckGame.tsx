@@ -121,18 +121,6 @@ export const CardDeckGame: React.FC = () => {
           backRoute="/games"
         />
 
-        {/* Debug Info */}
-        <div className="text-xs bg-yellow-100 p-3 rounded border mb-6">
-          <p><strong>Debug Info:</strong></p>
-          <p>Current Card ID: {currentCard?.id || 'None'}</p>
-          <p>Game Card ID: {gameState?.current_card_id || 'None'}</p>
-          <p>Card Revealed: {cardRevealed ? 'Yes' : 'No'}</p>
-          <p>Has Card Data: {currentCard ? 'Yes' : 'No'}</p>
-          <p>Is My Turn: {isMyTurn ? 'Yes' : 'No'}</p>
-          <p>Game Status: {gameState?.status || 'Unknown'}</p>
-          <p>Loading: {loading ? 'Yes' : 'No'}</p>
-          {currentCard && <p>Card Prompt: {currentCard.prompt?.substring(0, 50)}...</p>}
-        </div>
 
         {/* Game Status - Shows failed tasks and skips */}
         <GameStatus 
