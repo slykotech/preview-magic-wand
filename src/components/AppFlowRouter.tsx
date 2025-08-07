@@ -147,15 +147,19 @@ export const AppFlowRouter: React.FC = () => {
       coupleData: !!coupleData,
       hasRealPartner,
       selfPaired: coupleData ? coupleData.user1_id === coupleData.user2_id : false,
-      premiumAccess: premiumAccess.has_access
+      premiumAccess: premiumAccess.has_access,
+      subscriptionLoading,
+      'SUBSCRIPTION CHECK': `User ${user?.email} has premium access: ${premiumAccess.has_access}`
     });
 
+    // CRITICAL: Only update subscription status when we have a definitive answer
+    // If subscription is still loading, don't update hasSubscription yet
     setFlowState(prev => ({
       ...prev,
       userData: {
         ...prev.userData,
         isAuthenticated: !!user,
-        hasSubscription: premiumAccess.has_access,
+        hasSubscription: premiumAccess.has_access, // This should be false for new users
         hasPartner: hasRealPartner, // Only true for real partnerships
         isVerified: !!user?.email_confirmed_at,
       }
@@ -208,6 +212,13 @@ export const AppFlowRouter: React.FC = () => {
     const determineNextStep = async () => {
       const { userData, completedSteps } = flowState;
       let nextStep: AppFlowStep = 'splash';
+
+      console.log('AppFlowRouter: Determining next step', {
+        userData,
+        completedSteps,
+        premiumAccess: premiumAccess.has_access,
+        subscriptionLoading
+      });
 
       // For authenticated users accessing specific flow URLs, respect those
       const isFlowUrl = location.pathname === '/subscription/trial' ||
