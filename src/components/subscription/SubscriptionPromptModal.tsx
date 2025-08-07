@@ -38,7 +38,12 @@ export const SubscriptionPromptModal = ({ isOpen, onClose, feature }: Subscripti
     const brand = cardDetails.cardNumber.startsWith('4') ? 'Visa' : 
                   cardDetails.cardNumber.startsWith('5') ? 'Mastercard' : 'Other';
 
-    const result = await startTrial({ last_four, brand });
+    const result = await startTrial({
+      cardNumber: cardDetails.cardNumber,
+      expiryDate: cardDetails.expiryDate,
+      cvv: cardDetails.cvv,
+      cardBrand: brand
+    });
     
     if (result.success) {
       onClose();

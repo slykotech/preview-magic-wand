@@ -128,16 +128,12 @@ export const PaymentDetails: React.FC = () => {
         return;
       }
 
-      const result = await startTrial(
-        { last_four, brand },
-        {
-          name: selectedPlan.name,
-          price: selectedPlan.price,
-          period: selectedPlan.period,
-          originalPrice: selectedPlan.originalPrice,
-          discount: selectedPlan.discount ? parseInt(selectedPlan.discount) : undefined
-        }
-      );
+      const result = await startTrial({
+        cardNumber: cardDetails.number.replace(/\s/g, ''),
+        expiryDate: cardDetails.expiry,
+        cvv: cardDetails.cvc,
+        cardBrand: brand
+      });
       
       if (result.success) {
         toast({

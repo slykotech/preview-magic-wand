@@ -6,6 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Sparkles, Heart, Calendar, MessageSquare, Camera, BarChart3, Users2, Shield } from 'lucide-react';
 import { GradientHeader } from '@/components/GradientHeader';
 import { useAuth } from '@/hooks/useAuth';
+import { EnhancedTrialFlow } from '@/components/subscription/EnhancedTrialFlow';
+import { TrialAnalytics } from '@/components/subscription/TrialAnalytics';
 
 const features = [
   {
@@ -49,7 +51,7 @@ const features = [
 export const SubscriptionTrial: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [loading, setLoading] = useState(false);
+  const [showTrialFlow, setShowTrialFlow] = useState(false);
 
   useEffect(() => {
     // Redirect non-authenticated users to auth
@@ -58,20 +60,15 @@ export const SubscriptionTrial: React.FC = () => {
     }
   }, [user, navigate]);
 
-  const handleStartTrial = async () => {
-    setLoading(true);
-    try {
-      // Navigate to plan selection
-      navigate('/subscription/plans');
-    } catch (error) {
-      console.error('Error starting trial:', error);
-    } finally {
-      setLoading(false);
-    }
+  const handleStartTrial = () => {
+    setShowTrialFlow(true);
+  };
+
+  const handleTrialStarted = () => {
+    navigate('/dashboard');
   };
 
   const handleSkip = () => {
-    // For now, redirect to dashboard with limited access
     navigate('/dashboard');
   };
 
@@ -79,8 +76,22 @@ export const SubscriptionTrial: React.FC = () => {
     return null; // Will redirect to auth
   }
 
+  if (showTrialFlow) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-rose-50 py-8">
+        <div className="container mx-auto px-4">
+          <EnhancedTrialFlow 
+            onTrialStarted={handleTrialStarted}
+            onSkip={handleSkip}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-rose-50">
+      <TrialAnalytics />
       <GradientHeader 
         title="Start Your Free Trial"
         subtitle={`Welcome ${user.email?.split('@')[0]}! Unlock all premium features`}
@@ -171,9 +182,8 @@ export const SubscriptionTrial: React.FC = () => {
               size="lg" 
               className="px-12 py-3 text-lg bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
               onClick={handleStartTrial}
-              disabled={loading}
             >
-              {loading ? 'Starting Trial...' : 'Start Your Free Trial'}
+              Start Your Free Trial
             </Button>
             
             <div className="space-y-2">

@@ -358,80 +358,88 @@ export const useEnhancedSubscription = () => {
     }
   };
 
-  // Start trial with enhanced error handling
-  const startTrial = async (
-    cardDetails: { last_four: string; brand: string },
-    planDetails?: {
-      name: string;
-      price: string;
-      period: string;
-      originalPrice?: string;
-      discount?: number;
-      discountCode?: string;
-    }
-  ) => {
-    if (!user) return { success: false, error: 'No user found' };
+  // Enhanced trial initiation with better mock support
+  const startTrial = async (cardDetails?: {
+    cardNumber: string;
+    expiryDate: string;
+    cvv: string;
+    cardBrand?: string;
+  }) => {
+    if (!user) return { success: false, error: 'User not authenticated' };
 
     try {
-      const result = await retryWithBackoff(async () => {
-        const trialEndDate = new Date();
-        trialEndDate.setDate(trialEndDate.getDate() + 7);
+      const { data: existingSubscription } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
 
-        const parsePrice = (priceStr: string): number => {
-          const cleanPrice = priceStr.replace(/[$,]/g, '');
-          return parseFloat(cleanPrice) || 0;
-        };
+      if (existingSubscription) {
+        return { success: false, error: 'Subscription already exists' };
+      }
 
-        const currentPrice = planDetails ? parsePrice(planDetails.price) : 0;
-        const originalPrice = planDetails?.originalPrice ? parsePrice(planDetails.originalPrice) : currentPrice;
+      const trialStartDate = new Date();
+      const trialEndDate = new Date();
+      trialEndDate.setDate(trialEndDate.getDate() + 7);
 
-        const deviceId = await getDeviceId();
+      // Create subscription record with enhanced trial tracking
+      const { error: subscriptionError } = await supabase
+        .from('subscriptions')
+        .insert({
+          user_id: user.id,
+          plan_type: 'premium',
+          status: 'trial',
+          trial_start_date: trialStartDate.toISOString(),
+          trial_end_date: trialEndDate.toISOString(),
+          is_trial: true,
+          payment_method_collected: !!cardDetails,
+          next_billing_date: trialEndDate.toISOString(),
+          price: 9.99,
+          billing_period: 'monthly'
+        });
 
-        const { error } = await supabase
-          .from('subscriptions')
-          .insert({
-            user_id: user.id,
-            status: 'trial',
-            plan_type: 'premium',
-            trial_start_date: new Date().toISOString(),
-            trial_end_date: trialEndDate.toISOString(),
-            auto_charge_date: trialEndDate.toISOString(),
-            card_last_four: cardDetails.last_four,
-            card_brand: cardDetails.brand,
-            selected_plan_name: planDetails?.name || 'Premium Plan',
-            plan_price: currentPrice,
-            original_price: originalPrice,
-            plan_period: planDetails?.period || 'month',
-            discount_applied: planDetails?.discount || null,
-            discount_code: planDetails?.discountCode || null,
-            device_id: deviceId,
-            last_synced_at: new Date().toISOString()
-          });
+      if (subscriptionError) throw subscriptionError;
 
-        if (error) throw error;
-        return true;
-      });
+      // Create trial event tracking
+      await supabase
+        .from('subscription_events')
+        .insert({
+          user_id: user.id,
+          event_type: 'trial_started',
+          event_data: {
+            trial_length_days: 7,
+            payment_method_collected: !!cardDetails,
+            card_brand: cardDetails?.cardBrand,
+            start_date: trialStartDate.toISOString(),
+            end_date: trialEndDate.toISOString()
+          }
+        });
 
-      // Create trial start notification
+      // Create welcome notification
       await supabase
         .from('subscription_notifications')
         .insert({
           user_id: user.id,
-          notification_type: 'trial_start',
-          title: '7-Day Free Trial Started!',
-          message: 'Your free trial has begun. You will be charged unless you cancel before the trial ends.'
+          notification_type: 'trial_started',
+          title: '🎉 Welcome to Premium!',
+          message: `Your 7-day free trial has started! Enjoy unlimited access to all features until ${trialEndDate.toLocaleDateString()}.`
         });
 
       await refreshSubscriptionData();
-
+      
       toast({
-        title: 'Trial Started!',
-        description: 'Your 7-day free trial has begun. Enjoy premium features!'
+        title: 'Trial Started! 🎉',
+        description: 'Welcome to 7 days of premium features!'
       });
 
       return { success: true };
     } catch (error: any) {
       console.error('Error starting trial:', error);
+      toast({
+        title: 'Trial Start Failed',
+        description: error.message || 'Unable to start trial. Please try again.',
+        variant: 'destructive'
+      });
       return { success: false, error: error.message };
     }
   };
@@ -481,6 +489,26 @@ export const useEnhancedSubscription = () => {
     const diffTime = trialEnd.getTime() - now.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return Math.max(0, diffDays);
+  };
+
+  const getTrialTimeRemaining = () => {
+    if (!premiumAccess.trial_end_date) return null;
+    const trialEnd = new Date(premiumAccess.trial_end_date);
+    const now = new Date();
+    const diffTime = trialEnd.getTime() - now.getTime();
+    
+    if (diffTime <= 0) return { expired: true };
+    
+    const days = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diffTime % (1000 * 60 * 60)) / (1000 * 60));
+    
+    return { days, hours, minutes, expired: false };
+  };
+
+  const isTrialExpiringSoon = () => {
+    const daysRemaining = getTrialDaysRemaining();
+    return daysRemaining <= 2 && daysRemaining > 0;
   };
 
   const markNotificationAsRead = async (notificationId: string) => {
@@ -627,16 +655,16 @@ export const useEnhancedSubscription = () => {
     loading,
     networkError,
     lastSyncAttempt,
-    checkPremiumAccess,
+    refreshSubscriptionData,
+    updatePaymentMethod,
     startTrial,
     grantPartnerAccess,
     shouldPromptSubscription,
     hasPremiumBenefits,
     getTrialDaysRemaining,
+    getTrialTimeRemaining,
+    isTrialExpiringSoon,
     markNotificationAsRead,
-    cancelSubscription,
-    updatePaymentMethod,
-    syncSubscriptionAcrossDevices,
-    refreshData: refreshSubscriptionData
+    cancelSubscription
   };
 };
