@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useCardGame } from '@/hooks/useCardGame';
 import { GameCard } from '@/components/CardGame/GameCard';
 import { TurnIndicator } from '@/components/CardGame/TurnIndicator';
-
+import { GameStats } from '@/components/CardGame/GameStats';
 import { GameStatus } from '@/components/CardGame/GameStatus';
 import { GameEndModal } from '@/components/CardGame/GameEndModal';
 import { DebugInfo } from '@/components/CardGame/DebugInfo';
@@ -151,6 +151,11 @@ export const CardDeckGame: React.FC = () => {
           partnerInfo={partnerInfo}
         />
 
+        {/* Legacy Game Stats for other info */}
+        <GameStats 
+          cardsPlayed={stats.cardsPlayed}
+          skipsRemaining={stats.skipsRemaining}
+        />
 
         {/* Turn Indicator */}
         <div className="mb-8">
