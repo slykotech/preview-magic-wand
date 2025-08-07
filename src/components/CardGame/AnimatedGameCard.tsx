@@ -423,53 +423,35 @@ export const AnimatedGameCard: React.FC<AnimatedGameCardProps> = ({
                   {card.prompt}
                 </p>
                 
-                {/* Card Metadata - Structured Format */}
-                <div className="space-y-4 text-center text-sm border-t border-border pt-4">
-                  {/* Category Section */}
-                  <div className="bg-muted/50 rounded-lg p-3">
-                    <div className="font-semibold text-foreground mb-1">Category</div>
-                    <div className="text-muted-foreground">
-                      {card.category.charAt(0).toUpperCase() + card.category.slice(1)}
-                      {card.subcategory && ` • ${card.subcategory}`}
+                {/* Card Metadata - Compact Format */}
+                <div className="space-y-3 text-center text-sm border-t border-border pt-3">
+                  {/* Category */}
+                  <div className="text-muted-foreground font-medium">
+                    {card.category.charAt(0).toUpperCase() + card.category.slice(1)}
+                    {card.subcategory && ` • ${card.subcategory}`}
+                  </div>
+                  
+                  {/* Difficulty & Intimacy */}
+                  <div className="flex justify-center gap-6">
+                    <div className="text-center">
+                      <div className="text-xs text-muted-foreground mb-1">Difficulty</div>
+                      <div className="text-amber-500">{'⭐'.repeat(card.difficulty_level)}</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-xs text-muted-foreground mb-1">Intimacy</div>
+                      <div className="text-rose-500">{'💕'.repeat(card.intimacy_level)}</div>
                     </div>
                   </div>
                   
-                  {/* Difficulty & Intimacy Grid */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-                      <div className="font-semibold text-amber-800 mb-1">Difficulty</div>
-                      <div className="text-amber-600">
-                        {'⭐'.repeat(card.difficulty_level)}
-                      </div>
-                    </div>
-                    <div className="bg-rose-50 border border-rose-200 rounded-lg p-3">
-                      <div className="font-semibold text-rose-800 mb-1">Intimacy</div>
-                      <div className="text-rose-600">
-                        {'💕'.repeat(card.intimacy_level)}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Game Details */}
-                  <div className="grid grid-cols-3 gap-2 text-xs">
-                    <div className="bg-blue-50 border border-blue-200 rounded-md p-2">
-                      <div className="font-medium text-blue-800">Timer</div>
-                      <div className="text-blue-600">⏱️ {card.timer_seconds}s</div>
-                    </div>
-                    <div className="bg-purple-50 border border-purple-200 rounded-md p-2">
-                      <div className="font-medium text-purple-800">Response</div>
-                      <div className="text-purple-600">
-                        {card.response_type === 'photo' ? '📸' : 
-                         card.response_type === 'text' ? '💬' : '⚡'} 
-                        {card.response_type}
-                      </div>
-                    </div>
-                    <div className="bg-green-50 border border-green-200 rounded-md p-2">
-                      <div className="font-medium text-green-800">Setting</div>
-                      <div className="text-green-600">
-                        {card.requires_physical_presence ? '👫 Together' : '📱 Remote'}
-                      </div>
-                    </div>
+                  {/* Timer & Response */}
+                  <div className="flex justify-center gap-6 text-xs text-muted-foreground">
+                    <span>⏱️ {Math.floor(card.timer_seconds / 60)}:{(card.timer_seconds % 60).toString().padStart(2, '0')}</span>
+                    <span>
+                      {card.response_type === 'photo' ? '📸' : 
+                       card.response_type === 'text' ? '💬' : '⚡'} 
+                      {card.response_type}
+                    </span>
+                    {card.requires_physical_presence && <span>👫 Together</span>}
                   </div>
                 </div>
               </div>
