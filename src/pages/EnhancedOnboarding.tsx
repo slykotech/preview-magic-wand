@@ -167,7 +167,7 @@ const EnhancedOnboarding = () => {
       if (error) throw error;
 
       toast.success("Welcome to LoveSync! 🎉");
-      navigate('/');
+      navigate('/dashboard');
     } catch (error) {
       console.error("Onboarding completion error:", error);
       toast.error("Failed to complete onboarding");
