@@ -19,12 +19,6 @@ export const GameStats: React.FC<GameStatsProps> = ({
         </CardContent>
       </Card>
       
-      <Card>
-        <CardContent className="p-3 text-center">
-          <p className="text-2xl font-bold text-destructive">{skipsRemaining}</p>
-          <p className="text-xs text-muted-foreground">Skips Left</p>
-        </CardContent>
-      </Card>
     </div>
   );
 };
