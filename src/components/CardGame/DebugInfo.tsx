@@ -61,6 +61,19 @@ export const DebugInfo: React.FC<DebugInfoProps> = ({
           Should Show: {shouldShowPopup ? '✅ YES' : '❌ NO'}
         </div>
       </div>
+
+      {/* Failed Tasks */}
+      <div className="mb-2 p-2 border border-gray-700 rounded">
+        <div className="text-red-400 font-bold mb-1">Failed Tasks:</div>
+        <div>User1 Failed: <span className="text-red-400 font-bold">{gameState?.user1_failed_tasks || 0}/3</span></div>
+        <div>User2 Failed: <span className="text-red-400 font-bold">{gameState?.user2_failed_tasks || 0}/3</span></div>
+        {gameState?.winner_id && (
+          <div className="text-green-400 font-bold">
+            Winner: {gameState.winner_id === currentUserId ? 'YOU' : 'PARTNER'} 
+            ({gameState.win_reason})
+          </div>
+        )}
+      </div>
       
       <div className="text-gray-400 text-xs">
         Updated: {new Date().toLocaleTimeString()}

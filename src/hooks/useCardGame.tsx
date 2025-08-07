@@ -537,14 +537,25 @@ export function useCardGame(sessionId: string | null) {
       // Handle failed task (timed out)
       if (timedOut) {
         newFailedTasks = currentFailedTasks + 1;
-        console.log(`Task failed! Failed tasks: ${newFailedTasks}/3`);
+        console.log(`⏰ Task failed due to timeout! Failed tasks: ${currentFailedTasks} → ${newFailedTasks}/3`);
+        
+        // Show immediate notification
+        toast.error(`⏰ Time's up! Failed tasks: ${newFailedTasks}/3`, {
+          duration: 3000,
+          style: { backgroundColor: '#fee2e2', color: '#dc2626' }
+        });
         
         // Check if game should end due to failed tasks
         if (newFailedTasks >= 3) {
           gameEnded = true;
           winnerId = isUser1 ? gameState.user2_id : gameState.user1_id;
           winReason = 'failed_tasks';
-          console.log('🎮 Game Over! Too many failed tasks.');
+          console.log('💀 Game Over! Too many failed tasks. Winner:', winnerId);
+          
+          toast.error('💀 Game Over! You failed too many tasks!', {
+            duration: 5000,
+            style: { backgroundColor: '#fecaca', color: '#dc2626' }
+          });
         }
       }
 
@@ -731,7 +742,7 @@ export function useCardGame(sessionId: string | null) {
         last_activity_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         status: gameEnded ? 'completed' : 'active',
-        [failedTasksField]: newFailedTasks
+        [failedTasksField]: newFailedTasks, // Ensure failed tasks are updated in DB
       };
 
       // Add winner info if game ended

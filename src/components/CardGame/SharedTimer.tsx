@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 interface SharedTimerProps {
   startTime: string | null;
   duration: number;
-  onExpire?: () => void;
+  onExpire: () => void;
   isActive: boolean;
 }
 
@@ -38,8 +38,9 @@ export const SharedTimer: React.FC<SharedTimerProps> = ({
     setTimeLeft(initialTimeLeft);
 
     if (initialTimeLeft === 0 && !timerExpired) {
+      console.log('⏰ SharedTimer already expired on initialization');
       setTimerExpired(true);
-      onExpire?.();
+      setTimeout(() => onExpire(), 100);
       return;
     }
 
@@ -49,8 +50,9 @@ export const SharedTimer: React.FC<SharedTimerProps> = ({
       setTimeLeft(remaining);
       
       if (remaining === 0 && !timerExpired) {
+        console.log('⏰ SharedTimer expired during countdown');
         setTimerExpired(true);
-        onExpire?.();
+        setTimeout(() => onExpire(), 100);
       }
     }, 1000);
 
@@ -70,10 +72,11 @@ export const SharedTimer: React.FC<SharedTimerProps> = ({
     return 'text-destructive';
   };
 
-  if (timerExpired) {
+  if (timerExpired || timeLeft <= 0) {
     return (
       <div className="text-center p-3 rounded-lg bg-destructive/10">
-        <p className="text-destructive font-semibold">⏰ Time's Up!</p>
+        <p className="text-destructive font-semibold text-xl animate-pulse">⏰ Time's Up!</p>
+        <p className="text-sm text-destructive mt-1">Task failed due to timeout</p>
       </div>
     );
   }
@@ -83,6 +86,15 @@ export const SharedTimer: React.FC<SharedTimerProps> = ({
       <p className={`text-2xl font-bold ${getTimerColor()}`}>
         ⏱️ {formatTime(timeLeft)}
       </p>
+      {timeLeft <= 10 && (
+        <p className="text-sm text-destructive mt-1 animate-pulse">
+          ⚠️ Time running out!
+        </p>
+      )}
+      {/* Debug info */}
+      <div className="text-xs text-muted-foreground mt-2">
+        Timer: {formatTime(timeLeft)} | Expired: {timerExpired ? 'Yes' : 'No'}
+      </div>
     </div>
   );
 };

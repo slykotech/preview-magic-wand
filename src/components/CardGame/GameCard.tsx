@@ -148,8 +148,12 @@ export const GameCard: React.FC<GameCardProps> = ({
   };
 
   const handleTimerExpire = () => {
+    console.log('⏰ Timer expired! Handling timeout...');
     if (isMyTurn) {
-      handleComplete(true);
+      console.log('⏰ My turn - completing with timeout flag');
+      handleComplete(true); // Pass true for timedOut
+    } else {
+      console.log('⏰ Not my turn - ignoring timer expiry');
     }
   };
 
