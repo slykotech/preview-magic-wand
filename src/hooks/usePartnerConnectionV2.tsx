@@ -279,7 +279,7 @@ export const usePartnerConnectionV2 = () => {
     try {
       const { error } = await supabase
         .from('partner_requests')
-        .update({ status: 'cancelled' })
+        .update({ status: 'declined' })
         .eq('id', requestId);
 
       if (error) throw error;
