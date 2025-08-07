@@ -302,7 +302,8 @@ export const AnimatedGameCard: React.FC<AnimatedGameCardProps> = ({
               <svg className="w-16 h-16 mb-5 opacity-90" viewBox="0 0 100 100" fill="currentColor">
                 <path d="M50,10 C77.6,10 100,32.4 100,60 C100,87.6 77.6,110 50,110 C37.5,110 26.3,104.5 18.3,96.7 C33.3,85.2 37.1,66.3 28.6,51.4 C20.2,36.4 2.4,32.6 0,50 C0,27.9 22.4,10 50,10 Z"/>
               </svg>
-              <div className="text-lg font-semibold tracking-wide">
+              
+              <div className="text-lg font-semibold tracking-wide mb-4">
                 {!isMyTurn 
                   ? 'Waiting for partner...'
                   : showResponsePopup 
@@ -310,16 +311,32 @@ export const AnimatedGameCard: React.FC<AnimatedGameCardProps> = ({
                     : 'Tap to Reveal'
                 }
               </div>
+              
               {showResponsePopup && (
-                <p className="text-sm mt-2 opacity-80">
+                <p className="text-sm mt-2 opacity-80 mb-4">
                   Dismiss the popup to continue
                 </p>
               )}
               
-              {/* Category hint on back */}
-              <div className="absolute bottom-4 left-0 right-0 flex justify-between px-6 text-sm opacity-75">
-                <span>{card.category}</span>
-                <span>{card.timer_seconds}s</span>
+              {/* Card metadata */}
+              <div className="space-y-2 text-center text-sm opacity-80">
+                <div className="flex items-center justify-center gap-3">
+                  <span>🏷️ {card.category}</span>
+                  <span>⏱️ {card.timer_seconds}s</span>
+                </div>
+                <div className="flex items-center justify-center gap-3">
+                  <span>⭐ {'★'.repeat(card.difficulty_level)}</span>
+                  <span>💕 {'❤️'.repeat(card.intimacy_level)}</span>
+                </div>
+                {card.response_type && (
+                  <div className="flex items-center justify-center">
+                    <span>
+                      {card.response_type === 'photo' ? '📸' : 
+                       card.response_type === 'text' ? '💬' : '⚡'} 
+                      {card.response_type}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 
