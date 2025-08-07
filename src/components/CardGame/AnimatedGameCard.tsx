@@ -526,19 +526,7 @@ export const AnimatedGameCard: React.FC<AnimatedGameCardProps> = ({
                   >
                     Complete Turn
                   </Button>
-                ) : (
-                  <Button
-                    onClick={() => handleComplete(false)}
-                    disabled={card.response_type === 'photo' && !hasPhotoSelected}
-                    className="px-6 py-3 bg-gradient-to-r from-primary to-purple-500 font-semibold"
-                    size="lg"
-                  >
-                    {card.response_type === 'photo' && !hasPhotoSelected 
-                      ? 'Upload Photo First' 
-                      : 'Complete Turn'
-                    }
-                  </Button>
-                )}
+                ) : null}
                 
                 {skipsRemaining > 0 && (
                   <Button
