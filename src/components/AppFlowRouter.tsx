@@ -180,7 +180,7 @@ export const AppFlowRouter: React.FC = () => {
       // Check if partner has premium access that could cover this user
       const partnerId = coupleData.user1_id === user.id ? coupleData.user2_id : coupleData.user1_id;
       
-      const { data, error } = await supabase.rpc('get_premium_access_details', {
+      const { data, error } = await supabase.rpc('get_premium_access_details' as any, {
         p_user_id: partnerId
       });
 

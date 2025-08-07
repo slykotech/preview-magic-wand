@@ -118,7 +118,7 @@ export const useEnhancedSubscription = () => {
       }
 
       // Sync with database
-      const { data: syncResult, error } = await supabase.rpc('sync_subscription_status', {
+      const { data: syncResult, error } = await supabase.rpc('sync_subscription_status' as any, {
         p_user_id: user.id,
         p_revenue_cat_status: revenueCatStatus,
         p_device_id: await getDeviceId()
@@ -174,7 +174,7 @@ export const useEnhancedSubscription = () => {
 
     try {
       const { data, error } = await retryWithBackoff(async () => {
-        const response = await supabase.rpc('check_billing_status', {
+        const response = await supabase.rpc('check_billing_status' as any, {
           p_user_id: user.id,
           p_subscription_id: subscription.id
         }) as { data: any; error: any };
@@ -247,7 +247,7 @@ export const useEnhancedSubscription = () => {
       }
 
       const { data, error } = await retryWithBackoff(async () => {
-        const response = await supabase.rpc('get_premium_access_details', {
+        const response = await supabase.rpc('get_premium_access_details' as any, {
           p_user_id: user.id
         }) as { data: any; error: any };
         if (response.error) throw new Error(response.error.message);

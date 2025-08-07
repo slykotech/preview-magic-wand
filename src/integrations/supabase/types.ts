@@ -2866,6 +2866,10 @@ export type Database = {
         Args: { geom1: unknown; geom2: unknown }
         Returns: boolean
       }
+      accept_partner_invitation: {
+        Args: { p_invitation_token: string; p_accepting_user_id: string }
+        Returns: Json
+      }
       accept_signup_invitation: {
         Args: { p_invitation_token: string; p_new_user_id: string }
         Returns: Json
@@ -2956,6 +2960,10 @@ export type Database = {
       calculate_sync_score: {
         Args: { p_couple_id: string }
         Returns: number
+      }
+      check_billing_status: {
+        Args: { p_user_id: string; p_subscription_id?: string }
+        Returns: Json
       }
       check_user_quota: {
         Args: { p_user_id: string; p_estimated_cost?: number }
@@ -3385,6 +3393,10 @@ export type Database = {
           last_ai_generation: string
           needs_refresh: boolean
         }[]
+      }
+      get_premium_access_details: {
+        Args: { p_user_id: string }
+        Returns: Json
       }
       get_proj4_from_srid: {
         Args: { "": number }
@@ -4780,6 +4792,14 @@ export type Database = {
       st_zmin: {
         Args: { "": unknown }
         Returns: number
+      }
+      sync_subscription_status: {
+        Args: {
+          p_user_id: string
+          p_revenue_cat_status?: Json
+          p_device_id?: string
+        }
+        Returns: Json
       }
       text: {
         Args: { "": unknown }
