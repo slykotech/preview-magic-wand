@@ -1,4 +1,6 @@
 import React from 'react';
+import { Button } from '@/components/ui/button';
+import { Heart, MessageCircle } from 'lucide-react';
 
 interface ResponsePopupProps {
   isOpen: boolean;
@@ -20,41 +22,47 @@ export const ResponsePopup: React.FC<ResponsePopupProps> = ({
   return (
     <>
       {/* Backdrop - blocks all interaction */}
-      <div className="fixed inset-0 bg-black/60 z-40" />
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40" />
       
       {/* Popup */}
       <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full animate-scale-in">
+        <div className="bg-card border border-border rounded-2xl shadow-2xl max-w-lg w-full animate-scale-in overflow-hidden">
           {/* Header */}
-          <div className="p-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-t-2xl">
-            <h3 className="text-white font-semibold text-lg flex items-center gap-2">
-              <span className="text-2xl">💬</span>
-              {authorName}'s Response
-            </h3>
+          <div className="p-6 bg-gradient-to-r from-primary to-accent text-primary-foreground">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-white/20 rounded-full">
+                <MessageCircle className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-lg">
+                  {authorName}'s Response
+                </h3>
+                <p className="text-sm opacity-90">
+                  {new Date(timestamp).toLocaleString()}
+                </p>
+              </div>
+              <Heart className="h-5 w-5 ml-auto opacity-80" />
+            </div>
           </div>
           
           {/* Content */}
           <div className="p-6">
-            <div className="bg-gray-50 rounded-lg p-4 mb-4">
-              <p className="text-lg text-gray-800 leading-relaxed italic">
+            <div className="bg-muted/50 border border-border rounded-xl p-4 mb-6">
+              <p className="text-foreground text-lg leading-relaxed">
                 "{response}"
               </p>
             </div>
-            
-            {/* Timestamp */}
-            <p className="text-sm text-gray-500 text-center">
-              {new Date(timestamp).toLocaleTimeString()}
-            </p>
           </div>
           
           {/* Dismiss Button */}
-          <div className="p-4 border-t border-gray-200">
-            <button
+          <div className="p-6 pt-0">
+            <Button
               onClick={onDismiss}
-              className="w-full px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-semibold hover:opacity-90 transition"
+              className="w-full bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-primary-foreground font-semibold py-3 h-auto shadow-lg hover:shadow-xl transition-all duration-200"
+              size="lg"
             >
-              Got it! Let me play my turn
-            </button>
+              Got it! Let me play my turn ✨
+            </Button>
           </div>
         </div>
       </div>
