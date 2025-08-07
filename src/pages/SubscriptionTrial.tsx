@@ -114,20 +114,6 @@ export const SubscriptionTrial: React.FC = () => {
               <p className="text-xl mb-4 text-white/90">
                 Experience all premium features at no cost
               </p>
-              <div className="flex items-center justify-center space-x-6 text-sm">
-                <div className="flex items-center">
-                  <Shield className="w-4 h-4 mr-2" />
-                  No commitment
-                </div>
-                <div className="flex items-center">
-                  <Heart className="w-4 h-4 mr-2" />
-                  Cancel anytime
-                </div>
-                <div className="flex items-center">
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Full access
-                </div>
-              </div>
             </CardContent>
           </Card>
 
@@ -213,14 +199,6 @@ export const SubscriptionTrial: React.FC = () => {
             <p className="text-muted-foreground">
               Choose a plan above to start your 7-day free trial
             </p>
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={handleSkip}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              Continue with limited access instead
-            </Button>
           </div>
 
           {/* Testimonial */}
