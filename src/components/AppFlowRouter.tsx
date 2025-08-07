@@ -136,11 +136,16 @@ export const AppFlowRouter: React.FC = () => {
   }, [flowState, location.pathname, authLoading, subscriptionLoading, coupleLoading]);
 
   const completeStep = (step: AppFlowStep, userData?: Partial<AppFlowState['userData']>) => {
-    setFlowState(prev => ({
-      ...prev,
-      completedSteps: [...prev.completedSteps, step],
-      userData: userData ? { ...prev.userData, ...userData } : prev.userData
-    }));
+    console.log('completeStep called with:', step, userData);
+    setFlowState(prev => {
+      const newState = {
+        ...prev,
+        completedSteps: [...prev.completedSteps, step],
+        userData: userData ? { ...prev.userData, ...userData } : prev.userData
+      };
+      console.log('New flow state:', newState);
+      return newState;
+    });
   };
 
   const handleSplashComplete = () => {
@@ -148,6 +153,7 @@ export const AppFlowRouter: React.FC = () => {
   };
 
   const handleMottoComplete = () => {
+    console.log('handleMottoComplete called');
     completeStep('motto', { hasSeenMotto: true });
   };
 
