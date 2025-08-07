@@ -123,7 +123,7 @@ const AppMottoPage = ({ onNext, onBack }: AppMottoProps) => {
             <div className="space-y-3 mt-8">
               {isLastSlide ? (
                 <Button 
-                  onClick={onNext}
+                  onClick={() => navigate('/auth')}
                   className="w-full py-4 text-lg bg-gradient-primary text-white shadow-primary hover:shadow-glow transform hover:scale-105 transition-all"
                 >
                   Start Your Journey
