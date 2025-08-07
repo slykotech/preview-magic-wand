@@ -120,17 +120,6 @@ export const CardDeckGame: React.FC = () => {
           icon="💕"
           backRoute="/games"
         />
-        
-        <div className="mb-6">
-          <Button 
-            variant="ghost" 
-            onClick={() => navigate('/games')}
-            className="mb-4"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Games
-          </Button>
-        </div>
 
         {/* Debug Info */}
         <div className="text-xs bg-yellow-100 p-3 rounded border mb-6">
