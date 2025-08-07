@@ -3,22 +3,24 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { GradientHeader } from "@/components/GradientHeader";
-import { Send, Sparkles, Mic, MicOff, Volume2, VolumeX, Lightbulb } from "lucide-react";
+import { Send, Sparkles, Mic, MicOff, Volume2, VolumeX, Lightbulb, Clock, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useVoiceRecording } from "@/hooks/useVoiceRecording";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
+import { usePersistentChat } from "@/hooks/usePersistentChat";
 import { Badge } from "@/components/ui/badge";
+
 interface Message {
   id: string;
   content: string;
   role: 'user' | 'assistant';
   timestamp: Date;
 }
+
 export const AICoach = () => {
-  const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -50,6 +52,17 @@ export const AICoach = () => {
     speak,
     stopSpeaking
   } = useTextToSpeech();
+  
+  // Use persistent chat hook
+  const {
+    messages,
+    isLoaded,
+    addMessage,
+    setMessages,
+    clearMessages,
+    getSessionInfo
+  } = usePersistentChat(sessionId);
+
   useEffect(() => {
     if (!loading && !user) {
       navigate('/auth');
@@ -59,6 +72,7 @@ export const AICoach = () => {
       initializeChatSession();
     }
   }, [user, loading, navigate]);
+
   const initializeChatSession = async () => {
     try {
       // Create or get existing chat session
@@ -72,24 +86,8 @@ export const AICoach = () => {
       if (error) throw error;
       setSessionId(session.id);
 
-      // Add welcome message
-      const welcomeMessage: Message = {
-        id: '1',
-        content: "Welcome to Soul Syncing 💞. A cozy corner just for you two — to share feelings, rediscover each other, and grow closer with every word. What’s on your heart today? Let’s open up and sync your souls together.",
-        role: 'assistant',
-        timestamp: new Date()
-      };
-      setMessages([welcomeMessage]);
-
       // Set initial suggestions
       setSuggestions(["How can we improve our communication?", "Planning a special date night", "Dealing with relationship stress", "Building emotional intimacy"]);
-
-      // Save welcome message to database
-      await supabase.from('ai_coach_messages').insert({
-        session_id: session.id,
-        content: welcomeMessage.content,
-        role: 'assistant'
-      });
     } catch (error) {
       console.error('Error initializing chat session:', error);
       toast({
@@ -99,14 +97,30 @@ export const AICoach = () => {
       });
     }
   };
+
+  // Initialize welcome message when chat is loaded and empty
+  useEffect(() => {
+    if (sessionId && isLoaded && messages.length === 0) {
+      const welcomeMessage: Message = {
+        id: '1',
+        content: "Welcome to Soul Syncing 💞. A cozy corner just for you two — to share feelings, rediscover each other, and grow closer with every word. What's on your heart today? Let's open up and sync your souls together.",
+        role: 'assistant',
+        timestamp: new Date()
+      };
+      addMessage(welcomeMessage);
+    }
+  }, [sessionId, isLoaded, messages.length, addMessage]);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({
       behavior: "smooth"
     });
   };
+  
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
   const handleSendMessage = async (messageText?: string) => {
     const textToSend = messageText || newMessage;
     if (!textToSend.trim() || !sessionId) return;
@@ -116,7 +130,7 @@ export const AICoach = () => {
       role: 'user',
       timestamp: new Date()
     };
-    setMessages(prev => [...prev, userMessage]);
+    addMessage(userMessage);
     setNewMessage("");
     setIsTyping(true);
     try {
@@ -162,7 +176,7 @@ export const AICoach = () => {
         role: 'assistant',
         timestamp: new Date()
       };
-      setMessages(prev => [...prev, aiResponse]);
+      addMessage(aiResponse);
       
       // Update token usage if available
       if (data.tokenUsage) {
@@ -204,11 +218,13 @@ export const AICoach = () => {
       });
     }
   };
+
   const updateSuggestions = (aiResponse: string) => {
     // Generate contextual suggestions based on AI response
     const contextSuggestions = ["Can you give me specific examples?", "How do we practice this together?", "What if my partner doesn't respond well?", "Any other techniques you'd recommend?"];
     setSuggestions(contextSuggestions);
   };
+
   const handleVoiceMessage = async () => {
     if (isRecording) {
       const transcribedText = await stopRecording();
@@ -219,6 +235,7 @@ export const AICoach = () => {
       await startRecording();
     }
   };
+
   const toggleVoiceMode = () => {
     setIsVoiceMode(!isVoiceMode);
     if (isSpeaking) {
@@ -229,18 +246,57 @@ export const AICoach = () => {
       description: isVoiceMode ? "AI responses will be text only" : "AI responses will be spoken aloud"
     });
   };
+
+  // Handle clear chat
+  const handleClearChat = () => {
+    clearMessages();
+    setSuggestions(["How can we improve our communication?", "Planning a special date night", "Dealing with relationship stress", "Building emotional intimacy"]);
+    toast({
+      title: "Chat cleared",
+      description: "Your conversation history has been cleared"
+    });
+  };
+
+  // Get session info for display
+  const sessionInfo = getSessionInfo();
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
   };
+
   return <div className="min-h-screen bg-background flex flex-col pb-20">
       {/* Gradient Header */}
       <GradientHeader title="AI Relationship Coach" subtitle="Always here to help your love grow" icon={<Sparkles size={24} />} showBackButton={false}>
-        {/* Voice Mode Toggle */}
-        <div className="flex justify-center mt-4">
+        {/* Session Info and Controls */}
+        <div className="flex justify-between items-center mt-4">
+          {sessionInfo && (
+            <div className="flex items-center gap-2 text-white/80 text-xs">
+              <Clock size={12} />
+              <span>
+                {sessionInfo.timeLeft.expired 
+                  ? "Session expired" 
+                  : `${sessionInfo.timeLeft.hours}h ${sessionInfo.timeLeft.minutes}m left`
+                }
+              </span>
+              <span>•</span>
+              <span>{sessionInfo.messageCount} messages</span>
+            </div>
+          )}
           
+          {messages.length > 1 && (
+            <Button
+              onClick={handleClearChat}
+              variant="ghost"
+              size="sm"
+              className="text-white/80 hover:text-white hover:bg-white/10 h-8 px-3"
+            >
+              <Trash2 size={14} className="mr-1" />
+              Clear
+            </Button>
+          )}
         </div>
       </GradientHeader>
 
