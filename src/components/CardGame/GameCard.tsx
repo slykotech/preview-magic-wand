@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { SharedTimer } from './SharedTimer';
+import { GameTimer } from './GameTimer';
 import { ResponsePopup } from './ResponsePopup';
 import { PhotoResponsePopup } from './PhotoResponsePopup';
 import { PhotoInput } from './PhotoInput';
@@ -348,12 +348,14 @@ export const GameCard: React.FC<GameCardProps> = ({
           </div>
         </div>
 
-        {/* Shared Timer - Visible to both players */}
-        <SharedTimer 
-          startTime={gameState?.current_card_started_at}
+        {/* Game Timer - Visible to both players */}
+        <GameTimer
+          sessionId={gameState?.id || ''}
           duration={card.timer_seconds}
-          onExpire={handleTimerExpire}
+          isMyTurn={isMyTurn}
           isActive={true}
+          cardStartedAt={gameState?.current_card_started_at}
+          onTimeUp={handleTimerExpire}
         />
 
         {/* Show response status if exists and seen */}

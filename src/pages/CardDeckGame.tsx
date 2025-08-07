@@ -75,12 +75,9 @@ export const CardDeckGame: React.FC = () => {
     }
   }, [gameState?.status, gameState?.winner_id]);
 
-  // Handle timer expiry - this will mark task as failed
+  // Handle timer expiry - simplified since timer now handles its own logic
   const handleTimerExpire = () => {
-    if (isMyTurn) {
-      console.log('Timer expired! Marking as failed task...');
-      actions.completeTurn(undefined, undefined, undefined, true); // true = timed out
-    }
+    console.log('⏰ Timer expired in CardDeckGame - handled by GameTimer');
   };
 
   // Handle rematch
