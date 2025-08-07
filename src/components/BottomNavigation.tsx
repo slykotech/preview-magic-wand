@@ -2,7 +2,7 @@ import { Home, MessageCircle, Calendar, Heart, User } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 const navItems = [
-  { id: 'home', icon: Home, label: 'Home', path: '/' },
+  { id: 'home', icon: Home, label: 'Home', path: '/dashboard' },
   { id: 'coach', icon: MessageCircle, label: 'Coach', path: '/coach' },
   { id: 'planner', icon: Calendar, label: 'Planner', path: '/planner' },
   { id: 'vault', icon: Heart, label: 'Vault', path: '/vault' },
@@ -42,7 +42,7 @@ export const BottomNavigation = () => {
       <div className="flex items-center justify-around py-2 px-4 max-w-md mx-auto">
         {navItems.map((item) => {
           const isActive = item.id === 'home' 
-            ? (location.pathname === '/' || location.pathname === '/dashboard')
+            ? (location.pathname === '/dashboard')
             : location.pathname === item.path;
           const Icon = item.icon;
           
