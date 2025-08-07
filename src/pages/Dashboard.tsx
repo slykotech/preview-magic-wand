@@ -64,6 +64,16 @@ export const Dashboard = () => {
   const [showSplash, setShowSplash] = useState(() => {
     // Only show splash on fresh app load, not on tab switches
     const hasShownSplash = sessionStorage.getItem('hasShownSplash');
+    const lastSplashTime = sessionStorage.getItem('lastSplashTime');
+    const now = Date.now();
+    
+    // Reset splash if more than 30 minutes have passed
+    if (lastSplashTime && (now - parseInt(lastSplashTime)) > 30 * 60 * 1000) {
+      sessionStorage.removeItem('hasShownSplash');
+      sessionStorage.removeItem('lastSplashTime');
+      return true;
+    }
+    
     return !hasShownSplash;
   });
   const [showDailyCheckin, setShowDailyCheckin] = useState(false);
@@ -175,24 +185,32 @@ export const Dashboard = () => {
   const fetchDashboardData = async () => {
     try {
       console.log('Fetching dashboard data for user:', user?.id);
-
-      // Fetch user profile data
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', user?.id)
-        .maybeSingle();
       
+      // Set basic loading state
+      setIsLoaded(false);
+
+      // Start fetching critical data in parallel
+      const [profileResult, coupleResult] = await Promise.allSettled([
+        supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', user?.id)
+          .maybeSingle(),
+        supabase
+          .from('couples')
+          .select('id, user1_id, user2_id')
+          .or(`user1_id.eq.${user?.id},user2_id.eq.${user?.id}`)
+          .order('created_at', { ascending: false })
+      ]);
+
+      // Handle profile data
+      const profileData = profileResult.status === 'fulfilled' ? profileResult.value.data : null;
       setUserProfile(profileData);
       setProfiles(profileData ? [profileData] : []);
 
-      // First, get user's couple relationship - get the most recent one
-      const {
-        data: coupleDataArray
-      } = await supabase.from('couples').select('id, user1_id, user2_id').or(`user1_id.eq.${user?.id},user2_id.eq.${user?.id}`).order('created_at', {
-        ascending: false
-      });
-
+      // Handle couple data
+      const coupleDataArray = coupleResult.status === 'fulfilled' ? coupleResult.value.data : null;
+      
       // Filter out self-pairing and get the first valid couple
       const coupleData = coupleDataArray?.find(couple => couple.user1_id !== couple.user2_id) || coupleDataArray?.[0];
       console.log('Couple data fetched:', coupleData);
@@ -209,83 +227,124 @@ export const Dashboard = () => {
         setUserMood(undefined);
         setPartnerMood(undefined);
         setIsLoaded(true);
+        
+        // Hide splash immediately for single users
+        if (showSplash) {
+          setTimeout(() => {
+            setShowSplash(false);
+            sessionStorage.setItem('hasShownSplash', 'true');
+            sessionStorage.setItem('lastSplashTime', Date.now().toString());
+          }, 500);
+        }
         return;
       }
       const currentPartnerId = coupleData?.user1_id === user?.id ? coupleData?.user2_id : coupleData?.user1_id;
       setPartnerId(currentPartnerId);
 
-      // Fetch partner profile data if partner exists and is different from user
-      if (currentPartnerId && currentPartnerId !== user?.id) {
-        const { data: partnerProfileData } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('user_id', currentPartnerId)
-          .maybeSingle();
-        setPartnerProfile(partnerProfileData);
-      } else {
-        setPartnerProfile(null);
-      }
-
-      // Handle case where user is paired with themselves (testing scenario)
-      const isTestingWithSelf = currentPartnerId === user?.id;
-
-      // Note: Sync score calculation is now handled by useEnhancedSyncScore hook
-
-      // Fetch upcoming scheduled date (only dates that have been scheduled but haven't passed yet)
+      // Fetch secondary data in parallel for better performance
       const today = new Date().toISOString().split('T')[0];
-      const {
-        data: dateData
-      } = await supabase.from('date_ideas').select('*').eq('couple_id', currentCoupleId).eq('is_completed', true) // Only scheduled dates
-      .gte('completed_date', today) // Future or today's dates only
-      .not('notes', 'is', null) // Must have scheduling notes
-      .ilike('notes', '%scheduled%') // Contains "scheduled" in notes
-      .order('completed_date', {
-        ascending: true
-      }).limit(1).maybeSingle();
+      const todayForMood = new Date().toISOString().split('T')[0];
+      
+      const [
+        partnerProfileResult,
+        dateDataResult,
+        scheduledCountResult,
+        memoryDataResult,
+        checkinDataResult,
+        coupleStreakResult,
+        userMoodResult,
+        partnerMoodResult
+      ] = await Promise.allSettled([
+        // Partner profile
+        currentPartnerId && currentPartnerId !== user?.id
+          ? supabase.from('profiles').select('*').eq('user_id', currentPartnerId).maybeSingle()
+          : Promise.resolve({ data: null }),
+        
+        // Date data
+        supabase
+          .from('date_ideas')
+          .select('*')
+          .eq('couple_id', currentCoupleId)
+          .eq('is_completed', true)
+          .gte('completed_date', today)
+          .not('notes', 'is', null)
+          .ilike('notes', '%scheduled%')
+          .order('completed_date', { ascending: true })
+          .limit(1)
+          .maybeSingle(),
+        
+        // Scheduled count
+        supabase
+          .from('date_ideas')
+          .select('*', { count: 'exact', head: true })
+          .eq('couple_id', currentCoupleId)
+          .eq('is_completed', true)
+          .gte('completed_date', today)
+          .not('notes', 'is', null)
+          .ilike('notes', '%scheduled%'),
+        
+        // Memory data
+        supabase
+          .from('memories')
+          .select('*')
+          .eq('couple_id', currentCoupleId)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        
+        // Checkin data
+        supabase
+          .from('daily_checkins')
+          .select('*')
+          .eq('user_id', user?.id)
+          .eq('couple_id', currentCoupleId)
+          .order('checkin_date', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        
+        // Couple streak data
+        supabase
+          .from('couples')
+          .select('checkin_streak, story_streak')
+          .eq('id', currentCoupleId)
+          .single(),
+        
+        // User mood
+        supabase
+          .from('daily_checkins')
+          .select('mood')
+          .eq('user_id', user?.id)
+          .eq('couple_id', currentCoupleId)
+          .eq('checkin_date', todayForMood)
+          .maybeSingle(),
+        
+        // Partner mood
+        supabase
+          .from('daily_checkins')
+          .select('mood')
+          .eq('user_id', currentPartnerId)
+          .eq('couple_id', currentCoupleId)
+          .eq('checkin_date', todayForMood)
+          .maybeSingle()
+      ]);
 
-      // Count all scheduled dates for the "Upcoming dates" card
-      const {
-        count: scheduledCount
-      } = await supabase.from('date_ideas').select('*', {
-        count: 'exact',
-        head: true
-      }).eq('couple_id', currentCoupleId).eq('is_completed', true) // Only scheduled dates
-      .gte('completed_date', today) // Future or today's dates only
-      .not('notes', 'is', null) // Must have scheduling notes
-      .ilike('notes', '%scheduled%'); // Contains "scheduled" in notes
+      // Process results with fallbacks
+      const partnerProfileData = partnerProfileResult.status === 'fulfilled' ? partnerProfileResult.value.data : null;
+      const dateData = dateDataResult.status === 'fulfilled' ? dateDataResult.value.data : null;
+      const scheduledCount = scheduledCountResult.status === 'fulfilled' ? scheduledCountResult.value.count : 0;
+      const memoryData = memoryDataResult.status === 'fulfilled' ? memoryDataResult.value.data : null;
+      const checkinData = checkinDataResult.status === 'fulfilled' ? checkinDataResult.value.data : null;
+      const coupleStreakData = coupleStreakResult.status === 'fulfilled' ? coupleStreakResult.value.data : null;
+      const userMoodData = userMoodResult.status === 'fulfilled' ? userMoodResult.value.data : null;
+      const partnerMoodData = partnerMoodResult.status === 'fulfilled' ? partnerMoodResult.value.data : null;
 
-      // Fetch recent memory
-      const {
-        data: memoryData
-      } = await supabase.from('memories').select('*').eq('couple_id', currentCoupleId).order('created_at', {
-        ascending: false
-      }).limit(1).maybeSingle();
-
-      // Fetch last checkin for current user
-      const {
-        data: checkinData
-      } = await supabase.from('daily_checkins').select('*').eq('user_id', user?.id).eq('couple_id', currentCoupleId).order('checkin_date', {
-        ascending: false
-      }).limit(1).maybeSingle();
-
-      // Get streak data from couples table (updated by database functions)
-      const { data: coupleStreakData } = await supabase
-        .from('couples')
-        .select('checkin_streak, story_streak')
-        .eq('id', currentCoupleId)
-        .single();
+      setPartnerProfile(partnerProfileData);
       
       const currentCheckinStreak = coupleStreakData?.checkin_streak || 0;
       const currentStoryStreak = coupleStreakData?.story_streak || 0;
 
-      // Get today's moods
-      const todayForMood = new Date().toISOString().split('T')[0];
-      const {
-        data: userMoodData
-      } = await supabase.from('daily_checkins').select('mood').eq('user_id', user?.id).eq('couple_id', currentCoupleId).eq('checkin_date', todayForMood).maybeSingle();
-      const {
-        data: partnerMoodData
-      } = await supabase.from('daily_checkins').select('mood').eq('user_id', currentPartnerId).eq('couple_id', currentCoupleId).eq('checkin_date', todayForMood).maybeSingle();
+      // Handle case where user is paired with themselves (testing scenario)
+      const isTestingWithSelf = currentPartnerId === user?.id;
 
       // Check for active stories
       await checkForStories(currentCoupleId, user?.id, currentPartnerId);
@@ -319,25 +378,44 @@ export const Dashboard = () => {
       } else {
         setPartnerMood(partnerMoodData?.mood);
       }
+      
+      // Set loaded first for immediate UI update
       setIsLoaded(true);
 
-      // Hide splash after data loads and animation completes (only if showing)
+      // Hide splash with reduced delay for better UX
       if (showSplash) {
         setTimeout(() => {
           setShowSplash(false);
           sessionStorage.setItem('hasShownSplash', 'true');
-        }, 2000);
+          sessionStorage.setItem('lastSplashTime', Date.now().toString());
+        }, 800); // Reduced from 2000ms to 800ms
       }
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
       setIsLoaded(true);
-      // Hide splash even on error to prevent infinite loading (only if showing)
+      
+      // Provide fallback data for graceful degradation
+      setUpcomingDate(null);
+      setRecentMemory(null);
+      setLastCheckin(null);
+      setCheckinStreak(0);
+      setStoryStreak(0);
+      setUserMood(undefined);
+      setPartnerMood(undefined);
+      
+      // Hide splash immediately on error
       if (showSplash) {
-        setTimeout(() => {
-          setShowSplash(false);
-          sessionStorage.setItem('hasShownSplash', 'true');
-        }, 1000);
+        setShowSplash(false);
+        sessionStorage.setItem('hasShownSplash', 'true');
+        sessionStorage.setItem('lastSplashTime', Date.now().toString());
       }
+      
+      // Show user-friendly error message
+      toast({
+        title: "Connection Issue",
+        description: "Some data may be missing. Pull down to refresh.",
+        variant: "default"
+      });
     }
   };
 
@@ -560,7 +638,7 @@ export const Dashboard = () => {
         </div>}
       
       {/* Main Content - with loading states */}
-      <div className={showSplash ? 'opacity-0' : 'opacity-100 transition-opacity duration-300'}>
+      <div className={showSplash ? 'opacity-0' : 'opacity-100 transition-opacity duration-300 dashboard-content'}>
         {/* Header with gradient background */}
         <div className="bg-gradient-primary py-12 px-6 -mx-6 -mt-8 mb-8 rounded-b-[4rem] relative overflow-hidden before:absolute before:bottom-0 before:left-0 before:right-0 before:h-12 before:bg-gradient-primary before:rounded-b-[5rem] before:-z-10 after:absolute after:bottom-0 after:left-0 after:right-0 after:h-6 after:bg-gradient-primary after:rounded-b-[6rem] after:-z-20">
           <div className={`text-center space-y-2 ${isLoaded ? 'animate-fade-in' : 'opacity-0'}`}>

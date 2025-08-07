@@ -451,3 +451,23 @@ input, textarea, [contenteditable] {
 .animate-scale-in {
   animation: scale-in 0.3s ease-out;
 }
+
+/* Dashboard Loading Optimizations */
+@keyframes smooth-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.dashboard-content {
+  animation: smooth-enter 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.optimized-loader {
+  animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}

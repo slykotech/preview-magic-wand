@@ -38,15 +38,25 @@ export const useEnhancedSyncScore = (coupleId: string | null) => {
       setLoading(true);
       setError(null);
 
-      // First try the enhanced sync score calculation
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Sync score calculation timeout')), 10000)
+      );
+
+      // First try the enhanced sync score calculation with timeout
       let calculatedScore = 0; // Start from 0% base score
       
       try {
-        // Always try enhanced calculation first
-        const { data: enhancedScore, error: enhancedError } = await supabase.rpc(
+        // Always try enhanced calculation first with timeout protection
+        const enhancedCalcPromise = supabase.rpc(
           'calculate_enhanced_sync_score',
           { p_couple_id: coupleId }
         );
+        
+        const { data: enhancedScore, error: enhancedError } = await Promise.race([
+          enhancedCalcPromise,
+          timeoutPromise
+        ]) as any;
         
         if (!enhancedError && enhancedScore !== null) {
           calculatedScore = enhancedScore;
