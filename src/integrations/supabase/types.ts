@@ -921,6 +921,45 @@ export type Database = {
         }
         Relationships: []
       }
+      device_sessions: {
+        Row: {
+          app_version: string | null
+          created_at: string | null
+          device_id: string
+          device_type: string | null
+          id: string
+          last_active_at: string | null
+          platform: string | null
+          revenue_cat_app_user_id: string | null
+          subscription_synced_at: string | null
+          user_id: string
+        }
+        Insert: {
+          app_version?: string | null
+          created_at?: string | null
+          device_id: string
+          device_type?: string | null
+          id?: string
+          last_active_at?: string | null
+          platform?: string | null
+          revenue_cat_app_user_id?: string | null
+          subscription_synced_at?: string | null
+          user_id: string
+        }
+        Update: {
+          app_version?: string | null
+          created_at?: string | null
+          device_id?: string
+          device_type?: string | null
+          id?: string
+          last_active_at?: string | null
+          platform?: string | null
+          revenue_cat_app_user_id?: string | null
+          subscription_synced_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       event_fetch_jobs: {
         Row: {
           completed_at: string | null
@@ -1547,6 +1586,45 @@ export type Database = {
         }
         Relationships: []
       }
+      partner_invitations: {
+        Row: {
+          accepted_at: string | null
+          accepted_by_user_id: string | null
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          invitation_token: string
+          invited_email: string
+          premium_user_id: string
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by_user_id?: string | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          invitation_token?: string
+          invited_email: string
+          premium_user_id: string
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by_user_id?: string | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          invitation_token?: string
+          invited_email?: string
+          premium_user_id?: string
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       partner_requests: {
         Row: {
           created_at: string
@@ -2138,7 +2216,10 @@ export type Database = {
           cancelled_at: string | null
           card_brand: string | null
           card_last_four: string | null
+          conversion_rate: number | null
+          country_code: string | null
           created_at: string
+          currency: string | null
           current_period_end: string | null
           current_period_start: string | null
           device_id: string | null
@@ -2147,6 +2228,7 @@ export type Database = {
           expired_at: string | null
           grace_period_end: string | null
           id: string
+          is_family_share: boolean | null
           is_trial: boolean | null
           last_synced_at: string | null
           original_price: number | null
@@ -2154,10 +2236,12 @@ export type Database = {
           plan_period: string | null
           plan_price: number | null
           plan_type: string
+          presented_offering_id: string | null
           product_id: string | null
           refund_reason: string | null
           refunded_at: string | null
           revenue_cat_customer_id: string | null
+          revenue_cat_environment: string | null
           revenue_cat_original_transaction_id: string | null
           revenue_cat_transaction_id: string | null
           selected_plan_name: string | null
@@ -2165,6 +2249,8 @@ export type Database = {
           store: string | null
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
+          takehome_percentage: number | null
+          tax_percentage: number | null
           trial_days_remaining: number | null
           trial_end_date: string | null
           trial_start_date: string | null
@@ -2179,7 +2265,10 @@ export type Database = {
           cancelled_at?: string | null
           card_brand?: string | null
           card_last_four?: string | null
+          conversion_rate?: number | null
+          country_code?: string | null
           created_at?: string
+          currency?: string | null
           current_period_end?: string | null
           current_period_start?: string | null
           device_id?: string | null
@@ -2188,6 +2277,7 @@ export type Database = {
           expired_at?: string | null
           grace_period_end?: string | null
           id?: string
+          is_family_share?: boolean | null
           is_trial?: boolean | null
           last_synced_at?: string | null
           original_price?: number | null
@@ -2195,10 +2285,12 @@ export type Database = {
           plan_period?: string | null
           plan_price?: number | null
           plan_type?: string
+          presented_offering_id?: string | null
           product_id?: string | null
           refund_reason?: string | null
           refunded_at?: string | null
           revenue_cat_customer_id?: string | null
+          revenue_cat_environment?: string | null
           revenue_cat_original_transaction_id?: string | null
           revenue_cat_transaction_id?: string | null
           selected_plan_name?: string | null
@@ -2206,6 +2298,8 @@ export type Database = {
           store?: string | null
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
+          takehome_percentage?: number | null
+          tax_percentage?: number | null
           trial_days_remaining?: number | null
           trial_end_date?: string | null
           trial_start_date?: string | null
@@ -2220,7 +2314,10 @@ export type Database = {
           cancelled_at?: string | null
           card_brand?: string | null
           card_last_four?: string | null
+          conversion_rate?: number | null
+          country_code?: string | null
           created_at?: string
+          currency?: string | null
           current_period_end?: string | null
           current_period_start?: string | null
           device_id?: string | null
@@ -2229,6 +2326,7 @@ export type Database = {
           expired_at?: string | null
           grace_period_end?: string | null
           id?: string
+          is_family_share?: boolean | null
           is_trial?: boolean | null
           last_synced_at?: string | null
           original_price?: number | null
@@ -2236,10 +2334,12 @@ export type Database = {
           plan_period?: string | null
           plan_price?: number | null
           plan_type?: string
+          presented_offering_id?: string | null
           product_id?: string | null
           refund_reason?: string | null
           refunded_at?: string | null
           revenue_cat_customer_id?: string | null
+          revenue_cat_environment?: string | null
           revenue_cat_original_transaction_id?: string | null
           revenue_cat_transaction_id?: string | null
           selected_plan_name?: string | null
@@ -2247,6 +2347,8 @@ export type Database = {
           store?: string | null
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
+          takehome_percentage?: number | null
+          tax_percentage?: number | null
           trial_days_remaining?: number | null
           trial_end_date?: string | null
           trial_start_date?: string | null
@@ -2576,6 +2678,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      webhook_signatures: {
+        Row: {
+          id: string
+          signature: string
+          source: string
+          timestamp: string | null
+          verified: boolean | null
+          webhook_id: string
+        }
+        Insert: {
+          id?: string
+          signature: string
+          source?: string
+          timestamp?: string | null
+          verified?: boolean | null
+          webhook_id: string
+        }
+        Update: {
+          id?: string
+          signature?: string
+          source?: string
+          timestamp?: string | null
+          verified?: boolean | null
+          webhook_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {
@@ -3260,10 +3389,6 @@ export type Database = {
           last_ai_generation: string
           needs_refresh: boolean
         }[]
-      }
-      get_premium_access_details: {
-        Args: { p_user_id: string }
-        Returns: Json
       }
       get_proj4_from_srid: {
         Args: { "": number }
