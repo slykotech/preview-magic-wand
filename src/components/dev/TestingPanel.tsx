@@ -84,60 +84,43 @@ export const TestingPanel: React.FC = () => {
 
   const loadMetrics = async () => {
     try {
-      // Use separate variables to avoid complex type inference
-      let userCount = 0;
-      let coupleCount = 0; 
-      let subCount = 0;
-      let gameCount = 0;
-      const errors: string[] = [];
+      // Count test/sandbox users
+      const { count: userCount } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact' })
+        .or('user_id.like.test-%,user_id.like.sandbox-%');
 
-      // Count users
-      try {
-        const result = await supabase.from('profiles').select('user_id').like('user_id', 'test-%');
-        userCount = result.data?.length || 0;
-        if (result.error) errors.push(result.error.message);
-      } catch (e) {
-        errors.push('Failed to count users');
-      }
+      // Count test couples
+      const { count: coupleCount } = await supabase
+        .from('couples')
+        .select('*', { count: 'exact' })
+        .or('id.like.test-%,id.like.sandbox-%');
 
-      // Count couples
-      try {
-        const result = await supabase.from('couples').select('id').like('id', 'test-%');
-        coupleCount = result.data?.length || 0;
-        if (result.error) errors.push(result.error.message);
-      } catch (e) {
-        errors.push('Failed to count couples');
-      }
-
-      // Count subscriptions - simplified to avoid TypeScript issues
-      try {
-        // For now, just set to 0 to avoid type issues - can be improved later
-        subCount = 0;
-      } catch (e) {
-        errors.push('Failed to count subscriptions');
-      }
+      // Count active subscriptions
+      const { count: subCount } = await supabase
+        .from('subscription_events')
+        .select('*', { count: 'exact' })
+        .eq('is_active', true)
+        .or('user_id.like.test-%,user_id.like.sandbox-%');
 
       // Count game sessions
-      try {
-        const result = await supabase.from('card_deck_game_sessions').select('id').like('couple_id', 'test-%');
-        gameCount = result.data?.length || 0;
-        if (result.error) errors.push(result.error.message);
-      } catch (e) {
-        errors.push('Failed to count games');
-      }
+      const { count: gameCount } = await supabase
+        .from('card_deck_game_sessions')
+        .select('*', { count: 'exact' })
+        .or('couple_id.like.test-%,couple_id.like.sandbox-%');
 
       setMetrics({
-        users: userCount,
-        couples: coupleCount,
-        subscriptions: subCount,
-        gameSessions: gameCount,
-        errors
+        users: userCount || 0,
+        couples: coupleCount || 0,
+        subscriptions: subCount || 0,
+        gameSessions: gameCount || 0,
+        errors: []
       });
     } catch (error) {
       console.error('Failed to load metrics:', error);
       setMetrics(prev => ({
         ...prev,
-        errors: ['Failed to load metrics']
+        errors: [...prev.errors, 'Failed to load metrics']
       }));
     }
   };
