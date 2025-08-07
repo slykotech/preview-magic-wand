@@ -121,13 +121,14 @@ export const CardDeckGame: React.FC = () => {
           backRoute="/games"
         />
 
-
         {/* Game Status - Shows failed tasks and skips */}
-        <GameStatus 
-          gameState={gameState}
-          currentUserId={user?.id || ''}
-          partnerInfo={partnerInfo}
-        />
+        <div className="mt-8">
+          <GameStatus 
+            gameState={gameState}
+            currentUserId={user?.id || ''}
+            partnerInfo={partnerInfo}
+          />
+        </div>
 
         {/* Legacy Game Stats for other info */}
         <GameStats 
