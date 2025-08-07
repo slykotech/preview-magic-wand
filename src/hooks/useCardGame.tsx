@@ -718,7 +718,7 @@ export function useCardGame(sessionId: string | null) {
       }
 
       const updateData: any = {
-        current_turn: gameEnded ? null : nextTurn,
+        current_turn: gameEnded ? gameState.current_turn : nextTurn, // Keep current turn when game ends
         current_card_id: gameEnded ? null : nextCardId, // Set the next card immediately
         current_card_revealed: false,
         current_card_started_at: null,
@@ -875,7 +875,7 @@ export function useCardGame(sessionId: string | null) {
         updateData.winner_id = winnerId;
         updateData.win_reason = winReason;
         updateData.completed_at = new Date().toISOString();
-        updateData.current_turn = null;
+        // Don't set current_turn to null - keep it as is when game ends
         
         // Clear any pending response data
         updateData.last_response_text = null;
