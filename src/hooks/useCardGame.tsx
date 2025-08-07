@@ -768,6 +768,15 @@ export function useCardGame(sessionId: string | null) {
         updateData[failedTasksField] = newFailedTasks;
         console.log(`🔄 Database update will include: ${failedTasksField} = ${newFailedTasks}`);
         console.log(`🚨 Full updateData for timeout:`, JSON.stringify(updateData, null, 2));
+        
+        // Force immediate local state update for visual feedback
+        setGameState(prevState => {
+          if (!prevState) return prevState;
+          const updatedState = { ...prevState };
+          updatedState[failedTasksField] = newFailedTasks;
+          console.log(`🔄 Local state updated: ${failedTasksField} = ${newFailedTasks}`);
+          return updatedState;
+        });
       }
 
       // Add winner info if game ended

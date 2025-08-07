@@ -24,22 +24,41 @@ export const SharedTimer: React.FC<SharedTimerProps> = ({
     }
 
     const startTimeMs = new Date(startTime).getTime();
+    const now = Date.now();
     const timerDuration = duration * 1000;
     
-    const calculateTimeLeft = () => {
-      const now = Date.now();
-      const elapsed = now - startTimeMs;
-      const remaining = Math.max(0, timerDuration - elapsed);
-      
-      // Debug logging for timestamp issues
-      console.log('⏰ Timer calculation debug:', {
+    // Check for invalid/future timestamps
+    if (startTimeMs > now) {
+      console.warn('⚠️ WARNING: Start time is in the future!', {
         startTime,
         startTimeMs,
         now,
-        elapsed: elapsed / 1000,
-        remaining: remaining / 1000,
-        duration
+        difference: (startTimeMs - now) / 1000
       });
+      // If timestamp is in future, treat as just started
+      const correctedStartTime = new Date().toISOString();
+      console.log('⏰ Using corrected start time:', correctedStartTime);
+      setTimeLeft(duration);
+      setTimerExpired(false);
+      return;
+    }
+    
+    const calculateTimeLeft = () => {
+      const currentNow = Date.now();
+      const elapsed = currentNow - startTimeMs;
+      const remaining = Math.max(0, timerDuration - elapsed);
+      
+      // Only log debug info if remaining time is reasonable
+      if (remaining <= timerDuration && elapsed >= 0) {
+        console.log('⏰ Timer calculation debug:', {
+          startTime,
+          startTimeMs,
+          now: currentNow,
+          elapsed: elapsed / 1000,
+          remaining: remaining / 1000,
+          duration
+        });
+      }
       
       return Math.floor(remaining / 1000);
     };

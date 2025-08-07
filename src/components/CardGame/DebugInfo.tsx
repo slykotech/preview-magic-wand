@@ -111,6 +111,10 @@ export const DebugInfo: React.FC<DebugInfoProps> = ({
             <div>Current Time: {new Date().toISOString()}</div>
             <div>Time Diff (ms): {Date.now() - new Date(gameState.current_card_started_at).getTime()}</div>
             <div>Elapsed: {Math.floor((Date.now() - new Date(gameState.current_card_started_at).getTime()) / 1000)}s</div>
+            <div className={Date.now() < new Date(gameState.current_card_started_at).getTime() ? 'text-red-400 font-bold' : 'text-green-400'}>
+              {Date.now() < new Date(gameState.current_card_started_at).getTime() ? 
+                '🚨 FUTURE TIMESTAMP!' : '✅ Valid timestamp'}
+            </div>
           </div>
         )}
       </div>
