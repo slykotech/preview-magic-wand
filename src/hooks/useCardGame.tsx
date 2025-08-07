@@ -547,10 +547,22 @@ export function useCardGame(sessionId: string | null) {
 
       // Handle failed task (timed out)
       if (timedOut) {
-        newFailedTasks = currentFailedTasks + 1;
+        // Ensure we have a valid number for failed tasks
+        const safeCurrentFailedTasks = Number(currentFailedTasks) || 0;
+        newFailedTasks = safeCurrentFailedTasks + 1;
+        
         console.log(`⏰ TIMEOUT DETECTED! Task failed due to timeout!`);
-        console.log(`⏰ Failed tasks: ${currentFailedTasks} → ${newFailedTasks}/3`);
-        console.log(`⏰ User: ${isUser1 ? 'User1' : 'User2'}, Field: ${failedTasksField}`);
+        console.log(`⏰ Failed tasks calculation:`, {
+          currentFailedTasks,
+          safeCurrentFailedTasks,
+          newFailedTasks,
+          failedTasksField,
+          isUser1,
+          gameStateValues: {
+            user1_failed_tasks: gameState.user1_failed_tasks,
+            user2_failed_tasks: gameState.user2_failed_tasks
+          }
+        });
         
         // Show immediate notification
         toast.error(`⏰ Time's up! Failed tasks: ${newFailedTasks}/3`, {
@@ -765,16 +777,25 @@ export function useCardGame(sessionId: string | null) {
 
       // Always update failed tasks field if timeout occurred
       if (timedOut) {
-        updateData[failedTasksField] = newFailedTasks;
-        console.log(`🔄 Database update will include: ${failedTasksField} = ${newFailedTasks}`);
+        // Ensure we're setting a valid number
+        const validFailedTasks = Number(newFailedTasks) || 0;
+        updateData[failedTasksField] = validFailedTasks;
+        
+        console.log(`🔄 Database update will include: ${failedTasksField} = ${validFailedTasks}`);
+        console.log(`🚨 Failed tasks validation:`, {
+          originalValue: newFailedTasks,
+          validatedValue: validFailedTasks,
+          type: typeof validFailedTasks,
+          isNumber: !isNaN(validFailedTasks)
+        });
         console.log(`🚨 Full updateData for timeout:`, JSON.stringify(updateData, null, 2));
         
         // Force immediate local state update for visual feedback
         setGameState(prevState => {
           if (!prevState) return prevState;
           const updatedState = { ...prevState };
-          updatedState[failedTasksField] = newFailedTasks;
-          console.log(`🔄 Local state updated: ${failedTasksField} = ${newFailedTasks}`);
+          updatedState[failedTasksField] = validFailedTasks;
+          console.log(`🔄 Local state updated: ${failedTasksField} = ${validFailedTasks}`);
           return updatedState;
         });
       }
