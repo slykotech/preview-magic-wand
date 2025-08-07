@@ -606,13 +606,39 @@ export const Dashboard = () => {
               // Show single avatar when no partner is connected
               <div className="flex justify-center">
                 <div className="relative">
-                  <div className="w-24 h-24 rounded-full border-4 border-white overflow-hidden shadow-lg">
-                    <img 
-                      src={userProfile?.avatar_url || '/placeholder.svg'} 
-                      alt="Your Avatar" 
-                      className="w-full h-full object-cover"
-                    />
+                  {/* User Avatar with Story Ring and Click Handler */}
+                  <div 
+                    className={`relative ${hasUserStory ? 'cursor-pointer' : ''}`}
+                    onClick={hasUserStory ? handleUserAvatarClick : undefined}
+                  >
+                    {/* Gradient ring only if story exists */}
+                    {hasUserStory ? (
+                      <div className="w-24 h-24 rounded-full bg-gradient-primary p-0.5 hover:p-0 transition-all duration-300">
+                        <div className="w-full h-full rounded-full bg-white p-1">
+                          <div className="w-full h-full rounded-full overflow-hidden shadow-lg">
+                            <img 
+                              src={userProfile?.avatar_url || '/placeholder.svg'} 
+                              alt="Your Avatar" 
+                              className="w-full h-full object-cover hover:scale-110 transition-all duration-300"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="w-24 h-24 rounded-full border-4 border-white overflow-hidden shadow-lg ring-4 ring-sunrise-coral/20">
+                        <img 
+                          src={userProfile?.avatar_url || '/placeholder.svg'} 
+                          alt="Your Avatar" 
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
+                    {/* Online status indicator */}
+                    <div className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-2 border-white ${
+                      isUserOnline ? 'bg-green-500' : 'bg-red-500'
+                    }`}></div>
                   </div>
+                  
                   {/* Camera button for uploading stories */}
                   <div className="absolute top-0 left-0">
                     <button
@@ -622,10 +648,6 @@ export const Dashboard = () => {
                       <Sparkles className="h-4 w-4" />
                     </button>
                   </div>
-                  {/* Online status indicator */}
-                  <div className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-2 border-white ${
-                    isUserOnline ? 'bg-green-500' : 'bg-red-500'
-                  }`}></div>
                 </div>
               </div>
             )
