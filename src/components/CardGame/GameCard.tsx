@@ -125,20 +125,30 @@ export const GameCard: React.FC<GameCardProps> = ({
   };
 
   const handleComplete = (timedOut = false) => {
+    console.group('🎯 GAMECARD handleComplete');
+    console.log('🎯 Called with timedOut:', timedOut);
+    console.log('🎯 Card response type:', card?.response_type);
+    console.log('🎯 Response data:', { response, photoResponse });
+    
     switch (card?.response_type) {
       case 'text':
+        console.log('🎯 Calling onComplete for TEXT with timedOut:', timedOut);
         onComplete(response, undefined, timedOut);
         break;
       case 'photo':
+        console.log('🎯 Calling onComplete for PHOTO with timedOut:', timedOut);
         onComplete(photoResponse || undefined, undefined, timedOut);
         break;
       case 'action':
       default:
+        console.log('🎯 Calling onComplete for ACTION with timedOut:', timedOut);
         onComplete(undefined, undefined, timedOut);
         break;
     }
+    console.log('🎯 Clearing response state...');
     setResponse('');
     setPhotoResponse(null);
+    console.groupEnd();
   };
 
   const handlePhotoSubmit = async (photoUrl: string, caption?: string) => {
@@ -149,19 +159,27 @@ export const GameCard: React.FC<GameCardProps> = ({
 
   const handleTimerExpire = () => {
     console.group('⏰ TIMER EXPIRED IN GAMECARD!');
-    console.log('Timer expired! Handling timeout...');
-    console.log('Current state:', {
+    console.log('⏰ Timer expired! Handling timeout...');
+    console.log('⏰ Current state:', {
       isMyTurn,
       currentUserId: userId,
       gameState: gameState?.id,
-      currentCard: card?.id
+      currentCard: card?.id,
+      gameUser1: gameState?.user1_id,
+      gameUser2: gameState?.user2_id,
+      currentTurn: gameState?.current_turn
     });
     
     if (isMyTurn) {
-      console.log('⏰ My turn - completing with timeout flag = TRUE');
+      console.log('⏰ ✅ MY TURN - completing with timeout flag = TRUE');
+      console.log('⏰ About to call handleComplete(true)...');
+      console.log('⏰ handleComplete function:', handleComplete.toString().substring(0, 100));
       handleComplete(true); // Pass true for timedOut
+      console.log('⏰ ✅ handleComplete(true) called successfully');
     } else {
-      console.log('⏰ Not my turn - ignoring timer expiry');
+      console.log('⏰ ❌ NOT MY TURN - ignoring timer expiry');
+      console.log('⏰ Current turn belongs to:', gameState?.current_turn);
+      console.log('⏰ My user ID:', userId);
     }
     console.groupEnd();
   };

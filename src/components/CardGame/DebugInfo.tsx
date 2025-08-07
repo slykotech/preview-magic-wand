@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface DebugInfoProps {
   gameState: any;
@@ -11,6 +11,27 @@ export const DebugInfo: React.FC<DebugInfoProps> = ({
   currentUserId, 
   isMyTurn 
 }) => {
+  const [lastFailedTasks, setLastFailedTasks] = useState<{user1: number, user2: number}>({user1: 0, user2: 0});
+  const [updateCount, setUpdateCount] = useState(0);
+
+  // Track changes in failed task counts
+  useEffect(() => {
+    if (gameState) {
+      const currentUser1Failed = gameState.user1_failed_tasks || 0;
+      const currentUser2Failed = gameState.user2_failed_tasks || 0;
+      
+      if (currentUser1Failed !== lastFailedTasks.user1 || currentUser2Failed !== lastFailedTasks.user2) {
+        console.log('🚨 FAILED TASKS CHANGED!', {
+          from: lastFailedTasks,
+          to: { user1: currentUser1Failed, user2: currentUser2Failed },
+          timestamp: new Date().toISOString()
+        });
+        setLastFailedTasks({ user1: currentUser1Failed, user2: currentUser2Failed });
+        setUpdateCount(prev => prev + 1);
+      }
+    }
+  }, [gameState?.user1_failed_tasks, gameState?.user2_failed_tasks, lastFailedTasks]);
+
   if (!gameState) return null;
 
   // Calculate popup conditions for debugging
@@ -64,15 +85,40 @@ export const DebugInfo: React.FC<DebugInfoProps> = ({
 
       {/* Failed Tasks */}
       <div className="mb-2 p-2 border border-gray-700 rounded">
-        <div className="text-red-400 font-bold mb-1">Failed Tasks:</div>
+        <div className="text-red-400 font-bold mb-1">Failed Tasks (Updates: {updateCount}):</div>
         <div>User1 Failed: <span className="text-red-400 font-bold">{gameState?.user1_failed_tasks || 0}/3</span></div>
         <div>User2 Failed: <span className="text-red-400 font-bold">{gameState?.user2_failed_tasks || 0}/3</span></div>
+        <div className="text-xs text-gray-400">
+          Last Update: {lastFailedTasks.user1}/{lastFailedTasks.user2}
+        </div>
         {gameState?.winner_id && (
           <div className="text-green-400 font-bold">
             Winner: {gameState.winner_id === currentUserId ? 'YOU' : 'PARTNER'} 
             ({gameState.win_reason})
           </div>
         )}
+      </div>
+
+      {/* Timer & Timeout Debug */}
+      <div className="mb-2 p-2 border border-gray-700 rounded">
+        <div className="text-orange-400 font-bold mb-1">Timer Debug:</div>
+        <div>Card Started: {gameState?.current_card_started_at || 'NONE'}</div>
+        <div>Card ID: {gameState?.current_card_id || 'NONE'}</div>
+        <div>Timer Active: {gameState?.current_card_started_at ? '✅' : '❌'}</div>
+        {gameState?.current_card_started_at && (
+          <div>
+            Elapsed: {Math.floor((Date.now() - new Date(gameState.current_card_started_at).getTime()) / 1000)}s
+          </div>
+        )}
+      </div>
+
+      {/* Game Flow Debug */}
+      <div className="mb-2 p-2 border border-gray-700 rounded">
+        <div className="text-cyan-400 font-bold mb-1">Game Flow:</div>
+        <div>Total Cards: {gameState?.total_cards_played || 0}</div>
+        <div>Current Phase: {gameState?.current_card_revealed ? 'Card Revealed' : 'Waiting'}</div>
+        <div>Card Completed: {gameState?.current_card_completed ? '✅' : '❌'}</div>
+        <div>Last Activity: {gameState?.last_activity_at ? new Date(gameState.last_activity_at).toLocaleTimeString() : 'NONE'}</div>
       </div>
       
       <div className="text-gray-400 text-xs">

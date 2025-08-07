@@ -484,7 +484,7 @@ export function useCardGame(sessionId: string | null) {
   const completeTurn = useCallback(async (response?: string | File, caption?: string, reactionTime?: number, timedOut: boolean = false) => {
     console.group('🎯 COMPLETE TURN FLOW');
     console.log('🚨 CRITICAL - TIMEOUT FLAG:', timedOut);
-    console.log('Starting completeTurn with:', {
+    console.log('🚨 Starting completeTurn with:', {
       response,
       hasResponse: !!response,
       responseLength: typeof response === 'string' ? response.length : 'N/A',
@@ -493,7 +493,13 @@ export function useCardGame(sessionId: string | null) {
       isMyTurn,
       currentUserId: user?.id,
       sessionId,
-      TIMEOUT_FLAG: timedOut
+      TIMEOUT_FLAG: timedOut,
+      gameStateSnapshot: {
+        user1_failed_tasks: gameState?.user1_failed_tasks,
+        user2_failed_tasks: gameState?.user2_failed_tasks,
+        current_turn: gameState?.current_turn,
+        status: gameState?.status
+      }
     });
     
     if (!gameState || !currentCard || !sessionId || !user) {
@@ -812,8 +818,12 @@ export function useCardGame(sessionId: string | null) {
         fieldName: failedTasksField,
         fieldValue: updateData[failedTasksField],
         timedOut,
-        includesFailedTaskField: failedTasksField in updateData
+        includesFailedTaskField: failedTasksField in updateData,
+        originalValue: gameState[failedTasksField],
+        newValue: newFailedTasks,
+        currentUser: isUser1 ? 'User1' : 'User2'
       });
+      console.log('🚨 ABOUT TO UPDATE DATABASE WITH:', JSON.stringify(updateData, null, 2));
 
       const { data: updatedData, error: updateError } = await supabase
         .from("card_deck_game_sessions")
@@ -824,15 +834,23 @@ export function useCardGame(sessionId: string | null) {
 
       if (updateError) {
         console.error('❌ Game state update failed:', updateError);
+        console.error('❌ Update error details:', {
+          code: updateError.code,
+          message: updateError.message,
+          details: updateError.details,
+          hint: updateError.hint
+        });
         throw updateError;
       }
       
       console.log('✅ Game state updated successfully:', updatedData);
-      console.log('🚨 FAILED TASKS AFTER UPDATE:', {
+      console.log('🚨 FAILED TASKS AFTER UPDATE - DATABASE RESPONSE:', {
         user1_failed_tasks: updatedData?.user1_failed_tasks,
         user2_failed_tasks: updatedData?.user2_failed_tasks,
         requestedField: failedTasksField,
-        requestedValue: updateData[failedTasksField]
+        requestedValue: updateData[failedTasksField],
+        wasTimeoutFlagTrue: timedOut,
+        updateWasSuccessful: !updateError
       });
       console.log('Response fields after update:', {
         last_response_text: updatedData?.last_response_text,
