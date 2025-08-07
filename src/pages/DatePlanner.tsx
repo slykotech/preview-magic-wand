@@ -82,10 +82,17 @@ export const DatePlanner = () => {
       navigate('/auth');
       return;
     }
+    
+    // Handle case when user doesn't have a couple setup
+    if (user && !coupleData && !loading) {
+      setLoading(false);
+      return;
+    }
+    
     if (user && coupleId) {
       fetchPlannedDates();
     }
-  }, [user, navigate, coupleId]);
+  }, [user, navigate, coupleId, coupleData, loading]);
 
   // Real-time subscription for date_ideas changes
   useEffect(() => {
@@ -385,6 +392,33 @@ export const DatePlanner = () => {
     return (
       <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 flex items-center justify-center">
         <div className="text-center">Loading...</div>
+      </div>
+    );
+  }
+
+  // Show message if user doesn't have a couple setup
+  if (!coupleData) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col pb-20">
+        <GradientHeader 
+          title="Date Planner" 
+          subtitle="Plan your perfect dates together" 
+          icon={<Heart size={24} />} 
+          showBackButton={false}
+        />
+        <div className="flex-1 flex items-center justify-center container mx-auto px-4">
+          <div className="text-center space-y-4">
+            <Heart className="w-16 h-16 text-muted-foreground mx-auto" />
+            <h2 className="text-xl font-semibold">Connect with Your Partner</h2>
+            <p className="text-muted-foreground max-w-md">
+              To start planning dates together, you'll need to connect with your partner first.
+            </p>
+            <Button onClick={() => navigate('/profile')} className="mt-4">
+              Set Up Partnership
+            </Button>
+          </div>
+        </div>
+        <BottomNavigation />
       </div>
     );
   }

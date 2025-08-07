@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 // Force refresh to fix Timeline reference error
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -66,6 +67,7 @@ const MemoryVault: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const { coupleData, loading: coupleLoading } = useCoupleData();
+  const navigate = useNavigate();
 
   // State
   const [memories, setMemories] = useState<Memory[]>([]);
@@ -151,8 +153,11 @@ const MemoryVault: React.FC = () => {
   useEffect(() => {
     if (coupleData?.id) {
       Promise.all([fetchMemories(), fetchNotes()]).finally(() => setLoading(false));
+    } else if (!coupleLoading) {
+      // If couple data loading is done and there's no couple data, stop loading
+      setLoading(false);
     }
-  }, [coupleData?.id, fetchMemories, fetchNotes]);
+  }, [coupleData?.id, fetchMemories, fetchNotes, coupleLoading]);
 
   // Drag and drop handlers
   const handleDrag = (e: React.DragEvent) => {
@@ -609,6 +614,33 @@ const MemoryVault: React.FC = () => {
           <div className="animate-spin h-8 w-8 border-4 border-primary border-r-transparent rounded-full mx-auto mb-4"></div>
           <p className="text-muted-foreground">Loading your memories...</p>
         </div>
+      </div>
+    );
+  }
+
+  // Show message if user doesn't have a couple setup
+  if (!coupleData) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col pb-20">
+        <GradientHeader 
+          title="Memory Vault" 
+          subtitle="Your love story collection" 
+          icon={<Heart size={24} />} 
+          showBackButton={false}
+        />
+        <div className="flex-1 flex items-center justify-center container mx-auto px-4">
+          <div className="text-center space-y-4">
+            <Heart className="w-16 h-16 text-muted-foreground mx-auto" />
+            <h2 className="text-xl font-semibold">Connect with Your Partner</h2>
+            <p className="text-muted-foreground max-w-md">
+              To start creating shared memories together, you'll need to connect with your partner first.
+            </p>
+            <Button onClick={() => navigate('/profile')} className="mt-4">
+              Set Up Partnership
+            </Button>
+          </div>
+        </div>
+        <BottomNavigation />
       </div>
     );
   }
