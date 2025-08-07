@@ -99,16 +99,12 @@ export const Dashboard = () => {
   const {
     syncScoreData,
     loading: syncScoreLoading,
-    error: syncScoreError,
     logActivity,
     refreshSyncScore
   } = useEnhancedSyncScore(coupleId);
 
-  // Ensure we have a safe score value - always provide a number for animation
+  // Ensure we have a safe score value
   const currentSyncScore = syncScoreData?.score ?? 0;
-  
-  // Only show animation if we have valid couple data
-  const shouldShowAnimation = coupleId && !syncScoreLoading;
 
   // Use presence tracking hook
   const {
@@ -526,16 +522,14 @@ export const Dashboard = () => {
     }}>
           
           {/* Sync Score - starts center, zooms to exact dashboard position */}
-          {shouldShowAnimation && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="sync-score-container" style={{
-            animation: 'zoom-to-position 1.2s ease-out 0.8s forwards',
-            transform: 'scale(2.5)'
-          }}>
-                <SyncScoreCircle score={currentSyncScore} animated={true} />
-              </div>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="sync-score-container" style={{
+          animation: 'zoom-to-position 1.2s ease-out 0.8s forwards',
+          transform: 'scale(2.5)'
+        }}>
+              <SyncScoreCircle score={currentSyncScore} animated={true} />
             </div>
-          )}
+          </div>
           
           {/* Floating Partner Mood Emojis */}
           {partnerMood && <div className="absolute inset-0 pointer-events-none">
@@ -582,13 +576,9 @@ export const Dashboard = () => {
           <div className={`${isLoaded ? 'animate-fade-in' : 'opacity-0'}`} style={{
           animationDelay: '100ms'
         }}>
-            {isLoaded && coupleId ? (
-              <div className="space-y-4">
+            {isLoaded ? <div className="space-y-4">
                 <SyncScoreCircle score={currentSyncScore} animated={true} />
-              </div>
-            ) : (
-              <SyncScoreSkeleton />
-            )}
+              </div> : <SyncScoreSkeleton />}
           </div>
 
         {/* Couple Avatars with Good Sync Status */}

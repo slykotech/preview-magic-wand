@@ -30,13 +30,11 @@ export const useEnhancedSyncScore = (coupleId: string | null) => {
 
   const fetchSyncScore = async () => {
     if (!coupleId || !user) {
-      console.log('❌ SyncScore: Missing coupleId or user', { coupleId, user: !!user });
       setLoading(false);
       return;
     }
 
     try {
-      console.log('🔄 SyncScore: Fetching sync score for couple:', coupleId);
       setLoading(true);
       setError(null);
 
@@ -44,7 +42,6 @@ export const useEnhancedSyncScore = (coupleId: string | null) => {
       let calculatedScore = 0; // Start from 0% base score
       
       try {
-        console.log('🧮 SyncScore: Attempting enhanced calculation...');
         // Always try enhanced calculation first
         const { data: enhancedScore, error: enhancedError } = await supabase.rpc(
           'calculate_enhanced_sync_score',
@@ -53,14 +50,12 @@ export const useEnhancedSyncScore = (coupleId: string | null) => {
         
         if (!enhancedError && enhancedScore !== null) {
           calculatedScore = enhancedScore;
-          console.log('✅ SyncScore: Enhanced calculation successful:', calculatedScore);
         } else {
-          console.log('❌ SyncScore: Enhanced sync score failed:', enhancedError);
+          console.log('Enhanced sync score failed:', enhancedError);
           throw new Error('Enhanced calculation failed');
         }
       } catch (enhancedErr) {
-        console.log('⚠️ SyncScore: Enhanced sync score not available, using fallback calculation');
-        console.error('Enhanced error details:', enhancedErr);
+        console.log('Enhanced sync score not available, using fallback calculation');
         
         // Fallback to simple calculation based on recent check-ins
         const { data: recentCheckins } = await supabase
