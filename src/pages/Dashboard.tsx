@@ -25,7 +25,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PremiumBadge } from '@/components/subscription/PremiumBadge';
 import { TrialStatus } from '@/components/subscription/TrialStatus';
 import { SubscriptionNotifications } from '@/components/subscription/SubscriptionNotifications';
-import { OnboardingProgress } from "@/components/OnboardingProgress";
+
 import { SubscriptionPromptModal } from '@/components/subscription/SubscriptionPromptModal';
 import { useSubscriptionGate } from '@/hooks/useSubscriptionGate';
 const getTimeBasedMessage = () => {
@@ -557,8 +557,6 @@ export const Dashboard = () => {
          
         <div className="container mx-auto px-6 space-y-6 pb-20">
           
-          {/* Onboarding Progress */}
-          <OnboardingProgress userProfile={profiles?.[0]} hasPartner={!!coupleId} />
 
           {/* Sync Score Section */}
           <div className={`${isLoaded ? 'animate-fade-in' : 'opacity-0'}`} style={{
