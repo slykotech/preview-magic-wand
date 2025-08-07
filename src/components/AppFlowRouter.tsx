@@ -85,10 +85,23 @@ export const AppFlowRouter: React.FC = () => {
     
     console.log('AppFlowRouter: Auth state change check', { userId: user?.id, authLoading });
     
-    // Always reset flow for fresh signups to ensure proper subscription flow
+    // Always reset flow for any authenticated user to ensure proper subscription flow
     if (user?.id) {
-      console.log('AppFlowRouter: User authenticated, resetting flow to ensure proper subscription check');
-      resetFlow();
+      console.log('AppFlowRouter: User authenticated, forcing flow reset to ensure subscription gate');
+      // Always reset flow to force subscription check for any user
+      setFlowState({
+        currentStep: 'splash',
+        completedSteps: [],
+        userId: user.id,
+        userData: {
+          hasSeenMotto: false,
+          hasCompletedOnboarding: false,
+          isAuthenticated: true, // User is authenticated
+          hasSubscription: false, // Will be checked properly
+          hasPartner: false, // Will be checked properly
+          isVerified: true, // Since they passed auth
+        }
+      });
       
       // Clean up any demo couples for this user
       cleanupDemoCouples();
