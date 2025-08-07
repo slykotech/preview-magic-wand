@@ -837,61 +837,81 @@ export function useCardGame(sessionId: string | null) {
     const skipsField = isUser1 ? 'user1_skips_remaining' : 'user2_skips_remaining';
     const skipsRemaining = gameState[skipsField];
 
+    // Block only if already at 0 skips - allow the last skip to be used
     if (skipsRemaining <= 0) {
       toast.error("No skips remaining! 😅");
       return;
     }
 
     try {
+      console.log(`🎯 Using skip... Current skips: ${skipsRemaining}`);
+      
       const newSkipsRemaining = skipsRemaining - 1;
       let gameEnded = false;
       let winnerId = null;
       let winReason = null;
 
-      // Check if game should end due to no skips left
+      // Check if this was the last skip - game ends after using it
       if (newSkipsRemaining === 0) {
         gameEnded = true;
         winnerId = isUser1 ? gameState.user2_id : gameState.user1_id;
         winReason = 'no_skips';
-        console.log('🎮 Game Over! No skips remaining.');
+        console.log('🎮 Last skip used! Game ending with opponent as winner.');
       }
 
-      const updatedSkippedCards = [...gameState.skipped_cards, currentCard.id];
+      const updatedSkippedCards = [...(gameState.skipped_cards || []), currentCard.id];
       
       const updateData: any = {
         [skipsField]: newSkipsRemaining,
         skipped_cards: updatedSkippedCards,
         current_card_id: null,
+        current_card_revealed: false,
         updated_at: new Date().toISOString()
       };
 
+      // If game is ending due to no skips left
       if (gameEnded) {
         updateData.status = 'completed';
         updateData.winner_id = winnerId;
         updateData.win_reason = winReason;
         updateData.completed_at = new Date().toISOString();
         updateData.current_turn = null;
+        
+        // Clear any pending response data
+        updateData.last_response_text = null;
+        updateData.last_response_seen = true;
       }
 
-      const { error } = await supabase
+      console.log('📝 Updating game with skip data:', updateData);
+
+      const { data, error } = await supabase
         .from("card_deck_game_sessions")
         .update(updateData)
-        .eq("id", sessionId);
+        .eq("id", sessionId)
+        .select()
+        .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Skip update failed:', error);
+        toast.error("Failed to skip card. Please try again.");
+        throw error;
+      }
+
+      console.log('✅ Skip successful:', data);
       
       // Show appropriate notification
       if (gameEnded) {
-        toast.error("🎮 Game Over! You've used all your skips.");
+        toast.error("🎮 You've used your last skip! Game Over!");
+        // Don't draw new card since game has ended
       } else {
-        toast.success(`Card skipped! ${newSkipsRemaining} skips left`);
-        // Draw new card after skip if game hasn't ended
+        toast.success(`Card skipped! ${newSkipsRemaining} skip${newSkipsRemaining !== 1 ? 's' : ''} left`);
+        // Draw new card after skip if game is still active
         setTimeout(() => drawCard(), 500);
       }
 
     } catch (error) {
       console.error("Failed to skip card:", error);
-      toast.error("Failed to skip card");
+      toast.error("Failed to skip card. Please try again.");
     }
   }, [isMyTurn, gameState, currentCard, sessionId, user, drawCard]);
 
