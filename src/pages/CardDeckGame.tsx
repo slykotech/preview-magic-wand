@@ -155,7 +155,6 @@ export const CardDeckGame: React.FC = () => {
         <GameStats 
           cardsPlayed={stats.cardsPlayed}
           skipsRemaining={stats.skipsRemaining}
-          favoriteCount={stats.favoriteCount}
           gameMode={gameState.game_mode}
         />
 
@@ -179,7 +178,6 @@ export const CardDeckGame: React.FC = () => {
               onReveal={actions.revealCard}
               onComplete={(response) => actions.completeTurn(response)}
               onSkip={actions.skipCard}
-              onFavorite={actions.favoriteCard}
               skipsRemaining={stats.skipsRemaining}
               sessionId={sessionId || ''}
               userId={user?.id || ''}

@@ -33,7 +33,6 @@ interface GameCardProps {
   onReveal: () => void;
   onComplete: (response?: string | File, caption?: string, timedOut?: boolean) => void;
   onSkip: () => void;
-  onFavorite: () => void;
   skipsRemaining: number;
   sessionId: string;
   userId: string;
@@ -49,7 +48,6 @@ export const GameCard: React.FC<GameCardProps> = ({
   onReveal, 
   onComplete, 
   onSkip, 
-  onFavorite, 
   skipsRemaining,
   sessionId,
   userId,
@@ -412,14 +410,6 @@ export const GameCard: React.FC<GameCardProps> = ({
                   </Button>
                 )}
                 
-                <Button
-                  variant="ghost"
-                  size="lg"
-                  onClick={onFavorite}
-                  className="text-2xl hover:scale-110 transition p-3"
-                >
-                  💖
-                </Button>
                 
                 {skipsRemaining > 0 && (
                   <Button

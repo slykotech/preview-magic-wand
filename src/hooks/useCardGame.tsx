@@ -13,7 +13,6 @@ interface GameState {
   current_card_id: string | null;
   played_cards: any;
   skipped_cards: any;
-  favorite_cards: any;
   user1_skips_remaining: number;
   user2_skips_remaining: number;
   user1_failed_tasks?: number;
@@ -83,8 +82,7 @@ export function useCardGame(sessionId: string | null) {
         setGameState({
           ...gameData,
           played_cards: Array.isArray(gameData.played_cards) ? gameData.played_cards : [],
-          skipped_cards: Array.isArray(gameData.skipped_cards) ? gameData.skipped_cards : [],
-          favorite_cards: Array.isArray(gameData.favorite_cards) ? gameData.favorite_cards : []
+          skipped_cards: Array.isArray(gameData.skipped_cards) ? gameData.skipped_cards : []
         });
         
         // Debug logging
@@ -197,8 +195,7 @@ export function useCardGame(sessionId: string | null) {
             const processedState = {
               ...newState,
               played_cards: Array.isArray(newState.played_cards) ? newState.played_cards : [],
-              skipped_cards: Array.isArray(newState.skipped_cards) ? newState.skipped_cards : [],
-              favorite_cards: Array.isArray(newState.favorite_cards) ? newState.favorite_cards : []
+              skipped_cards: Array.isArray(newState.skipped_cards) ? newState.skipped_cards : []
             };
             
             // Debug logging for real-time updates
@@ -1021,28 +1018,6 @@ export function useCardGame(sessionId: string | null) {
     }
   }, [isMyTurn, gameState, currentCard, sessionId, user, drawCard]);
 
-  // Add card to favorites
-  const favoriteCard = useCallback(async () => {
-    if (!currentCard || !gameState || !sessionId) return;
-
-    try {
-      const updatedFavorites = [...gameState.favorite_cards, currentCard.id];
-      
-      await supabase
-        .from("card_deck_game_sessions")
-        .update({
-          favorite_cards: updatedFavorites,
-          updated_at: new Date().toISOString()
-        })
-        .eq("id", sessionId);
-
-      toast.success("Added to favorites! 💕");
-
-    } catch (error) {
-      console.error("Failed to favorite card:", error);
-      toast.error("Failed to add to favorites");
-    }
-  }, [currentCard, gameState, sessionId]);
 
   // Pause/Resume game
   const togglePause = useCallback(async () => {
@@ -1145,14 +1120,12 @@ export function useCardGame(sessionId: string | null) {
       skipsRemaining: gameState && user ? 
         (user.id === gameState.user1_id ? 
           gameState.user1_skips_remaining : 
-          gameState.user2_skips_remaining) : 0,
-      favoriteCount: gameState?.favorite_cards.length || 0
+          gameState.user2_skips_remaining) : 0
     },
     actions: {
       drawCard,
       completeTurn,
       skipCard,
-      favoriteCard,
       togglePause,
       endGame,
       revealCard,
