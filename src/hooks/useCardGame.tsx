@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useCoupleData } from "@/hooks/useCoupleData";
 import { toast } from "sonner";
+import CardDistributionManager from "@/utils/cardDistributionManager";
 
 interface GameState {
   id: string;
@@ -351,21 +352,23 @@ export function useCardGame(sessionId: string | null) {
         return;
       }
 
-      // First, check distribution of played cards for weighted selection
-      if (gameState.played_cards && gameState.played_cards.length > 0) {
-        const { data: playedCards } = await supabase
-          .from("deck_cards")
-          .select("response_type")
-          .in("id", gameState.played_cards);
-        
-        const distribution = {
-          action: playedCards?.filter(c => c.response_type === 'action').length || 0,
-          text: playedCards?.filter(c => c.response_type === 'text').length || 0,
-          photo: playedCards?.filter(c => c.response_type === 'photo').length || 0
-        };
-        
-        console.log('📊 Current distribution:', distribution);
-      }
+      console.group('🎴 Drawing Card with Distribution Logic');
+      
+      const distributionManager = new CardDistributionManager();
+      const playedCardIds = gameState.played_cards || [];
+      
+      // Get all cards for reference
+      const { data: allCardsData } = await supabase
+        .from("deck_cards")
+        .select("id, response_type")
+        .in("id", playedCardIds.length > 0 ? playedCardIds : ['dummy']);
+      
+      const allCards = allCardsData || [];
+      
+      // Log current distribution
+      const currentDist = distributionManager.getCurrentCycleDistribution(playedCardIds, allCards);
+      console.log('📊 Current cycle distribution:', currentDist);
+      console.log(`📍 Position in cycle: ${playedCardIds.length % 10}/10`);
 
       // Group available cards by type
       const cardsByType = {
@@ -374,64 +377,69 @@ export function useCardGame(sessionId: string | null) {
         photo: availableCards.filter(c => c.response_type === 'photo')
       };
 
-      console.log('📦 Available cards by type:', {
+      console.log('📦 Available cards:', {
         action: cardsByType.action.length,
         text: cardsByType.text.length,
         photo: cardsByType.photo.length
       });
 
-      // WEIGHTED SELECTION - Prioritize underrepresented types
-      let selectedCard;
+      // Calculate weights
+      const weights = distributionManager.calculateTypeWeights(
+        playedCardIds, 
+        allCards, 
+        availableCards
+      );
       
-      // If no photo cards have been played and some are available, increase chance
-      const totalPlayed = gameState.total_cards_played || 0;
-      if (totalPlayed > 5 && cardsByType.photo.length > 0) {
-        // Check if any photo cards have been played
-        const { data: playedPhotoCards } = await supabase
-          .from("deck_cards")
-          .select("id")
-          .eq("response_type", "photo")
-          .in("id", gameState.played_cards || []);
+      console.log('⚖️ Type weights:', weights);
+
+      // Check consecutive cards
+      const lastTypes = [];
+      for (let i = Math.max(0, playedCardIds.length - 2); i < playedCardIds.length; i++) {
+        const card = allCards.find(c => c.id === playedCardIds[i]);
+        if (card) lastTypes.push(card.response_type);
+      }
+      console.log('🔄 Last card types:', lastTypes);
+
+      // Select type based on weights
+      let selectedType = distributionManager.selectCardType(weights);
+      let selectedCard = null;
+      
+      // Try to get a card of the selected type
+      if (cardsByType[selectedType].length > 0) {
+        selectedCard = cardsByType[selectedType][
+          Math.floor(Math.random() * cardsByType[selectedType].length)
+        ];
+      } else {
+        // Fallback: try other types
+        console.log(`⚠️ No ${selectedType} cards available, trying alternatives`);
         
-        const photoCardsPlayed = playedPhotoCards?.length || 0;
-        
-        if (photoCardsPlayed === 0) {
-          console.log('🎯 Forcing photo card selection (none played yet)');
-          selectedCard = cardsByType.photo[Math.floor(Math.random() * cardsByType.photo.length)];
+        for (const type of ['action', 'text', 'photo']) {
+          if (type !== selectedType && cardsByType[type].length > 0) {
+            const consecutiveCount = distributionManager.getConsecutiveCount(
+              playedCardIds, 
+              allCards, 
+              type
+            );
+            
+            if (consecutiveCount < 2) {
+              selectedCard = cardsByType[type][
+                Math.floor(Math.random() * cardsByType[type].length)
+              ];
+              selectedType = type;
+              break;
+            }
+          }
         }
       }
-      
-      // If not forced, use weighted random selection
+
+      // Final fallback
       if (!selectedCard) {
-        // Calculate weights based on availability
-        const totalAvailable = availableCards.length;
-        const weights = {
-          action: cardsByType.action.length / totalAvailable,
-          text: cardsByType.text.length / totalAvailable,
-          photo: cardsByType.photo.length / totalAvailable
-        };
-        
-        // Random selection with weights
-        const random = Math.random();
-        let selectedType;
-        
-        if (random < weights.action) {
-          selectedType = 'action';
-        } else if (random < weights.action + weights.text) {
-          selectedType = 'text';
-        } else {
-          selectedType = 'photo';
-        }
-        
-        const typeCards = cardsByType[selectedType];
-        if (typeCards.length > 0) {
-          selectedCard = typeCards[Math.floor(Math.random() * typeCards.length)];
-          console.log(`🎲 Selected ${selectedType} card`);
-        } else {
-          // Fallback to any available card
-          selectedCard = availableCards[Math.floor(Math.random() * availableCards.length)];
-        }
+        console.log('⚠️ Using random selection as final fallback');
+        selectedCard = availableCards[Math.floor(Math.random() * availableCards.length)];
+        selectedType = selectedCard.response_type;
       }
+
+      console.log(`✅ Selected ${selectedType} card:`, selectedCard.id);
 
       console.log('✅ Selected card:', {
         id: selectedCard.id.substring(0, 8),

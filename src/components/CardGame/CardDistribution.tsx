@@ -6,53 +6,114 @@ interface CardDistributionProps {
 }
 
 const CardDistribution: React.FC<CardDistributionProps> = ({ gameState }) => {
-  const [distribution, setDistribution] = useState({ action: 0, text: 0, photo: 0 });
-  
+  const [distribution, setDistribution] = useState({
+    total: { action: 0, text: 0, photo: 0 },
+    currentCycle: { action: 0, text: 0, photo: 0 },
+    cyclePosition: 0
+  });
+
   useEffect(() => {
     const fetchDistribution = async () => {
       if (!gameState?.played_cards || gameState.played_cards.length === 0) {
-        setDistribution({ action: 0, text: 0, photo: 0 });
+        setDistribution({
+          total: { action: 0, text: 0, photo: 0 },
+          currentCycle: { action: 0, text: 0, photo: 0 },
+          cyclePosition: 0
+        });
         return;
       }
-      
+
       const { data } = await supabase
         .from("deck_cards")
-        .select("response_type")
+        .select("id, response_type")
         .in("id", gameState.played_cards);
-      
+
       if (data) {
-        setDistribution({
-          action: data.filter(c => c.response_type === 'action').length,
-          text: data.filter(c => c.response_type === 'text').length,
-          photo: data.filter(c => c.response_type === 'photo').length
+        // Total distribution
+        const total = { action: 0, text: 0, photo: 0 };
+        data.forEach(card => {
+          if (total[card.response_type as keyof typeof total] !== undefined) {
+            total[card.response_type as keyof typeof total]++;
+          }
         });
+
+        // Current cycle distribution
+        const cyclePosition = gameState.played_cards.length % 10;
+        const cycleStart = Math.floor(gameState.played_cards.length / 10) * 10;
+        const currentCycleCards = gameState.played_cards.slice(cycleStart);
+        
+        const currentCycle = { action: 0, text: 0, photo: 0 };
+        data.filter(card => currentCycleCards.includes(card.id)).forEach(card => {
+          if (currentCycle[card.response_type as keyof typeof currentCycle] !== undefined) {
+            currentCycle[card.response_type as keyof typeof currentCycle]++;
+          }
+        });
+
+        setDistribution({ total, currentCycle, cyclePosition });
       }
     };
-    
+
     fetchDistribution();
   }, [gameState?.played_cards]);
-  
-  const total = distribution.action + distribution.text + distribution.photo;
-  
+
   return (
     <div className="bg-card p-3 rounded-lg border mb-4">
-      <h4 className="text-sm font-semibold text-card-foreground mb-2">Card Distribution</h4>
-      <div className="space-y-1 text-xs">
-        <div className="flex justify-between">
-          <span>Action: {distribution.action}</span>
-          <span>{total > 0 ? Math.round((distribution.action / total) * 100) : 0}%</span>
+      <h4 className="text-sm font-semibold text-card-foreground mb-2">
+        Card Distribution (Cycle {Math.floor((gameState?.total_cards_played || 0) / 10) + 1})
+      </h4>
+      
+      {/* Current Cycle Progress */}
+      <div className="mb-3">
+        <div className="flex justify-between text-xs text-muted-foreground mb-1">
+          <span>Cycle Progress</span>
+          <span>{distribution.cyclePosition}/10</span>
         </div>
-        <div className="flex justify-between">
-          <span>Text: {distribution.text}</span>
-          <span>{total > 0 ? Math.round((distribution.text / total) * 100) : 0}%</span>
-        </div>
-        <div className="flex justify-between text-destructive font-semibold">
-          <span>Photo: {distribution.photo}</span>
-          <span>{total > 0 ? Math.round((distribution.photo / total) * 100) : 0}%</span>
+        <div className="w-full bg-muted rounded-full h-2">
+          <div 
+            className="bg-primary h-2 rounded-full transition-all"
+            style={{ width: `${(distribution.cyclePosition / 10) * 100}%` }}
+          />
         </div>
       </div>
-      {distribution.photo === 0 && total > 10 && (
-        <p className="text-xs text-destructive mt-2">⚠️ No photo cards drawn yet!</p>
+
+      {/* Type Distribution in Current Cycle */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between text-xs">
+          <span className="flex items-center gap-1">
+            <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+            Action
+          </span>
+          <span className={distribution.currentCycle.action >= 4 ? 'text-green-600 font-bold' : ''}>
+            {distribution.currentCycle.action}/4
+          </span>
+        </div>
+        
+        <div className="flex items-center justify-between text-xs">
+          <span className="flex items-center gap-1">
+            <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+            Text
+          </span>
+          <span className={distribution.currentCycle.text >= 3 ? 'text-green-600 font-bold' : ''}>
+            {distribution.currentCycle.text}/3
+          </span>
+        </div>
+        
+        <div className="flex items-center justify-between text-xs">
+          <span className="flex items-center gap-1">
+            <span className="w-2 h-2 bg-pink-500 rounded-full"></span>
+            Photo
+          </span>
+          <span className={distribution.currentCycle.photo >= 3 ? 'text-green-600 font-bold' : ''}>
+            {distribution.currentCycle.photo}/3
+          </span>
+        </div>
+      </div>
+
+      {/* Warning if photo cards are behind */}
+      {distribution.cyclePosition >= 5 && distribution.currentCycle.photo === 0 && (
+        <p className="text-xs text-destructive mt-2 font-semibold">
+          ⚠️ Photo cards needed in this cycle!
+        </p>
       )}
     </div>
   );

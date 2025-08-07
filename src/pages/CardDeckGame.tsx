@@ -255,6 +255,38 @@ export const CardDeckGame: React.FC = () => {
           isMyTurn={isMyTurn} 
         />
 
+        {/* Force Photo Card Button for Development */}
+        {process.env.NODE_ENV === 'development' && (
+          <button
+            onClick={async () => {
+              const { data: photoCards } = await supabase
+                .from("deck_cards")
+                .select("id")
+                .eq("response_type", "photo")
+                .eq("is_active", true)
+                .not("id", "in", `(${gameState.played_cards.join(",")})`)
+                .limit(1);
+              
+              if (photoCards && photoCards.length > 0) {
+                await supabase
+                  .from("card_deck_game_sessions")
+                  .update({
+                    current_card_id: photoCards[0].id,
+                    last_activity_at: new Date().toISOString()
+                  })
+                  .eq("id", sessionId);
+                
+                console.log('Forced photo card:', photoCards[0].id);
+              } else {
+                console.log('No photo cards available!');
+              }
+            }}
+            className="px-3 py-1 bg-pink-500 text-white rounded text-xs mb-4"
+          >
+            Force Photo Card
+          </button>
+        )}
+
         {/* Game Completed Modal */}
         {gameState.status === 'completed' && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
