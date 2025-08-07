@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useCardGame } from '@/hooks/useCardGame';
-import { GameCard } from '@/components/CardGame/GameCard';
+import { AnimatedGameCard } from '@/components/CardGame/AnimatedGameCard';
 import { TurnIndicator } from '@/components/CardGame/TurnIndicator';
 import { GameStats } from '@/components/CardGame/GameStats';
 import { GameStatus } from '@/components/CardGame/GameStatus';
@@ -166,10 +166,10 @@ export const CardDeckGame: React.FC = () => {
           />
         </div>
 
-        {/* Game Card or Loading State */}
+        {/* Animated Game Card or Loading State */}
         <div className="mt-8">
           {currentCard ? (
-            <GameCard
+            <AnimatedGameCard
               card={currentCard}
               gameState={gameState}
               isMyTurn={isMyTurn}
@@ -180,8 +180,7 @@ export const CardDeckGame: React.FC = () => {
               skipsRemaining={stats.skipsRemaining}
               sessionId={sessionId || ''}
               userId={user?.id || ''}
-              blockAutoAdvance={blockAutoAdvance}
-              setBlockAutoAdvance={actions.setBlockAutoAdvance}
+              onShuffle={actions.drawCard}
             />
           ) : (
             <div className="text-center p-8 bg-muted rounded-lg">
