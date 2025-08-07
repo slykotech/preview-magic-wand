@@ -75,16 +75,10 @@ export const AICoach = () => {
 
   const initializeChatSession = async () => {
     try {
-      // Create or get existing chat session
-      const {
-        data: session,
-        error
-      } = await supabase.from('ai_coach_sessions').insert({
-        user_id: user?.id,
-        title: 'Daily Check-in Chat'
-      }).select().single();
-      if (error) throw error;
-      setSessionId(session.id);
+      // Generate consistent sessionId based on user ID + current date
+      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+      const consistentSessionId = `${user?.id}-${today}`;
+      setSessionId(consistentSessionId);
 
       // Set initial suggestions
       setSuggestions(["How can we improve our communication?", "Planning a special date night", "Dealing with relationship stress", "Building emotional intimacy"]);
