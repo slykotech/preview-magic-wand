@@ -537,13 +537,21 @@ export function useCardGame(sessionId: string | null) {
       // Handle failed task (timed out)
       if (timedOut) {
         newFailedTasks = currentFailedTasks + 1;
-        console.log(`⏰ Task failed due to timeout! Failed tasks: ${currentFailedTasks} → ${newFailedTasks}/3`);
+        console.log(`⏰ TIMEOUT DETECTED! Task failed due to timeout!`);
+        console.log(`⏰ Failed tasks: ${currentFailedTasks} → ${newFailedTasks}/3`);
+        console.log(`⏰ User: ${isUser1 ? 'User1' : 'User2'}, Field: ${failedTasksField}`);
         
         // Show immediate notification
         toast.error(`⏰ Time's up! Failed tasks: ${newFailedTasks}/3`, {
           duration: 3000,
           style: { backgroundColor: '#fee2e2', color: '#dc2626' }
         });
+        
+        // Update the game state immediately to reflect failed task count
+        setGameState(prev => prev ? {
+          ...prev,
+          [failedTasksField]: newFailedTasks
+        } : prev);
         
         // Check if game should end due to failed tasks
         if (newFailedTasks >= 3) {
@@ -741,9 +749,14 @@ export function useCardGame(sessionId: string | null) {
         total_cards_played: gameState.total_cards_played + 1,
         last_activity_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        status: gameEnded ? 'completed' : 'active',
-        [failedTasksField]: newFailedTasks, // Ensure failed tasks are updated in DB
+        status: gameEnded ? 'completed' : 'active'
       };
+
+      // Always update failed tasks field if timeout occurred
+      if (timedOut) {
+        updateData[failedTasksField] = newFailedTasks;
+        console.log(`🔄 Database update will include: ${failedTasksField} = ${newFailedTasks}`);
+      }
 
       // Add winner info if game ended
       if (gameEnded) {
