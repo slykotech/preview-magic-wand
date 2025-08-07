@@ -426,11 +426,40 @@ export const AnimatedGameCard: React.FC<AnimatedGameCardProps> = ({
                 </g>
               </svg>
               
-              {/* Text overlay with gradient */}
-              <div className="relative z-10 bg-gradient-to-t from-card via-card/90 to-transparent p-6 pt-12">
-                <p className="text-lg leading-relaxed text-center font-medium">
+              {/* Text overlay with gradient and card metadata */}
+              <div className="relative z-10 bg-gradient-to-t from-card via-card/95 to-transparent p-6 pt-16">
+                <p className="text-lg leading-relaxed text-center font-medium mb-6">
                   {card.prompt}
                 </p>
+                
+                {/* Card Metadata */}
+                <div className="space-y-3 text-center text-sm border-t border-border pt-4">
+                  <div className="text-muted-foreground font-medium">
+                    🏷️ {card.category.charAt(0).toUpperCase() + card.category.slice(1)}
+                    {card.subcategory && ` • ${card.subcategory}`}
+                  </div>
+                  
+                  <div className="flex justify-center items-center gap-6 text-muted-foreground">
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs">Difficulty:</span>
+                      <span className="text-amber-500">{'⭐'.repeat(card.difficulty_level)}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs">Intimacy:</span>
+                      <span className="text-rose-500">{'💕'.repeat(card.intimacy_level)}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-center items-center gap-4 text-xs text-muted-foreground">
+                    <span>⏱️ {card.timer_seconds}s</span>
+                    <span>
+                      {card.response_type === 'photo' ? '📸' : 
+                       card.response_type === 'text' ? '💬' : '⚡'} 
+                      {card.response_type}
+                    </span>
+                    {card.requires_physical_presence && <span>👫 Together</span>}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
