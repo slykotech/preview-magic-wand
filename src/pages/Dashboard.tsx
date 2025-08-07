@@ -58,7 +58,8 @@ const getMoodEmoji = (mood: string): string => {
 export const Dashboard = () => {
   const { checkFeatureAccess, showPrompt, promptFeature, closePrompt } = useSubscriptionGate();
   const [profiles, setProfiles] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [partnerProfile, setPartnerProfile] = useState<any>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [showSplash, setShowSplash] = useState(() => {
     // Only show splash on fresh app load, not on tab switches
@@ -182,6 +183,7 @@ export const Dashboard = () => {
         .eq('user_id', user?.id)
         .maybeSingle();
       
+      setUserProfile(profileData);
       setProfiles(profileData ? [profileData] : []);
 
       // First, get user's couple relationship - get the most recent one
@@ -211,6 +213,18 @@ export const Dashboard = () => {
       }
       const currentPartnerId = coupleData?.user1_id === user?.id ? coupleData?.user2_id : coupleData?.user1_id;
       setPartnerId(currentPartnerId);
+
+      // Fetch partner profile data if partner exists and is different from user
+      if (currentPartnerId && currentPartnerId !== user?.id) {
+        const { data: partnerProfileData } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', currentPartnerId)
+          .maybeSingle();
+        setPartnerProfile(partnerProfileData);
+      } else {
+        setPartnerProfile(null);
+      }
 
       // Handle case where user is paired with themselves (testing scenario)
       const isTestingWithSelf = currentPartnerId === user?.id;
@@ -571,7 +585,19 @@ export const Dashboard = () => {
         <div className={`${isLoaded ? 'animate-fade-in' : 'opacity-0'}`} style={{
           animationDelay: '200ms'
         }}>
-          {isLoaded ? <CoupleAvatars syncScore={currentSyncScore} animated={true} onUserAvatarClick={handleUserAvatarClick} onPartnerAvatarClick={handlePartnerAvatarClick} onCameraClick={handleCameraClick} hasUserStory={hasUserStory} hasPartnerStory={hasPartnerStory} isUserOnline={isUserOnline} isPartnerOnline={isPartnerOnline} /> : <div className="flex justify-center">
+          {isLoaded ? <CoupleAvatars 
+            syncScore={currentSyncScore} 
+            animated={true} 
+            onUserAvatarClick={handleUserAvatarClick} 
+            onPartnerAvatarClick={handlePartnerAvatarClick} 
+            onCameraClick={handleCameraClick} 
+            hasUserStory={hasUserStory} 
+            hasPartnerStory={hasPartnerStory} 
+            isUserOnline={isUserOnline} 
+            isPartnerOnline={isPartnerOnline}
+            userAvatarUrl={userProfile?.avatar_url}
+            partnerAvatarUrl={partnerProfile?.avatar_url}
+          /> : <div className="flex justify-center">
               <div className="flex items-center gap-4">
                 <div className="w-16 h-16 bg-muted animate-pulse rounded-full"></div>
                 <div className="w-8 h-8 bg-accent animate-pulse rounded-full"></div>
