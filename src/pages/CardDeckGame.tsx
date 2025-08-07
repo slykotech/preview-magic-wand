@@ -151,11 +151,6 @@ export const CardDeckGame: React.FC = () => {
           partnerInfo={partnerInfo}
         />
 
-        {/* Legacy Game Stats for other info */}
-        <GameStats 
-          cardsPlayed={stats.cardsPlayed}
-          skipsRemaining={stats.skipsRemaining}
-        />
 
         {/* Turn Indicator */}
         <div className="mb-8">
