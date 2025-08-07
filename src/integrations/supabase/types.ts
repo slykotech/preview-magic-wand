@@ -2957,10 +2957,6 @@ export type Database = {
         Args: { p_couple_id: string }
         Returns: number
       }
-      check_billing_status: {
-        Args: { p_user_id: string; p_subscription_id: string }
-        Returns: Json
-      }
       check_user_quota: {
         Args: { p_user_id: string; p_estimated_cost?: number }
         Returns: Json
@@ -4784,14 +4780,6 @@ export type Database = {
       st_zmin: {
         Args: { "": unknown }
         Returns: number
-      }
-      sync_subscription_status: {
-        Args: {
-          p_user_id: string
-          p_revenue_cat_status?: Json
-          p_device_id?: string
-        }
-        Returns: Json
       }
       text: {
         Args: { "": unknown }
