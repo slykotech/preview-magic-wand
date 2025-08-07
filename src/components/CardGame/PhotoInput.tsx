@@ -6,9 +6,10 @@ import { Input } from '@/components/ui/input';
 interface PhotoInputProps {
   onPhotoSelected: (url: string, caption?: string) => void;
   isSubmitting: boolean;
+  onPhotoStateChange?: (hasPhoto: boolean) => void;
 }
 
-export const PhotoInput: React.FC<PhotoInputProps> = ({ onPhotoSelected, isSubmitting }) => {
+export const PhotoInput: React.FC<PhotoInputProps> = ({ onPhotoSelected, isSubmitting, onPhotoStateChange }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [caption, setCaption] = useState('');
@@ -30,6 +31,11 @@ export const PhotoInput: React.FC<PhotoInputProps> = ({ onPhotoSelected, isSubmi
     window.addEventListener('resize', checkDevice);
     return () => window.removeEventListener('resize', checkDevice);
   }, []);
+
+  // Notify parent when photo state changes
+  useEffect(() => {
+    onPhotoStateChange?.(!!previewUrl);
+  }, [previewUrl, onPhotoStateChange]);
 
   const handleFileSelect = (file: File, mode: 'camera' | 'upload') => {
     if (file && file.type.startsWith('image/')) {

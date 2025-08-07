@@ -52,6 +52,7 @@ export const AnimatedGameCard: React.FC<AnimatedGameCardProps> = ({
 }) => {
   const [response, setResponse] = useState('');
   const [photoResponse, setPhotoResponse] = useState<File | null>(null);
+  const [hasPhotoSelected, setHasPhotoSelected] = useState(false);
   const [showResponsePopup, setShowResponsePopup] = useState(false);
   const [isShuffling, setIsShuffling] = useState(false);
   const cardSceneRef = useRef<HTMLDivElement>(null);
@@ -117,12 +118,18 @@ export const AnimatedGameCard: React.FC<AnimatedGameCardProps> = ({
     }
     setResponse('');
     setPhotoResponse(null);
+    setHasPhotoSelected(false);
   };
 
   const handlePhotoSubmit = async (photoUrl: string, caption?: string) => {
     onComplete(photoUrl, caption, false);
     setResponse('');
     setPhotoResponse(null);
+    setHasPhotoSelected(false);
+  };
+
+  const handlePhotoSelected = (hasPhoto: boolean) => {
+    setHasPhotoSelected(hasPhoto);
   };
 
   const handleTimerExpire = () => {
@@ -522,11 +529,14 @@ export const AnimatedGameCard: React.FC<AnimatedGameCardProps> = ({
                 ) : (
                   <Button
                     onClick={() => handleComplete(false)}
-                    disabled={false}
+                    disabled={card.response_type === 'photo' && !hasPhotoSelected}
                     className="px-6 py-3 bg-gradient-to-r from-primary to-purple-500 font-semibold"
                     size="lg"
                   >
-                    Complete Turn
+                    {card.response_type === 'photo' && !hasPhotoSelected 
+                      ? 'Upload Photo First' 
+                      : 'Complete Turn'
+                    }
                   </Button>
                 )}
                 
@@ -586,6 +596,7 @@ export const AnimatedGameCard: React.FC<AnimatedGameCardProps> = ({
             <PhotoInput
               onPhotoSelected={handlePhotoSubmit}
               isSubmitting={false}
+              onPhotoStateChange={handlePhotoSelected}
             />
           </div>
         );
