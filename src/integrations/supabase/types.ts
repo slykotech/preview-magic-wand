@@ -960,6 +960,57 @@ export type Database = {
         }
         Relationships: []
       }
+      entitlements: {
+        Row: {
+          created_at: string
+          expiration_date: string | null
+          id: string
+          identifier: string
+          is_active: boolean
+          is_sandbox: boolean
+          latest_purchase_date: string | null
+          original_purchase_date: string | null
+          period_type: string | null
+          product_identifier: string | null
+          store: string | null
+          updated_at: string
+          user_id: string
+          will_renew: boolean
+        }
+        Insert: {
+          created_at?: string
+          expiration_date?: string | null
+          id?: string
+          identifier: string
+          is_active?: boolean
+          is_sandbox?: boolean
+          latest_purchase_date?: string | null
+          original_purchase_date?: string | null
+          period_type?: string | null
+          product_identifier?: string | null
+          store?: string | null
+          updated_at?: string
+          user_id: string
+          will_renew?: boolean
+        }
+        Update: {
+          created_at?: string
+          expiration_date?: string | null
+          id?: string
+          identifier?: string
+          is_active?: boolean
+          is_sandbox?: boolean
+          latest_purchase_date?: string | null
+          original_purchase_date?: string | null
+          period_type?: string | null
+          product_identifier?: string | null
+          store?: string | null
+          updated_at?: string
+          user_id?: string
+          will_renew?: boolean
+        }
+        Relationships: []
+      }
       event_fetch_jobs: {
         Row: {
           completed_at: string | null
@@ -1875,6 +1926,60 @@ export type Database = {
           revenue_cat_customer_id?: string | null
           subscription_plan?: string | null
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      purchase_history: {
+        Row: {
+          country_code: string | null
+          created_at: string
+          currency: string | null
+          environment: string | null
+          id: string
+          is_family_share: boolean | null
+          is_restore: boolean | null
+          original_transaction_id: string | null
+          price: number | null
+          product_id: string
+          purchased_at: string
+          revenue_cat_event_id: string | null
+          store: string
+          transaction_id: string
+          user_id: string
+        }
+        Insert: {
+          country_code?: string | null
+          created_at?: string
+          currency?: string | null
+          environment?: string | null
+          id?: string
+          is_family_share?: boolean | null
+          is_restore?: boolean | null
+          original_transaction_id?: string | null
+          price?: number | null
+          product_id: string
+          purchased_at: string
+          revenue_cat_event_id?: string | null
+          store: string
+          transaction_id: string
+          user_id: string
+        }
+        Update: {
+          country_code?: string | null
+          created_at?: string
+          currency?: string | null
+          environment?: string | null
+          id?: string
+          is_family_share?: boolean | null
+          is_restore?: boolean | null
+          original_transaction_id?: string | null
+          price?: number | null
+          product_id?: string
+          purchased_at?: string
+          revenue_cat_event_id?: string | null
+          store?: string
+          transaction_id?: string
           user_id?: string
         }
         Relationships: []
