@@ -856,31 +856,31 @@ export const DatePlanner = () => {
                       cost: "$20-30"
                     },
                     {
-                      title: "Cooking Class for Two",
-                      description: "Learn to make a new cuisine together",
-                      category: "food",
-                      duration: "3-4 hours", 
-                      cost: "$80-120"
+                      title: "Candlelit Dinner at Home",
+                      description: "Cook together and dine by candlelight with soft music",
+                      category: "romantic",
+                      duration: "3-4 hours",
+                      cost: "$30-50"
                     },
                     {
-                      title: "Mini Golf Adventure",
-                      description: "Fun and playful competition with lots of laughs",
-                      category: "entertainment",
-                      duration: "1-2 hours",
-                      cost: "$15-25"
+                      title: "Stargazing Night",
+                      description: "Find a quiet spot to watch the stars and share dreams",
+                      category: "romantic",
+                      duration: "2-4 hours",
+                      cost: "Free"
                     },
                     {
-                      title: "Art Gallery Stroll",
-                      description: "Explore local art and culture together",
-                      category: "cultural",
+                      title: "Couples Massage",
+                      description: "Relax and reconnect with a spa day for two",
+                      category: "romantic",
                       duration: "2-3 hours",
-                      cost: "$10-20"
+                      cost: "$150-250"
                     },
                     {
-                      title: "Hiking Trail Discovery",
-                      description: "Find a scenic trail and enjoy nature together",
-                      category: "outdoor",
-                      duration: "3-5 hours",
+                      title: "Beach Walk at Dawn",
+                      description: "Watch the sunrise together while walking hand in hand",
+                      category: "romantic",
+                      duration: "1-2 hours",
                       cost: "Free"
                     },
                     {
@@ -889,6 +889,48 @@ export const DatePlanner = () => {
                       category: "romantic",
                       duration: "2-3 hours",
                       cost: "$50-80"
+                    },
+                    {
+                      title: "Private Movie Night",
+                      description: "Create a cozy home theater with your favorite films",
+                      category: "romantic",
+                      duration: "3-4 hours",
+                      cost: "$15-25"
+                    },
+                    {
+                      title: "Couple's Dance Class",
+                      description: "Learn a new dance together and create beautiful memories",
+                      category: "romantic",
+                      duration: "1-2 hours",
+                      cost: "$40-60"
+                    },
+                    {
+                      title: "Love Letter Writing",
+                      description: "Write heartfelt letters to each other in a cozy café",
+                      category: "romantic",
+                      duration: "1-2 hours",
+                      cost: "$10-20"
+                    },
+                    {
+                      title: "Memory Lane Drive",
+                      description: "Visit places that are special to your relationship",
+                      category: "romantic",
+                      duration: "2-4 hours",
+                      cost: "$20-40"
+                    },
+                    {
+                      title: "Cooking Class for Two",
+                      description: "Learn to make a new cuisine together",
+                      category: "food",
+                      duration: "3-4 hours", 
+                      cost: "$80-120"
+                    },
+                    {
+                      title: "Art Gallery Stroll",
+                      description: "Explore local art and culture together",
+                      category: "cultural",
+                      duration: "2-3 hours",
+                      cost: "$10-20"
                     }
                   ].map((idea, index) => (
                     <Card key={index} className="hover:shadow-md transition-shadow">
