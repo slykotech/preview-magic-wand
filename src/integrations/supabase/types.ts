@@ -295,12 +295,14 @@ export type Database = {
           created_at: string | null
           current_card_completed: boolean | null
           current_card_id: string | null
+          current_card_index: number | null
           current_card_responded_at: string | null
           current_card_response: string | null
           current_card_response_type: string | null
           current_card_revealed: boolean | null
           current_card_started_at: string | null
           current_turn: string
+          deck_size: number | null
           favorite_cards: Json | null
           game_mode: string | null
           id: string
@@ -311,6 +313,8 @@ export type Database = {
           last_response_seen: boolean | null
           last_response_text: string | null
           last_response_timestamp: string | null
+          max_failed_tasks: number | null
+          max_skips: number | null
           played_cards: Json | null
           response_dismissed_by_user1: boolean | null
           response_dismissed_by_user2: boolean | null
@@ -335,12 +339,14 @@ export type Database = {
           created_at?: string | null
           current_card_completed?: boolean | null
           current_card_id?: string | null
+          current_card_index?: number | null
           current_card_responded_at?: string | null
           current_card_response?: string | null
           current_card_response_type?: string | null
           current_card_revealed?: boolean | null
           current_card_started_at?: string | null
           current_turn: string
+          deck_size?: number | null
           favorite_cards?: Json | null
           game_mode?: string | null
           id?: string
@@ -351,6 +357,8 @@ export type Database = {
           last_response_seen?: boolean | null
           last_response_text?: string | null
           last_response_timestamp?: string | null
+          max_failed_tasks?: number | null
+          max_skips?: number | null
           played_cards?: Json | null
           response_dismissed_by_user1?: boolean | null
           response_dismissed_by_user2?: boolean | null
@@ -375,12 +383,14 @@ export type Database = {
           created_at?: string | null
           current_card_completed?: boolean | null
           current_card_id?: string | null
+          current_card_index?: number | null
           current_card_responded_at?: string | null
           current_card_response?: string | null
           current_card_response_type?: string | null
           current_card_revealed?: boolean | null
           current_card_started_at?: string | null
           current_turn?: string
+          deck_size?: number | null
           favorite_cards?: Json | null
           game_mode?: string | null
           id?: string
@@ -391,6 +401,8 @@ export type Database = {
           last_response_seen?: boolean | null
           last_response_text?: string | null
           last_response_timestamp?: string | null
+          max_failed_tasks?: number | null
+          max_skips?: number | null
           played_cards?: Json | null
           response_dismissed_by_user1?: boolean | null
           response_dismissed_by_user2?: boolean | null
@@ -483,6 +495,7 @@ export type Database = {
           meaningful_response: boolean | null
           partner_rating: number | null
           partner_reaction: string | null
+          position_in_deck: number | null
           responded_at: string | null
           response_audio_url: string | null
           response_photo_caption: string | null
@@ -503,6 +516,7 @@ export type Database = {
           meaningful_response?: boolean | null
           partner_rating?: number | null
           partner_reaction?: string | null
+          position_in_deck?: number | null
           responded_at?: string | null
           response_audio_url?: string | null
           response_photo_caption?: string | null
@@ -523,6 +537,7 @@ export type Database = {
           meaningful_response?: boolean | null
           partner_rating?: number | null
           partner_reaction?: string | null
+          position_in_deck?: number | null
           responded_at?: string | null
           response_audio_url?: string | null
           response_photo_caption?: string | null
@@ -1242,6 +1257,54 @@ export type Database = {
             columns: ["game_id"]
             isOneToOne: false
             referencedRelation: "card_games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      game_decks: {
+        Row: {
+          card_id: string
+          failed: boolean | null
+          id: string
+          is_played: boolean | null
+          played_at: string | null
+          position: number
+          session_id: string
+          skipped: boolean | null
+        }
+        Insert: {
+          card_id: string
+          failed?: boolean | null
+          id?: string
+          is_played?: boolean | null
+          played_at?: string | null
+          position: number
+          session_id: string
+          skipped?: boolean | null
+        }
+        Update: {
+          card_id?: string
+          failed?: boolean | null
+          id?: string
+          is_played?: boolean | null
+          played_at?: string | null
+          position?: number
+          session_id?: string
+          skipped?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_decks_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "deck_cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_decks_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "card_deck_game_sessions"
             referencedColumns: ["id"]
           },
         ]
@@ -3132,6 +3195,10 @@ export type Database = {
       cleanup_old_ai_events: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      create_shuffled_deck: {
+        Args: { p_session_id: string; p_deck_size?: number }
+        Returns: number
       }
       create_signup_invitation: {
         Args: { p_invitee_email: string; p_inviter_name?: string }
