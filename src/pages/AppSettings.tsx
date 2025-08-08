@@ -3,9 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -14,32 +12,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { 
   ArrowLeft, 
   Bell, 
-  Shield, 
   Moon, 
   Sun, 
-  Smartphone, 
-  Mail, 
-  Clock, 
-  Heart,
   Trash2,
-  Download,
-  User,
   AlertTriangle
 } from "lucide-react";
 import { useTheme } from "next-themes";
-
-interface AppPreferences {
-  dailyReminders: boolean;
-  weeklyInsights: boolean;
-  partnerActivity: boolean;
-  emailNotifications: boolean;
-}
-
-interface PermissionSettings {
-  location: boolean;
-  mediaLibrary: boolean;
-  camera: boolean;
-}
 
 export const AppSettings = () => {
   const { toast } = useToast();
@@ -50,20 +28,9 @@ export const AppSettings = () => {
   
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [preferences, setPreferences] = useState<AppPreferences>({
-    dailyReminders: true,
-    weeklyInsights: true,
-    partnerActivity: true,
-    emailNotifications: true
-  });
-  
-  const [permissions, setPermissions] = useState<PermissionSettings>({
-    location: false,
-    mediaLibrary: false,
-    camera: false
-  });
-
+  const [appNotifications, setAppNotifications] = useState(true);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     loadSettings();
@@ -83,16 +50,13 @@ export const AppSettings = () => {
         .maybeSingle();
 
       if (couplePrefs) {
-        setPreferences(prev => ({
-          ...prev,
-          dailyReminders: couplePrefs.reminder_frequency === 'daily'
-        }));
+        setAppNotifications(couplePrefs.reminder_frequency === 'daily');
       }
 
-      // Load permission settings from localStorage
-      const savedPermissions = localStorage.getItem('app_permissions');
-      if (savedPermissions) {
-        setPermissions(JSON.parse(savedPermissions));
+      // Load notification settings from localStorage
+      const savedNotifications = localStorage.getItem('app_notifications');
+      if (savedNotifications !== null) {
+        setAppNotifications(JSON.parse(savedNotifications));
       }
     } catch (error) {
       console.error('Error loading settings:', error);
@@ -117,13 +81,13 @@ export const AppSettings = () => {
         .from('couple_preferences')
         .upsert({
           couple_id: coupleData.id,
-          reminder_frequency: preferences.dailyReminders ? 'daily' : 'weekly'
+          reminder_frequency: appNotifications ? 'daily' : 'off'
         }, {
           onConflict: 'couple_id'
         });
 
-      // Save permissions to localStorage
-      localStorage.setItem('app_permissions', JSON.stringify(permissions));
+      // Save notifications to localStorage
+      localStorage.setItem('app_notifications', JSON.stringify(appNotifications));
 
       if (error) throw error;
 
@@ -143,72 +107,50 @@ export const AppSettings = () => {
     }
   };
 
-  const requestPermission = async (type: keyof PermissionSettings) => {
-    try {
-      let granted = false;
-      
-      switch (type) {
-        case 'location':
-          if ('geolocation' in navigator) {
-            await new Promise((resolve, reject) => {
-              navigator.geolocation.getCurrentPosition(resolve, reject);
-            });
-            granted = true;
-          }
-          break;
-        case 'mediaLibrary':
-          // For web browsers, we can't request permanent media library access
-          // Instead, we'll simulate the permission for file uploads
-          if ('showOpenFilePicker' in window || 'File' in window) {
-            granted = true; // Media library access is available through file inputs
-          }
-          break;
-        case 'camera':
-          if ('mediaDevices' in navigator) {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-            granted = true;
-            stream.getTracks().forEach(track => track.stop()); // Clean up
-          }
-          break;
-      }
-
-      if (granted) {
-        setPermissions(prev => ({ ...prev, [type]: true }));
-        toast({
-          title: "Permission granted ✅",
-          description: `${type} access has been enabled`
-        });
-      }
-    } catch (error) {
+  const deleteAccount = async () => {
+    if (!user) {
       toast({
-        title: "Permission denied",
-        description: `Could not enable ${type} access. Please check your browser settings.`,
+        title: "Authentication Error",
+        description: "No user session found. Please sign in again.",
         variant: "destructive"
       });
+      return;
     }
-  };
 
-  const deleteAccount = async () => {
     try {
-      setSaving(true);
+      setIsDeleting(true);
       
-      // Get the current session token
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        throw new Error('No valid session found');
+      // Get the current session
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session?.access_token) {
+        throw new Error('No valid session found. Please sign in again.');
       }
 
+      console.log('Calling delete-account function...');
+      
       // Call the delete-account edge function
       const { data, error } = await supabase.functions.invoke('delete-account', {
         headers: {
-          'Authorization': `Bearer ${session.access_token}`
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
         }
       });
 
-      if (error) throw error;
+      console.log('Delete function response:', { data, error });
+
+      if (error) {
+        console.error('Edge function error:', error);
+        throw error;
+      }
+
+      if (data?.error) {
+        console.error('Server error:', data.error);
+        throw new Error(data.error);
+      }
 
       // Clear local storage and state
       localStorage.clear();
+      sessionStorage.clear();
       
       // Sign out (this will also clear the session)
       await supabase.auth.signOut();
@@ -219,18 +161,29 @@ export const AppSettings = () => {
         description: "Your account and data have been permanently deleted."
       });
 
-      // Redirect to signup page
-      navigate('/signup', { replace: true });
+      // Redirect to signup page after a brief delay
+      setTimeout(() => {
+        navigate('/', { replace: true });
+      }, 2000);
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting account:', error);
+      
+      let errorMessage = "Please try again. If the problem persists, contact support.";
+      
+      if (error.message?.includes('session') || error.message?.includes('auth')) {
+        errorMessage = "Session expired. Please sign in again and try deleting your account.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "Unable to delete your account",
-        description: "Please try again. If the problem persists, contact support.",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
-      setSaving(false);
+      setIsDeleting(false);
       setShowDeleteDialog(false);
     }
   };
@@ -267,64 +220,23 @@ export const AppSettings = () => {
       </div>
 
       <div className="p-6 space-y-6">
-        {/* Notifications */}
+        {/* App Notifications */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 font-poppins">
               <Bell className="text-primary" size={20} />
-              Notifications
+              App Notifications
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <Label className="font-semibold">Daily Reminders</Label>
-                <p className="text-sm text-muted-foreground">Get reminded to check in with your partner</p>
+                <Label className="font-semibold">Enable Notifications</Label>
+                <p className="text-sm text-muted-foreground">Get reminded to check in with your partner and receive updates</p>
               </div>
               <Switch
-                checked={preferences.dailyReminders}
-                onCheckedChange={(checked) => 
-                  setPreferences(prev => ({ ...prev, dailyReminders: checked }))
-                }
-              />
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <div>
-                <Label className="font-semibold">Weekly Insights</Label>
-                <p className="text-sm text-muted-foreground">Receive relationship insights and tips</p>
-              </div>
-              <Switch
-                checked={preferences.weeklyInsights}
-                onCheckedChange={(checked) => 
-                  setPreferences(prev => ({ ...prev, weeklyInsights: checked }))
-                }
-              />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div>
-                <Label className="font-semibold">Partner Activity</Label>
-                <p className="text-sm text-muted-foreground">Notify when your partner is active</p>
-              </div>
-              <Switch
-                checked={preferences.partnerActivity}
-                onCheckedChange={(checked) => 
-                  setPreferences(prev => ({ ...prev, partnerActivity: checked }))
-                }
-              />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div>
-                <Label className="font-semibold">Email Notifications</Label>
-                <p className="text-sm text-muted-foreground">Mirror all reminders and insights via email</p>
-              </div>
-              <Switch
-                checked={preferences.emailNotifications}
-                onCheckedChange={(checked) => 
-                  setPreferences(prev => ({ ...prev, emailNotifications: checked }))
-                }
+                checked={appNotifications}
+                onCheckedChange={setAppNotifications}
               />
             </div>
           </CardContent>
@@ -355,93 +267,26 @@ export const AppSettings = () => {
           </CardContent>
         </Card>
 
-        {/* Permissions */}
+        {/* Delete Account */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 font-poppins">
-              <Shield className="text-primary" size={20} />
-              App Permissions
+            <CardTitle className="flex items-center gap-2 font-poppins text-destructive">
+              <Trash2 className="text-destructive" size={20} />
+              Delete Account
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <Label className="font-semibold">Location Access</Label>
-                <p className="text-sm text-muted-foreground">Required for local date plan suggestions</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Switch
-                  checked={permissions.location}
-                  onCheckedChange={(checked) => 
-                    checked ? requestPermission('location') : setPermissions(prev => ({ ...prev, location: false }))
-                  }
-                />
-                {!permissions.location && (
-                  <Button size="sm" variant="outline" onClick={() => requestPermission('location')}>
-                    Enable
-                  </Button>
-                )}
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <Label className="font-semibold">Media Library</Label>
-                <p className="text-sm text-muted-foreground">Upload photos to Memory Vault and stories</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Switch
-                  checked={permissions.mediaLibrary}
-                  onCheckedChange={(checked) => 
-                    checked ? requestPermission('mediaLibrary') : setPermissions(prev => ({ ...prev, mediaLibrary: false }))
-                  }
-                />
-                {!permissions.mediaLibrary && (
-                  <Button size="sm" variant="outline" onClick={() => requestPermission('mediaLibrary')}>
-                    Enable
-                  </Button>
-                )}
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <Label className="font-semibold">Camera Access</Label>
-                <p className="text-sm text-muted-foreground">Capture new photos for stories and memories</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Switch
-                  checked={permissions.camera}
-                  onCheckedChange={(checked) => 
-                    checked ? requestPermission('camera') : setPermissions(prev => ({ ...prev, camera: false }))
-                  }
-                />
-                {!permissions.camera && (
-                  <Button size="sm" variant="outline" onClick={() => requestPermission('camera')}>
-                    Enable
-                  </Button>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Account Management */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 font-poppins">
-              <User className="text-primary" size={20} />
-              Account Management
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Permanently delete your account and all associated data. This action cannot be undone.
+            </p>
             <Button
               variant="destructive"
               onClick={() => setShowDeleteDialog(true)}
-              className="w-full justify-start"
+              className="w-full justify-center"
+              disabled={isDeleting}
             >
               <Trash2 className="mr-2" size={16} />
-              Delete Account
+              Delete My Account
             </Button>
           </CardContent>
         </Card>
@@ -484,7 +329,7 @@ export const AppSettings = () => {
                   variant="outline"
                   onClick={() => setShowDeleteDialog(false)}
                   className="flex-1"
-                  disabled={saving}
+                  disabled={isDeleting}
                 >
                   Cancel
                 </Button>
@@ -492,9 +337,9 @@ export const AppSettings = () => {
                   variant="destructive"
                   onClick={deleteAccount}
                   className="flex-1"
-                  disabled={saving}
+                  disabled={isDeleting}
                 >
-                  {saving ? "Deleting..." : "Delete Forever"}
+                  {isDeleting ? "Deleting..." : "Delete Forever"}
                 </Button>
               </div>
             </CardContent>
