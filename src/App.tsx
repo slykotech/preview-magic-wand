@@ -4,7 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "next-themes";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./hooks/useAuth";
 import SplashScreen from "./components/SplashScreen";
 import { SignupPermissionsFlow } from "./components/SignupPermissionsFlow";
@@ -39,10 +39,7 @@ import { ResetPassword } from "./pages/ResetPassword";
 import { VerifyEmail } from "./pages/VerifyEmail";
 import SignupResolver from "./pages/SignupResolver";
 import CompleteSignup from "./pages/CompleteSignup";
-import { SubscriptionOnboarding } from "./pages/SubscriptionOnboarding";
 import { SubscriptionTrial } from "./pages/SubscriptionTrial";
-import { SubscriptionPlans } from "./pages/SubscriptionPlans";
-import { SubscriptionPayment } from "./pages/SubscriptionPayment";
 import { SubscriptionPartnerInvite } from "./pages/SubscriptionPartnerInvite";
 import { SubscriptionGate } from "./components/SubscriptionGate";
 
@@ -81,10 +78,10 @@ const App = () => {
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
-                <Route path="/subscription" element={<SubscriptionOnboarding />} />
+                <Route path="/subscription" element={<Navigate to="/subscription/trial" replace />} />
                 <Route path="/subscription/trial" element={<SubscriptionTrial />} />
-                <Route path="/subscription/plans" element={<SubscriptionPlans />} />
-                <Route path="/subscription/payment" element={<SubscriptionPayment />} />
+                <Route path="/subscription/plans" element={<Navigate to="/subscription/trial" replace />} />
+                <Route path="/subscription/payment" element={<Navigate to="/subscription/trial" replace />} />
                 <Route path="/subscription/partner-invite" element={<SubscriptionPartnerInvite />} />
                 <Route path="/dashboard" element={<SubscriptionGate><Dashboard /></SubscriptionGate>} />
                 <Route path="/messages" element={<SubscriptionGate><Messages /></SubscriptionGate>} />

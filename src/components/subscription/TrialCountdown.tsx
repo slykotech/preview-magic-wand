@@ -21,7 +21,7 @@ export const TrialCountdown = () => {
   }
 
   const handleUpgrade = () => {
-    navigate('/subscription/plans');
+    navigate('/subscription/trial');
   };
 
   return (

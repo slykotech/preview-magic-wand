@@ -56,7 +56,7 @@ export const LockedAccessScreen: React.FC<LockedAccessScreenProps> = ({
         <div className="space-y-3">
           {showFreeTrial && (
             <Button 
-              onClick={() => navigate('/subscription/plans')}
+              onClick={() => navigate('/subscription/trial')}
               className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:opacity-90"
               size="lg"
             >
