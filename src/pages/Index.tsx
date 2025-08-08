@@ -1,4 +1,4 @@
-//
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,13 @@ const Index = () => {
     loading
   } = useAuth();
   const navigate = useNavigate();
+  useEffect(() => {
+    if (!loading) {
+      if (user) {
+        navigate('/motto');
+      }
+    }
+  }, [user, loading, navigate]);
   if (loading) {
     return <div className="min-h-screen bg-gradient-romance flex items-center justify-center">
         <div className="text-center">
