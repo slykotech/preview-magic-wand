@@ -108,12 +108,20 @@ export const GameDebugPanel: React.FC<GameDebugPanelProps> = ({
   const recreateDeck = async () => {
     setLoading(true);
     try {
-      const deckManager = new DeckManager();
-      const deckSize = await deckManager.createShuffledDeck(sessionId);
+      // Simple reset - clear game state and let drawCard handle random selection
+      await supabase
+        .from('card_deck_game_sessions')
+        .update({
+          current_card_id: null,
+          played_cards: [],
+          skipped_cards: [],
+          total_cards_played: 0
+        })
+        .eq('id', sessionId);
       
       toast({
-        title: "Deck Recreated",
-        description: `New deck with ${deckSize} cards created`
+        title: "Game Reset",
+        description: "Cleared all cards, ready for fresh random draws"
       });
 
       // Run diagnostics after deck creation

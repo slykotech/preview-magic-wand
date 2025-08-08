@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useCoupleData } from "@/hooks/useCoupleData";
 import { toast } from "sonner";
-import CardDistributionManager from "@/utils/cardDistributionManager";
+import { DeckManager } from "@/utils/deckManager";
 
 interface GameState {
   id: string;
@@ -55,7 +55,8 @@ export function useCardGame(sessionId: string | null) {
   const [partnerInfo, setPartnerInfo] = useState<{id: string, name: string} | null>(null);
   const [cardRevealed, setCardRevealed] = useState(false);
   const [blockAutoAdvance, setBlockAutoAdvance] = useState(false);
-  const [lastNotificationTurn, setLastNotificationTurn] = useState<string>(''); // Track last notified turn to prevent duplicates
+  const [lastNotificationTurn, setLastNotificationTurn] = useState<string>('');
+  const [error, setError] = useState<string | null>(null);
 
   // Initialize game - consolidated initialization
   useEffect(() => {
@@ -199,7 +200,6 @@ export function useCardGame(sessionId: string | null) {
     };
   }, [user, sessionId, lastNotificationTurn]);
 
-
   // Reveal card function - syncs with database
   const revealCard = useCallback(async (): Promise<void> => {
     if (!isMyTurn || !gameState || !currentCard || cardRevealed) {
@@ -229,846 +229,149 @@ export function useCardGame(sessionId: string | null) {
     }
   }, [isMyTurn, gameState, currentCard, cardRevealed, sessionId]);
 
-  // This function is no longer needed as game creation is handled in Games.tsx
-  const createNewSession = async () => {
-    console.log('createNewSession called - this should not happen anymore');
-  };
-
-  // Draw next card with comprehensive error handling and immediate card setting
+  // Draw next card using simple random selection
   const drawCard = useCallback(async () => {
-    console.log('🎯 drawCard called:', { 
-      isMyTurn, 
-      gameState: !!gameState, 
-      sessionId,
-      playedCards: gameState?.played_cards?.length || 0 
-    });
-    
-    if (!isMyTurn || !gameState || !sessionId) {
-      console.log('❌ drawCard early return:', { isMyTurn, gameState: !!gameState, sessionId });
-      return;
-    }
+    if (!isMyTurn || !gameState || !sessionId) return;
 
     try {
-      console.log('🔍 Fetching available cards...');
+      setLoading(true);
       
-      // Get available cards with full data
-      let query = supabase
-        .from("deck_cards")
-        .select("*") // Get all fields, not just id
-        .eq("is_active", true);
-
-      // Combine played and skipped cards for exclusion
-      const excludedCards = [
-        ...(gameState.played_cards && Array.isArray(gameState.played_cards) ? gameState.played_cards : []),
-        ...(gameState.skipped_cards && Array.isArray(gameState.skipped_cards) ? gameState.skipped_cards : [])
-      ].filter(id => id && typeof id === 'string');
-
-      if (excludedCards.length > 0) {
-        console.log('🚫 Filtering out cards:', { 
-          played: gameState.played_cards?.length || 0, 
-          skipped: gameState.skipped_cards?.length || 0,
-          total: excludedCards.length 
-        });
-        query = query.not("id", "in", `(${excludedCards.join(",")})`);
-      }
-
-      const { data: availableCards, error } = await query.limit(100);
-
-      console.log('📊 Available cards result:', { 
-        count: availableCards?.length || 0, 
-        error: error?.message || 'none',
-        playedCardsCount: gameState.played_cards?.length || 0
-      });
-
-      if (error) {
-        console.error('❌ Supabase query error:', error);
-        throw new Error(`Database error: ${error.message}`);
-      }
-
-      if (!availableCards || availableCards.length === 0) {
+      const deckManager = new DeckManager();
+      const nextCard = await deckManager.drawNextCard(sessionId);
+      
+      if (!nextCard) {
         console.log('🏁 No more cards available, ending game');
-        toast.error("No more cards available!");
-        await endGame();
+        await endGame('deck_empty');
         return;
       }
 
-      console.group('🎴 Drawing Card with Enhanced Debug Logic');
+      setCurrentCard(nextCard);
       
-      const playedCardIds = gameState.played_cards || [];
-      
-      // STEP 1: Add comprehensive debugging for photo cards
-      console.log('🔍 PHOTO CARD INVESTIGATION:');
-      
-      // Check total photo cards in database
-      const { data: allPhotoCards, error: photoError } = await supabase
-        .from("deck_cards")
-        .select("id, prompt, category")
-        .eq("is_active", true)
-        .eq("response_type", "photo");
-      
-      console.log(`📸 Total photo cards in database: ${allPhotoCards?.length || 0}`);
-      if (photoError) console.error('❌ Photo card query error:', photoError);
-      
-      // Check what's being excluded (separate variable to avoid conflict)
-      const excludedCardIds = [
-        ...(gameState.played_cards && Array.isArray(gameState.played_cards) ? gameState.played_cards : []),
-        ...(gameState.skipped_cards && Array.isArray(gameState.skipped_cards) ? gameState.skipped_cards : [])
-      ].filter(id => id && typeof id === 'string');
-      
-      console.log('🚫 Excluded cards:', { 
-        played: gameState.played_cards?.length || 0, 
-        skipped: gameState.skipped_cards?.length || 0,
-        total: excludedCardIds.length,
-        excludedPhotoCards: excludedCardIds.length > 0 ? (await supabase
-          .from("deck_cards")
-          .select("response_type")
-          .in("id", excludedCardIds)
-          .eq("response_type", "photo")).data?.length || 0 : 0
-      });
-
-      // Check available photo cards after exclusion
-      let photoQuery = supabase
-        .from("deck_cards")
-        .select("*")
-        .eq("is_active", true)
-        .eq("response_type", "photo");
-
-      if (excludedCardIds.length > 0) {
-        photoQuery = photoQuery.not("id", "in", `(${excludedCardIds.join(",")})`);
-      }
-
-      const { data: availablePhotoCards } = await photoQuery;
-      console.log(`📸 Available photo cards after exclusion: ${availablePhotoCards?.length || 0}`);
-      
-      // Sample some photo cards
-      if (availablePhotoCards && availablePhotoCards.length > 0) {
-        console.log('📸 Sample available photo cards:', 
-          availablePhotoCards.slice(0, 3).map(c => ({
-            id: c.id.substring(0, 8),
-            prompt: c.prompt.substring(0, 50) + '...'
-          }))
-        );
-      } else {
-        console.log('❌ NO PHOTO CARDS AVAILABLE - This is the problem!');
-      }
-
-      // CRITICAL FIX: Get user-specific played cards for distribution calculation
-      console.log('🔍 Getting user-specific card history for distribution...');
-      
-      // Get cards that THIS USER has played (not combined)
-      const { data: userResponses } = await supabase
-        .from("card_responses")
-        .select("card_id")
-        .eq("session_id", sessionId)
-        .eq("user_id", user?.id)
-        .order("created_at", { ascending: true });
-
-      const userPlayedCardIds = userResponses?.map(r => r.card_id) || [];
-      console.log(`👤 User ${user?.id?.substring(0, 8)} has played ${userPlayedCardIds.length} cards`);
-
-      // Get card details for user's played cards only
-      let userCardsData = [];
-      if (userPlayedCardIds.length > 0) {
-        const { data } = await supabase
-          .from("deck_cards")
-          .select("id, response_type")
-          .in("id", userPlayedCardIds);
-        userCardsData = data || [];
-      }
-      
-      console.log('🔍 User-specific card analysis:', {
-        userPlayedCount: userPlayedCardIds.length,
-        userCardsDataCount: userCardsData.length,
-        combinedPlayedCount: playedCardIds.length,
-        userDistribution: userCardsData.reduce((acc, card) => {
-          acc[card.response_type] = (acc[card.response_type] || 0) + 1;
-          return acc;
-        }, { action: 0, text: 0, photo: 0 } as Record<string, number>)
-      });
-
-      // ENHANCED CARD SELECTION: Force photo cards if underrepresented
-      console.group('🎯 ENHANCED CARD SELECTION');
-      
-      const userDistribution = userCardsData.reduce((acc, card) => {
-        acc[card.response_type] = (acc[card.response_type] || 0) + 1;
-        return acc;
-      }, { action: 0, text: 0, photo: 0 } as Record<string, number>);
-
-      const totalUserCards = userPlayedCardIds.length;
-      const photoPercent = totalUserCards > 0 ? userDistribution.photo / totalUserCards : 0;
-      
-      console.log(`📊 User photo percentage: ${(photoPercent * 100).toFixed(1)}% (${userDistribution.photo}/${totalUserCards})`);
-
-      // If user has played 3+ cards and less than 20% are photos, FORCE a photo card
-      const shouldForcePhoto = totalUserCards >= 3 && photoPercent < 0.2 && availablePhotoCards && availablePhotoCards.length > 0;
-      
-      if (shouldForcePhoto) {
-        console.log('🎯 FORCING PHOTO CARD - User is photo-deficit');
-        const randomPhotoCard = availablePhotoCards[Math.floor(Math.random() * availablePhotoCards.length)];
-        
-        console.log('✅ Force-selected photo card:', {
-          id: randomPhotoCard.id.substring(0, 8),
-          type: randomPhotoCard.response_type,
-          prompt: randomPhotoCard.prompt.substring(0, 50) + '...'
-        });
-        
-        console.groupEnd();
-        console.groupEnd();
-        
-        // Update game state
-        const { error: updateError } = await supabase
-          .from("card_deck_game_sessions")
-          .update({
-            current_card_id: randomPhotoCard.id,
-            current_card_revealed: false,
-            current_card_started_at: new Date().toISOString(),
-            last_activity_at: new Date().toISOString()
-          })
-          .eq("id", sessionId);
-
-        if (updateError) {
-          console.error('❌ Failed to update game state:', updateError);
-          throw updateError;
-        }
-
-        setCurrentCard(randomPhotoCard as CardData);
-        setCardRevealed(false);
-        setBlockAutoAdvance(false);
-        
-        toast.success("📸 Photo challenge incoming!", {
-          description: "Time to capture the moment!"
-        });
-        
-        return;
-      }
-
-      console.log('📊 Using balanced distribution logic...');
-      
-      const cardManager = new CardDistributionManager();
-      
-      // Use the balanced selection method
-      let selectedCard = cardManager.selectRandomCard(
-        userPlayedCardIds,  // User's played cards only
-        userCardsData,      // User's card data only  
-        availableCards      // Available cards (shared pool)
-      );
-      
-      console.groupEnd();
-
-      // Check if we got a card
-      if (!selectedCard) {
-        console.log('❌ No card selected from simple method, using emergency fallback');
-        selectedCard = availableCards[Math.floor(Math.random() * availableCards.length)];
-      }
-
-      console.log('✅ Selected card:', {
-        id: selectedCard.id.substring(0, 8),
-        type: selectedCard.response_type,
-        category: selectedCard.category,
-        prompt: selectedCard.prompt.substring(0, 50) + '...'
-      });
-      
-      // Set the card locally immediately for better UX
-      setCurrentCard(selectedCard as CardData);
-      
-      // Update game state with the new card
-      console.log('💾 Updating game state with card:', selectedCard.id);
-      const updateData = {
-        current_card_id: selectedCard.id,
-        current_card_revealed: false,
-        current_card_started_at: null,
-        current_card_completed: false,
-        current_card_response: null,
-        current_card_response_type: null,
-        current_card_responded_at: null,
-        last_activity_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-
-      const { error: updateError } = await supabase
-        .from("card_deck_game_sessions")
-        .update(updateData)
-        .eq("id", sessionId);
-
-      if (updateError) {
-        console.error('❌ Update error:', updateError);
-        setCurrentCard(null); // Clear card on error
-        throw new Error(`Failed to update game: ${updateError.message}`);
-      }
-      
-      console.log('✅ Card drawn successfully!');
-      toast.success("New card drawn!");
+      // Auto-reveal the card
+      setTimeout(() => {
+        setCardRevealed(true);
+      }, 100);
 
     } catch (error) {
-      console.error("💥 Failed to draw card - Full error:", error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      toast.error(`Failed to draw card: ${errorMessage}`);
-      setCurrentCard(null); // Clear card on error
-      
-      // Add more specific error handling
-      if (errorMessage.includes('permission denied') || errorMessage.includes('policy violation')) {
-        console.error('🔒 Permission/RLS issue detected');
-        toast.error("Permission denied. Please check if you're properly logged in.");
-      } else if (errorMessage.includes('network') || errorMessage.includes('connection')) {
-        console.error('🌐 Network issue detected');
-        toast.error("Network error. Please check your connection.");
-      }
+      console.error("Failed to draw card:", error);
+      setError("Failed to draw card");
+    } finally {
+      setLoading(false);
     }
-  }, [isMyTurn, gameState, sessionId]);
+  }, [gameState, isMyTurn, sessionId]);
 
-  // Complete turn and switch to partner - now with failed task tracking
+  // Complete turn and switch to partner
   const completeTurn = useCallback(async (response?: string | File, caption?: string, reactionTime?: number, timedOut: boolean = false) => {
-    console.group('🎯 COMPLETE TURN FLOW');
-    console.log('🚨 CRITICAL - TIMEOUT FLAG:', timedOut);
-    console.log('🚨 Starting completeTurn with:', {
-      response,
-      hasResponse: !!response,
-      responseLength: typeof response === 'string' ? response.length : 'N/A',
-      currentCard: currentCard?.id,
-      cardType: currentCard?.response_type,
-      isMyTurn,
-      currentUserId: user?.id,
-      sessionId,
-      TIMEOUT_FLAG: timedOut,
-      gameStateSnapshot: {
-        user1_failed_tasks: gameState?.user1_failed_tasks,
-        user2_failed_tasks: gameState?.user2_failed_tasks,
-        current_turn: gameState?.current_turn,
-        status: gameState?.status
-      }
-    });
-    
-    if (!gameState || !currentCard || !sessionId || !user) {
-      const errorMsg = `Cannot complete turn: ${!gameState ? 'No game state' : !currentCard ? 'No current card' : !sessionId ? 'No session ID' : 'No user'}`;
-      console.error('❌ ' + errorMsg);
-      toast.error(errorMsg);
-      return;
-    }
-    
-    // Enhanced turn validation with more debugging
-    console.log('🔍 Turn validation:', {
-      currentTurn: gameState.current_turn,
-      userId: user.id,
-      isMatch: user.id === gameState.current_turn,
-      isUser1: user.id === gameState.user1_id,
-      isUser2: user.id === gameState.user2_id
-    });
-    
-    // Allow either the current turn holder OR if the user is one of the game participants
-    const isValidPlayer = user.id === gameState.user1_id || user.id === gameState.user2_id;
-    const isTurnHolder = user.id === gameState.current_turn;
-    
-    if (!isValidPlayer) {
-      console.error('❌ User not part of this game');
-      toast.error("You're not part of this game!");
-      return;
-    }
-    
-    // For debugging, allow any valid player to complete (remove strict turn checking for now)
-    console.log('✅ Player validation passed, proceeding with turn completion');
+    if (!gameState || !currentCard || !sessionId || !user) return;
 
     try {
-      // Check for failed task and handle win conditions
-      const isUser1 = user.id === gameState.user1_id;
-      const failedTasksField = isUser1 ? 'user1_failed_tasks' : 'user2_failed_tasks';
-      const currentFailedTasks = isUser1 ? (gameState.user1_failed_tasks || 0) : (gameState.user2_failed_tasks || 0);
-
-      let gameEnded = false;
-      let winnerId = null;
-      let winReason = null;
-      let newFailedTasks = currentFailedTasks;
-
-      // Handle failed task (timed out)
-      if (timedOut) {
-        // Ensure we have a valid number for failed tasks
-        const safeCurrentFailedTasks = Number(currentFailedTasks) || 0;
-        newFailedTasks = safeCurrentFailedTasks + 1;
-        
-        console.log(`⏰ TIMEOUT DETECTED! Task failed due to timeout!`);
-        console.log(`⏰ Failed tasks calculation:`, {
-          currentFailedTasks,
-          safeCurrentFailedTasks,
-          newFailedTasks,
-          failedTasksField,
-          isUser1,
-          gameStateValues: {
-            user1_failed_tasks: gameState.user1_failed_tasks,
-            user2_failed_tasks: gameState.user2_failed_tasks
-          }
-        });
-        
-        // Show immediate notification
-        toast.error(`⏰ Time's up! Failed tasks: ${newFailedTasks}/3`, {
-          duration: 3000,
-          style: { backgroundColor: '#fee2e2', color: '#dc2626' }
-        });
-        
-        // Update the game state immediately to reflect failed task count
-        setGameState(prev => prev ? {
-          ...prev,
-          [failedTasksField]: newFailedTasks
-        } : prev);
-        
-        // Check if game should end due to failed tasks - cap at 3
-        if (newFailedTasks >= 3) {
-          newFailedTasks = 3; // Cap at maximum
-          gameEnded = true;
-          winnerId = isUser1 ? gameState.user2_id : gameState.user1_id;
-          winReason = 'failed_tasks';
-          console.log('💀 Game Over! Too many failed tasks. Winner:', winnerId);
-          
-          toast.error('💀 Game Over! You failed too many tasks!', {
-            duration: 5000,
-            style: { backgroundColor: '#fecaca', color: '#dc2626' }
-          });
-        }
-      }
-
-      // Save response for action cards or if response is provided
-      console.log('💾 Response saving logic:', {
-        hasResponse: !!response,
-        requiresAction: currentCard.requires_action,
-        responseType: currentCard.response_type,
-        shouldSaveResponse: response || currentCard.requires_action
-      });
-      
-      if (response || currentCard.requires_action || currentCard.response_type === 'action') {
+      // Save response if provided
+      if (response || currentCard.requires_action) {
         let responseText = '';
         let responseType = currentCard.response_type || 'action';
         
-        console.log('💾 Preparing to save response:', { response, responseType, cardId: currentCard.id });
-        
         if (response instanceof File) {
-          // Handle file upload to Supabase Storage
+          // Handle file upload
           const fileName = `${sessionId}/${currentCard.id}/${Date.now()}.jpg`;
           const { data: uploadData, error: uploadError } = await supabase.storage
             .from('card-responses')
             .upload(fileName, response);
           
           if (!uploadError && uploadData) {
-            responseText = fileName; // Store file path
+            responseText = fileName;
             responseType = 'photo';
-          } else {
-            console.error('❌ File upload failed:', uploadError);
-            throw new Error('Failed to upload photo');
           }
         } else if (typeof response === 'string') {
           responseText = response;
           responseType = 'text';
         } else {
-          // For action cards, save a default response
           responseText = 'Task completed';
           responseType = 'action';
         }
 
-        // First, update the game session with response for real-time sharing
-        if (responseText) {
-          console.group('💬 UPDATING GAME SESSION WITH RESPONSE');
-          console.log('Response details:', {
-            responseText,
-            responseType,
-            sessionId,
-            cardId: currentCard.id,
-            userId: user.id
+        // Save response to database
+        await supabase
+          .from("card_responses")
+          .insert({
+            session_id: sessionId,
+            card_id: currentCard.id,
+            user_id: user.id,
+            response_text: responseText,
+            response_type: responseType,
+            time_taken_seconds: reactionTime || null,
+            completed_on_time: !timedOut
           });
-          
-          const { data: sessionData, error: sessionUpdateError } = await supabase
-            .from("card_deck_game_sessions")
-            .update({
-              current_card_response: responseText,
-              current_card_response_type: responseType,
-              current_card_responded_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            })
-            .eq("id", sessionId)
-            .select()
-            .single();
-
-          if (sessionUpdateError) {
-            console.error('❌ Error updating session with response:', sessionUpdateError);
-            console.groupEnd();
-          } else {
-            console.log('✅ Game session updated successfully:', sessionData);
-            console.log('🔄 Real-time event should now fire for partner');
-            console.log('⏳ Waiting 3 seconds for partner to see response...');
-            console.groupEnd();
-            // Give a moment for the partner to see the response before proceeding
-            await new Promise(resolve => setTimeout(resolve, 3000));
-          }
-        }
-
-        const responseData = {
-          session_id: sessionId,
-          card_id: currentCard.id,
-          user_id: user.id,
-          response_text: responseText,
-          response_type: responseType,
-          time_taken_seconds: reactionTime || null,
-          completed_on_time: !timedOut
-        };
-        
-        console.log('📝 Inserting response to database:', responseData);
-        
-        try {
-          const { data: insertedResponse, error: responseError } = await supabase
-            .from("card_responses")
-            .insert(responseData)
-            .select()
-            .single();
-            
-          if (responseError) {
-            console.error('❌ Failed to insert response:', responseError);
-            console.error('Response error details:', {
-              code: responseError.code,
-              message: responseError.message,
-              details: responseError.details,
-              hint: responseError.hint
-            });
-            throw responseError;
-          }
-          
-          console.log('✅ Response inserted successfully:', insertedResponse);
-        } catch (insertError) {
-          console.error('❌ Insert operation failed:', insertError);
-          // Continue with turn completion even if response save fails
-          toast.error('Response save failed, but continuing turn');
-        }
       }
 
-      // Update game state - switch turn and mark card as completed
+      // Switch turns and draw next card for partner
       const nextTurn = gameState.current_turn === gameState.user1_id 
         ? gameState.user2_id 
         : gameState.user1_id;
 
-      const updatedPlayedCards = [...(gameState.played_cards || []), currentCard.id];
+      const deckManager = new DeckManager();
+      const nextCard = await deckManager.drawNextCard(sessionId);
 
-      console.log('🔄 Updating game state:', {
-        sessionId,
-        currentTurn: gameState.current_turn,
-        nextTurn,
-        cardId: currentCard.id,
-        totalPlayed: gameState.total_cards_played
-      });
-
-      // First, let's draw the next card for the partner
-      console.log('🎯 Drawing next card for partner before switching turns');
-      let nextCardId = null;
-      
-      try {
-        // Get available cards for the next player
-        let query = supabase
-          .from("deck_cards")
-          .select("id")
-          .eq("is_active", true);
-
-        // Exclude played cards (including the one we just completed)
-        if (updatedPlayedCards.length > 0) {
-          const validPlayedCards = updatedPlayedCards.filter(id => id && typeof id === 'string');
-          if (validPlayedCards.length > 0) {
-            query = query.not("id", "in", `(${validPlayedCards.join(",")})`);
-          }
-        }
-
-        // Exclude skipped cards  
-        if (gameState.skipped_cards && Array.isArray(gameState.skipped_cards) && gameState.skipped_cards.length > 0) {
-          const validSkippedCards = gameState.skipped_cards.filter(id => id && typeof id === 'string');
-          if (validSkippedCards.length > 0) {
-            query = query.not("id", "in", `(${validSkippedCards.join(",")})`);
-          }
-        }
-
-        const { data: availableCards, error: cardError } = await query.limit(100);
-
-        if (cardError) {
-          console.error('❌ Error fetching next card:', cardError);
-        } else if (availableCards && availableCards.length > 0) {
-          // Select random card for next player
-          const randomCard = availableCards[Math.floor(Math.random() * availableCards.length)];
-          nextCardId = randomCard.id;
-          console.log('✅ Next card selected:', nextCardId);
-        } else {
-          console.log('🏁 No more cards available for next player');
-        }
-      } catch (error) {
-        console.error('❌ Failed to fetch next card:', error);
-      }
-
-      const updateData: any = {
-        current_turn: gameEnded ? gameState.current_turn : nextTurn, // Keep current turn when game ends
-        current_card_id: gameEnded ? null : nextCardId, // Set the next card immediately
-        current_card_revealed: false,
-        current_card_started_at: null,
-        current_card_completed: false, // Reset for next turn
-        current_card_response: null, // Clear response for next turn
-        current_card_response_type: null,
-        current_card_responded_at: null,
-        played_cards: updatedPlayedCards,
-        total_cards_played: gameState.total_cards_played + 1,
-        last_activity_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        status: gameEnded ? 'completed' : 'active'
-      };
-
-      // Always update failed tasks field if timeout occurred
-      if (timedOut) {
-        // Ensure we're setting a valid number
-        const validFailedTasks = Number(newFailedTasks) || 0;
-        updateData[failedTasksField] = validFailedTasks;
-        
-        console.log(`🔄 Database update will include: ${failedTasksField} = ${validFailedTasks}`);
-        console.log(`🚨 Failed tasks validation:`, {
-          originalValue: newFailedTasks,
-          validatedValue: validFailedTasks,
-          type: typeof validFailedTasks,
-          isNumber: !isNaN(validFailedTasks)
-        });
-        console.log(`🚨 Full updateData for timeout:`, JSON.stringify(updateData, null, 2));
-        
-        // Force immediate local state update for visual feedback
-        setGameState(prevState => {
-          if (!prevState) return prevState;
-          const updatedState = { ...prevState };
-          updatedState[failedTasksField] = validFailedTasks;
-          console.log(`🔄 Local state updated: ${failedTasksField} = ${validFailedTasks}`);
-          return updatedState;
-        });
-      }
-
-      // Add winner info if game ended
-      if (gameEnded) {
-        updateData.winner_id = winnerId;
-        updateData.win_reason = winReason;
-        updateData.completed_at = new Date().toISOString();
-      }
-
-      // Handle response data (only if there's a response or action was completed)
-      if (timedOut) {
-        // For timeouts, don't save response data but clear previous
-        console.log('⏰ Timeout - clearing response data');
-        updateData.last_response_text = null;
-        updateData.last_response_photo_url = null;
-        updateData.last_response_photo_caption = null;
-        updateData.last_response_author_id = null;
-        updateData.last_response_timestamp = null;
-        updateData.last_response_seen = true;
-      } else if (response && typeof response === 'string' && currentCard.response_type === 'text') {
-        console.log('💬 Adding text response data for next player...');
-        updateData.last_response_text = response;
-        updateData.last_response_photo_url = null;
-        updateData.last_response_photo_caption = null;
-        updateData.last_response_author_id = user.id;
-        updateData.last_response_timestamp = new Date().toISOString();
-        updateData.last_response_seen = false;
-        
-        console.log('Response data to save:', {
-          text: response.substring(0, 50) + '...',
-          authorId: user.id,
-          seen: false
-        });
-      } else if (response && typeof response === 'string' && currentCard.response_type === 'photo') {
-        console.log('📸 Adding photo response data for next player...');
-        updateData.last_response_text = null;
-        updateData.last_response_photo_url = response;
-        updateData.last_response_photo_caption = caption || null;
-        updateData.last_response_author_id = user.id;
-        updateData.last_response_timestamp = new Date().toISOString();
-        updateData.last_response_seen = false;
-        
-        console.log('Photo response data to save:', {
-          photoUrl: response.substring(0, 50) + '...',
-          caption: caption || null,
-          authorId: user.id,
-          seen: false
-        });
-      } else {
-        console.log('🧹 Clearing previous response data (action task or no response)');
-        updateData.last_response_text = null;
-        updateData.last_response_photo_url = null;
-        updateData.last_response_photo_caption = null;
-        updateData.last_response_author_id = null;
-        updateData.last_response_timestamp = null;
-        updateData.last_response_seen = true;
-      }
-
-      console.log('🚨 CRITICAL DATABASE UPDATE:', {
-        sessionId,
-        timedOut,
-        failedTasksField,
-        newFailedTasks,
-        updateIncludesFailedField: failedTasksField in updateData,
-        updateValue: updateData[failedTasksField]
-      });
-
-      const { data: updatedData, error: updateError } = await supabase
-        .from("card_deck_game_sessions")
-        .update(updateData)
-        .eq("id", sessionId)
-        .select()
-        .single();
-
-      if (updateError) {
-        console.error('❌ Game state update failed:', updateError);
-        console.error('❌ Update error details:', {
-          code: updateError.code,
-          message: updateError.message,
-          details: updateError.details,
-          hint: updateError.hint
-        });
-        throw updateError;
-      }
-      
-      console.log('✅ Game state updated successfully:', updatedData);
-      console.log('🚨 FAILED TASKS AFTER UPDATE - DATABASE RESPONSE:', {
-        user1_failed_tasks: updatedData?.user1_failed_tasks,
-        user2_failed_tasks: updatedData?.user2_failed_tasks,
-        requestedField: failedTasksField,
-        requestedValue: updateData[failedTasksField],
-        wasTimeoutFlagTrue: timedOut,
-        updateWasSuccessful: !updateError
-      });
-      console.log('Response fields after update:', {
-        last_response_text: updatedData?.last_response_text,
-        last_response_author_id: updatedData?.last_response_author_id,
-        last_response_seen: updatedData?.last_response_seen
-      });
-
-      // Update card usage count for the completed card
+      // Update game state
       await supabase
-        .from("deck_cards")
-        .update({ usage_count: (currentCard.usage_count || 0) + 1 })
-        .eq("id", currentCard.id);
+        .from("card_deck_game_sessions")
+        .update({
+          current_turn: nextCard ? nextTurn : gameState.current_turn,
+          current_card_id: nextCard?.id || null,
+          current_card_revealed: false,
+          total_cards_played: gameState.total_cards_played + 1,
+          last_activity_at: new Date().toISOString(),
+          status: nextCard ? 'active' : 'completed'
+        })
+        .eq("id", sessionId);
 
-      // Show appropriate notification
-      if (timedOut) {
-        if (gameEnded) {
-          toast.error("⏰ Task failed! Game Over!");
-        } else {
-          toast.error(`⏰ Task failed! ${3 - newFailedTasks} chances left.`);
-        }
+      if (!nextCard) {
+        toast.success("Game completed! 🎉");
       } else {
         toast.success("Turn completed! 💕");
       }
 
-      if (gameEnded) {
-        console.log('🎮 Game ended!', { winnerId, winReason });
-      }
-
     } catch (error) {
       console.error("Failed to complete turn:", error);
-      toast.error("Failed to complete turn. Please try again.");
-    } finally {
-      console.groupEnd();
+      toast.error("Failed to complete turn");
     }
-  }, [isMyTurn, gameState, currentCard, sessionId, user]);
+  }, [gameState, currentCard, sessionId, user]);
 
-  // Skip card (limited uses) - now with win condition check
+  // Skip card function
   const skipCard = useCallback(async () => {
     if (!isMyTurn || !gameState || !currentCard || !sessionId || !user) return;
 
-    const isUser1 = user.id === gameState.user1_id;
-    const skipsField = isUser1 ? 'user1_skips_remaining' : 'user2_skips_remaining';
-    const skipsRemaining = gameState[skipsField];
-
-    // Block only if already at 0 skips - allow the last skip to be used
-    if (skipsRemaining <= 0) {
-      toast.error("No skips remaining! 😅");
-      return;
-    }
-
     try {
-      console.log(`🎯 Using skip... Current skips: ${skipsRemaining}`);
+      const deckManager = new DeckManager();
+      await deckManager.skipCard(sessionId);
       
-      const newSkipsRemaining = skipsRemaining - 1;
-      let gameEnded = false;
-      let winnerId = null;
-      let winReason = null;
-
-      // Check if this was the last skip - game ends after using it
-      if (newSkipsRemaining === 0) {
-        gameEnded = true;
-        winnerId = isUser1 ? gameState.user2_id : gameState.user1_id;
-        winReason = 'no_skips';
-        console.log('🎮 Last skip used! Game ending with opponent as winner.');
-      }
-
-      const updatedSkippedCards = [...(gameState.skipped_cards || []), currentCard.id];
+      // Draw next card
+      const nextCard = await deckManager.drawNextCard(sessionId);
       
-      const updateData: any = {
-        [skipsField]: newSkipsRemaining,
-        skipped_cards: updatedSkippedCards,
-        current_card_id: null,
-        current_card_revealed: false,
-        updated_at: new Date().toISOString()
-      };
-
-      // If game is ending due to no skips left
-      if (gameEnded) {
-        updateData.status = 'completed';
-        updateData.winner_id = winnerId;
-        updateData.win_reason = winReason;
-        updateData.completed_at = new Date().toISOString();
-        // Don't set current_turn to null - keep it as is when game ends
-        
-        // Clear any pending response data
-        updateData.last_response_text = null;
-        updateData.last_response_seen = true;
+      if (nextCard) {
+        setCurrentCard(nextCard);
       } else {
-        // Switch turns after skip if game is still active
-        const nextTurn = isUser1 ? gameState.user2_id : gameState.user1_id;
-        updateData.current_turn = nextTurn;
-        console.log(`🔄 Switching turn after skip from ${user.id} to ${nextTurn}`);
+        await endGame('deck_empty');
       }
-
-      console.log('📝 Updating game with skip data:', updateData);
-
-      const { data, error } = await supabase
-        .from("card_deck_game_sessions")
-        .update(updateData)
-        .eq("id", sessionId)
-        .select()
-        .single();
-
-      if (error) {
-        console.error('❌ Skip update failed:', error);
-        toast.error("Failed to skip card. Please try again.");
-        throw error;
-      }
-
-      console.log('✅ Skip successful:', data);
       
-      // Show appropriate notification
-      if (gameEnded) {
-        toast.error("🎮 You've used your last skip! Game Over!");
-        // Don't draw new card since game has ended
-      } else {
-        toast.success(`Card skipped! ${newSkipsRemaining} skip${newSkipsRemaining !== 1 ? 's' : ''} left`);
-        // Turn has been switched, so the other player will need to draw a new card
-        // No need to call drawCard() here since it's no longer this player's turn
-      }
-
+      toast.success("Card skipped!");
+      
     } catch (error) {
       console.error("Failed to skip card:", error);
-      toast.error("Failed to skip card. Please try again.");
+      toast.error("Failed to skip card");
     }
-  }, [isMyTurn, gameState, currentCard, sessionId, user, drawCard]);
-
-
+  }, [isMyTurn, gameState, currentCard, sessionId, user]);
 
   // End game
-  const endGame = useCallback(async () => {
+  const endGame = useCallback(async (reason?: string) => {
     if (!sessionId) return;
 
     try {
-      const sessionDuration = gameState ? 
-        new Date().getTime() - new Date(gameState.started_at).getTime() : 0;
-
       await supabase
         .from("card_deck_game_sessions")
         .update({
           status: 'completed',
           completed_at: new Date().toISOString(),
-          session_duration: `${Math.floor(sessionDuration / 1000)} seconds`,
-          updated_at: new Date().toISOString()
+          win_reason: reason || 'manual_end'
         })
         .eq("id", sessionId);
 
@@ -1078,47 +381,36 @@ export function useCardGame(sessionId: string | null) {
       console.error("Failed to end game:", error);
       toast.error("Failed to end game");
     }
-  }, [gameState, sessionId]);
+  }, [sessionId]);
 
-  // Rematch function - creates a new game session for both partners
+  // Rematch function
   const rematchGame = useCallback(async () => {
     if (!gameState || !user) return;
 
     try {
-      console.log("Starting rematch for session:", sessionId);
-      
-      // Create a new game session with the same partners
       const { data: newSession, error } = await supabase
         .from('card_deck_game_sessions')
         .insert({
           couple_id: gameState.couple_id,
           user1_id: gameState.user1_id,
           user2_id: gameState.user2_id,
-          current_turn: gameState.user1_id, // Start with user1 again
+          current_turn: gameState.user1_id,
           status: 'active',
           game_mode: gameState.game_mode || 'classic'
         })
         .select()
         .single();
 
-      if (error) {
-        console.error("Failed to create rematch session:", error);
-        toast.error("Failed to create rematch");
-        return;
-      }
+      if (error) throw error;
 
-      console.log("Created new rematch session:", newSession.id);
       toast.success("Rematch started! 🎮");
-
-      // Navigate both players to the new game session
-      // This will happen automatically via realtime updates, but we can also navigate directly
       window.location.href = `/games/card-deck/${newSession.id}`;
 
     } catch (error) {
       console.error("Failed to start rematch:", error);
       toast.error("Failed to start rematch");
     }
-  }, [gameState, sessionId, user]);
+  }, [gameState, user]);
 
   return {
     gameState,
@@ -1138,13 +430,13 @@ export function useCardGame(sessionId: string | null) {
       drawCard,
       completeTurn,
       skipCard,
-      
       endGame,
       revealCard,
       setBlockAutoAdvance,
       rematchGame
     },
     cardRevealed,
-    blockAutoAdvance
+    blockAutoAdvance,
+    error
   };
 }

@@ -205,7 +205,7 @@ export const CardDeckGame: React.FC = () => {
             
             <Button
               variant="destructive"
-              onClick={actions.endGame}
+              onClick={() => actions.endGame()}
               className="min-w-[140px] h-10"
             >
               End Game
@@ -290,20 +290,19 @@ export const CardDeckGame: React.FC = () => {
                   console.log('🎯 Played card types:', responseDistribution);
                 }
                 
-                // Test the card manager directly
-                const manager = new (await import('../utils/cardDistributionManager')).default();
+                // Test random card selection
+                const { data: available } = await supabase
+                  .from("deck_cards")
+                  .select("*")
+                  .eq("is_active", true);
                 
-                // Get available cards
-                const excludedIds = [...(gameState?.played_cards || []), ...(gameState?.skipped_cards || [])];
-                let query = supabase.from("deck_cards").select("*").eq("is_active", true);
-                if (excludedIds.length > 0) {
-                  query = query.not("id", "in", `(${excludedIds.join(",")})`);
+                console.log('🎲 Testing random card selection...');
+                if (available && available.length > 0) {
+                  const types = ['action', 'text', 'photo'];
+                  const randomType = types[Math.floor(Math.random() * types.length)];
+                  const testCard = available.find(c => c.response_type === randomType) || available[0];
+                  console.log('🧪 Test result:', testCard?.response_type);
                 }
-                const { data: available } = await query;
-                
-                console.log('🎲 Testing CardDistributionManager...');
-                const testCard = manager.selectRandomCard([], [], available || []);
-                console.log('🧪 Test result:', testCard?.response_type);
                 
                 console.groupEnd();
               }}
