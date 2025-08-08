@@ -28,7 +28,7 @@ export const GradientHeader = ({
       navigate(-1);
     }
   };
-  return <div className={`bg-gradient-romance text-white p-6 pb-8 shadow-romantic relative overflow-hidden rounded-b-[2rem] ${className}`}>
+  return <div className={`bg-gradient-romance text-white p-6 pb-8 safe-area-top shadow-romantic relative overflow-hidden rounded-b-[2rem] ${className}`}>
       {/* Background Pattern with curved overlay */}
       <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-black/10 rounded-b-[2rem]" />
       <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl transform translate-x-24 -translate-y-24" />
@@ -42,7 +42,7 @@ export const GradientHeader = ({
           {showBackButton && <Button variant="ghost" size="icon" onClick={handleBackClick} className="text-white hover:bg-white/20 rounded-full h-10 w-10">
               <ArrowLeft className="w-5 h-5" />
             </Button>}
-          <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm border border-white/10">
+          <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center shrink-0 backdrop-blur-sm border border-white/10 [&>svg]:w-6 [&>svg]:h-6 [&>svg]:text-white [&>svg]:stroke-[1.75]">
             {icon}
           </div>
           <div className="flex-1">
