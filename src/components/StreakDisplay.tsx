@@ -28,7 +28,7 @@ export const StreakDisplay: React.FC<StreakDisplayProps> = ({
 
   return (
     <Card className={`${className} bg-gradient-romance border-none shadow-elegant`}>
-      <CardContent className="p-6">
+      <CardContent className="p-4">
         <h3 className="text-lg font-bold text-white mb-4 text-center">
           Love Streaks {getStreakEmoji(Math.max(checkinStreak, storyStreak))}
         </h3>
