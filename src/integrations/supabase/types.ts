@@ -1764,6 +1764,7 @@ export type Database = {
           invitation_context: string | null
           last_name: string
           password_hash: string
+          password_is_hashed: boolean | null
           status: string
           user_id: string | null
           verification_token: string
@@ -1778,6 +1779,7 @@ export type Database = {
           invitation_context?: string | null
           last_name: string
           password_hash: string
+          password_is_hashed?: boolean | null
           status?: string
           user_id?: string | null
           verification_token: string
@@ -1792,6 +1794,7 @@ export type Database = {
           invitation_context?: string | null
           last_name?: string
           password_hash?: string
+          password_is_hashed?: boolean | null
           status?: string
           user_id?: string | null
           verification_token?: string
@@ -4978,6 +4981,10 @@ export type Database = {
       }
       user_has_partner: {
         Args: { p_user_id: string }
+        Returns: boolean
+      }
+      validate_email_format: {
+        Args: { email_input: string }
         Returns: boolean
       }
       verify_password: {

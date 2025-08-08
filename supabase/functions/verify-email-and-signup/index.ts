@@ -57,10 +57,24 @@ Deno.serve(async (req) => {
       throw new Error('Verification token has expired. Please request a new verification email.')
     }
 
+    // For hashed passwords, we need to generate a new secure password
+    // Since we can't reverse the hash, we'll generate a secure temporary password
+    let userPassword = '';
+    
+    if (pendingVerification.password_is_hashed) {
+      // Generate a secure random password for hashed entries
+      const randomBytes = new Uint8Array(16);
+      crypto.getRandomValues(randomBytes);
+      userPassword = Array.from(randomBytes, b => b.toString(16).padStart(2, '0')).join('');
+    } else {
+      // For legacy unhashed passwords (should be rare after our security fix)
+      userPassword = pendingVerification.password_hash;
+    }
+
     // Create the user account
     const { data: authData, error: signUpError } = await supabase.auth.admin.createUser({
       email: pendingVerification.email,
-      password: pendingVerification.password_hash, // This is actually the raw password, not hashed
+      password: userPassword,
       email_confirm: true, // Skip email confirmation since we're handling it manually
       user_metadata: {
         first_name: pendingVerification.first_name,

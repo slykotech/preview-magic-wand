@@ -57,6 +57,7 @@ Deno.serve(async (req) => {
 
     console.log(`Processing standalone signup invite for: ${email}`);
 
+    // Enhanced input validation
     if (!email || !firstName || !lastName || !password) {
       const error = 'All fields are required';
       console.error('Validation error:', error);
@@ -64,6 +65,52 @@ Deno.serve(async (req) => {
         JSON.stringify({ 
           success: false, 
           error 
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    // Validate email format
+    const emailRegex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+    if (!emailRegex.test(email)) {
+      console.error('Invalid email format:', email);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Invalid email format' 
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    // Validate password strength
+    if (password.length < 8) {
+      console.error('Password too short');
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Password must be at least 8 characters long' 
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    // Validate name fields
+    if (firstName.trim().length < 1 || lastName.trim().length < 1) {
+      console.error('Invalid name fields');
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'First and last names cannot be empty' 
         }),
         { 
           status: 400, 
@@ -162,6 +209,15 @@ Deno.serve(async (req) => {
 
     console.log(`Generated verification token: ${verificationToken}`);
 
+    // Hash the password before storing (SECURITY FIX)
+    console.log('Hashing password securely...');
+    const hashedPassword = await crypto.subtle.digest(
+      'SHA-256',
+      new TextEncoder().encode(password + verificationToken) // Use token as salt
+    );
+    const passwordHash = Array.from(new Uint8Array(hashedPassword))
+      .map(b => b.toString(16).padStart(2, '0')).join('');
+
     // Store verification data temporarily (no invitation context for standalone signup)
     console.log('Storing verification data...');
     const { error: insertError } = await supabase
@@ -170,7 +226,8 @@ Deno.serve(async (req) => {
         email,
         first_name: firstName,
         last_name: lastName,
-        password_hash: password, // Stored as plain text, Supabase Auth handles hashing
+        password_hash: passwordHash, // Store hashed password
+        password_is_hashed: true, // Mark as hashed
         verification_token: verificationToken,
         expires_at: expiresAt.toISOString(),
         invitation_context: null // Standalone signup, no invitation context
