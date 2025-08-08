@@ -34,7 +34,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         console.log('Auth state change:', { event, hasSession: !!session, user: session?.user?.email });
         
         // Handle logout events
@@ -51,11 +51,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         const isVerified = session?.user?.email_confirmed_at != null;
         
         if (isVerified && session) {
-          // For returning users, always clear flow state to force subscription check
-          if (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') {
-            console.log('Clearing app flow state for returning user to enforce subscription flow');
-            localStorage.removeItem('love-sync-app-flow');
-          }
           
           setSession(session);
           setUser(session.user);
@@ -74,10 +69,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       const isVerified = session?.user?.email_confirmed_at != null;
       
       if (isVerified && session) {
-        // For any existing session, clear flow state to force proper subscription check
-        console.log('Clearing app flow state for existing session to enforce subscription flow');
-        localStorage.removeItem('love-sync-app-flow');
-        
         setSession(session);
         setUser(session.user);
       } else {

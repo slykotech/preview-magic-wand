@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Heart, Sparkles, Shield, Users, ArrowRight, Star } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 
 interface AppMottoProps {
   onNext: () => void;
@@ -12,7 +13,12 @@ interface AppMottoProps {
 const AppMottoPage = ({ onNext, onBack }: AppMottoProps) => {
   const navigate = useNavigate();
   const [currentSlide, setCurrentSlide] = useState(0);
-
+  const { user, loading } = useAuth();
+  useEffect(() => {
+    if (!loading && user) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [user, loading, navigate]);
   const slides = [
     {
       icon: <Heart size={48} className="text-primary" />,

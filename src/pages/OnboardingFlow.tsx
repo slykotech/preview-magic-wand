@@ -1,15 +1,26 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Heart, Users, Target } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 
 const OnboardingFlow = () => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
   const [relationshipType, setRelationshipType] = useState("");
   const [goals, setGoals] = useState<string[]>([]);
-
+  const { user, loading } = useAuth();
+  useEffect(() => {
+    if (loading) return;
+    if (user) {
+      navigate('/dashboard', { replace: true });
+      return;
+    }
+    if (localStorage.getItem('onboarding_completed') === 'true') {
+      navigate('/auth', { replace: true });
+    }
+  }, [user, loading, navigate]);
   const relationshipTypes = [
     { id: "dating", label: "Dating", icon: <Heart size={24} /> },
     { id: "engaged", label: "Engaged", icon: <Heart size={24} /> },
@@ -109,8 +120,9 @@ const OnboardingFlow = () => {
     if (currentStep < 1) {
       setCurrentStep(currentStep + 1);
     } else {
-      // Complete onboarding and go to dashboard
+      // Complete onboarding and go to auth/sign-in
       console.log("Onboarding complete:", { relationshipType, goals });
+      try { localStorage.setItem('onboarding_completed', 'true'); } catch {}
       navigate('/auth');
     }
   };

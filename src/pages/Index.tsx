@@ -5,11 +5,16 @@ import { Button } from "@/components/ui/button";
 import { LoveSyncLogo } from "@/components/LoveSyncLogo";
 import { Heart, Sparkles, Calendar, Camera } from "lucide-react";
 const Index = () => {
-  const {
-    user,
-    loading
-  } = useAuth();
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
+  useEffect(() => {
+    if (loading) return;
+    if (user) {
+      navigate('/dashboard', { replace: true });
+    } else if (localStorage.getItem('onboarding_completed') === 'true') {
+      navigate('/auth', { replace: true });
+    }
+  }, [user, loading, navigate]);
   if (loading) {
     return <div className="min-h-screen bg-gradient-romance flex items-center justify-center">
         <div className="text-center">
