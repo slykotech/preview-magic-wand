@@ -81,6 +81,21 @@ class CardDistributionManager {
       total: available.action + available.text + available.photo
     });
 
+    // Count what the user has played so far by type
+    const userPlayedTypes = {
+      action: 0,
+      text: 0,
+      photo: 0
+    };
+
+    allCards.forEach(card => {
+      if (userPlayedTypes[card.response_type as keyof typeof userPlayedTypes] !== undefined) {
+        userPlayedTypes[card.response_type as keyof typeof userPlayedTypes]++;
+      }
+    });
+
+    console.log('📊 User played distribution:', userPlayedTypes);
+
     // Check consecutive cards to prevent more than 2 in a row
     const weights = { action: 0, text: 0, photo: 0 };
     
@@ -90,6 +105,7 @@ class CardDistributionManager {
       // Skip if no cards available of this type
       if (available[typedType] === 0) {
         weights[typedType] = 0;
+        console.log(`❌ No ${type} cards available`);
         return;
       }
       
@@ -101,18 +117,35 @@ class CardDistributionManager {
         return;
       }
       
-      // EQUAL WEIGHT DISTRIBUTION: 40% action, 30% text, 30% photo
+      // BASE WEIGHT DISTRIBUTION: 40% action, 30% text, 30% photo
+      let baseWeight = 0;
       if (type === 'action') {
-        weights[typedType] = 0.4; // 40%
+        baseWeight = 0.4; // 40%
       } else if (type === 'text') {
-        weights[typedType] = 0.3; // 30%
+        baseWeight = 0.3; // 30%
       } else if (type === 'photo') {
-        weights[typedType] = 0.3; // 30%
+        baseWeight = 0.3; // 30%
       }
+      
+      // BOOST UNDERREPRESENTED TYPES: If a user hasn't gotten enough of a type, boost it
+      const totalPlayed = userPlayedTypes.action + userPlayedTypes.text + userPlayedTypes.photo;
+      if (totalPlayed > 0) {
+        const currentRatio = userPlayedTypes[typedType] / totalPlayed;
+        const targetRatio = baseWeight;
+        
+        // If this type is underrepresented, boost it significantly
+        if (currentRatio < targetRatio) {
+          const boostMultiplier = Math.max(1.5, (targetRatio / Math.max(currentRatio, 0.01)) * 0.8);
+          baseWeight *= boostMultiplier;
+          console.log(`🚀 Boosting ${type}: current=${(currentRatio*100).toFixed(1)}%, target=${(targetRatio*100).toFixed(1)}%, boost=${boostMultiplier.toFixed(2)}x`);
+        }
+      }
+      
+      weights[typedType] = baseWeight;
       
       // Reduce weight for consecutive cards (but don't block completely unless at limit)
       if (consecutiveCount === this.MAX_CONSECUTIVE - 1) {
-        weights[typedType] *= 0.3; // Reduce to 30% if one away from limit
+        weights[typedType] *= 0.5; // Reduce to 50% if one away from limit
         console.log(`⚠️ Reducing ${type} weight due to consecutive (${consecutiveCount})`);
       }
     });
