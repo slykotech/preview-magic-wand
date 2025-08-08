@@ -339,10 +339,12 @@ export function useCardGame(sessionId: string | null) {
         photo: availableCards.filter(c => c.response_type === 'photo')
       };
 
-      console.log('📦 Available cards:', {
-        action: cardsByType.action.length,
-        text: cardsByType.text.length,
-        photo: cardsByType.photo.length
+      console.log('📦 CARD POOL ANALYSIS - Available for Drawing:', {
+        action: `${cardsByType.action.length} cards`,
+        text: `${cardsByType.text.length} cards`, 
+        photo: `${cardsByType.photo.length} cards`,
+        total: `${cardsByType.action.length + cardsByType.text.length + cardsByType.photo.length} cards`,
+        targetDistribution: '40% action, 30% text, 30% photo'
       });
 
       // Calculate weights using USER-SPECIFIC data

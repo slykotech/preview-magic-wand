@@ -60,22 +60,12 @@ class CardDistributionManager {
     return count;
   }
 
-  // Calculate weight for each card type
+  // Calculate weight for each card type using EQUAL WEIGHTS (40% action, 30% text, 30% photo)
   calculateTypeWeights(
     playedCards: string[], 
     allCards: any[],
     availableCards: any[]
   ): { action: number; text: number; photo: number } {
-    const currentDistribution = this.getCurrentCycleDistribution(playedCards, allCards);
-    const cyclePosition = playedCards.length % 10;
-    const cardsLeftInCycle = 10 - cyclePosition;
-    
-    // Calculate remaining needed for each type
-    const remaining = {
-      action: Math.max(0, this.DISTRIBUTION_PER_10.action - currentDistribution.action),
-      text: Math.max(0, this.DISTRIBUTION_PER_10.text - currentDistribution.text),
-      photo: Math.max(0, this.DISTRIBUTION_PER_10.photo - currentDistribution.photo)
-    };
     
     // Calculate available cards by type
     const available = {
@@ -84,20 +74,14 @@ class CardDistributionManager {
       photo: availableCards.filter(c => c.response_type === 'photo').length
     };
     
-      console.log('📊 Distribution Debug:', {
-        cyclePosition,
-        cardsLeftInCycle,
-        currentDistribution,
-        remaining,
-        available
-      });
-      
-      // CRITICAL FIX: If early in cycle, ensure photo cards get a chance
-      if (cyclePosition < 3 && available.photo > 0) {
-        console.log('🎯 Early cycle boost for photo cards');
-      }
-    
-    // Calculate weights
+    console.log('🎯 EQUAL WEIGHT DISTRIBUTION - Cards Available:', {
+      action: available.action,
+      text: available.text,
+      photo: available.photo,
+      total: available.action + available.text + available.photo
+    });
+
+    // Check consecutive cards to prevent more than 2 in a row
     const weights = { action: 0, text: 0, photo: 0 };
     
     Object.keys(weights).forEach(type => {
@@ -109,52 +93,31 @@ class CardDistributionManager {
         return;
       }
       
-      // Check consecutive limit
+      // Check consecutive limit (max 2 in a row)
       const consecutiveCount = this.getConsecutiveCount(playedCards, allCards, type);
       if (consecutiveCount >= this.MAX_CONSECUTIVE) {
         weights[typedType] = 0; // Block this type completely
+        console.log(`🚫 Blocking ${type} (${consecutiveCount} consecutive)`);
         return;
       }
       
-      // Base weight on remaining needed vs cards left in cycle
-      let weight = remaining[typedType];
-      
-      // If we still need cards of this type
-      if (remaining[typedType] > 0) {
-        // Urgency factor: more urgent as cycle progresses
-        const urgencyFactor = cardsLeftInCycle > 0 ? remaining[typedType] / cardsLeftInCycle : 1;
-        weight = weight * (1 + urgencyFactor);
-        
-        // Extra boost if we're behind schedule
-        if (remaining[typedType] > cardsLeftInCycle / 2) {
-          weight *= 2;
-        }
-        
-        // CRITICAL FIX: Enhanced photo card priority
-        if (type === 'photo') {
-          // Give photo cards strong early priority in first half of cycle
-          if (cyclePosition <= 5 && currentDistribution.photo === 0) {
-            weight *= 4; // Much stronger boost
-            console.log('📸 Early photo boost applied:', weight);
-          } else if (currentDistribution.photo === 0 && cyclePosition >= 6) {
-            weight *= 5; // Emergency boost late in cycle
-            console.log('🚨 Emergency photo boost applied:', weight);
-          }
-        }
-      } else {
-        // We've met the requirement, but still allow with lower weight
-        weight = 0.2; // Slightly higher than before to give more chances
+      // EQUAL WEIGHT DISTRIBUTION: 40% action, 30% text, 30% photo
+      if (type === 'action') {
+        weights[typedType] = 0.4; // 40%
+      } else if (type === 'text') {
+        weights[typedType] = 0.3; // 30%
+      } else if (type === 'photo') {
+        weights[typedType] = 0.3; // 30%
       }
       
       // Reduce weight for consecutive cards (but don't block completely unless at limit)
       if (consecutiveCount === this.MAX_CONSECUTIVE - 1) {
-        weight *= 0.2;
+        weights[typedType] *= 0.3; // Reduce to 30% if one away from limit
+        console.log(`⚠️ Reducing ${type} weight due to consecutive (${consecutiveCount})`);
       }
-      
-      weights[typedType] = Math.max(0, weight);
     });
     
-    // Normalize weights
+    // Normalize weights so they add up to 1.0
     const totalWeight = weights.action + weights.text + weights.photo;
     if (totalWeight > 0) {
       weights.action /= totalWeight;
@@ -170,9 +133,16 @@ class CardDistributionManager {
       weights.action = available.action > 0 ? equalWeight : 0;
       weights.text = available.text > 0 ? equalWeight : 0;
       weights.photo = available.photo > 0 ? equalWeight : 0;
+      
+      console.log('🆘 Emergency fallback weights applied');
     }
     
-    console.log('⚖️ Final weights:', weights);
+    console.log('⚖️ Final normalized weights:', {
+      action: `${(weights.action * 100).toFixed(1)}%`,
+      text: `${(weights.text * 100).toFixed(1)}%`,
+      photo: `${(weights.photo * 100).toFixed(1)}%`
+    });
+    
     return weights;
   }
 
