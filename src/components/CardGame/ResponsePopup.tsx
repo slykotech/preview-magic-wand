@@ -48,9 +48,26 @@ export const ResponsePopup: React.FC<ResponsePopupProps> = ({
           {/* Content */}
           <div className="p-6">
             <div className="bg-muted/50 border border-border rounded-xl p-4 mb-6 max-h-60 overflow-y-auto">
-              <p className="text-foreground text-lg leading-relaxed">
-                {response}
-              </p>
+              {/* Check if response is a photo URL */}
+              {response && (response.includes('supabase.co/storage') || response.includes('http')) && 
+               (response.includes('.jpg') || response.includes('.jpeg') || response.includes('.png') || response.includes('.gif') || response.includes('.webp')) ? (
+                // Display as image
+                <div className="rounded-lg overflow-hidden bg-background border border-border">
+                  <img 
+                    src={response} 
+                    alt="Response photo" 
+                    className="w-full h-auto max-h-48 object-contain"
+                    onError={(e) => {
+                      e.currentTarget.src = '/placeholder.svg';
+                    }}
+                  />
+                </div>
+              ) : (
+                // Display as text
+                <p className="text-foreground text-lg leading-relaxed">
+                  {response}
+                </p>
+              )}
             </div>
           </div>
           
