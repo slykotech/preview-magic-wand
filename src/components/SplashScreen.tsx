@@ -10,11 +10,11 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
   useEffect(() => {
     const timer1 = setTimeout(() => {
       setShowContent(true);
-    }, 300); // Reduced from 500ms
+    }, 500); // Content appears after 500ms
 
     const timer2 = setTimeout(() => {
       onComplete();
-    }, 1200); // Reduced from 2000ms to 1200ms
+    }, 3000); // Splash screen shows for 3 seconds total
 
     return () => {
       clearTimeout(timer1);
