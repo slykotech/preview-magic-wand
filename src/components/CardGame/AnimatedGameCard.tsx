@@ -506,7 +506,7 @@ export const AnimatedGameCard: React.FC<AnimatedGameCardProps> = ({
 
         {/* Action Buttons - Only show when popup is not open and card is revealed */}
         {isRevealed && !showResponsePopup && (
-          <div className="flex gap-3 justify-center">
+          <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
             {isMyTurn && (
               <>
                 {card.response_type === 'text' ? (
