@@ -85,6 +85,5 @@ export const RecentTasks: React.FC = () => {
   if (loading) {
     return;
   }
-  return <Card>
-    </Card>;
+  return null;
 };
