@@ -5057,6 +5057,10 @@ export type Database = {
         Args: { email_input: string }
         Returns: boolean
       }
+      validate_email_verification_redirect: {
+        Args: { verification_url: string }
+        Returns: string
+      }
       verify_password: {
         Args: { password: string; hash: string }
         Returns: boolean

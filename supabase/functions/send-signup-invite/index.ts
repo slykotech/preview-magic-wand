@@ -89,13 +89,13 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Validate password strength
-    if (password.length < 8) {
+    // Validate password strength - updated to match frontend validation
+    if (password.length < 6) {
       console.error('Password too short');
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: 'Password must be at least 8 characters long' 
+          error: 'Password must be at least 6 characters long' 
         }),
         { 
           status: 400, 
