@@ -165,27 +165,66 @@ export const DatePlanner = () => {
   const handleAddEvent = async (dateData?: any) => {
     const dataToAdd = dateData || formData;
     
-    if (!dataToAdd.title || !coupleData || !user) {
+    console.log('Add Date clicked - Data to add:', dataToAdd);
+    console.log('Form data state:', formData);
+    console.log('Couple data:', !!coupleData);
+    console.log('User data:', !!user);
+    
+    // More specific validation - only title is required
+    if (!dataToAdd.title?.trim()) {
+      console.error('Validation failed: Missing title');
       toast({
         title: "Missing Information",
-        description: "Please fill in the required fields."
+        description: "Please enter a title for your date."
+      });
+      return;
+    }
+
+    if (!coupleData) {
+      console.error('Validation failed: No couple data');
+      toast({
+        title: "Setup Required",
+        description: "Please set up your partnership first."
+      });
+      return;
+    }
+
+    if (!user) {
+      console.error('Validation failed: No user');
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to add dates."
       });
       return;
     }
 
     try {
+      console.log('Attempting to insert date idea...');
+      
       const { data, error } = await supabase
         .from('date_ideas')
         .insert({
           couple_id: coupleData.id,
           created_by: user.id,
-          ...dataToAdd
+          title: dataToAdd.title.trim(),
+          description: dataToAdd.description?.trim() || null,
+          category: dataToAdd.category || 'romantic',
+          scheduled_date: dataToAdd.scheduled_date || null,
+          scheduled_time: dataToAdd.scheduled_time || null,
+          location: dataToAdd.location?.trim() || null,
+          estimated_cost: dataToAdd.estimated_cost?.trim() || null,
+          estimated_duration: dataToAdd.estimated_duration?.trim() || null,
+          notes: dataToAdd.notes?.trim() || null
         })
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Database error:', error);
+        throw error;
+      }
 
+      console.log('Successfully added date:', data);
       setPlannedDates(prev => [data, ...prev]);
       
       if (!dateData) {
