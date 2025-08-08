@@ -442,7 +442,7 @@ export const DatePlanner = () => {
       <div className="min-h-screen bg-background flex flex-col pb-20">
         <GradientHeader 
           title="Date Planner" 
-          subtitle="Plan your perfect dates together" 
+          subtitle="Because love needs some beautiful plans" 
           icon={<Heart size={24} />} 
           showBackButton={false}
         />
@@ -492,11 +492,11 @@ export const DatePlanner = () => {
               </TabsTrigger>
               <TabsTrigger value="events" className="flex items-center gap-2">
                 <Calendar className="w-4 h-4" />
-                Local Events
+                Sweet Suggestions
               </TabsTrigger>
               <TabsTrigger value="suggestions" className="flex items-center gap-2">
                 <Sparkles className="w-4 h-4" />
-                Sweet Suggestions
+                Local Events
               </TabsTrigger>
             </TabsList>
 
