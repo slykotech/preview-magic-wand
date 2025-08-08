@@ -162,13 +162,13 @@ export const TaskHistory: React.FC<TaskHistoryProps> = ({ sessionId, isOpen, onC
                           {task.card_prompt}
                         </p>
 
-                        {task.response_type === 'text' && task.response_text && (
+                        {task.response_type === 'text' && task.response_text && !task.response_text.startsWith('https://') && (
                           <div className="bg-muted/50 p-3 rounded-md mb-2">
                             <p className="text-sm whitespace-pre-wrap">{task.response_text}</p>
                           </div>
                         )}
 
-                        {task.response_type === 'photo' && (task.response_photo_url || task.response_text) && (
+                        {task.response_type === 'photo' && (task.response_photo_url || (task.response_text && task.response_text.startsWith('https://'))) && (
                           <div className="mb-2">
                             <img
                               src={task.response_photo_url || task.response_text || ''}
@@ -176,6 +176,21 @@ export const TaskHistory: React.FC<TaskHistoryProps> = ({ sessionId, isOpen, onC
                               className="max-h-64 max-w-full rounded-md border object-cover"
                               onError={(e) => {
                                 console.error('Failed to load image:', task.response_photo_url || task.response_text);
+                                e.currentTarget.style.display = 'none';
+                              }}
+                            />
+                          </div>
+                        )}
+
+                        {/* Show photo even if response_type is text but contains image URL */}
+                        {task.response_type === 'text' && task.response_text && task.response_text.startsWith('https://') && (
+                          <div className="mb-2">
+                            <img
+                              src={task.response_text}
+                              alt="Photo response"
+                              className="max-h-64 max-w-full rounded-md border object-cover"
+                              onError={(e) => {
+                                console.error('Failed to load image:', task.response_text);
                                 e.currentTarget.style.display = 'none';
                               }}
                             />
