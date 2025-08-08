@@ -72,7 +72,7 @@ class CardDistributionManager {
       return null;
     }
     
-    console.log('🎴 REAL-LIFE CARD DRAWING - Simple & Random');
+    console.log('🎴 PURE RANDOM CARD DRAWING - No Restrictions');
     console.log('📦 Available cards by type:', {
       action: availableCards.filter(c => c.response_type === 'action').length,
       text: availableCards.filter(c => c.response_type === 'text').length,
@@ -89,94 +89,16 @@ class CardDistributionManager {
       })
     });
 
-    // STEP 1: Check if we need to avoid consecutive cards (only rule)
+    // STEP 1: NO RESTRICTIONS - Use all available cards
     let eligibleCards = [...availableCards];
     
-    if (playedCards.length >= 2) {
-      // Get last 2 cards this user played
-      const lastTwoCards = playedCards.slice(-2);
-      const lastTwoTypes = lastTwoCards.map(cardId => {
-        const card = allCards.find(c => c.id === cardId);
-        return card?.response_type;
-      }).filter(Boolean);
-      
-      console.log('🔍 Checking last 2 user cards:', {
-        lastTwoCards: lastTwoCards.map(id => id.substring(0, 8)),
-        lastTwoTypes,
-        userTotalPlayed: playedCards.length
-      });
-      
-      // If last 2 cards are same type, avoid that type
-      if (lastTwoTypes.length === 2 && lastTwoTypes[0] === lastTwoTypes[1]) {
-        const typeToAvoid = lastTwoTypes[0];
-        const beforeFilter = eligibleCards.length;
-        const cardsOfTypeToAvoid = eligibleCards.filter(c => c.response_type === typeToAvoid).length;
-        eligibleCards = eligibleCards.filter(c => c.response_type !== typeToAvoid);
-        
-        console.log(`🚫 Avoiding ${typeToAvoid} to prevent 3rd consecutive:`, {
-          totalBefore: beforeFilter,
-          cardsOfTypeAvoid: cardsOfTypeToAvoid, 
-          totalAfter: eligibleCards.length,
-          userLastTwo: lastTwoTypes
-        });
-        
-        // If filtering removed all cards, ignore the rule (emergency fallback)
-        if (eligibleCards.length === 0) {
-          console.log('⚠️ All cards filtered out, ignoring consecutive rule');
-          eligibleCards = [...availableCards];
-        }
-      }
-    }
+    console.log('✅ All cards eligible - no filtering applied');
+    console.log(`🎲 Drawing randomly from ${eligibleCards.length} total cards...`);
     
-    // STEP 2: BALANCED RANDOM SELECTION (ensure fair distribution)
-    console.log(`🎲 Selecting card with balanced distribution from ${eligibleCards.length} eligible cards...`);
-    
-    // Calculate user's current distribution
-    const userDistribution = { action: 0, text: 0, photo: 0 };
-    playedCards.forEach(cardId => {
-      const card = allCards.find(c => c.id === cardId);
-      if (card && userDistribution[card.response_type as keyof typeof userDistribution] !== undefined) {
-        userDistribution[card.response_type as keyof typeof userDistribution]++;
-      }
-    });
-
-    console.log('📊 User distribution:', {
-      current: userDistribution,
-      target: this.DISTRIBUTION_PER_10,
-      totalPlayed: playedCards.length
-    });
-
-    // Calculate weights to balance distribution
-    const totalPlayed = playedCards.length || 1;
-    const weights = {
-      action: Math.max(0.1, (this.DISTRIBUTION_PER_10.action / 10) - (userDistribution.action / totalPlayed)),
-      text: Math.max(0.1, (this.DISTRIBUTION_PER_10.text / 10) - (userDistribution.text / totalPlayed)),
-      photo: Math.max(0.1, (this.DISTRIBUTION_PER_10.photo / 10) - (userDistribution.photo / totalPlayed))
-    };
-
-    // Normalize weights
-    const weightSum = weights.action + weights.text + weights.photo;
-    const normalizedWeights = {
-      action: weights.action / weightSum,
-      text: weights.text / weightSum,
-      photo: weights.photo / weightSum
-    };
-
-    console.log('⚖️ Card type weights:', normalizedWeights);
-
-    // Select card type based on weights
-    const selectedType = this.selectCardType(normalizedWeights);
-    const cardsOfSelectedType = eligibleCards.filter(c => c.response_type === selectedType);
-    
-    let selectedCard;
-    if (cardsOfSelectedType.length === 0) {
-      console.log(`⚠️ No ${selectedType} cards available, falling back to random`);
-      const shuffledCards = this.shuffleArray(eligibleCards);
-      selectedCard = shuffledCards[0];
-    } else {
-      console.log(`✅ Selecting from ${cardsOfSelectedType.length} ${selectedType} cards`);
-      selectedCard = this.selectRandomCardFromType(cardsOfSelectedType, true);
-    }
+    // STEP 2: TRUE RANDOM SELECTION (like real life)
+    // Shuffle the eligible cards for true randomness
+    const shuffledCards = this.shuffleArray(eligibleCards);
+    const selectedCard = shuffledCards[0];
     
     console.log('✅ Card drawn:', {
       type: selectedCard.response_type,
