@@ -307,7 +307,7 @@ export function useCardGame(sessionId: string | null) {
         allCardsData = data || [];
       }
       
-      const allCards = allCardsData || [];
+      const allCards = allCardsData;
       
       // Log current distribution
       const currentDist = distributionManager.getCurrentCycleDistribution(playedCardIds, allCards);
@@ -344,41 +344,46 @@ export function useCardGame(sessionId: string | null) {
       }
       console.log('🔄 Last card types:', lastTypes);
 
-      // Select type based on weights
+      // Select type based on weights with improved fallback logic
       let selectedType = distributionManager.selectCardType(weights);
       let selectedCard = null;
       
       // Try to get a card of the selected type
-      if (cardsByType[selectedType].length > 0) {
-        selectedCard = cardsByType[selectedType][
-          Math.floor(Math.random() * cardsByType[selectedType].length)
-        ];
+      if (cardsByType[selectedType as keyof typeof cardsByType].length > 0) {
+        const cards = cardsByType[selectedType as keyof typeof cardsByType];
+        selectedCard = cards[Math.floor(Math.random() * cards.length)];
+        console.log(`✅ Successfully selected ${selectedType} card`);
       } else {
-        // Fallback: try other types
+        // Fallback: try other types in order of availability and consecutive count
         console.log(`⚠️ No ${selectedType} cards available, trying alternatives`);
         
-        for (const type of ['action', 'text', 'photo']) {
-          if (type !== selectedType && cardsByType[type].length > 0) {
-            const consecutiveCount = distributionManager.getConsecutiveCount(
-              playedCardIds, 
-              allCards, 
-              type
-            );
-            
-            if (consecutiveCount < 2) {
-              selectedCard = cardsByType[type][
-                Math.floor(Math.random() * cardsByType[type].length)
-              ];
-              selectedType = type;
-              break;
-            }
+        const fallbackOrder = ['action', 'text', 'photo'].filter(type => 
+          type !== selectedType && cardsByType[type as keyof typeof cardsByType].length > 0
+        );
+        
+        // Sort by consecutive count (prefer types with fewer consecutive plays)
+        fallbackOrder.sort((a, b) => {
+          const consecutiveA = distributionManager.getConsecutiveCount(playedCardIds, allCardsData, a);
+          const consecutiveB = distributionManager.getConsecutiveCount(playedCardIds, allCardsData, b);
+          return consecutiveA - consecutiveB;
+        });
+        
+        for (const type of fallbackOrder) {
+          const consecutiveCount = distributionManager.getConsecutiveCount(playedCardIds, allCardsData, type);
+          
+          if (consecutiveCount < 2) { // Respect the MAX_CONSECUTIVE limit
+            const cards = cardsByType[type as keyof typeof cardsByType];
+            selectedCard = cards[Math.floor(Math.random() * cards.length)];
+            selectedType = type;
+            console.log(`✅ Fallback selected: ${type} (consecutive: ${consecutiveCount})`);
+            break;
           }
         }
       }
 
-      // Final fallback
+      // Final emergency fallback (should rarely happen)
       if (!selectedCard) {
-        console.log('⚠️ Using random selection as final fallback');
+        console.log('⚠️ Using emergency random selection');
         selectedCard = availableCards[Math.floor(Math.random() * availableCards.length)];
         selectedType = selectedCard.response_type;
       }

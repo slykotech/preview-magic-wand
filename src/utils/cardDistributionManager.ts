@@ -164,15 +164,31 @@ class CardDistributionManager {
     return weights;
   }
 
-  // Select card type based on weights
+  // Select card type based on weights with improved randomness
   selectCardType(weights: { action: number; text: number; photo: number }): string {
     const random = Math.random();
     
-    if (random < weights.action) {
+    console.log('🎲 Random selection:', { random, weights });
+    
+    // Create cumulative probability ranges
+    const actionRange = weights.action;
+    const textRange = actionRange + weights.text;
+    const photoRange = textRange + weights.photo; // Should be 1.0
+    
+    console.log('📊 Probability ranges:', {
+      action: `0 - ${actionRange.toFixed(3)}`,
+      text: `${actionRange.toFixed(3)} - ${textRange.toFixed(3)}`,
+      photo: `${textRange.toFixed(3)} - ${photoRange.toFixed(3)}`
+    });
+    
+    if (random < actionRange) {
+      console.log('✅ Selected: ACTION');
       return 'action';
-    } else if (random < weights.action + weights.text) {
+    } else if (random < textRange) {
+      console.log('✅ Selected: TEXT');
       return 'text';
     } else {
+      console.log('✅ Selected: PHOTO');
       return 'photo';
     }
   }
