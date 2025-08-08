@@ -14,14 +14,18 @@ import { GradientHeader } from '@/components/GradientHeader';
 import { useAuth } from '@/hooks/useAuth';
 import { ArrowLeft } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-
 export const CardDeckGame: React.FC = () => {
-  const { sessionId } = useParams<{ sessionId: string }>();
+  const {
+    sessionId
+  } = useParams<{
+    sessionId: string;
+  }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const {
+    user
+  } = useAuth();
   const [showHistory, setShowHistory] = useState(false);
   const [showGameEndModal, setShowGameEndModal] = useState(false);
-  
   const {
     gameState,
     currentCard,
@@ -45,22 +49,15 @@ export const CardDeckGame: React.FC = () => {
       loading,
       blockAutoAdvance
     });
-    
+
     // Only auto-draw if all conditions are met and avoid multiple calls
-    if (
-      isMyTurn && 
-      !currentCard && 
-      gameState?.status === 'active' && 
-      !loading && 
-      !blockAutoAdvance && 
-      sessionId
-    ) {
+    if (isMyTurn && !currentCard && gameState?.status === 'active' && !loading && !blockAutoAdvance && sessionId) {
       console.log('Auto-drawing card for user turn');
       const timer = setTimeout(() => {
         console.log('Executing auto-draw card action');
         actions.drawCard();
       }, 500); // Single delay
-      
+
       return () => clearTimeout(timer);
     }
   }, [isMyTurn, currentCard, gameState?.status, sessionId, loading, blockAutoAdvance, actions.drawCard]);
@@ -72,10 +69,9 @@ export const CardDeckGame: React.FC = () => {
     }
   }, [gameState?.status, gameState?.winner_id]);
 
-  // Handle timer expiry - call completeTurn with timeout
+  // Handle timer expiry - simplified since timer now handles its own logic
   const handleTimerExpire = () => {
-    console.log('⏰ Timer expired in CardDeckGame - triggering failed task');
-    actions.completeTurn(undefined, undefined, undefined, true); // timedOut = true
+    console.log('⏰ Timer expired in CardDeckGame - handled by GameTimer');
   };
 
   // Handle rematch - calls the shared rematch function
@@ -83,204 +79,137 @@ export const CardDeckGame: React.FC = () => {
     setShowGameEndModal(false);
     await actions.rematchGame();
   };
-
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center">
+    return <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin text-6xl mb-4">💕</div>
           <p className="text-muted-foreground">Loading your game...</p>
         </div>
-      </div>
-    );
+      </div>;
   }
-
   if (!gameState) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center">
+    return <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center">
         <div className="text-center">
           <p className="text-xl text-muted-foreground mb-4">Game not found</p>
           <Button onClick={() => navigate('/games')}>
             Back to Games
           </Button>
         </div>
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 p-4">
+  return <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 p-4">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <GradientHeader 
-          title="Card Deck Game 💕" 
-          subtitle={partnerInfo ? `Playing with ${partnerInfo.name}` : "Loading..."}
-          icon="💕"
-          backRoute="/games"
-        />
+        <GradientHeader title="Card Deck Game 💕" subtitle={partnerInfo ? `Playing with ${partnerInfo.name}` : "Loading..."} icon="💕" backRoute="/games" />
 
         {/* Game Status - Shows failed tasks and skips */}
         <div className="mt-4">
-          <GameStatus 
-            gameState={gameState}
-            currentUserId={user?.id || ''}
-            partnerInfo={partnerInfo}
-          />
+          <GameStatus gameState={gameState} currentUserId={user?.id || ''} partnerInfo={partnerInfo} />
         </div>
 
         {/* Legacy Game Stats for other info */}
-        <GameStats 
-          cardsPlayed={stats.cardsPlayed}
-          skipsRemaining={stats.skipsRemaining}
-        />
+        <GameStats cardsPlayed={stats.cardsPlayed} skipsRemaining={stats.skipsRemaining} />
 
         {/* Turn Indicator */}
         <div className="mb-8">
-          <TurnIndicator 
-            isMyTurn={isMyTurn}
-            partnerName={partnerInfo?.name || 'Your partner'}
-            connectionStatus={connectionStatus}
-          />
+          <TurnIndicator isMyTurn={isMyTurn} partnerName={partnerInfo?.name || 'Your partner'} connectionStatus={connectionStatus} />
         </div>
 
         {/* Animated Game Card or Loading State */}
         <div className="mt-8">
-          {currentCard ? (
-            <AnimatedGameCard
-              card={currentCard}
-              gameState={gameState}
-              isMyTurn={isMyTurn}
-              isRevealed={cardRevealed}
-              onReveal={actions.revealCard}
-              onComplete={(response, caption, reactionTime, timedOut) => actions.completeTurn(response, caption, reactionTime, timedOut)}
-              onSkip={actions.skipCard}
-              skipsRemaining={stats.skipsRemaining}
-              sessionId={sessionId || ''}
-              userId={user?.id || ''}
-              onShuffle={() => {
-                console.log('🔀 Shuffle requested - drawing new card with enhanced randomness');
-                actions.drawCard();
-              }}
-            />
-          ) : (
-            <div className="text-center p-8 bg-muted rounded-lg">
-              {isMyTurn ? (
-                loading ? (
-                  <div>
+          {currentCard ? <AnimatedGameCard card={currentCard} gameState={gameState} isMyTurn={isMyTurn} isRevealed={cardRevealed} onReveal={actions.revealCard} onComplete={response => actions.completeTurn(response)} onSkip={actions.skipCard} skipsRemaining={stats.skipsRemaining} sessionId={sessionId || ''} userId={user?.id || ''} onShuffle={() => {
+          console.log('🔀 Shuffle requested - drawing new card with enhanced randomness');
+          actions.drawCard();
+        }} /> : <div className="text-center p-8 bg-muted rounded-lg">
+              {isMyTurn ? loading ? <div>
                     <p className="text-lg font-semibold">Drawing card...</p>
                     <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mt-4"></div>
-                  </div>
-                ) : (
-                  <div>
+                  </div> : <div>
                     <p className="text-lg font-semibold">No card available</p>
-                    <button 
-                      onClick={actions.drawCard}
-                      className="mt-4 px-6 py-2 bg-primary text-primary-foreground rounded-lg"
-                    >
+                    <button onClick={actions.drawCard} className="mt-4 px-6 py-2 bg-primary text-primary-foreground rounded-lg">
                       Draw Card
                     </button>
-                  </div>
-                )
-              ) : (
-                <p className="text-lg">Waiting for partner to play...</p>
-              )}
-            </div>
-          )}
+                  </div> : <p className="text-lg">Waiting for partner to play...</p>}
+            </div>}
         </div>
 
         {/* Game Controls */}
         <div className="mt-8">
-          <div className="flex justify-center items-center gap-6 flex-wrap bg-gradient-to-r from-slate-50 to-gray-50 p-6 rounded-xl border border-gray-200 shadow-sm">
-            <div className="flex items-center gap-3 px-4 py-3 bg-white rounded-lg shadow-sm border border-gray-200">
-              <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
-              <span className="text-sm font-medium text-gray-600">Cards Played:</span>
-              <span className="text-lg font-bold text-blue-600">{stats.cardsPlayed}</span>
-            </div>
-
-            <div className="flex items-center gap-3 px-4 py-3 bg-white rounded-lg shadow-sm border border-gray-200">
-              <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
-              <span className="text-sm font-medium text-gray-600">Skips Left:</span>
-              <span className="text-lg font-bold text-purple-600">{stats.skipsRemaining}</span>
-            </div>
-
-            <div className="flex items-center gap-3 px-4 py-3 bg-white rounded-lg shadow-sm border border-gray-200">
-              <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-              <span className="text-sm font-medium text-gray-600">Failed Tasks:</span>
-              <span className="text-lg font-bold text-red-600">
-                {user?.id === gameState?.user1_id ? gameState?.user1_failed_tasks || 0 : gameState?.user2_failed_tasks || 0}/3
-              </span>
+          <div className="flex justify-center items-center gap-4 flex-wrap">
+            <div className="flex items-center gap-2 px-3 py-2 bg-muted rounded-lg">
+              <span className="text-sm font-medium text-muted-foreground">Cards Played:</span>
+              <span className="text-sm font-bold">{stats.cardsPlayed}</span>
             </div>
             
-            <Button
-              variant="outline"
-              onClick={() => setShowHistory(true)}
-              className="min-w-[140px] h-12 font-semibold shadow-md hover:shadow-lg border-2 border-gray-300 hover:border-blue-400 bg-white hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-all duration-200"
-            >
+            <Button variant="outline" onClick={() => setShowHistory(true)} className="flex items-center gap-2 min-w-[140px] h-10">
               📝 History
             </Button>
             
-            <Button
-              variant="destructive"
-              onClick={() => actions.endGame()}
-              className="min-w-[140px] h-12 font-semibold shadow-md hover:shadow-lg bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 transition-all duration-200"
-            >
-              End Game
-            </Button>
             
+            
+            {/* Debug Controls - Development Only */}
+            {process.env.NODE_ENV === 'development' && <Button onClick={async () => {
+            const playedCardIds = [...(gameState.played_cards || []), ...(gameState.skipped_cards || [])];
+            const {
+              data: photoCards
+            } = await supabase.from("deck_cards").select("id").eq("response_type", "photo").eq("is_active", true).not("id", "in", playedCardIds.length > 0 ? `(${playedCardIds.join(",")})` : "()").limit(1);
+            if (photoCards && photoCards.length > 0) {
+              await supabase.from("card_deck_game_sessions").update({
+                current_card_id: photoCards[0].id,
+                last_activity_at: new Date().toISOString()
+              }).eq("id", sessionId);
+              console.log('Forced photo card:', photoCards[0].id);
+            }
+          }} variant="secondary" className="min-w-[140px] h-10">
+                📸 Photo
+              </Button>}
           </div>
         </div>
 
-
         {/* Card Distribution Tracking */}
-        <CardDistribution key={user?.id} gameState={gameState} />
+        <CardDistribution gameState={gameState} />
 
         {/* Debug Info - Remove this in production */}
-        <DebugInfo 
-          gameState={gameState} 
-          currentUserId={user?.id || ''} 
-          isMyTurn={isMyTurn} 
-        />
+        <DebugInfo gameState={gameState} currentUserId={user?.id || ''} isMyTurn={isMyTurn} />
 
+        {/* Force Photo Card Button for Development */}
+        {process.env.NODE_ENV === 'development' && <button onClick={async () => {
+        const {
+          data: photoCards
+        } = await supabase.from("deck_cards").select("id").eq("response_type", "photo").eq("is_active", true).not("id", "in", `(${gameState.played_cards.join(",")})`).limit(1);
+        if (photoCards && photoCards.length > 0) {
+          await supabase.from("card_deck_game_sessions").update({
+            current_card_id: photoCards[0].id,
+            last_activity_at: new Date().toISOString()
+          }).eq("id", sessionId);
+          console.log('Forced photo card:', photoCards[0].id);
+        } else {
+          console.log('No photo cards available!');
+        }
+      }} className="px-3 py-1 bg-pink-500 text-white rounded text-xs mb-4">
+            Force Photo Card
+          </button>}
 
         {/* Game Completed Modal */}
-        {gameState.status === 'completed' && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+        {gameState.status === 'completed' && <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
             <div className="bg-card rounded-2xl p-8 max-w-md w-full text-center">
               <h2 className="text-3xl font-bold mb-4">Game Complete! 🎉</h2>
               <p className="text-muted-foreground mb-6">
                 You played {stats.cardsPlayed} cards together!
               </p>
               <div className="space-y-3">
-                <Button
-                  onClick={() => navigate('/games')}
-                  className="w-full"
-                >
+                <Button onClick={() => navigate('/games')} className="w-full">
                   Back to Games
                 </Button>
               </div>
             </div>
-          </div>
-        )}
+          </div>}
         
         {/* Game End Modal */}
-        <GameEndModal
-          isOpen={showGameEndModal}
-          gameState={gameState}
-          currentUserId={user?.id || ''}
-          partnerInfo={partnerInfo}
-          onRematch={handleRematch}
-          onExit={() => navigate('/games')}
-        />
+        <GameEndModal isOpen={showGameEndModal} gameState={gameState} currentUserId={user?.id || ''} partnerInfo={partnerInfo} onRematch={handleRematch} onExit={() => navigate('/games')} />
 
         {/* Task History Modal */}
-        {showHistory && (
-          <TaskHistory 
-            sessionId={sessionId || ''} 
-            isOpen={showHistory} 
-            onClose={() => setShowHistory(false)} 
-          />
-        )}
+        {showHistory && <TaskHistory sessionId={sessionId || ''} isOpen={showHistory} onClose={() => setShowHistory(false)} />}
       </div>
-    </div>
-  );
+    </div>;
 };
