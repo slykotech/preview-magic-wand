@@ -844,11 +844,92 @@ export const DatePlanner = () => {
             </TabsContent>
 
             <TabsContent value="events" className="space-y-6">
-              <EventDiscovery 
-                coupleId={coupleId || ''}
-                userId={user?.id || ''}
-                onAddToDatePlan={handleAddEvent}
-              />
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Sweet Date Ideas</h3>
+                <div className="grid gap-4">
+                  {[
+                    {
+                      title: "Sunset Picnic at the Park",
+                      description: "Pack your favorite snacks and watch the sunset together",
+                      category: "romantic",
+                      duration: "2-3 hours",
+                      cost: "$20-30"
+                    },
+                    {
+                      title: "Cooking Class for Two",
+                      description: "Learn to make a new cuisine together",
+                      category: "food",
+                      duration: "3-4 hours", 
+                      cost: "$80-120"
+                    },
+                    {
+                      title: "Mini Golf Adventure",
+                      description: "Fun and playful competition with lots of laughs",
+                      category: "entertainment",
+                      duration: "1-2 hours",
+                      cost: "$15-25"
+                    },
+                    {
+                      title: "Art Gallery Stroll",
+                      description: "Explore local art and culture together",
+                      category: "cultural",
+                      duration: "2-3 hours",
+                      cost: "$10-20"
+                    },
+                    {
+                      title: "Hiking Trail Discovery",
+                      description: "Find a scenic trail and enjoy nature together",
+                      category: "outdoor",
+                      duration: "3-5 hours",
+                      cost: "Free"
+                    },
+                    {
+                      title: "Wine Tasting Evening",
+                      description: "Sample local wines and cheese pairings",
+                      category: "romantic",
+                      duration: "2-3 hours",
+                      cost: "$50-80"
+                    }
+                  ].map((idea, index) => (
+                    <Card key={index} className="hover:shadow-md transition-shadow">
+                      <CardContent className="p-4">
+                        <div className="flex justify-between items-start mb-3">
+                          <div>
+                            <h4 className="font-semibold text-base mb-1">{idea.title}</h4>
+                            <Badge variant="outline" className="text-xs">
+                              {idea.category.charAt(0).toUpperCase() + idea.category.slice(1)}
+                            </Badge>
+                          </div>
+                          <Button 
+                            size="sm" 
+                            onClick={() => handleAddEvent({
+                              title: idea.title,
+                              description: idea.description,
+                              category: idea.category,
+                              estimated_duration: idea.duration,
+                              estimated_cost: idea.cost
+                            })}
+                          >
+                            <Plus className="h-4 w-4 mr-1" />
+                            Add
+                          </Button>
+                        </div>
+                        <p className="text-muted-foreground text-sm mb-3">{idea.description}</p>
+                        <div className="flex gap-4 text-sm text-muted-foreground">
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            <span>{idea.duration}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <DollarSign className="h-3 w-3" />
+                            <span>{idea.cost}</span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
             </TabsContent>
 
             <TabsContent value="suggestions" className="space-y-6">
