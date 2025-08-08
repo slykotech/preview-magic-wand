@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Crown, Shield, Heart, Sparkles } from 'lucide-react';
-import { useEnhancedSubscription } from '@/hooks/useEnhancedSubscription';
+import { useSubscription } from '@/hooks/useSubscription';
+import { Capacitor } from '@capacitor/core';
+import { useToast } from '@/hooks/use-toast';
 
 interface SubscriptionPromptModalProps {
   isOpen: boolean;
@@ -14,42 +14,57 @@ interface SubscriptionPromptModalProps {
 }
 
 export const SubscriptionPromptModal = ({ isOpen, onClose, feature }: SubscriptionPromptModalProps) => {
-  const { startTrial } = useEnhancedSubscription();
+  const { plans, subscribeToPlan } = useSubscription();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [cardDetails, setCardDetails] = useState({
-    cardNumber: '',
-    expiryDate: '',
-    cvv: '',
-    last_four: '',
-    brand: 'Visa'
-  });
+  const isNative = Capacitor.isNativePlatform();
 
   const handleStartTrial = async () => {
-    if (!cardDetails.cardNumber || !cardDetails.expiryDate || !cardDetails.cvv) {
+    if (!isNative) {
+      toast({
+        title: "Use Mobile App",
+        description: "Please use the mobile app to subscribe via App Store or Google Play.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Get the first available plan (usually Premium)
+    const defaultPlan = plans.find(p => p.name.toLowerCase().includes('premium')) || plans[0];
+    if (!defaultPlan) {
+      toast({
+        title: "No Plans Available",
+        description: "Please try again later.",
+        variant: "destructive"
+      });
       return;
     }
 
     setLoading(true);
-    
-    // Extract last 4 digits
-    const last_four = cardDetails.cardNumber.slice(-4);
-    
-    // Determine card brand (simple logic)
-    const brand = cardDetails.cardNumber.startsWith('4') ? 'Visa' : 
-                  cardDetails.cardNumber.startsWith('5') ? 'Mastercard' : 'Other';
-
-    const result = await startTrial({
-      cardNumber: cardDetails.cardNumber,
-      expiryDate: cardDetails.expiryDate,
-      cvv: cardDetails.cvv,
-      cardBrand: brand
-    });
-    
-    if (result.success) {
-      onClose();
+    try {
+      const success = await subscribeToPlan(defaultPlan.id);
+      if (success) {
+        toast({
+          title: "Trial Started! 🎉",
+          description: "Welcome to 7 days of premium features!"
+        });
+        onClose();
+      } else {
+        toast({
+          title: "Subscription Failed",
+          description: "Unable to start subscription. Please try again.",
+          variant: "destructive"
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Subscription Failed",
+        description: error.message || "Unable to start subscription. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
     }
-    
-    setLoading(false);
   };
 
   const premiumFeatures = [
@@ -99,49 +114,10 @@ export const SubscriptionPromptModal = ({ isOpen, onClose, feature }: Subscripti
           <div className="bg-gradient-to-r from-success/10 to-transparent p-4 rounded-lg border border-success/20">
             <div className="font-semibold text-success mb-2">🎉 7-Day Free Trial</div>
             <div className="text-sm text-muted-foreground">
-              Start your free trial today. No charges for 7 days. Auto-renews at $9.99/month unless cancelled.
-            </div>
-          </div>
-
-          {/* Card Details Form */}
-          <div className="space-y-4">
-            <Label className="text-sm font-medium">Secure your trial with a card (no charge for 7 days)</Label>
-            
-            <div className="space-y-3">
-              <div>
-                <Label htmlFor="cardNumber" className="text-xs text-muted-foreground">Card Number</Label>
-                <Input
-                  id="cardNumber"
-                  placeholder="1234 5678 9012 3456"
-                  value={cardDetails.cardNumber}
-                  onChange={(e) => setCardDetails(prev => ({ ...prev, cardNumber: e.target.value }))}
-                  maxLength={19}
-                />
-              </div>
-              
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label htmlFor="expiryDate" className="text-xs text-muted-foreground">MM/YY</Label>
-                  <Input
-                    id="expiryDate"
-                    placeholder="12/26"
-                    value={cardDetails.expiryDate}
-                    onChange={(e) => setCardDetails(prev => ({ ...prev, expiryDate: e.target.value }))}
-                    maxLength={5}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="cvv" className="text-xs text-muted-foreground">CVV</Label>
-                  <Input
-                    id="cvv"
-                    placeholder="123"
-                    value={cardDetails.cvv}
-                    onChange={(e) => setCardDetails(prev => ({ ...prev, cvv: e.target.value }))}
-                    maxLength={4}
-                    type="password"
-                  />
-                </div>
-              </div>
+              {isNative 
+                ? "Start your free trial today via RevenueCat. No charges for 7 days. Auto-renews unless cancelled."
+                : "Please use the mobile app to start your trial via App Store or Google Play."
+              }
             </div>
           </div>
 
@@ -149,10 +125,10 @@ export const SubscriptionPromptModal = ({ isOpen, onClose, feature }: Subscripti
           <div className="space-y-3">
             <Button
               onClick={handleStartTrial}
-              disabled={loading || !cardDetails.cardNumber || !cardDetails.expiryDate || !cardDetails.cvv}
+              disabled={loading || !isNative}
               className="w-full bg-gradient-to-r from-primary to-primary-glow hover:from-primary-glow hover:to-primary"
             >
-              {loading ? 'Starting Trial...' : 'Start 7-Day Free Trial'}
+              {loading ? 'Starting Trial...' : isNative ? 'Start 7-Day Free Trial' : 'Use Mobile App'}
             </Button>
             
             <Button variant="ghost" onClick={onClose} className="w-full">
@@ -162,7 +138,10 @@ export const SubscriptionPromptModal = ({ isOpen, onClose, feature }: Subscripti
 
           {/* Terms */}
           <div className="text-xs text-muted-foreground text-center">
-            By starting your trial, you agree to our terms. Cancel anytime before your trial ends to avoid charges.
+            {isNative 
+              ? "By starting your trial, you agree to our terms. Cancel anytime via App Store/Google Play."
+              : "Download our mobile app to start your premium trial via your device's app store."
+            }
           </div>
         </div>
       </DialogContent>

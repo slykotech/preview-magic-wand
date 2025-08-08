@@ -7,7 +7,6 @@ import { Sparkles, Heart, Calendar, MessageSquare, Camera, BarChart3, Users2, Sh
 import { GradientHeader } from '@/components/GradientHeader';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
-import { EnhancedTrialFlow } from '@/components/subscription/EnhancedTrialFlow';
 import { TrialAnalytics } from '@/components/subscription/TrialAnalytics';
 import { Capacitor } from '@capacitor/core';
 import { useToast } from '@/hooks/use-toast';
@@ -54,12 +53,11 @@ const features = [
 export const SubscriptionTrial: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { plans, restorePurchases } = useSubscription();
-  const [showTrialFlow, setShowTrialFlow] = useState(false);
-const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+  const { plans, subscribeToPlan, restorePurchases } = useSubscription();
   const isNative = Capacitor.isNativePlatform();
   const { toast } = useToast();
   const [isRestoring, setIsRestoring] = useState(false);
+  const [isSubscribing, setIsSubscribing] = useState(false);
   const handleRestore = async () => {
     setIsRestoring(true);
     try {
@@ -82,35 +80,47 @@ const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
     }
   }, [user, navigate]);
 
-  const handlePlanSelect = (planId: string) => {
-    setSelectedPlan(planId);
-    setShowTrialFlow(true);
-  };
+  const handlePlanSelect = async (planId: string) => {
+    if (!isNative) {
+      toast({
+        title: "Use Mobile App",
+        description: "Please use the mobile app to subscribe via App Store or Google Play.",
+        variant: "destructive"
+      });
+      return;
+    }
 
-  const handleTrialStarted = () => {
-    navigate('/dashboard');
-  };
-
-  const handleSkip = () => {
-    navigate('/dashboard');
+    setIsSubscribing(true);
+    try {
+      const success = await subscribeToPlan(planId);
+      if (success) {
+        toast({
+          title: "Trial Started! 🎉",
+          description: "Welcome to 7 days of premium features!"
+        });
+        navigate('/dashboard');
+      } else {
+        toast({
+          title: "Subscription Failed",
+          description: "Unable to start subscription. Please try again.",
+          variant: "destructive"
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Subscription Failed",
+        description: error.message || "Unable to start subscription. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubscribing(false);
+    }
   };
 
   if (!user) {
     return null; // Will redirect to auth
   }
 
-  if (showTrialFlow) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-rose-50 py-8">
-        <div className="container mx-auto px-4">
-          <EnhancedTrialFlow 
-            onTrialStarted={handleTrialStarted}
-            onSkip={handleSkip}
-          />
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-rose-50">
@@ -140,12 +150,11 @@ const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
           {isNative ? (
             <div className="grid md:grid-cols-2 gap-6 mb-8">
               {plans.map((plan) => (
-                <Card 
+                  <Card 
                   key={plan.id} 
-                  className={`relative h-full hover:shadow-lg transition-all cursor-pointer border-2 ${
+                  className={`relative h-full hover:shadow-lg transition-all border-2 ${
                     plan.name.toLowerCase().includes('premium') ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
                   }`}
-                  onClick={() => handlePlanSelect(plan.id)}
                 >
                   {plan.name.toLowerCase().includes('premium') && (
                     <Badge className="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-primary text-primary-foreground">
@@ -170,12 +179,10 @@ const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
                   <CardContent>
                     <Button 
                       className="w-full mb-4 bg-gradient-to-r from-primary to-primary-glow"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handlePlanSelect(plan.id);
-                      }}
+                      onClick={() => handlePlanSelect(plan.id)}
+                      disabled={isSubscribing}
                     >
-                      Start Free Trial
+                      {isSubscribing ? 'Starting Trial...' : 'Start Free Trial'}
                     </Button>
                     <div className="text-xs text-center text-muted-foreground">
                       7 days free, then ${plan.price}/{plan.period}
@@ -242,7 +249,7 @@ const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
           {/* Call to Action */}
           <div className="text-center space-y-4">
             <p className="text-muted-foreground">
-              {isNative ? 'Choose a plan above to start your 7-day free trial' : 'Open the mobile app to start your 7-day free trial via the App Store or Google Play.'}
+              {isNative ? 'Choose a plan above to start your 7-day free trial via RevenueCat' : 'Open the mobile app to start your 7-day free trial via the App Store or Google Play.'}
             </p>
           </div>
 
