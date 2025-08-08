@@ -190,9 +190,17 @@ const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
                 <CardTitle className="text-center">Subscribe in the mobile app</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-center text-muted-foreground mb-4">
+                <p className="text-center text-muted-foreground mb-6">
                   Payments are handled by the App Store and Google Play. Please use the mobile app to start your 7-day free trial.
                 </p>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center mb-4">
+                  <Button asChild>
+                    <a href="https://apps.apple.com" target="_blank" rel="noreferrer">Get the app on the App Store</a>
+                  </Button>
+                  <Button variant="outline" asChild>
+                    <a href="https://play.google.com/store" target="_blank" rel="noreferrer">Get it on Google Play</a>
+                  </Button>
+                </div>
                 <div className="flex justify-center">
                   <Button variant="outline" onClick={handleRestore} disabled={isRestoring}>
                     {isRestoring ? 'Restoring…' : 'I already subscribed on my phone — Restore Purchases'}
