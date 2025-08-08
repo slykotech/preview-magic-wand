@@ -211,37 +211,6 @@ export const CardDeckGame: React.FC = () => {
               End Game
             </Button>
             
-            {/* Debug Controls - Development Only */}
-            {process.env.NODE_ENV === 'development' && (
-              <Button
-                onClick={async () => {
-                  const playedCardIds = [...(gameState.played_cards || []), ...(gameState.skipped_cards || [])];
-                  const { data: photoCards } = await supabase
-                    .from("deck_cards")
-                    .select("id")
-                    .eq("response_type", "photo")
-                    .eq("is_active", true)
-                    .not("id", "in", playedCardIds.length > 0 ? `(${playedCardIds.join(",")})` : "()")
-                    .limit(1);
-                  
-                  if (photoCards && photoCards.length > 0) {
-                    await supabase
-                      .from("card_deck_game_sessions")
-                      .update({
-                        current_card_id: photoCards[0].id,
-                        last_activity_at: new Date().toISOString()
-                      })
-                      .eq("id", sessionId);
-                    
-                    console.log('Forced photo card:', photoCards[0].id);
-                  }
-                }}
-                variant="secondary"
-                className="min-w-[140px] h-10"
-              >
-                📸 Photo
-              </Button>
-            )}
           </div>
         </div>
 
