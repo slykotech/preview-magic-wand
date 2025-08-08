@@ -82,22 +82,37 @@ export const Games = () => {
         return;
       }
 
-      // For tic_toe_heart - check for existing session first
+      // For tic_toe_heart - check for existing session, but only join if it's actually in progress
       const { data: existingSession } = await supabase
         .from("game_sessions")
-        .select("*")
+        .select(`
+          *,
+          tic_toe_heart_games(*)
+        `)
         .eq("couple_id", coupleData.id)
         .eq("status", "active")
         .order("started_at", { ascending: false })
         .limit(1)
         .maybeSingle();
       
-      if (existingSession) {
-        // Join existing game session
-        console.log('Joining existing game session:', existingSession.id);
+      // Check if we have an active session with an incomplete game
+      let shouldJoinExisting = false;
+      if (existingSession && existingSession.tic_toe_heart_games) {
+        const gameData = Array.isArray(existingSession.tic_toe_heart_games) 
+          ? existingSession.tic_toe_heart_games[0] 
+          : existingSession.tic_toe_heart_games;
+        // Only join if the game is still in progress (not won/draw)
+        if (gameData) {
+          shouldJoinExisting = gameData.game_status === 'playing';
+        }
+      }
+      
+      if (shouldJoinExisting) {
+        // Join existing incomplete game
+        console.log('Joining existing incomplete game session:', existingSession.id);
         navigate(`/games/${existingSession.id}`);
       } else {
-        // Create new session
+        // Create new session for completed games or no existing session
         console.log('Creating new game session for:', gameType);
         const session = await createGameSession(gameType);
         if (session) {
