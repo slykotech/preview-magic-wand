@@ -11,6 +11,7 @@ interface TaskHistoryItem {
   card_id: string;
   user_id: string;
   response_text: string | null;
+  response_photo_url: string | null;
   response_type: 'text' | 'photo' | 'action';
   responded_at: string;
   time_taken_seconds: number | null;
@@ -70,6 +71,7 @@ export const TaskHistory: React.FC<TaskHistoryProps> = ({ sessionId, isOpen, onC
           card_id: response.card_id,
           user_id: response.user_id,
           response_text: response.response_text,
+          response_photo_url: response.response_photo_url,
           response_type: response.response_type as 'text' | 'photo' | 'action',
           responded_at: response.responded_at,
           time_taken_seconds: response.time_taken_seconds,
@@ -166,12 +168,16 @@ export const TaskHistory: React.FC<TaskHistoryProps> = ({ sessionId, isOpen, onC
                           </div>
                         )}
 
-                        {task.response_type === 'photo' && task.response_text && (
+                        {task.response_type === 'photo' && (task.response_photo_url || task.response_text) && (
                           <div className="mb-2">
                             <img
-                              src={`${supabase.storage.from('card-responses').getPublicUrl(task.response_text).data.publicUrl}`}
-                              alt="Response"
-                              className="max-h-32 rounded-md border"
+                              src={task.response_photo_url || task.response_text || ''}
+                              alt="Photo response"
+                              className="max-h-64 max-w-full rounded-md border object-cover"
+                              onError={(e) => {
+                                console.error('Failed to load image:', task.response_photo_url || task.response_text);
+                                e.currentTarget.style.display = 'none';
+                              }}
                             />
                           </div>
                         )}
