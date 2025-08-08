@@ -60,7 +60,7 @@ class CardDistributionManager {
     return count;
   }
 
-  // BALANCED CARD DISTRIBUTION: Ensures fair distribution of card types
+  // SIMPLE AND RELIABLE CARD DISTRIBUTION
   selectRandomCard(
     playedCards: string[], 
     allCards: any[],
@@ -72,11 +72,19 @@ class CardDistributionManager {
       return null;
     }
     
-    console.log('🎴 BALANCED CARD DRAWING - Fair Distribution');
+    console.log('🎴 SIMPLE CARD DISTRIBUTION - Guaranteed Variety');
+    
+    // Group available cards by type
+    const cardsByType = {
+      action: availableCards.filter(c => c.response_type === 'action'),
+      text: availableCards.filter(c => c.response_type === 'text'),
+      photo: availableCards.filter(c => c.response_type === 'photo')
+    };
+    
     console.log('📦 Available cards by type:', {
-      action: availableCards.filter(c => c.response_type === 'action').length,
-      text: availableCards.filter(c => c.response_type === 'text').length,
-      photo: availableCards.filter(c => c.response_type === 'photo').length,
+      action: cardsByType.action.length,
+      text: cardsByType.text.length,
+      photo: cardsByType.photo.length,
       total: availableCards.length
     });
 
@@ -89,95 +97,96 @@ class CardDistributionManager {
       }
     });
 
-    console.log('📊 User card distribution:', {
-      totalPlayed: playedCards.length,
-      distribution: userDistribution,
-      lastCards: playedCards.slice(-3).map(id => {
-        const card = allCards.find(c => c.id === id);
-        return { id: id.substring(0, 8), type: card?.response_type };
-      })
+    const totalPlayed = playedCards.length;
+    console.log('📊 User distribution:', {
+      totalPlayed,
+      counts: userDistribution,
+      percentages: {
+        action: totalPlayed > 0 ? (userDistribution.action / totalPlayed * 100).toFixed(1) + '%' : '0%',
+        text: totalPlayed > 0 ? (userDistribution.text / totalPlayed * 100).toFixed(1) + '%' : '0%',
+        photo: totalPlayed > 0 ? (userDistribution.photo / totalPlayed * 100).toFixed(1) + '%' : '0%'
+      }
     });
 
-    // STEP 1: Avoid 3+ consecutive cards of same type
-    let eligibleCards = [...availableCards];
+    // STRATEGY: Force balance after first few cards
+    let selectedCard;
     
-    if (playedCards.length >= 2) {
+    if (totalPlayed >= 2) {
+      // Find the most underrepresented type that has available cards
+      const types = ['action', 'text', 'photo'] as const;
+      const typesWithCards = types.filter(type => cardsByType[type].length > 0);
+      
+      if (typesWithCards.length === 0) {
+        console.log('❌ No cards of any type available!');
+        return null;
+      }
+
+      // Calculate deficit for each type (target 33% each)
+      const deficits = typesWithCards.map(type => ({
+        type,
+        count: userDistribution[type],
+        percent: totalPlayed > 0 ? userDistribution[type] / totalPlayed : 0,
+        deficit: (1/3) - (totalPlayed > 0 ? userDistribution[type] / totalPlayed : 0),
+        available: cardsByType[type].length
+      }));
+
+      // Sort by biggest deficit (most underrepresented)
+      deficits.sort((a, b) => b.deficit - a.deficit);
+      
+      console.log('📈 Type deficits (biggest first):', deficits.map(d => ({
+        type: d.type,
+        deficit: (d.deficit * 100).toFixed(1) + '%',
+        count: d.count,
+        available: d.available
+      })));
+
+      // Pick the most underrepresented type
+      const chosenType = deficits[0].type;
+      const availableOfType = cardsByType[chosenType];
+      
+      console.log(`🎯 Selecting ${chosenType} card (biggest deficit: ${(deficits[0].deficit * 100).toFixed(1)}%)`);
+      
+      // Random card from chosen type
+      selectedCard = availableOfType[Math.floor(Math.random() * availableOfType.length)];
+      
+    } else {
+      // For first few cards, truly random
+      console.log('🎲 Early game - truly random selection');
+      selectedCard = availableCards[Math.floor(Math.random() * availableCards.length)];
+    }
+
+    // Avoid 3+ consecutive cards of same type
+    if (totalPlayed >= 2) {
       const lastTwoCards = playedCards.slice(-2);
       const lastTwoTypes = lastTwoCards.map(cardId => {
         const card = allCards.find(c => c.id === cardId);
         return card?.response_type;
       }).filter(Boolean);
       
-      // If last 2 cards are same type, avoid that type
-      if (lastTwoTypes.length === 2 && lastTwoTypes[0] === lastTwoTypes[1]) {
-        const typeToAvoid = lastTwoTypes[0];
-        eligibleCards = eligibleCards.filter(c => c.response_type !== typeToAvoid);
+      // If last 2 cards are same type and we're about to make it 3, try different type
+      if (lastTwoTypes.length === 2 && 
+          lastTwoTypes[0] === lastTwoTypes[1] && 
+          selectedCard.response_type === lastTwoTypes[0]) {
         
-        console.log(`🚫 Avoiding ${typeToAvoid} to prevent 3rd consecutive`);
+        console.log(`🚫 Would create 3rd consecutive ${selectedCard.response_type}, trying different type...`);
         
-        // If filtering removed all cards, ignore the rule
-        if (eligibleCards.length === 0) {
-          console.log('⚠️ All cards filtered out, ignoring consecutive rule');
-          eligibleCards = [...availableCards];
+        // Try to find a different type
+        const otherTypes = ['action', 'text', 'photo'].filter(type => 
+          type !== selectedCard.response_type && cardsByType[type as keyof typeof cardsByType].length > 0
+        );
+        
+        if (otherTypes.length > 0) {
+          const alternativeType = otherTypes[Math.floor(Math.random() * otherTypes.length)];
+          const alternativeCards = cardsByType[alternativeType as keyof typeof cardsByType];
+          selectedCard = alternativeCards[Math.floor(Math.random() * alternativeCards.length)];
+          console.log(`✅ Switched to ${selectedCard.response_type} to avoid consecutive`);
+        } else {
+          console.log('⚠️ No alternative types available, keeping original selection');
         }
       }
     }
-
-    // STEP 2: Apply distribution balancing
-    const totalPlayed = playedCards.length;
-    if (totalPlayed >= 3) { // Only balance after a few cards
-      // Calculate which type is most underrepresented
-      const actionPercent = userDistribution.action / totalPlayed;
-      const textPercent = userDistribution.text / totalPlayed;
-      const photoPercent = userDistribution.photo / totalPlayed;
-      
-      console.log('📈 Current percentages:', {
-        action: `${(actionPercent * 100).toFixed(1)}%`,
-        text: `${(textPercent * 100).toFixed(1)}%`, 
-        photo: `${(photoPercent * 100).toFixed(1)}%`
-      });
-
-      // Target: 40% action, 30% text, 30% photo
-      const targetAction = 0.4;
-      const targetText = 0.3;
-      const targetPhoto = 0.3;
-
-      // Calculate how far each type is from target
-      const actionDeficit = targetAction - actionPercent;
-      const textDeficit = targetText - textPercent;
-      const photoDeficit = targetPhoto - photoPercent;
-
-      // Find the most underrepresented type
-      let preferredType = null;
-      let maxDeficit = 0.1; // Only prefer if deficit is significant
-
-      if (actionDeficit > maxDeficit) {
-        preferredType = 'action';
-        maxDeficit = actionDeficit;
-      }
-      if (textDeficit > maxDeficit) {
-        preferredType = 'text'; 
-        maxDeficit = textDeficit;
-      }
-      if (photoDeficit > maxDeficit) {
-        preferredType = 'photo';
-        maxDeficit = photoDeficit;
-      }
-
-      if (preferredType) {
-        const preferredCards = eligibleCards.filter(c => c.response_type === preferredType);
-        if (preferredCards.length > 0) {
-          console.log(`⚖️ Favoring ${preferredType} cards (deficit: ${(maxDeficit * 100).toFixed(1)}%)`);
-          eligibleCards = preferredCards;
-        }
-      }
-    }
-
-    // STEP 3: Random selection from eligible cards
-    const shuffledCards = this.shuffleArray(eligibleCards);
-    const selectedCard = shuffledCards[0];
     
-    console.log('✅ Card selected:', {
+    console.log('✅ Final selection:', {
       type: selectedCard.response_type,
       category: selectedCard.category,
       id: selectedCard.id.substring(0, 8),
