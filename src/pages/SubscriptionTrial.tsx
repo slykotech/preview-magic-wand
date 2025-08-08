@@ -200,17 +200,17 @@ export const SubscriptionTrial: React.FC = () => {
                 <p className="text-center text-muted-foreground mb-6">
                   Payments are handled by the App Store and Google Play. Please use the mobile app to start your 7-day free trial.
                 </p>
-                <div className="flex flex-col sm:flex-row gap-3 justify-center mb-4">
-                  <Button asChild>
-                    <a href="https://apps.apple.com" target="_blank" rel="noreferrer">Get the app on the App Store</a>
+                <div className="flex flex-col sm:flex-row gap-2 justify-center mb-4 max-w-md mx-auto">
+                  <Button asChild size="sm" className="text-sm py-2 px-4">
+                    <a href="https://apps.apple.com" target="_blank" rel="noreferrer">App Store</a>
                   </Button>
-                  <Button variant="outline" asChild>
-                    <a href="https://play.google.com/store" target="_blank" rel="noreferrer">Get it on Google Play</a>
+                  <Button variant="outline" asChild size="sm" className="text-sm py-2 px-4">
+                    <a href="https://play.google.com/store" target="_blank" rel="noreferrer">Google Play</a>
                   </Button>
                 </div>
                 <div className="flex justify-center">
-                  <Button variant="outline" onClick={handleRestore} disabled={isRestoring}>
-                    {isRestoring ? 'Restoring…' : 'I already subscribed on my phone — Restore Purchases'}
+                  <Button variant="ghost" size="sm" onClick={handleRestore} disabled={isRestoring} className="text-xs text-muted-foreground hover:text-foreground">
+                    {isRestoring ? 'Restoring…' : 'Already subscribed? Restore Purchases'}
                   </Button>
                 </div>
               </CardContent>
