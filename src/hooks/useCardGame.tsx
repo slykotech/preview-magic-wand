@@ -341,19 +341,80 @@ export function useCardGame(sessionId: string | null) {
     if (!isMyTurn || !gameState || !currentCard || !sessionId || !user) return;
 
     try {
+      console.log('🔄 Processing skip for user:', user.id);
+      
+      // Determine which user's skips to reduce
+      const isUser1 = user.id === gameState.user1_id;
+      const currentUserSkips = isUser1 ? gameState.user1_skips_remaining : gameState.user2_skips_remaining;
+      
+      if (currentUserSkips <= 0) {
+        toast.error("No skips remaining!");
+        return;
+      }
+
+      // Calculate new skip counts
+      const newUser1Skips = isUser1 ? currentUserSkips - 1 : gameState.user1_skips_remaining;
+      const newUser2Skips = !isUser1 ? currentUserSkips - 1 : gameState.user2_skips_remaining;
+      
+      console.log('Skip counts:', { 
+        before: { user1: gameState.user1_skips_remaining, user2: gameState.user2_skips_remaining },
+        after: { user1: newUser1Skips, user2: newUser2Skips }
+      });
+
+      // Check if user runs out of skips (game over condition)
+      const userRunsOutOfSkips = (isUser1 ? newUser1Skips : newUser2Skips) <= 0;
+      
+      if (userRunsOutOfSkips) {
+        // Opponent wins when current user runs out of skips
+        const winnerId = isUser1 ? gameState.user2_id : gameState.user1_id;
+        
+        await supabase
+          .from("card_deck_game_sessions")
+          .update({
+            status: 'completed',
+            completed_at: new Date().toISOString(),
+            winner_id: winnerId,
+            win_reason: 'opponent_no_skips',
+            user1_skips_remaining: newUser1Skips,
+            user2_skips_remaining: newUser2Skips,
+            last_activity_at: new Date().toISOString()
+          })
+          .eq("id", sessionId);
+          
+        toast.success("Game Over! You ran out of skips. Your partner wins! 🎉");
+        return;
+      }
+
+      // Add current card to skipped cards
       const deckManager = new DeckManager();
       await deckManager.skipCard(sessionId);
       
-      // Draw next card
+      // Draw next card for partner
       const nextCard = await deckManager.drawNextCard(sessionId);
       
-      if (nextCard) {
-        setCurrentCard(nextCard);
+      // Switch turns and update skip counts
+      const nextTurn = gameState.current_turn === gameState.user1_id 
+        ? gameState.user2_id 
+        : gameState.user1_id;
+
+      await supabase
+        .from("card_deck_game_sessions")
+        .update({
+          current_turn: nextCard ? nextTurn : gameState.current_turn,
+          current_card_id: nextCard?.id || null,
+          current_card_revealed: false,
+          user1_skips_remaining: newUser1Skips,
+          user2_skips_remaining: newUser2Skips,
+          last_activity_at: new Date().toISOString(),
+          status: nextCard ? 'active' : 'completed'
+        })
+        .eq("id", sessionId);
+
+      if (!nextCard) {
+        toast.success("Game completed! No more cards available 🎉");
       } else {
-        await endGame('deck_empty');
+        toast.success(`Card skipped! ${newUser1Skips + newUser2Skips} skips remaining total`);
       }
-      
-      toast.success("Card skipped!");
       
     } catch (error) {
       console.error("Failed to skip card:", error);
