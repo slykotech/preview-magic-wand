@@ -167,12 +167,17 @@ export const DatePlanner = () => {
     
     console.log('Add Date clicked - Data to add:', dataToAdd);
     console.log('Form data state:', formData);
+    console.log('DateData parameter:', dateData);
+    console.log('Title from dataToAdd:', dataToAdd.title);
+    console.log('Title trimmed:', dataToAdd.title?.trim());
+    console.log('Title check result:', !!dataToAdd.title?.trim());
     console.log('Couple data:', !!coupleData);
     console.log('User data:', !!user);
     
     // More specific validation - only title is required
-    if (!dataToAdd.title?.trim()) {
-      console.error('Validation failed: Missing title');
+    const titleValue = dataToAdd.title;
+    if (!titleValue || titleValue.trim() === '') {
+      console.error('Validation failed: Missing title', { titleValue, trimmed: titleValue?.trim() });
       toast({
         title: "Missing Information",
         description: "Please enter a title for your date."
