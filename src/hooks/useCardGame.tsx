@@ -257,22 +257,19 @@ export function useCardGame(sessionId: string | null) {
         .select("*") // Get all fields, not just id
         .eq("is_active", true);
 
-      // Exclude played cards
-      if (gameState.played_cards && Array.isArray(gameState.played_cards) && gameState.played_cards.length > 0) {
-        const validPlayedCards = gameState.played_cards.filter(id => id && typeof id === 'string');
-        if (validPlayedCards.length > 0) {
-          console.log('🚫 Filtering out played cards:', validPlayedCards);
-          query = query.not("id", "in", `(${validPlayedCards.join(",")})`);
-        }
-      }
+      // Combine played and skipped cards for exclusion
+      const excludedCards = [
+        ...(gameState.played_cards && Array.isArray(gameState.played_cards) ? gameState.played_cards : []),
+        ...(gameState.skipped_cards && Array.isArray(gameState.skipped_cards) ? gameState.skipped_cards : [])
+      ].filter(id => id && typeof id === 'string');
 
-      // Exclude skipped cards  
-      if (gameState.skipped_cards && Array.isArray(gameState.skipped_cards) && gameState.skipped_cards.length > 0) {
-        const validSkippedCards = gameState.skipped_cards.filter(id => id && typeof id === 'string');
-        if (validSkippedCards.length > 0) {
-          console.log('⏭️ Filtering out skipped cards:', validSkippedCards);
-          query = query.not("id", "in", `(${validSkippedCards.join(",")})`);
-        }
+      if (excludedCards.length > 0) {
+        console.log('🚫 Filtering out cards:', { 
+          played: gameState.played_cards?.length || 0, 
+          skipped: gameState.skipped_cards?.length || 0,
+          total: excludedCards.length 
+        });
+        query = query.not("id", "in", `(${excludedCards.join(",")})`);
       }
 
       const { data: availableCards, error } = await query.limit(100);
@@ -300,11 +297,15 @@ export function useCardGame(sessionId: string | null) {
       const distributionManager = new CardDistributionManager();
       const playedCardIds = gameState.played_cards || [];
       
-      // Get all cards for reference
-      const { data: allCardsData } = await supabase
-        .from("deck_cards")
-        .select("id, response_type")
-        .in("id", playedCardIds.length > 0 ? playedCardIds : ['dummy']);
+      // Get all played cards for reference (needed for distribution calculation)
+      let allCardsData = [];
+      if (playedCardIds.length > 0) {
+        const { data } = await supabase
+          .from("deck_cards")
+          .select("id, response_type")
+          .in("id", playedCardIds);
+        allCardsData = data || [];
+      }
       
       const allCards = allCardsData || [];
       

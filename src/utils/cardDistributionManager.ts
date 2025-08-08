@@ -68,12 +68,13 @@ class CardDistributionManager {
   ): { action: number; text: number; photo: number } {
     const currentDistribution = this.getCurrentCycleDistribution(playedCards, allCards);
     const cyclePosition = playedCards.length % 10;
+    const cardsLeftInCycle = 10 - cyclePosition;
     
     // Calculate remaining needed for each type
     const remaining = {
-      action: this.DISTRIBUTION_PER_10.action - currentDistribution.action,
-      text: this.DISTRIBUTION_PER_10.text - currentDistribution.text,
-      photo: this.DISTRIBUTION_PER_10.photo - currentDistribution.photo
+      action: Math.max(0, this.DISTRIBUTION_PER_10.action - currentDistribution.action),
+      text: Math.max(0, this.DISTRIBUTION_PER_10.text - currentDistribution.text),
+      photo: Math.max(0, this.DISTRIBUTION_PER_10.photo - currentDistribution.photo)
     };
     
     // Calculate available cards by type
@@ -83,35 +84,59 @@ class CardDistributionManager {
       photo: availableCards.filter(c => c.response_type === 'photo').length
     };
     
+    console.log('📊 Distribution Debug:', {
+      cyclePosition,
+      cardsLeftInCycle,
+      currentDistribution,
+      remaining,
+      available
+    });
+    
     // Calculate weights
     const weights = { action: 0, text: 0, photo: 0 };
     
     Object.keys(weights).forEach(type => {
       const typedType = type as keyof typeof weights;
-      // Base weight on how many we still need
-      let weight = remaining[typedType] / Math.max(1, (10 - cyclePosition));
       
-      // Boost if we're behind schedule
-      if (remaining[typedType] > (10 - cyclePosition) / 2) {
-        weight *= 2;
+      // Skip if no cards available of this type
+      if (available[typedType] === 0) {
+        weights[typedType] = 0;
+        return;
       }
       
-      // Reduce weight if consecutive limit reached
+      // Check consecutive limit
       const consecutiveCount = this.getConsecutiveCount(playedCards, allCards, type);
       if (consecutiveCount >= this.MAX_CONSECUTIVE) {
-        weight = 0; // Block this type
-      } else if (consecutiveCount === this.MAX_CONSECUTIVE - 1) {
-        weight *= 0.3; // Reduce probability
+        weights[typedType] = 0; // Block this type completely
+        return;
       }
       
-      // Ensure we have cards available
-      if (available[typedType] === 0) {
-        weight = 0;
+      // Base weight on remaining needed vs cards left in cycle
+      let weight = remaining[typedType];
+      
+      // If we still need cards of this type
+      if (remaining[typedType] > 0) {
+        // Urgency factor: more urgent as cycle progresses
+        const urgencyFactor = cardsLeftInCycle > 0 ? remaining[typedType] / cardsLeftInCycle : 1;
+        weight = weight * (1 + urgencyFactor);
+        
+        // Extra boost if we're behind schedule
+        if (remaining[typedType] > cardsLeftInCycle / 2) {
+          weight *= 2;
+        }
+        
+        // Special photo card boost if none played and cycle is progressing
+        if (type === 'photo' && currentDistribution.photo === 0 && cyclePosition >= 4) {
+          weight *= 3;
+        }
+      } else {
+        // We've met the requirement, but still allow with lower weight
+        weight = 0.1;
       }
       
-      // Special boost for photo cards if none played yet
-      if (type === 'photo' && currentDistribution.photo === 0 && cyclePosition >= 3) {
-        weight *= 3;
+      // Reduce weight for consecutive cards (but don't block completely unless at limit)
+      if (consecutiveCount === this.MAX_CONSECUTIVE - 1) {
+        weight *= 0.2;
       }
       
       weights[typedType] = Math.max(0, weight);
@@ -124,10 +149,18 @@ class CardDistributionManager {
       weights.text /= totalWeight;
       weights.photo /= totalWeight;
     } else {
-      // Fallback to equal distribution
-      weights.action = weights.text = weights.photo = 1/3;
+      // Emergency fallback: give equal weight to available types
+      const availableTypes = Object.keys(available).filter(type => 
+        available[type as keyof typeof available] > 0
+      );
+      const equalWeight = availableTypes.length > 0 ? 1 / availableTypes.length : 0;
+      
+      weights.action = available.action > 0 ? equalWeight : 0;
+      weights.text = available.text > 0 ? equalWeight : 0;
+      weights.photo = available.photo > 0 ? equalWeight : 0;
     }
     
+    console.log('⚖️ Final weights:', weights);
     return weights;
   }
 

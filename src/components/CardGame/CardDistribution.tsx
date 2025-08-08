@@ -59,7 +59,7 @@ const CardDistribution: React.FC<CardDistributionProps> = ({ gameState }) => {
   return (
     <div className="bg-card p-3 rounded-lg border mb-4">
       <h4 className="text-sm font-semibold text-card-foreground mb-2">
-        Card Distribution (Cycle {Math.floor((gameState?.total_cards_played || 0) / 10) + 1})
+        Card Distribution (Cycle {Math.floor((gameState?.played_cards?.length || 0) / 10) + 1})
       </h4>
       
       {/* Current Cycle Progress */}
