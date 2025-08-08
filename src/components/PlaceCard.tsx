@@ -92,7 +92,7 @@ export const PlaceCard: React.FC<PlaceCardProps> = ({ place, onAddToDatePlan }) 
       estimated_cost: place.priceLevel ? '$'.repeat(place.priceLevel * 15) : '',
       estimated_duration: '2 hours',
       notes: `Rating: ${place.rating}/5 ⭐${place.distance ? ` • ${place.distance}km away` : ''}`,
-      scheduled_date: selectedDate,
+      scheduled_date: format(selectedDate, 'yyyy-MM-dd'),
       scheduled_time: selectedTime
     };
     
