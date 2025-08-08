@@ -292,10 +292,66 @@ export function useCardGame(sessionId: string | null) {
         return;
       }
 
-      console.group('🎴 Drawing Card with Simple Random Logic');
+      console.group('🎴 Drawing Card with Enhanced Debug Logic');
       
       const playedCardIds = gameState.played_cards || [];
       
+      // STEP 1: Add comprehensive debugging for photo cards
+      console.log('🔍 PHOTO CARD INVESTIGATION:');
+      
+      // Check total photo cards in database
+      const { data: allPhotoCards, error: photoError } = await supabase
+        .from("deck_cards")
+        .select("id, prompt, category")
+        .eq("is_active", true)
+        .eq("response_type", "photo");
+      
+      console.log(`📸 Total photo cards in database: ${allPhotoCards?.length || 0}`);
+      if (photoError) console.error('❌ Photo card query error:', photoError);
+      
+      // Check what's being excluded (separate variable to avoid conflict)
+      const excludedCardIds = [
+        ...(gameState.played_cards && Array.isArray(gameState.played_cards) ? gameState.played_cards : []),
+        ...(gameState.skipped_cards && Array.isArray(gameState.skipped_cards) ? gameState.skipped_cards : [])
+      ].filter(id => id && typeof id === 'string');
+      
+      console.log('🚫 Excluded cards:', { 
+        played: gameState.played_cards?.length || 0, 
+        skipped: gameState.skipped_cards?.length || 0,
+        total: excludedCardIds.length,
+        excludedPhotoCards: excludedCardIds.length > 0 ? (await supabase
+          .from("deck_cards")
+          .select("response_type")
+          .in("id", excludedCardIds)
+          .eq("response_type", "photo")).data?.length || 0 : 0
+      });
+
+      // Check available photo cards after exclusion
+      let photoQuery = supabase
+        .from("deck_cards")
+        .select("*")
+        .eq("is_active", true)
+        .eq("response_type", "photo");
+
+      if (excludedCardIds.length > 0) {
+        photoQuery = photoQuery.not("id", "in", `(${excludedCardIds.join(",")})`);
+      }
+
+      const { data: availablePhotoCards } = await photoQuery;
+      console.log(`📸 Available photo cards after exclusion: ${availablePhotoCards?.length || 0}`);
+      
+      // Sample some photo cards
+      if (availablePhotoCards && availablePhotoCards.length > 0) {
+        console.log('📸 Sample available photo cards:', 
+          availablePhotoCards.slice(0, 3).map(c => ({
+            id: c.id.substring(0, 8),
+            prompt: c.prompt.substring(0, 50) + '...'
+          }))
+        );
+      } else {
+        console.log('❌ NO PHOTO CARDS AVAILABLE - This is the problem!');
+      }
+
       // CRITICAL FIX: Get user-specific played cards for distribution calculation
       console.log('🔍 Getting user-specific card history for distribution...');
       
@@ -323,21 +379,74 @@ export function useCardGame(sessionId: string | null) {
       console.log('🔍 User-specific card analysis:', {
         userPlayedCount: userPlayedCardIds.length,
         userCardsDataCount: userCardsData.length,
-        combinedPlayedCount: playedCardIds.length
+        combinedPlayedCount: playedCardIds.length,
+        userDistribution: userCardsData.reduce((acc, card) => {
+          acc[card.response_type] = (acc[card.response_type] || 0) + 1;
+          return acc;
+        }, { action: 0, text: 0, photo: 0 } as Record<string, number>)
       });
 
-      // SIMPLE REAL-LIFE APPROACH: Just draw a random card!
-      console.log('📊 User card history analysis:', {
-        userPlayedCount: userPlayedCardIds.length,
-        userCardsDataCount: userCardsData.length,
-        position: `${userPlayedCardIds.length}/∞`
-      });
+      // ENHANCED CARD SELECTION: Force photo cards if underrepresented
+      console.group('🎯 ENHANCED CARD SELECTION');
+      
+      const userDistribution = userCardsData.reduce((acc, card) => {
+        acc[card.response_type] = (acc[card.response_type] || 0) + 1;
+        return acc;
+      }, { action: 0, text: 0, photo: 0 } as Record<string, number>);
 
-      console.group('🎴 REAL-LIFE CARD DRAWING');
+      const totalUserCards = userPlayedCardIds.length;
+      const photoPercent = totalUserCards > 0 ? userDistribution.photo / totalUserCards : 0;
+      
+      console.log(`📊 User photo percentage: ${(photoPercent * 100).toFixed(1)}% (${userDistribution.photo}/${totalUserCards})`);
+
+      // If user has played 3+ cards and less than 20% are photos, FORCE a photo card
+      const shouldForcePhoto = totalUserCards >= 3 && photoPercent < 0.2 && availablePhotoCards && availablePhotoCards.length > 0;
+      
+      if (shouldForcePhoto) {
+        console.log('🎯 FORCING PHOTO CARD - User is photo-deficit');
+        const randomPhotoCard = availablePhotoCards[Math.floor(Math.random() * availablePhotoCards.length)];
+        
+        console.log('✅ Force-selected photo card:', {
+          id: randomPhotoCard.id.substring(0, 8),
+          type: randomPhotoCard.response_type,
+          prompt: randomPhotoCard.prompt.substring(0, 50) + '...'
+        });
+        
+        console.groupEnd();
+        console.groupEnd();
+        
+        // Update game state
+        const { error: updateError } = await supabase
+          .from("card_deck_game_sessions")
+          .update({
+            current_card_id: randomPhotoCard.id,
+            current_card_revealed: false,
+            current_card_started_at: new Date().toISOString(),
+            last_activity_at: new Date().toISOString()
+          })
+          .eq("id", sessionId);
+
+        if (updateError) {
+          console.error('❌ Failed to update game state:', updateError);
+          throw updateError;
+        }
+
+        setCurrentCard(randomPhotoCard as CardData);
+        setCardRevealed(false);
+        setBlockAutoAdvance(false);
+        
+        toast.success("📸 Photo challenge incoming!", {
+          description: "Time to capture the moment!"
+        });
+        
+        return;
+      }
+
+      console.log('📊 Using balanced distribution logic...');
       
       const cardManager = new CardDistributionManager();
       
-      // Use the simple random selection method
+      // Use the balanced selection method
       let selectedCard = cardManager.selectRandomCard(
         userPlayedCardIds,  // User's played cards only
         userCardsData,      // User's card data only  
