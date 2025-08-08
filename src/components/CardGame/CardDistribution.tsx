@@ -14,16 +14,20 @@ const CardDistribution: React.FC<CardDistributionProps> = ({ gameState }) => {
     cyclePosition: 0,
     userCards: 0
   });
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchUserDistribution = async () => {
-      if (!gameState?.played_cards || gameState.played_cards.length === 0 || !user) {
+      setIsLoading(true);
+      
+      if (!gameState?.id || !user?.id) {
         setDistribution({
           total: { action: 0, text: 0, photo: 0 },
           currentCycle: { action: 0, text: 0, photo: 0 },
           cyclePosition: 0,
           userCards: 0
         });
+        setIsLoading(false);
         return;
       }
 
@@ -42,6 +46,7 @@ const CardDistribution: React.FC<CardDistributionProps> = ({ gameState }) => {
           cyclePosition: 0,
           userCards: 0
         });
+        setIsLoading(false);
         return;
       }
 
@@ -92,10 +97,12 @@ const CardDistribution: React.FC<CardDistributionProps> = ({ gameState }) => {
           userCards: userCardsCount
         });
       }
+      
+      setIsLoading(false);
     };
 
     fetchUserDistribution();
-  }, [gameState?.played_cards, gameState?.id, user]);
+  }, [gameState?.id, user?.id]);
 
   return (
     <div className="bg-card p-3 rounded-lg border mb-4">

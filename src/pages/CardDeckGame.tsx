@@ -246,7 +246,7 @@ export const CardDeckGame: React.FC = () => {
         </div>
 
         {/* Card Distribution Tracking */}
-        <CardDistribution gameState={gameState} />
+        <CardDistribution key={user?.id} gameState={gameState} />
 
         {/* Debug Info - Remove this in production */}
         <DebugInfo 
