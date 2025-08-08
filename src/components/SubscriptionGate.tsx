@@ -32,45 +32,10 @@ export const SubscriptionGate = ({ children }: SubscriptionGateProps) => {
     );
   }
 
-  // Show premium access required if user doesn't have access
+  // Redirect unauthenticated subscribers to trial flow
   if (!subscriptionInfo.isActive) {
-    return (
-      <div className="min-h-screen bg-gradient-primary p-4 flex items-center justify-center">
-        <Card className="max-w-md w-full p-6 bg-white/95 backdrop-blur-sm shadow-xl">
-          <div className="text-center space-y-6">
-            <div className="space-y-3">
-              <Crown className="w-12 h-12 text-primary mx-auto" />
-              <h1 className="text-2xl font-bold">Premium Required</h1>
-              <p className="text-muted-foreground">
-                Complete your subscription setup to access premium features.
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              <Button 
-                onClick={() => navigate('/subscription/trial')}
-                className="w-full"
-              >
-                <Crown className="w-4 h-4 mr-2" />
-                Start Free Trial
-              </Button>
-              
-              <Button 
-                variant="outline"
-                onClick={() => navigate(-1)}
-                className="w-full"
-              >
-                Back
-              </Button>
-              
-              <div className="text-xs text-muted-foreground">
-                ✓ Card required for trial • ✓ 7 days free • ✓ Cancel anytime
-              </div>
-            </div>
-          </div>
-        </Card>
-      </div>
-    );
+    navigate('/subscription/trial');
+    return null;
   }
 
   // User has active subscription, render children
