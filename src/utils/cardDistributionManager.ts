@@ -80,6 +80,15 @@ class CardDistributionManager {
       total: availableCards.length
     });
 
+    // Debug: Show user's card history
+    console.log('👤 User card history:', {
+      totalPlayed: playedCards.length,
+      last5Cards: playedCards.slice(-5).map(id => {
+        const card = allCards.find(c => c.id === id);
+        return { id: id.substring(0, 8), type: card?.response_type };
+      })
+    });
+
     // STEP 1: Check if we need to avoid consecutive cards (only rule)
     let eligibleCards = [...availableCards];
     
@@ -119,12 +128,55 @@ class CardDistributionManager {
       }
     }
     
-    // STEP 2: TRUE RANDOM SELECTION (like real life)
-    console.log(`🎲 Drawing randomly from ${eligibleCards.length} eligible cards...`);
+    // STEP 2: BALANCED RANDOM SELECTION (ensure fair distribution)
+    console.log(`🎲 Selecting card with balanced distribution from ${eligibleCards.length} eligible cards...`);
     
-    // Shuffle the eligible cards for true randomness
-    const shuffledCards = this.shuffleArray(eligibleCards);
-    const selectedCard = shuffledCards[0];
+    // Calculate user's current distribution
+    const userDistribution = { action: 0, text: 0, photo: 0 };
+    playedCards.forEach(cardId => {
+      const card = allCards.find(c => c.id === cardId);
+      if (card && userDistribution[card.response_type as keyof typeof userDistribution] !== undefined) {
+        userDistribution[card.response_type as keyof typeof userDistribution]++;
+      }
+    });
+
+    console.log('📊 User distribution:', {
+      current: userDistribution,
+      target: this.DISTRIBUTION_PER_10,
+      totalPlayed: playedCards.length
+    });
+
+    // Calculate weights to balance distribution
+    const totalPlayed = playedCards.length || 1;
+    const weights = {
+      action: Math.max(0.1, (this.DISTRIBUTION_PER_10.action / 10) - (userDistribution.action / totalPlayed)),
+      text: Math.max(0.1, (this.DISTRIBUTION_PER_10.text / 10) - (userDistribution.text / totalPlayed)),
+      photo: Math.max(0.1, (this.DISTRIBUTION_PER_10.photo / 10) - (userDistribution.photo / totalPlayed))
+    };
+
+    // Normalize weights
+    const weightSum = weights.action + weights.text + weights.photo;
+    const normalizedWeights = {
+      action: weights.action / weightSum,
+      text: weights.text / weightSum,
+      photo: weights.photo / weightSum
+    };
+
+    console.log('⚖️ Card type weights:', normalizedWeights);
+
+    // Select card type based on weights
+    const selectedType = this.selectCardType(normalizedWeights);
+    const cardsOfSelectedType = eligibleCards.filter(c => c.response_type === selectedType);
+    
+    let selectedCard;
+    if (cardsOfSelectedType.length === 0) {
+      console.log(`⚠️ No ${selectedType} cards available, falling back to random`);
+      const shuffledCards = this.shuffleArray(eligibleCards);
+      selectedCard = shuffledCards[0];
+    } else {
+      console.log(`✅ Selecting from ${cardsOfSelectedType.length} ${selectedType} cards`);
+      selectedCard = this.selectRandomCardFromType(cardsOfSelectedType, true);
+    }
     
     console.log('✅ Card drawn:', {
       type: selectedCard.response_type,
