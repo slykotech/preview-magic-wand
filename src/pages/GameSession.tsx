@@ -14,7 +14,7 @@ import { toast } from 'sonner';
 
 // Import romantic game components
 import { TicToeHeartGame } from '@/components/GameComponents/TicToeHeartGame';
-import { TruthOrDareCouplesGame } from '@/components/GameComponents/TruthOrDareCouplesGame';
+
 
 interface GameSession {
   id: string;
@@ -89,7 +89,7 @@ export const GameSession = () => {
       setSession(sessionData);
 
       // For new romantic games, fetch cards from the new tables
-      if (['couples_card_game', 'tic_toe_heart', 'truth_or_dare_couples'].includes(sessionData.card_games.game_type)) {
+      if (['couples_card_game', 'tic_toe_heart'].includes(sessionData.card_games.game_type)) {
         if (sessionData.card_games.game_type === 'couples_card_game') {
           // For now, just create a sample card to avoid TypeScript issues
           const sampleCard: GameCard = {
@@ -221,17 +221,9 @@ export const GameSession = () => {
           />
         )}
         
-        {session.card_games.game_type === 'truth_or_dare_couples' && (
-          <TruthOrDareCouplesGame
-            sessionId={sessionId!}
-            isUserTurn={session.player_turn === user?.id}
-            onSubmitResponse={(response, proof) => console.log('Response:', response)}
-            onNextRound={() => console.log('Next round')}
-          />
-        )}
 
         {/* Fallback for unsupported games */}
-        {!['tic_toe_heart', 'truth_or_dare_couples'].includes(session.card_games.game_type) && (
+        {!['tic_toe_heart'].includes(session.card_games.game_type) && (
           <Card>
             <CardHeader>
               <CardTitle>Game Not Yet Supported</CardTitle>

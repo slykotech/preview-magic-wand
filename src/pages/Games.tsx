@@ -30,17 +30,6 @@ const gameTypes = [
     bgGradient: "from-purple-50 to-pink-50",
     darkBgGradient: "from-purple-950/30 to-pink-950/30",
     description: "Romantic twist on classic Tic-Tac-Toe with winner rewards and heart animations"
-  },
-  {
-    id: "truth_or_dare_couples",
-    title: "Truth or Dare",
-    subtitle: "Spicy & Sweet",
-    icon: Lightbulb,
-    secondaryIcon: HelpCircle,
-    gradient: "from-rose-400 to-orange-400",
-    bgGradient: "from-rose-50 to-orange-50",
-    darkBgGradient: "from-rose-950/30 to-orange-950/30",
-    description: "Flirty truths and cute dares designed to build trust and create fun memories"
   }
 ];
 
@@ -93,7 +82,7 @@ export const Games = () => {
         return;
       }
 
-      // For tic_toe_heart and truth_or_dare_couples - check for existing session first
+      // For tic_toe_heart - check for existing session first
       const { data: existingSession } = await supabase
         .from("game_sessions")
         .select("*")
