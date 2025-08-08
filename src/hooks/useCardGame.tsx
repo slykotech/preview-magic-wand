@@ -543,7 +543,7 @@ export function useCardGame(sessionId: string | null) {
     }
   }, [sessionId]);
 
-  // Rematch function
+  // Rematch function - Reset all game stats to initial values
   const rematchGame = useCallback(async () => {
     if (!gameState || !user) return;
 
@@ -556,14 +556,30 @@ export function useCardGame(sessionId: string | null) {
           user2_id: gameState.user2_id,
           current_turn: gameState.user1_id,
           status: 'active',
-          game_mode: gameState.game_mode || 'classic'
+          game_mode: gameState.game_mode || 'classic',
+          // Reset all stats to initial values
+          total_cards_played: 0,
+          user1_skips_remaining: 3, // Reset to max skips
+          user2_skips_remaining: 3, // Reset to max skips
+          user1_failed_tasks: 0, // Reset failed tasks
+          user2_failed_tasks: 0, // Reset failed tasks
+          max_failed_tasks: 3,
+          max_skips: 3,
+          played_cards: [],
+          skipped_cards: [],
+          favorite_cards: [],
+          current_card_id: null,
+          current_card_revealed: false,
+          current_card_completed: false,
+          winner_id: null,
+          win_reason: null
         })
         .select()
         .single();
 
       if (error) throw error;
 
-      toast.success("Rematch started! 🎮");
+      toast.success("Rematch started! 🎮 All stats reset!");
       window.location.href = `/games/card-deck/${newSession.id}`;
 
     } catch (error) {
