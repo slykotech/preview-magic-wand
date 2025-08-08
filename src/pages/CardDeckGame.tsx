@@ -198,13 +198,6 @@ export const CardDeckGame: React.FC = () => {
             </div>
 
 
-            <div className="flex items-center gap-3 px-4 py-3 bg-white rounded-lg shadow-sm border border-gray-200">
-              <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-              <span className="text-sm font-medium text-gray-600">Failed Tasks:</span>
-              <span className="text-lg font-bold text-red-600">
-                {user?.id === gameState?.user1_id ? gameState?.user1_failed_tasks || 0 : gameState?.user2_failed_tasks || 0}/3
-              </span>
-            </div>
             
             <Button
               variant="outline"
