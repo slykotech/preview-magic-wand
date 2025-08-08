@@ -27,6 +27,12 @@ interface GameState {
   total_cards_played: number;
   last_activity_at: string;
   started_at: string;
+  last_response_text?: string | null;
+  last_response_photo_url?: string | null;
+  last_response_photo_caption?: string | null;
+  last_response_author_id?: string | null;
+  last_response_timestamp?: string | null;
+  last_response_seen?: boolean | null;
 }
 
 interface CardData {
@@ -320,6 +326,34 @@ export function useCardGame(sessionId: string | null) {
             time_taken_seconds: reactionTime || null,
             completed_on_time: !timedOut
           });
+
+        // Update game session with latest response for partner to see
+        const responseUpdateData: any = {
+          last_response_author_id: user.id,
+          last_response_timestamp: new Date().toISOString(),
+          last_response_seen: false
+        };
+
+        if (responseType === 'photo') {
+          // Get the public URL for the uploaded file
+          const { data: urlData } = supabase.storage
+            .from('card-responses')
+            .getPublicUrl(responseText);
+          
+          responseUpdateData.last_response_photo_url = urlData.publicUrl;
+          responseUpdateData.last_response_photo_caption = caption || '';
+          responseUpdateData.last_response_text = null; // Clear text response
+        } else {
+          responseUpdateData.last_response_text = responseText;
+          responseUpdateData.last_response_photo_url = null; // Clear photo response
+          responseUpdateData.last_response_photo_caption = null;
+        }
+
+        // Update the game session with response data
+        await supabase
+          .from("card_deck_game_sessions")
+          .update(responseUpdateData)
+          .eq("id", sessionId);
       }
 
       // Calculate new failed task counts
@@ -542,6 +576,20 @@ export function useCardGame(sessionId: string | null) {
     }
   }, [gameState, user]);
 
+  // Mark response as seen
+  const markResponseAsSeen = useCallback(async () => {
+    if (!sessionId) return;
+    
+    try {
+      await supabase
+        .from("card_deck_game_sessions")
+        .update({ last_response_seen: true })
+        .eq("id", sessionId);
+    } catch (error) {
+      console.error("Failed to mark response as seen:", error);
+    }
+  }, [sessionId]);
+
   return {
     gameState,
     currentCard,
@@ -567,7 +615,8 @@ export function useCardGame(sessionId: string | null) {
       endGame,
       revealCard,
       setBlockAutoAdvance,
-      rematchGame
+      rematchGame,
+      markResponseAsSeen
     },
     cardRevealed,
     blockAutoAdvance,
