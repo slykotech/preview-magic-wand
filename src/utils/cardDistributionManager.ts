@@ -91,13 +91,25 @@ class CardDistributionManager {
         return card?.response_type;
       }).filter(Boolean);
       
+      console.log('🔍 Checking last 2 user cards:', {
+        lastTwoCards: lastTwoCards.map(id => id.substring(0, 8)),
+        lastTwoTypes,
+        userTotalPlayed: playedCards.length
+      });
+      
       // If last 2 cards are same type, avoid that type
       if (lastTwoTypes.length === 2 && lastTwoTypes[0] === lastTwoTypes[1]) {
         const typeToAvoid = lastTwoTypes[0];
         const beforeFilter = eligibleCards.length;
+        const cardsOfTypeToAvoid = eligibleCards.filter(c => c.response_type === typeToAvoid).length;
         eligibleCards = eligibleCards.filter(c => c.response_type !== typeToAvoid);
         
-        console.log(`🚫 Avoiding ${typeToAvoid} to prevent 3rd consecutive (filtered ${beforeFilter} → ${eligibleCards.length})`);
+        console.log(`🚫 Avoiding ${typeToAvoid} to prevent 3rd consecutive:`, {
+          totalBefore: beforeFilter,
+          cardsOfTypeAvoid: cardsOfTypeToAvoid, 
+          totalAfter: eligibleCards.length,
+          userLastTwo: lastTwoTypes
+        });
         
         // If filtering removed all cards, ignore the rule (emergency fallback)
         if (eligibleCards.length === 0) {
