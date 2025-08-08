@@ -1,71 +1,112 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 interface CardDistributionProps {
   gameState: any;
 }
 
 const CardDistribution: React.FC<CardDistributionProps> = ({ gameState }) => {
+  const { user } = useAuth();
   const [distribution, setDistribution] = useState({
     total: { action: 0, text: 0, photo: 0 },
     currentCycle: { action: 0, text: 0, photo: 0 },
-    cyclePosition: 0
+    cyclePosition: 0,
+    userCards: 0
   });
 
   useEffect(() => {
-    const fetchDistribution = async () => {
-      if (!gameState?.played_cards || gameState.played_cards.length === 0) {
+    const fetchUserDistribution = async () => {
+      if (!gameState?.played_cards || gameState.played_cards.length === 0 || !user) {
         setDistribution({
           total: { action: 0, text: 0, photo: 0 },
           currentCycle: { action: 0, text: 0, photo: 0 },
-          cyclePosition: 0
+          cyclePosition: 0,
+          userCards: 0
         });
         return;
       }
 
-      const { data } = await supabase
+      // Get all card responses for this session to filter by user
+      const { data: responses } = await supabase
+        .from("card_responses")
+        .select("card_id, user_id")
+        .eq("session_id", gameState.id)
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: true });
+
+      if (!responses || responses.length === 0) {
+        setDistribution({
+          total: { action: 0, text: 0, photo: 0 },
+          currentCycle: { action: 0, text: 0, photo: 0 },
+          cyclePosition: 0,
+          userCards: 0
+        });
+        return;
+      }
+
+      // Get the card details for user's cards only
+      const userCardIds = responses.map(r => r.card_id);
+      const { data: cardData } = await supabase
         .from("deck_cards")
         .select("id, response_type")
-        .in("id", gameState.played_cards);
+        .in("id", userCardIds);
 
-      if (data) {
-        // Total distribution
+      if (cardData) {
+        // Total distribution for this user
         const total = { action: 0, text: 0, photo: 0 };
-        data.forEach(card => {
+        cardData.forEach(card => {
           if (total[card.response_type as keyof typeof total] !== undefined) {
             total[card.response_type as keyof typeof total]++;
           }
         });
 
-        // Current cycle distribution
-        const cyclePosition = gameState.played_cards.length % 10;
-        const cycleStart = Math.floor(gameState.played_cards.length / 10) * 10;
-        const currentCycleCards = gameState.played_cards.slice(cycleStart);
+        // Current cycle distribution for this user (every 10 cards the user played)
+        const userCardsCount = cardData.length;
+        const cyclePosition = userCardsCount % 10;
+        const cycleStart = Math.floor(userCardsCount / 10) * 10;
+        const currentCycleCardIds = userCardIds.slice(cycleStart);
         
         const currentCycle = { action: 0, text: 0, photo: 0 };
-        data.filter(card => currentCycleCards.includes(card.id)).forEach(card => {
-          if (currentCycle[card.response_type as keyof typeof currentCycle] !== undefined) {
-            currentCycle[card.response_type as keyof typeof currentCycle]++;
-          }
+        cardData
+          .filter(card => currentCycleCardIds.includes(card.id))
+          .forEach(card => {
+            if (currentCycle[card.response_type as keyof typeof currentCycle] !== undefined) {
+              currentCycle[card.response_type as keyof typeof currentCycle]++;
+            }
+          });
+
+        console.log('📊 User Distribution Debug:', {
+          userId: user.id,
+          userCardsCount,
+          cyclePosition,
+          currentCycle,
+          total,
+          currentCycleCardIds: currentCycleCardIds.length
         });
 
-        setDistribution({ total, currentCycle, cyclePosition });
+        setDistribution({ 
+          total, 
+          currentCycle, 
+          cyclePosition,
+          userCards: userCardsCount
+        });
       }
     };
 
-    fetchDistribution();
-  }, [gameState?.played_cards]);
+    fetchUserDistribution();
+  }, [gameState?.played_cards, gameState?.id, user]);
 
   return (
     <div className="bg-card p-3 rounded-lg border mb-4">
       <h4 className="text-sm font-semibold text-card-foreground mb-2">
-        Card Distribution (Cycle {Math.floor((gameState?.played_cards?.length || 0) / 10) + 1})
+        My Card Distribution (Cycle {Math.floor(distribution.userCards / 10) + 1})
       </h4>
       
       {/* Current Cycle Progress */}
       <div className="mb-3">
         <div className="flex justify-between text-xs text-muted-foreground mb-1">
-          <span>Cycle Progress</span>
+          <span>My Cycle Progress</span>
           <span>{distribution.cyclePosition}/10</span>
         </div>
         <div className="w-full bg-muted rounded-full h-2">
@@ -109,10 +150,18 @@ const CardDistribution: React.FC<CardDistributionProps> = ({ gameState }) => {
         </div>
       </div>
 
-      {/* Warning if photo cards are behind */}
+      {/* Show total cards played by user */}
+      <div className="mt-2 pt-2 border-t border-border">
+        <div className="flex justify-between text-xs text-muted-foreground">
+          <span>Total cards played by me:</span>
+          <span className="font-medium">{distribution.userCards}</span>
+        </div>
+      </div>
+
+      {/* Warning if photo cards are behind in user's cycle */}
       {distribution.cyclePosition >= 5 && distribution.currentCycle.photo === 0 && (
         <p className="text-xs text-destructive mt-2 font-semibold">
-          ⚠️ Photo cards needed in this cycle!
+          ⚠️ You need photo cards in this cycle!
         </p>
       )}
     </div>
