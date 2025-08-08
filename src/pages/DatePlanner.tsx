@@ -165,7 +165,8 @@ export const DatePlanner = () => {
   };
 
   const handleAddEvent = async (dateData?: any) => {
-    const dataToAdd = dateData || formData;
+    const isEvent = dateData && typeof dateData === 'object' && 'preventDefault' in dateData;
+    const dataToAdd = isEvent ? formData : (dateData || formData);
     
     console.log('Add Date clicked - Data to add:', dataToAdd);
     console.log('Form data state:', formData);
@@ -626,7 +627,7 @@ export const DatePlanner = () => {
                      />
                    </div>
                    <div className="flex gap-2">
-                     <Button onClick={handleAddEvent} className="flex-1">
+                     <Button onClick={() => handleAddEvent()} className="flex-1">
                        <Plus className="h-4 w-4 mr-2" />
                        Add Date
                      </Button>
