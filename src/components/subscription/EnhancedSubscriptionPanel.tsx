@@ -55,10 +55,10 @@ export const EnhancedSubscriptionPanel: React.FC = () => {
           </div>
 
           <div className="flex gap-2">
-            <Button className="flex-1" onClick={() => (window.location.href = '/subscription/trial')}>
+            <Button size="sm" className="flex-1" onClick={() => (window.location.href = '/subscription/trial')}>
               <Crown className="w-4 h-4 mr-2" /> Start Free Trial
             </Button>
-            <Button variant="outline" onClick={handleSyncNow} disabled={syncing}>
+            <Button size="sm" variant="outline" onClick={handleSyncNow} disabled={syncing}>
               <RefreshCcw className={`w-4 h-4 mr-2 ${syncing ? 'animate-spin' : ''}`} /> Sync
             </Button>
           </div>
@@ -110,11 +110,11 @@ export const EnhancedSubscriptionPanel: React.FC = () => {
           )}
 
           <div className="flex gap-2">
-            <Button variant="outline" onClick={handleSyncNow} disabled={syncing}>
+            <Button size="sm" variant="outline" onClick={handleSyncNow} disabled={syncing}>
               <RefreshCcw className={`w-4 h-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
               Sync Now
             </Button>
-            <Button variant="outline" onClick={updatePaymentMethod}>
+            <Button size="sm" variant="outline" onClick={updatePaymentMethod}>
               Update Payment Method
             </Button>
           </div>
