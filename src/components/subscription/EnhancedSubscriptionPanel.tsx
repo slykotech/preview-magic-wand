@@ -6,6 +6,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Crown, CheckCircle, AlertTriangle, Calendar, RefreshCcw, Users } from 'lucide-react';
 import { useEnhancedSubscription } from '@/hooks/useEnhancedSubscription';
 import { PartnerInvitationManager } from '@/components/subscription/PartnerInvitationManager';
+import { Capacitor } from '@capacitor/core';
+import { useSubscription } from '@/hooks/useSubscription';
 
 export const EnhancedSubscriptionPanel: React.FC = () => {
   const {
@@ -18,6 +20,9 @@ export const EnhancedSubscriptionPanel: React.FC = () => {
   } = useEnhancedSubscription();
 
   const [syncing, setSyncing] = useState(false);
+  const [restoring, setRestoring] = useState(false);
+  const { restorePurchases } = useSubscription();
+  const isNative = Capacitor.isNativePlatform();
 
   const nextBilling = subscription?.current_period_end || premiumAccess.current_period_end;
   const isBillingIssue = !!premiumAccess.billing_issue || subscription?.billing_issue;
@@ -31,6 +36,16 @@ export const EnhancedSubscriptionPanel: React.FC = () => {
     }
   };
 
+  const handleRestore = async () => {
+    if (!isNative) return;
+    setRestoring(true);
+    try {
+      await restorePurchases();
+      await refreshSubscriptionData();
+    } finally {
+      setRestoring(false);
+    }
+  };
   if (loading) {
     return (
       <Card className="p-6">
@@ -50,14 +65,19 @@ export const EnhancedSubscriptionPanel: React.FC = () => {
             <Crown className="w-6 h-6 text-muted-foreground" />
             <div>
               <h3 className="font-semibold">No Premium Access</h3>
-              <p className="text-sm text-muted-foreground">Start a 7-day free trial to unlock everything</p>
+              <p className="text-sm text-muted-foreground">
+                Subscriptions are managed via the App Store and Google Play. Purchase in the mobile app, then tap Sync{isNative ? ' or Restore' : ''}.
+              </p>
             </div>
           </div>
 
           <div className="flex gap-2">
-            <Button size="sm" className="flex-1" onClick={() => (window.location.href = '/subscription/trial')}>
-              <Crown className="w-4 h-4 mr-2" /> Start Free Trial
-            </Button>
+            {isNative && (
+              <Button size="sm" variant="outline" onClick={handleRestore} disabled={restoring}>
+                <RefreshCcw className={`w-4 h-4 mr-2 ${restoring ? 'animate-spin' : ''}`} />
+                Restore Purchases
+              </Button>
+            )}
             <Button size="sm" variant="outline" onClick={handleSyncNow} disabled={syncing}>
               <RefreshCcw className={`w-4 h-4 mr-2 ${syncing ? 'animate-spin' : ''}`} /> Sync
             </Button>
