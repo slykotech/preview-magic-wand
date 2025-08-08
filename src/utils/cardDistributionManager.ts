@@ -84,13 +84,18 @@ class CardDistributionManager {
       photo: availableCards.filter(c => c.response_type === 'photo').length
     };
     
-    console.log('📊 Distribution Debug:', {
-      cyclePosition,
-      cardsLeftInCycle,
-      currentDistribution,
-      remaining,
-      available
-    });
+      console.log('📊 Distribution Debug:', {
+        cyclePosition,
+        cardsLeftInCycle,
+        currentDistribution,
+        remaining,
+        available
+      });
+      
+      // CRITICAL FIX: If early in cycle, ensure photo cards get a chance
+      if (cyclePosition < 3 && available.photo > 0) {
+        console.log('🎯 Early cycle boost for photo cards');
+      }
     
     // Calculate weights
     const weights = { action: 0, text: 0, photo: 0 };
@@ -125,13 +130,20 @@ class CardDistributionManager {
           weight *= 2;
         }
         
-        // Special photo card boost if none played and cycle is progressing
-        if (type === 'photo' && currentDistribution.photo === 0 && cyclePosition >= 4) {
-          weight *= 3;
+        // CRITICAL FIX: Enhanced photo card priority
+        if (type === 'photo') {
+          // Give photo cards strong early priority in first half of cycle
+          if (cyclePosition <= 5 && currentDistribution.photo === 0) {
+            weight *= 4; // Much stronger boost
+            console.log('📸 Early photo boost applied:', weight);
+          } else if (currentDistribution.photo === 0 && cyclePosition >= 6) {
+            weight *= 5; // Emergency boost late in cycle
+            console.log('🚨 Emergency photo boost applied:', weight);
+          }
         }
       } else {
         // We've met the requirement, but still allow with lower weight
-        weight = 0.1;
+        weight = 0.2; // Slightly higher than before to give more chances
       }
       
       // Reduce weight for consecutive cards (but don't block completely unless at limit)
