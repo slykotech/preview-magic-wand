@@ -48,6 +48,8 @@ export const DatePlanner = () => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingDate, setEditingDate] = useState<DateIdea | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [suggestionToAdd, setSuggestionToAdd] = useState<any>(null);
+  const [suggestionDateTime, setSuggestionDateTime] = useState({ date: '', time: '' });
   const [loading, setLoading] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -259,6 +261,25 @@ export const DatePlanner = () => {
         description: "Failed to add date. Please try again."
       });
     }
+  };
+
+  const handleSuggestionClick = (suggestion: any) => {
+    setSuggestionToAdd(suggestion);
+    setSuggestionDateTime({ date: '', time: '' });
+  };
+
+  const handleAddSuggestionWithDateTime = async () => {
+    if (!suggestionToAdd) return;
+
+    const dataToAdd = {
+      ...suggestionToAdd,
+      scheduled_date: suggestionDateTime.date,
+      scheduled_time: suggestionDateTime.time
+    };
+
+    await handleAddEvent(dataToAdd);
+    setSuggestionToAdd(null);
+    setSuggestionDateTime({ date: '', time: '' });
   };
 
   const handleEditDate = (date: DateIdea) => {
@@ -944,7 +965,7 @@ export const DatePlanner = () => {
                           </div>
                           <Button 
                             size="sm" 
-                            onClick={() => handleAddEvent({
+                            onClick={() => handleSuggestionClick({
                               title: idea.title,
                               description: idea.description,
                               category: idea.category,
@@ -1004,7 +1025,43 @@ export const DatePlanner = () => {
              </AlertDialogAction>
            </AlertDialogFooter>
          </AlertDialogContent>
-       </AlertDialog>
+        </AlertDialog>
+
+        {/* Date/Time Selection Dialog for Suggestions */}
+        <AlertDialog open={!!suggestionToAdd} onOpenChange={() => setSuggestionToAdd(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Schedule Your Date</AlertDialogTitle>
+              <AlertDialogDescription>
+                When would you like to plan "{suggestionToAdd?.title}"?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="grid grid-cols-2 gap-4 py-4">
+              <div>
+                <label className="text-sm font-medium">Date</label>
+                <Input
+                  type="date"
+                  value={suggestionDateTime.date}
+                  onChange={(e) => setSuggestionDateTime({ ...suggestionDateTime, date: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Time</label>
+                <Input
+                  type="time"
+                  value={suggestionDateTime.time}
+                  onChange={(e) => setSuggestionDateTime({ ...suggestionDateTime, time: e.target.value })}
+                />
+              </div>
+            </div>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleAddSuggestionWithDateTime}>
+                Add to Planner
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
        <BottomNavigation />
      </div>
