@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -93,7 +93,7 @@ export const PlaceCard: React.FC<PlaceCardProps> = ({ place, onAddToDatePlan }) 
       estimated_duration: '2 hours',
       notes: `Rating: ${place.rating}/5 ⭐${place.distance ? ` • ${place.distance}km away` : ''}`,
       scheduled_date: format(selectedDate, 'yyyy-MM-dd'),
-      scheduled_time: selectedTime
+      scheduled_time: selectedTime,
     };
     
     onAddToDatePlan(dateData);
@@ -172,6 +172,9 @@ export const PlaceCard: React.FC<PlaceCardProps> = ({ place, onAddToDatePlan }) 
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
                 <DialogTitle>Schedule Visit to {place.name}</DialogTitle>
+                <DialogDescription>
+                  Choose a date and time for this plan.
+                </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 {/* Date Picker */}

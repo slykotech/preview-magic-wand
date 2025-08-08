@@ -285,7 +285,7 @@ export const SweetSuggestions: React.FC<SweetSuggestionsProps> = ({
               <Loader2 className="h-8 w-8 animate-spin" />
               <span className="ml-2">Finding amazing places nearby...</span>
             </div> : places.length > 0 ? <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {places.map(place => <PlaceCard key={place.id} place={place} onAddToDatePlan={handleAddToDatePlan} />)}
+              {places.map(place => <PlaceCard key={place.id} place={place} onAddToDatePlan={onAddToDatePlan} />)}
             </div> : location ? <Card>
               <CardContent className="text-center py-12">
                 <p className="text-muted-foreground">
