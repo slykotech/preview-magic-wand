@@ -6,6 +6,7 @@ import { ResponsePopup } from './ResponsePopup';
 import { PhotoResponsePopup } from './PhotoResponsePopup';
 import { PhotoInput } from './PhotoInput';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface CardData {
   id: string;
@@ -29,7 +30,7 @@ interface AnimatedGameCardProps {
   isMyTurn: boolean;
   isRevealed: boolean;
   onReveal: () => void;
-  onComplete: (response?: string | File, caption?: string, timedOut?: boolean) => void;
+  onComplete: (response?: string | File, caption?: string, reactionTime?: number, timedOut?: boolean) => void;
   onSkip: () => void;
   skipsRemaining: number;
   sessionId: string;
@@ -104,16 +105,30 @@ export const AnimatedGameCard: React.FC<AnimatedGameCardProps> = ({
   };
 
   const handleComplete = (timedOut = false) => {
+    console.log('🎯 HandleComplete called:', { 
+      timedOut, 
+      response_type: card?.response_type,
+      hasResponse: !!response || !!photoResponse 
+    });
+
     switch (card?.response_type) {
       case 'text':
-        onComplete(response, undefined, timedOut);
+        if (!response.trim() && !timedOut) {
+          toast.error("Please enter a response before submitting!");
+          return;
+        }
+        onComplete(response.trim() || undefined, undefined, undefined, timedOut);
         break;
       case 'photo':
-        onComplete(photoResponse || undefined, undefined, timedOut);
+        if (!photoResponse && !timedOut) {
+          toast.error("Please upload a photo before submitting!");
+          return;
+        }
+        onComplete(photoResponse || undefined, undefined, undefined, timedOut);
         break;
       case 'action':
       default:
-        onComplete(undefined, undefined, timedOut);
+        onComplete(undefined, undefined, undefined, timedOut);
         break;
     }
     setResponse('');
@@ -122,7 +137,7 @@ export const AnimatedGameCard: React.FC<AnimatedGameCardProps> = ({
   };
 
   const handlePhotoSubmit = async (photoUrl: string, caption?: string) => {
-    onComplete(photoUrl, caption, false);
+    onComplete(photoUrl, caption, undefined, false);
     setResponse('');
     setPhotoResponse(null);
     setHasPhotoSelected(false);

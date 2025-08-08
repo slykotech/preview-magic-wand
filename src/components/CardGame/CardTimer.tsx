@@ -47,6 +47,8 @@ export const CardTimer: React.FC<CardTimerProps> = ({
         if (newTime <= 0 && isMyTurn && !hasExpired) {
           console.log('⏰ Timer expired! Calling onExpire...');
           setHasExpired(true);
+          clearInterval(intervalRef.current!);
+          intervalRef.current = null;
           
           // Call onExpire after a small delay to ensure state is updated
           setTimeout(() => {

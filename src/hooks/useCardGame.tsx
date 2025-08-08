@@ -260,13 +260,27 @@ export function useCardGame(sessionId: string | null) {
     }
   }, [gameState, isMyTurn, sessionId]);
 
-  // Complete turn and switch to partner
+  // Complete turn and switch to partner with enhanced logic
   const completeTurn = useCallback(async (response?: string | File, caption?: string, reactionTime?: number, timedOut: boolean = false) => {
     if (!gameState || !currentCard || !sessionId || !user) return;
 
     try {
-      // Save response if provided
-      if (response || currentCard.requires_action) {
+      console.log('🎯 Complete turn:', { 
+        timedOut, 
+        response_type: currentCard.response_type,
+        user_id: user.id,
+        hasResponse: !!response 
+      });
+
+      // Handle failed task if timed out or no response for required types
+      let isFailedTask = false;
+      if (timedOut || (!response && (currentCard.response_type === 'text' || currentCard.response_type === 'photo'))) {
+        isFailedTask = true;
+        console.log('⚠️ Failed task detected');
+      }
+
+      // Save response if provided and not failed
+      if (response && !isFailedTask) {
         let responseText = '';
         let responseType = currentCard.response_type || 'action';
         
@@ -303,13 +317,54 @@ export function useCardGame(sessionId: string | null) {
           });
       }
 
-      // Switch turns and draw next card for partner
+      // Calculate new failed task counts
+      const isUser1 = user.id === gameState.user1_id;
+      const newUser1FailedTasks = isUser1 && isFailedTask ? 
+        gameState.user1_failed_tasks + 1 : gameState.user1_failed_tasks;
+      const newUser2FailedTasks = !isUser1 && isFailedTask ? 
+        gameState.user2_failed_tasks + 1 : gameState.user2_failed_tasks;
+
+      console.log('📊 Failed tasks update:', {
+        before: { user1: gameState.user1_failed_tasks, user2: gameState.user2_failed_tasks },
+        after: { user1: newUser1FailedTasks, user2: newUser2FailedTasks },
+        isFailedTask,
+        isUser1
+      });
+
+      // Check for game over due to failed tasks
+      if (newUser1FailedTasks >= 3 || newUser2FailedTasks >= 3) {
+        const winnerId = newUser1FailedTasks >= 3 ? gameState.user2_id : gameState.user1_id;
+        const loserId = newUser1FailedTasks >= 3 ? gameState.user1_id : gameState.user2_id;
+        
+        await supabase
+          .from("card_deck_game_sessions")
+          .update({
+            status: 'completed',
+            completed_at: new Date().toISOString(),
+            winner_id: winnerId,
+            win_reason: 'opponent_failed_tasks',
+            user1_failed_tasks: newUser1FailedTasks,
+            user2_failed_tasks: newUser2FailedTasks,
+            last_activity_at: new Date().toISOString()
+          })
+          .eq("id", sessionId);
+          
+        const isWinner = winnerId === user.id;
+        toast.success(isWinner ? 
+          "🎉 You win! Your partner failed too many tasks!" : 
+          "💔 Game Over! You failed too many tasks. Partner wins!"
+        );
+        return;
+      }
+
+      // Draw next card for partner
+      const deckManager = new DeckManager();
+      const nextCard = await deckManager.drawNextCard(sessionId);
+      
+      // Switch turns
       const nextTurn = gameState.current_turn === gameState.user1_id 
         ? gameState.user2_id 
         : gameState.user1_id;
-
-      const deckManager = new DeckManager();
-      const nextCard = await deckManager.drawNextCard(sessionId);
 
       // Update game state
       await supabase
@@ -318,6 +373,8 @@ export function useCardGame(sessionId: string | null) {
           current_turn: nextCard ? nextTurn : gameState.current_turn,
           current_card_id: nextCard?.id || null,
           current_card_revealed: false,
+          user1_failed_tasks: newUser1FailedTasks,
+          user2_failed_tasks: newUser2FailedTasks,
           total_cards_played: gameState.total_cards_played + 1,
           last_activity_at: new Date().toISOString(),
           status: nextCard ? 'active' : 'completed'
@@ -325,9 +382,11 @@ export function useCardGame(sessionId: string | null) {
         .eq("id", sessionId);
 
       if (!nextCard) {
-        toast.success("Game completed! 🎉");
+        toast.success("🎉 Game completed! No more cards available!");
+      } else if (isFailedTask) {
+        toast.error("⏰ Task failed! Turn switched to partner");
       } else {
-        toast.success("Turn completed! 💕");
+        toast.success("✅ Turn completed! 💕");
       }
 
     } catch (error) {
@@ -336,7 +395,7 @@ export function useCardGame(sessionId: string | null) {
     }
   }, [gameState, currentCard, sessionId, user]);
 
-  // Skip card function
+  // Enhanced skip card function with proper game logic
   const skipCard = useCallback(async () => {
     if (!isMyTurn || !gameState || !currentCard || !sessionId || !user) return;
 
@@ -356,7 +415,7 @@ export function useCardGame(sessionId: string | null) {
       const newUser1Skips = isUser1 ? currentUserSkips - 1 : gameState.user1_skips_remaining;
       const newUser2Skips = !isUser1 ? currentUserSkips - 1 : gameState.user2_skips_remaining;
       
-      console.log('Skip counts:', { 
+      console.log('📊 Skip counts:', { 
         before: { user1: gameState.user1_skips_remaining, user2: gameState.user2_skips_remaining },
         after: { user1: newUser1Skips, user2: newUser2Skips }
       });
@@ -381,7 +440,7 @@ export function useCardGame(sessionId: string | null) {
           })
           .eq("id", sessionId);
           
-        toast.success("Game Over! You ran out of skips. Your partner wins! 🎉");
+        toast.success("🎉 Game Over! You ran out of skips. Your partner wins!");
         return;
       }
 
@@ -411,9 +470,10 @@ export function useCardGame(sessionId: string | null) {
         .eq("id", sessionId);
 
       if (!nextCard) {
-        toast.success("Game completed! No more cards available 🎉");
+        toast.success("🎉 Game completed! No more cards available!");
       } else {
-        toast.success(`Card skipped! ${newUser1Skips + newUser2Skips} skips remaining total`);
+        const totalSkipsLeft = newUser1Skips + newUser2Skips;
+        toast.success(`⏭️ Card skipped! ${totalSkipsLeft} total skips remaining`);
       }
       
     } catch (error) {

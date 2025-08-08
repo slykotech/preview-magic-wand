@@ -151,7 +151,7 @@ export const CardDeckGame: React.FC = () => {
               isMyTurn={isMyTurn}
               isRevealed={cardRevealed}
               onReveal={actions.revealCard}
-              onComplete={(response) => actions.completeTurn(response)}
+              onComplete={(response, caption, reactionTime, timedOut) => actions.completeTurn(response, caption, reactionTime, timedOut)}
               onSkip={actions.skipCard}
               skipsRemaining={stats.skipsRemaining}
               sessionId={sessionId || ''}
@@ -194,6 +194,20 @@ export const CardDeckGame: React.FC = () => {
               <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
               <span className="text-sm font-medium text-gray-600">Cards Played:</span>
               <span className="text-lg font-bold text-blue-600">{stats.cardsPlayed}</span>
+            </div>
+
+            <div className="flex items-center gap-3 px-4 py-3 bg-white rounded-lg shadow-sm border border-gray-200">
+              <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+              <span className="text-sm font-medium text-gray-600">Skips Left:</span>
+              <span className="text-lg font-bold text-purple-600">{stats.skipsRemaining}</span>
+            </div>
+
+            <div className="flex items-center gap-3 px-4 py-3 bg-white rounded-lg shadow-sm border border-gray-200">
+              <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+              <span className="text-sm font-medium text-gray-600">Failed Tasks:</span>
+              <span className="text-lg font-bold text-red-600">
+                {user?.id === gameState?.user1_id ? gameState?.user1_failed_tasks || 0 : gameState?.user2_failed_tasks || 0}/3
+              </span>
             </div>
             
             <Button
