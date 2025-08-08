@@ -485,7 +485,7 @@ export const DatePlanner = () => {
       <div className="flex-1 overflow-y-auto container mx-auto px-4 py-6">
         <div className="w-full">
           <Tabs defaultValue="planned" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 mb-6">
+            <TabsList className="grid grid-cols-3 gap-2 mb-6">
               <TabsTrigger value="planned" className="flex items-center gap-2">
                 <Heart className="w-4 h-4" />
                 Planned Dates
