@@ -292,9 +292,8 @@ export function useCardGame(sessionId: string | null) {
         return;
       }
 
-      console.group('🎴 Drawing Card with Distribution Logic');
+      console.group('🎴 Drawing Card with Simple Random Logic');
       
-      const distributionManager = new CardDistributionManager();
       const playedCardIds = gameState.played_cards || [];
       
       // CRITICAL FIX: Get user-specific played cards for distribution calculation
@@ -326,89 +325,32 @@ export function useCardGame(sessionId: string | null) {
         userCardsDataCount: userCardsData.length,
         combinedPlayedCount: playedCardIds.length
       });
-      
-      // Use user-specific data for distribution calculation
-      const currentDist = distributionManager.getCurrentCycleDistribution(userPlayedCardIds, userCardsData);
-      console.log('📊 User cycle distribution:', currentDist);
-      console.log(`📍 User position in cycle: ${userPlayedCardIds.length % 10}/10`);
 
-      // Group available cards by type
-      const cardsByType = {
-        action: availableCards.filter(c => c.response_type === 'action'),
-        text: availableCards.filter(c => c.response_type === 'text'),
-        photo: availableCards.filter(c => c.response_type === 'photo')
-      };
-
-      console.log('📦 CARD POOL ANALYSIS - Available for Drawing:', {
-        action: `${cardsByType.action.length} cards`,
-        text: `${cardsByType.text.length} cards`, 
-        photo: `${cardsByType.photo.length} cards`,
-        total: `${cardsByType.action.length + cardsByType.text.length + cardsByType.photo.length} cards`,
-        targetDistribution: '40% action, 30% text, 30% photo'
+      // SIMPLE REAL-LIFE APPROACH: Just draw a random card!
+      console.log('📊 User card history analysis:', {
+        userPlayedCount: userPlayedCardIds.length,
+        userCardsDataCount: userCardsData.length,
+        position: `${userPlayedCardIds.length}/∞`
       });
 
-      // Calculate weights using USER-SPECIFIC data
-      const weights = distributionManager.calculateTypeWeights(
-        userPlayedCardIds,  // User's cards only
-        userCardsData,      // User's card data only
+      console.group('🎴 REAL-LIFE CARD DRAWING');
+      
+      const cardManager = new CardDistributionManager();
+      
+      // Use the simple random selection method
+      let selectedCard = cardManager.selectRandomCard(
+        userPlayedCardIds,  // User's played cards only
+        userCardsData,      // User's card data only  
         availableCards      // Available cards (shared pool)
       );
       
-      console.log('⚖️ User-specific type weights:', weights);
+      console.groupEnd();
 
-      // Check consecutive cards for this user
-      const lastTypes = [];
-      for (let i = Math.max(0, userPlayedCardIds.length - 2); i < userPlayedCardIds.length; i++) {
-        const card = userCardsData.find(c => c.id === userPlayedCardIds[i]);
-        if (card) lastTypes.push(card.response_type);
-      }
-      console.log('🔄 User last card types:', lastTypes);
-
-      // Select type based on user-specific weights
-      let selectedType = distributionManager.selectCardType(weights);
-      let selectedCard = null;
-      
-      // Try to get a card of the selected type
-      if (cardsByType[selectedType as keyof typeof cardsByType].length > 0) {
-        const cards = cardsByType[selectedType as keyof typeof cardsByType];
-        selectedCard = distributionManager.selectRandomCardFromType(cards, true); // Enable shuffle for more randomness
-        console.log(`✅ Successfully selected ${selectedType} card`);
-      } else {
-        // Fallback: try other types in order of availability and consecutive count
-        console.log(`⚠️ No ${selectedType} cards available, trying alternatives`);
-        
-        const fallbackOrder = ['action', 'text', 'photo'].filter(type => 
-          type !== selectedType && cardsByType[type as keyof typeof cardsByType].length > 0
-        );
-        
-        // Sort by consecutive count (prefer types with fewer consecutive plays)
-        fallbackOrder.sort((a, b) => {
-          const consecutiveA = distributionManager.getConsecutiveCount(userPlayedCardIds, userCardsData, a);
-          const consecutiveB = distributionManager.getConsecutiveCount(userPlayedCardIds, userCardsData, b);
-          return consecutiveA - consecutiveB;
-        });
-        
-        for (const type of fallbackOrder) {
-          const consecutiveCount = distributionManager.getConsecutiveCount(userPlayedCardIds, userCardsData, type);
-          
-          if (consecutiveCount < 2) { // Respect the MAX_CONSECUTIVE limit
-            const cards = cardsByType[type as keyof typeof cardsByType];
-            selectedCard = distributionManager.selectRandomCardFromType(cards, true); // Enable shuffle for fallback too
-            selectedType = type;
-            console.log(`✅ Fallback selected: ${type} (consecutive: ${consecutiveCount})`);
-            break;
-          }
-        }
-      }
-
-      // Final emergency fallback (should rarely happen)
+      // Check if we got a card
       if (!selectedCard) {
-        console.log('⚠️ Using emergency random selection');
+        console.log('❌ No card selected from simple method, using emergency fallback');
         selectedCard = availableCards[Math.floor(Math.random() * availableCards.length)];
-        selectedType = selectedCard.response_type;
       }
-
-      console.log(`✅ Selected ${selectedType} card:`, selectedCard.id);
 
       console.log('✅ Selected card:', {
         id: selectedCard.id.substring(0, 8),

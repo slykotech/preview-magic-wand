@@ -60,123 +60,74 @@ class CardDistributionManager {
     return count;
   }
 
-  // Calculate weight for each card type using EQUAL WEIGHTS (40% action, 30% text, 30% photo)
-  calculateTypeWeights(
+  // SIMPLE REAL-LIFE APPROACH: Just like shuffling actual cards
+  selectRandomCard(
     playedCards: string[], 
     allCards: any[],
     availableCards: any[]
-  ): { action: number; text: number; photo: number } {
+  ): any | null {
     
-    // Calculate available cards by type
-    const available = {
-      action: availableCards.filter(c => c.response_type === 'action').length,
-      text: availableCards.filter(c => c.response_type === 'text').length,
-      photo: availableCards.filter(c => c.response_type === 'photo').length
-    };
-    
-    console.log('🎯 EQUAL WEIGHT DISTRIBUTION - Cards Available:', {
-      action: available.action,
-      text: available.text,
-      photo: available.photo,
-      total: available.action + available.text + available.photo
-    });
-
-    // Count what the user has played so far by type
-    const userPlayedTypes = {
-      action: 0,
-      text: 0,
-      photo: 0
-    };
-
-    allCards.forEach(card => {
-      if (userPlayedTypes[card.response_type as keyof typeof userPlayedTypes] !== undefined) {
-        userPlayedTypes[card.response_type as keyof typeof userPlayedTypes]++;
-      }
-    });
-
-    console.log('📊 User played distribution:', userPlayedTypes);
-
-    // Check consecutive cards to prevent more than 2 in a row
-    const weights = { action: 0, text: 0, photo: 0 };
-    
-    Object.keys(weights).forEach(type => {
-      const typedType = type as keyof typeof weights;
-      
-      // Skip if no cards available of this type
-      if (available[typedType] === 0) {
-        weights[typedType] = 0;
-        console.log(`❌ No ${type} cards available`);
-        return;
-      }
-      
-      // Check consecutive limit (max 2 in a row)
-      const consecutiveCount = this.getConsecutiveCount(playedCards, allCards, type);
-      if (consecutiveCount >= this.MAX_CONSECUTIVE) {
-        weights[typedType] = 0; // Block this type completely
-        console.log(`🚫 Blocking ${type} (${consecutiveCount} consecutive)`);
-        return;
-      }
-      
-      // BASE WEIGHT DISTRIBUTION: 40% action, 30% text, 30% photo
-      let baseWeight = 0;
-      if (type === 'action') {
-        baseWeight = 0.4; // 40%
-      } else if (type === 'text') {
-        baseWeight = 0.3; // 30%
-      } else if (type === 'photo') {
-        baseWeight = 0.3; // 30%
-      }
-      
-      // BOOST UNDERREPRESENTED TYPES: If a user hasn't gotten enough of a type, boost it
-      const totalPlayed = userPlayedTypes.action + userPlayedTypes.text + userPlayedTypes.photo;
-      if (totalPlayed > 0) {
-        const currentRatio = userPlayedTypes[typedType] / totalPlayed;
-        const targetRatio = baseWeight;
-        
-        // If this type is underrepresented, boost it significantly
-        if (currentRatio < targetRatio) {
-          const boostMultiplier = Math.max(1.5, (targetRatio / Math.max(currentRatio, 0.01)) * 0.8);
-          baseWeight *= boostMultiplier;
-          console.log(`🚀 Boosting ${type}: current=${(currentRatio*100).toFixed(1)}%, target=${(targetRatio*100).toFixed(1)}%, boost=${boostMultiplier.toFixed(2)}x`);
-        }
-      }
-      
-      weights[typedType] = baseWeight;
-      
-      // Reduce weight for consecutive cards (but don't block completely unless at limit)
-      if (consecutiveCount === this.MAX_CONSECUTIVE - 1) {
-        weights[typedType] *= 0.5; // Reduce to 50% if one away from limit
-        console.log(`⚠️ Reducing ${type} weight due to consecutive (${consecutiveCount})`);
-      }
-    });
-    
-    // Normalize weights so they add up to 1.0
-    const totalWeight = weights.action + weights.text + weights.photo;
-    if (totalWeight > 0) {
-      weights.action /= totalWeight;
-      weights.text /= totalWeight;
-      weights.photo /= totalWeight;
-    } else {
-      // Emergency fallback: give equal weight to available types
-      const availableTypes = Object.keys(available).filter(type => 
-        available[type as keyof typeof available] > 0
-      );
-      const equalWeight = availableTypes.length > 0 ? 1 / availableTypes.length : 0;
-      
-      weights.action = available.action > 0 ? equalWeight : 0;
-      weights.text = available.text > 0 ? equalWeight : 0;
-      weights.photo = available.photo > 0 ? equalWeight : 0;
-      
-      console.log('🆘 Emergency fallback weights applied');
+    if (availableCards.length === 0) {
+      console.log('❌ No cards available to draw');
+      return null;
     }
     
-    console.log('⚖️ Final normalized weights:', {
-      action: `${(weights.action * 100).toFixed(1)}%`,
-      text: `${(weights.text * 100).toFixed(1)}%`,
-      photo: `${(weights.photo * 100).toFixed(1)}%`
+    console.log('🎴 REAL-LIFE CARD DRAWING - Simple & Random');
+    console.log('📦 Available cards by type:', {
+      action: availableCards.filter(c => c.response_type === 'action').length,
+      text: availableCards.filter(c => c.response_type === 'text').length,
+      photo: availableCards.filter(c => c.response_type === 'photo').length,
+      total: availableCards.length
+    });
+
+    // STEP 1: Check if we need to avoid consecutive cards (only rule)
+    let eligibleCards = [...availableCards];
+    
+    if (playedCards.length >= 2) {
+      // Get last 2 cards this user played
+      const lastTwoCards = playedCards.slice(-2);
+      const lastTwoTypes = lastTwoCards.map(cardId => {
+        const card = allCards.find(c => c.id === cardId);
+        return card?.response_type;
+      }).filter(Boolean);
+      
+      // If last 2 cards are same type, avoid that type
+      if (lastTwoTypes.length === 2 && lastTwoTypes[0] === lastTwoTypes[1]) {
+        const typeToAvoid = lastTwoTypes[0];
+        const beforeFilter = eligibleCards.length;
+        eligibleCards = eligibleCards.filter(c => c.response_type !== typeToAvoid);
+        
+        console.log(`🚫 Avoiding ${typeToAvoid} to prevent 3rd consecutive (filtered ${beforeFilter} → ${eligibleCards.length})`);
+        
+        // If filtering removed all cards, ignore the rule (emergency fallback)
+        if (eligibleCards.length === 0) {
+          console.log('⚠️ All cards filtered out, ignoring consecutive rule');
+          eligibleCards = [...availableCards];
+        }
+      }
+    }
+    
+    // STEP 2: TRUE RANDOM SELECTION (like real life)
+    console.log(`🎲 Drawing randomly from ${eligibleCards.length} eligible cards...`);
+    
+    // Shuffle the eligible cards for true randomness
+    const shuffledCards = this.shuffleArray(eligibleCards);
+    const selectedCard = shuffledCards[0];
+    
+    console.log('✅ Card drawn:', {
+      type: selectedCard.response_type,
+      category: selectedCard.category,
+      id: selectedCard.id.substring(0, 8),
+      prompt: selectedCard.prompt.substring(0, 50) + '...'
     });
     
-    return weights;
+    return selectedCard;
+  }
+
+  // Remove the complex weight calculation - not needed anymore
+  calculateTypeWeights(): { action: number; text: number; photo: number } {
+    // This method is no longer used but kept for compatibility
+    return { action: 0.4, text: 0.3, photo: 0.3 };
   }
 
   // Select card type based on weights with improved randomness
