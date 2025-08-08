@@ -124,20 +124,22 @@ const AppMottoPage = ({ onNext, onBack }: AppMottoProps) => {
                {isLastSlide ? (
                  <Button 
                    onClick={() => navigate('/onboarding')}
-                   className="w-full py-4 text-lg bg-gradient-primary text-white shadow-primary hover:shadow-glow transform hover:scale-105 transition-all"
+                   size="lg"
+                   className="w-full bg-gradient-primary text-white shadow-primary hover:shadow-glow transform hover:scale-105 transition-all"
                  >
                    Start Your Journey
                    <Heart size={20} className="ml-2" />
                  </Button>
-              ) : (
-                <Button 
-                  onClick={() => setCurrentSlide(currentSlide + 1)}
-                  className="w-full py-4 text-lg bg-gradient-primary text-white shadow-primary hover:shadow-glow transform hover:scale-105 transition-all"
-                >
-                  Next
-                  <ArrowRight size={20} className="ml-2" />
-                </Button>
-              )}
+               ) : (
+                 <Button 
+                   onClick={() => setCurrentSlide(currentSlide + 1)}
+                   size="lg"
+                   className="w-full bg-gradient-primary text-white shadow-primary hover:shadow-glow transform hover:scale-105 transition-all"
+                 >
+                   Next
+                   <ArrowRight size={20} className="ml-2" />
+                 </Button>
+               )}
 
               {currentSlide > 0 && (
                 <Button 

@@ -284,7 +284,7 @@ export const DailyCheckinFlow: React.FC<DailyCheckinFlowProps> = ({
               <div className="space-y-2">
                 <p className="text-xs text-muted-foreground font-medium">Need inspiration? Try one of these:</p>
                 <div className="flex flex-wrap gap-2">
-                  {relationshipPrompts.map((prompt, index) => <Button key={index} variant="outline" size="sm" className="text-xs h-auto py-1 px-2" onClick={() => setTomorrowIntention(prompt)}>
+                   {relationshipPrompts.map((prompt, index) => <Button key={index} variant="outline" size="compact" onClick={() => setTomorrowIntention(prompt)}>
                       {prompt}
                     </Button>)}
                 </div>

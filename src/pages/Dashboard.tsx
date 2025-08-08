@@ -864,7 +864,7 @@ export const Dashboard = () => {
         <div className={`${isLoaded ? 'animate-fade-in' : 'opacity-0'}`} style={{
           animationDelay: '700ms'
         }}>
-          {isLoaded ? <Button className="w-full rounded-xl py-3 bg-yellow-400 hover:bg-yellow-500 text-black font-medium transition-all hover:scale-[1.02] duration-200" onClick={() => navigate('/coach')}>
+          {isLoaded ? <Button size="lg" className="w-full rounded-xl bg-yellow-400 hover:bg-yellow-500 text-black font-medium transition-all hover:scale-[1.02] duration-200" onClick={() => navigate('/coach')}>
               <Sparkles className="mr-2" size={18} />
               Get Relationship Insights
             </Button> : <div className="w-full h-12 bg-muted animate-pulse rounded-xl"></div>}
@@ -874,7 +874,7 @@ export const Dashboard = () => {
         <div className={`${isLoaded ? 'animate-fade-in' : 'opacity-0'}`} style={{
           animationDelay: '750ms'
         }}>
-          {isLoaded ? <Button className="w-full rounded-xl py-3 bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 text-white font-medium transition-all hover:scale-[1.02] duration-200" onClick={() => navigate('/games')}>
+          {isLoaded ? <Button size="lg" className="w-full rounded-xl bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 text-white font-medium transition-all hover:scale-[1.02] duration-200" onClick={() => navigate('/games')}>
               <Play className="mr-2" size={18} />
               Relationship Games
             </Button> : <div className="w-full h-12 bg-muted animate-pulse rounded-xl"></div>}

@@ -157,7 +157,7 @@ const OnboardingFlow = () => {
           <Button 
             onClick={handleNext}
             disabled={!canProceed()}
-            className="w-full py-3"
+            className="w-full"
           >
             {currentStep === 1 ? 'Complete Setup' : 'Continue'}
           </Button>

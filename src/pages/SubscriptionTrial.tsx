@@ -201,10 +201,10 @@ export const SubscriptionTrial: React.FC = () => {
                   Payments are handled by the App Store and Google Play. Please use the mobile app to start your 7-day free trial.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-2 justify-center mb-4 max-w-md mx-auto">
-                  <Button asChild size="sm" className="text-sm py-2 px-4">
+                  <Button asChild size="sm">
                     <a href="https://apps.apple.com" target="_blank" rel="noreferrer">App Store</a>
                   </Button>
-                  <Button variant="outline" asChild size="sm" className="text-sm py-2 px-4">
+                  <Button variant="outline" asChild size="sm">
                     <a href="https://play.google.com/store" target="_blank" rel="noreferrer">Google Play</a>
                   </Button>
                 </div>
