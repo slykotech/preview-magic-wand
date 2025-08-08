@@ -35,20 +35,13 @@ export const GradientHeader = ({
       <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full blur-2xl transform -translate-x-12 translate-y-12 mb-8" />
       
       {/* Curved bottom accent */}
-      <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-r from-white/10 via-white/5 to-white/10 rounded-b-[2rem] mb-4" />
+      
       
       <div className="relative z-10">
         <div className="flex items-center gap-3 mb-4">
-          {showBackButton && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleBackClick}
-              className="text-white hover:bg-white/20 rounded-full h-10 w-10"
-            >
+          {showBackButton && <Button variant="ghost" size="icon" onClick={handleBackClick} className="text-white hover:bg-white/20 rounded-full h-10 w-10">
               <ArrowLeft className="w-5 h-5" />
-            </Button>
-          )}
+            </Button>}
           <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm border border-white/10">
             {icon}
           </div>
