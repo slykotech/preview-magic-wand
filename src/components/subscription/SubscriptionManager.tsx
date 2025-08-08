@@ -116,7 +116,7 @@ export const SubscriptionManager = ({ onPlanChange }: SubscriptionManagerProps) 
           <div className="flex gap-2">
             <Button 
               className="flex-1"
-              onClick={() => window.location.href = '/subscription-onboarding'}
+              onClick={() => window.location.href = '/subscription/trial'}
             >
               <Crown className="w-4 h-4 mr-2" />
               Upgrade to Premium

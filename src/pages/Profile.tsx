@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { SyncScoreBreakdown } from "@/components/SyncScoreBreakdown";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { GradientHeader } from "@/components/GradientHeader";
-import { SubscriptionManager } from "@/components/subscription/SubscriptionManager";
+import { EnhancedSubscriptionPanel } from "@/components/subscription/EnhancedSubscriptionPanel";
 import { FeedbackModal } from "@/components/FeedbackModal";
 import { User, Heart, Settings, Award, Calendar, LogOut, ChevronRight, Crown, Star, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -295,7 +295,7 @@ export const Profile = () => {
             <Crown className="inline w-5 h-5 mr-2 text-primary" />
             Subscription
           </h2>
-          <SubscriptionManager onPlanChange={fetchProfileData} />
+          <EnhancedSubscriptionPanel />
         </div>
 
         {/* Settings Section */}
