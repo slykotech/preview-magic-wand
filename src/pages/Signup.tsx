@@ -69,7 +69,8 @@ export const Signup = () => {
             email,
             firstName,
             lastName,
-            password
+            password,
+            hasPassword: true
           }
         });
         console.log('Function response received:', response);
