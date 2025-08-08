@@ -189,16 +189,17 @@ export const CardDeckGame: React.FC = () => {
 
         {/* Game Controls */}
         <div className="mt-8">
-          <div className="flex justify-center items-center gap-4 flex-wrap">
-            <div className="flex items-center gap-2 px-3 py-2 bg-muted rounded-lg">
-              <span className="text-sm font-medium text-muted-foreground">Cards Played:</span>
-              <span className="text-sm font-bold">{stats.cardsPlayed}</span>
+          <div className="flex justify-center items-center gap-6 flex-wrap bg-gradient-to-r from-slate-50 to-gray-50 p-6 rounded-xl border border-gray-200 shadow-sm">
+            <div className="flex items-center gap-3 px-4 py-3 bg-white rounded-lg shadow-sm border border-gray-200">
+              <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+              <span className="text-sm font-medium text-gray-600">Cards Played:</span>
+              <span className="text-lg font-bold text-blue-600">{stats.cardsPlayed}</span>
             </div>
             
             <Button
               variant="outline"
               onClick={() => setShowHistory(true)}
-              className="flex items-center gap-2 min-w-[140px] h-10"
+              className="min-w-[140px] h-12 font-semibold shadow-md hover:shadow-lg border-2 border-gray-300 hover:border-blue-400 bg-white hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-all duration-200"
             >
               📝 History
             </Button>
@@ -206,7 +207,7 @@ export const CardDeckGame: React.FC = () => {
             <Button
               variant="destructive"
               onClick={() => actions.endGame()}
-              className="min-w-[140px] h-10"
+              className="min-w-[140px] h-12 font-semibold shadow-md hover:shadow-lg bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 transition-all duration-200"
             >
               End Game
             </Button>
