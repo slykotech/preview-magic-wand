@@ -228,17 +228,15 @@ export const AppSettings = () => {
               App Notifications
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <div>
-                <Label className="font-semibold">Enable Notifications</Label>
-                <p className="text-sm text-muted-foreground">Get reminded to check in with your partner and receive updates</p>
-              </div>
-              <Switch
-                checked={appNotifications}
-                onCheckedChange={setAppNotifications}
-              />
+          <CardContent className="flex items-center justify-between">
+            <div>
+              <Label className="font-semibold">Enable Notifications</Label>
+              <p className="text-sm text-muted-foreground">Get reminded to check in with your partner and receive updates</p>
             </div>
+            <Switch
+              checked={appNotifications}
+              onCheckedChange={setAppNotifications}
+            />
           </CardContent>
         </Card>
 
