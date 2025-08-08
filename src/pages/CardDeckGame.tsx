@@ -197,11 +197,6 @@ export const CardDeckGame: React.FC = () => {
               <span className="text-lg font-bold text-blue-600">{stats.cardsPlayed}</span>
             </div>
 
-            <div className="flex items-center gap-3 px-4 py-3 bg-white rounded-lg shadow-sm border border-gray-200">
-              <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
-              <span className="text-sm font-medium text-gray-600">Skips Left:</span>
-              <span className="text-lg font-bold text-purple-600">{stats.skipsRemaining}</span>
-            </div>
 
             <div className="flex items-center gap-3 px-4 py-3 bg-white rounded-lg shadow-sm border border-gray-200">
               <div className="w-3 h-3 bg-red-500 rounded-full"></div>
