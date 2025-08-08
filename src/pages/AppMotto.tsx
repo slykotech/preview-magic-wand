@@ -58,13 +58,13 @@ const AppMottoPage = ({ onNext, onBack }: AppMottoProps) => {
         {/* Header */}
         <div className="px-6 pt-12 pb-2">
           <div className="flex justify-end">
-            <Button 
-              variant="ghost" 
-              onClick={() => navigate('/auth')}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              Skip
-            </Button>
+             <Button 
+               variant="ghost" 
+               onClick={() => navigate('/onboarding')}
+               className="text-muted-foreground hover:text-foreground"
+             >
+               Skip
+             </Button>
           </div>
         </div>
 
@@ -121,14 +121,14 @@ const AppMottoPage = ({ onNext, onBack }: AppMottoProps) => {
 
             {/* Action Buttons */}
             <div className="space-y-3 mt-8">
-              {isLastSlide ? (
-                <Button 
-                  onClick={() => navigate('/auth')}
-                  className="w-full py-4 text-lg bg-gradient-primary text-white shadow-primary hover:shadow-glow transform hover:scale-105 transition-all"
-                >
-                  Start Your Journey
-                  <Heart size={20} className="ml-2" />
-                </Button>
+               {isLastSlide ? (
+                 <Button 
+                   onClick={() => navigate('/onboarding')}
+                   className="w-full py-4 text-lg bg-gradient-primary text-white shadow-primary hover:shadow-glow transform hover:scale-105 transition-all"
+                 >
+                   Start Your Journey
+                   <Heart size={20} className="ml-2" />
+                 </Button>
               ) : (
                 <Button 
                   onClick={() => setCurrentSlide(currentSlide + 1)}
