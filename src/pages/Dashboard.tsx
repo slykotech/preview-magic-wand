@@ -16,6 +16,7 @@ import { usePresence } from "@/hooks/usePresence";
 import { useCardGames } from "@/hooks/useCardGames";
 import { SyncScoreSkeleton, DashboardCardSkeleton, CompactCardSkeleton, MoodDisplaySkeleton } from "@/components/ui/skeleton";
 import { Calendar, Heart, MessageCircle, Sparkles, Clock, Lightbulb, X, Activity, Gamepad2, Play, Trophy } from "lucide-react";
+import { GradientHeader } from "@/components/GradientHeader";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -639,13 +640,13 @@ export const Dashboard = () => {
       
       {/* Main Content - with loading states */}
       <div className={showSplash ? 'opacity-0' : 'opacity-100 transition-opacity duration-300 dashboard-content'}>
-        {/* Header with gradient background */}
-        <div className="bg-gradient-primary py-12 px-6 -mx-6 -mt-8 mb-8 rounded-b-[4rem] relative overflow-hidden before:absolute before:bottom-0 before:left-0 before:right-0 before:h-12 before:bg-gradient-primary before:rounded-b-[5rem] before:-z-10 after:absolute after:bottom-0 after:left-0 after:right-0 after:h-6 after:bg-gradient-primary after:rounded-b-[6rem] after:-z-20">
-          <div className={`text-center space-y-2 ${isLoaded ? 'animate-fade-in' : 'opacity-0'}`}>
-            
-            <h1 className="text-2xl md:text-3xl font-bold text-white/90">{getTimeBasedMessage()}</h1>
-          </div>
-        </div>
+        {/* Gradient Header */}
+        <GradientHeader 
+          title={getTimeBasedMessage()} 
+          subtitle="Your love journey continues" 
+          icon={<Heart size={24} />} 
+          showBackButton={false}
+        />
          
         <div className="container mx-auto px-6 space-y-6 pb-20">
           
