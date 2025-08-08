@@ -174,6 +174,29 @@ class CardDistributionManager {
       return 'photo';
     }
   }
+
+  // Shuffle array using Fisher-Yates algorithm for true randomness
+  shuffleArray<T>(array: T[]): T[] {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  }
+
+  // Enhanced card selection with optional shuffle
+  selectRandomCardFromType(cards: any[], shouldShuffle: boolean = false): any {
+    if (cards.length === 0) return null;
+    
+    if (shouldShuffle) {
+      console.log('🎲 Shuffling card pool for enhanced randomness...');
+      const shuffledCards = this.shuffleArray(cards);
+      return shuffledCards[0]; // Take first card from shuffled array
+    }
+    
+    return cards[Math.floor(Math.random() * cards.length)];
+  }
 }
 
 export default CardDistributionManager;

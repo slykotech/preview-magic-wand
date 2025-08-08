@@ -371,7 +371,7 @@ export function useCardGame(sessionId: string | null) {
       // Try to get a card of the selected type
       if (cardsByType[selectedType as keyof typeof cardsByType].length > 0) {
         const cards = cardsByType[selectedType as keyof typeof cardsByType];
-        selectedCard = cards[Math.floor(Math.random() * cards.length)];
+        selectedCard = distributionManager.selectRandomCardFromType(cards, true); // Enable shuffle for more randomness
         console.log(`✅ Successfully selected ${selectedType} card`);
       } else {
         // Fallback: try other types in order of availability and consecutive count
@@ -393,7 +393,7 @@ export function useCardGame(sessionId: string | null) {
           
           if (consecutiveCount < 2) { // Respect the MAX_CONSECUTIVE limit
             const cards = cardsByType[type as keyof typeof cardsByType];
-            selectedCard = cards[Math.floor(Math.random() * cards.length)];
+            selectedCard = distributionManager.selectRandomCardFromType(cards, true); // Enable shuffle for fallback too
             selectedType = type;
             console.log(`✅ Fallback selected: ${type} (consecutive: ${consecutiveCount})`);
             break;

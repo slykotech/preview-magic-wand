@@ -156,7 +156,10 @@ export const CardDeckGame: React.FC = () => {
               skipsRemaining={stats.skipsRemaining}
               sessionId={sessionId || ''}
               userId={user?.id || ''}
-              onShuffle={actions.drawCard}
+              onShuffle={() => {
+                console.log('🔀 Shuffle requested - drawing new card with enhanced randomness');
+                actions.drawCard();
+              }}
             />
           ) : (
             <div className="text-center p-8 bg-muted rounded-lg">
