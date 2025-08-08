@@ -316,6 +316,7 @@ export type Database = {
           max_failed_tasks: number | null
           max_skips: number | null
           played_cards: Json | null
+          rematch_session_id: string | null
           response_dismissed_by_user1: boolean | null
           response_dismissed_by_user2: boolean | null
           session_duration: unknown | null
@@ -360,6 +361,7 @@ export type Database = {
           max_failed_tasks?: number | null
           max_skips?: number | null
           played_cards?: Json | null
+          rematch_session_id?: string | null
           response_dismissed_by_user1?: boolean | null
           response_dismissed_by_user2?: boolean | null
           session_duration?: unknown | null
@@ -404,6 +406,7 @@ export type Database = {
           max_failed_tasks?: number | null
           max_skips?: number | null
           played_cards?: Json | null
+          rematch_session_id?: string | null
           response_dismissed_by_user1?: boolean | null
           response_dismissed_by_user2?: boolean | null
           session_duration?: unknown | null

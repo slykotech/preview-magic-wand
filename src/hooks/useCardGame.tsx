@@ -135,7 +135,7 @@ export function useCardGame(sessionId: string | null) {
     initializeGame();
   }, [user, coupleData, sessionId]);
 
-  // Real-time subscription - optimized to prevent duplicate notifications
+  // Real-time subscription - handle rematch redirection and game updates
   useEffect(() => {
     if (!sessionId || !user) return;
 
@@ -153,7 +153,15 @@ export function useCardGame(sessionId: string | null) {
           const newState = payload.new as any;
           const oldState = payload.old as any;
           
-          // Detect actual changes
+          // Handle rematch redirection - if status changed to 'rematch_started'
+          if (newState.status === 'rematch_started' && newState.rematch_session_id) {
+            console.log('🎮 Rematch detected, redirecting to new session:', newState.rematch_session_id);
+            toast.success("🎮 Rematch started! Redirecting to new game...");
+            window.location.href = `/games/card-deck/${newState.rematch_session_id}`;
+            return;
+          }
+          
+          // Detect actual changes for regular updates
           const turnChanged = newState.current_turn !== oldState?.current_turn;
           const cardChanged = newState.current_card_id !== oldState?.current_card_id;
           
