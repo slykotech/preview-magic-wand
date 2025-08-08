@@ -297,22 +297,40 @@ export function useCardGame(sessionId: string | null) {
       const distributionManager = new CardDistributionManager();
       const playedCardIds = gameState.played_cards || [];
       
-      // Get all played cards for reference (needed for distribution calculation)
-      let allCardsData = [];
-      if (playedCardIds.length > 0) {
+      // CRITICAL FIX: Get user-specific played cards for distribution calculation
+      console.log('🔍 Getting user-specific card history for distribution...');
+      
+      // Get cards that THIS USER has played (not combined)
+      const { data: userResponses } = await supabase
+        .from("card_responses")
+        .select("card_id")
+        .eq("session_id", sessionId)
+        .eq("user_id", user?.id)
+        .order("created_at", { ascending: true });
+
+      const userPlayedCardIds = userResponses?.map(r => r.card_id) || [];
+      console.log(`👤 User ${user?.id?.substring(0, 8)} has played ${userPlayedCardIds.length} cards`);
+
+      // Get card details for user's played cards only
+      let userCardsData = [];
+      if (userPlayedCardIds.length > 0) {
         const { data } = await supabase
           .from("deck_cards")
           .select("id, response_type")
-          .in("id", playedCardIds);
-        allCardsData = data || [];
+          .in("id", userPlayedCardIds);
+        userCardsData = data || [];
       }
       
-      const allCards = allCardsData;
+      console.log('🔍 User-specific card analysis:', {
+        userPlayedCount: userPlayedCardIds.length,
+        userCardsDataCount: userCardsData.length,
+        combinedPlayedCount: playedCardIds.length
+      });
       
-      // Log current distribution
-      const currentDist = distributionManager.getCurrentCycleDistribution(playedCardIds, allCards);
-      console.log('📊 Current cycle distribution:', currentDist);
-      console.log(`📍 Position in cycle: ${playedCardIds.length % 10}/10`);
+      // Use user-specific data for distribution calculation
+      const currentDist = distributionManager.getCurrentCycleDistribution(userPlayedCardIds, userCardsData);
+      console.log('📊 User cycle distribution:', currentDist);
+      console.log(`📍 User position in cycle: ${userPlayedCardIds.length % 10}/10`);
 
       // Group available cards by type
       const cardsByType = {
@@ -327,24 +345,24 @@ export function useCardGame(sessionId: string | null) {
         photo: cardsByType.photo.length
       });
 
-      // Calculate weights
+      // Calculate weights using USER-SPECIFIC data
       const weights = distributionManager.calculateTypeWeights(
-        playedCardIds, 
-        allCards, 
-        availableCards
+        userPlayedCardIds,  // User's cards only
+        userCardsData,      // User's card data only
+        availableCards      // Available cards (shared pool)
       );
       
-      console.log('⚖️ Type weights:', weights);
+      console.log('⚖️ User-specific type weights:', weights);
 
-      // Check consecutive cards
+      // Check consecutive cards for this user
       const lastTypes = [];
-      for (let i = Math.max(0, playedCardIds.length - 2); i < playedCardIds.length; i++) {
-        const card = allCards.find(c => c.id === playedCardIds[i]);
+      for (let i = Math.max(0, userPlayedCardIds.length - 2); i < userPlayedCardIds.length; i++) {
+        const card = userCardsData.find(c => c.id === userPlayedCardIds[i]);
         if (card) lastTypes.push(card.response_type);
       }
-      console.log('🔄 Last card types:', lastTypes);
+      console.log('🔄 User last card types:', lastTypes);
 
-      // Select type based on weights with improved fallback logic
+      // Select type based on user-specific weights
       let selectedType = distributionManager.selectCardType(weights);
       let selectedCard = null;
       
@@ -363,13 +381,13 @@ export function useCardGame(sessionId: string | null) {
         
         // Sort by consecutive count (prefer types with fewer consecutive plays)
         fallbackOrder.sort((a, b) => {
-          const consecutiveA = distributionManager.getConsecutiveCount(playedCardIds, allCardsData, a);
-          const consecutiveB = distributionManager.getConsecutiveCount(playedCardIds, allCardsData, b);
+          const consecutiveA = distributionManager.getConsecutiveCount(userPlayedCardIds, userCardsData, a);
+          const consecutiveB = distributionManager.getConsecutiveCount(userPlayedCardIds, userCardsData, b);
           return consecutiveA - consecutiveB;
         });
         
         for (const type of fallbackOrder) {
-          const consecutiveCount = distributionManager.getConsecutiveCount(playedCardIds, allCardsData, type);
+          const consecutiveCount = distributionManager.getConsecutiveCount(userPlayedCardIds, userCardsData, type);
           
           if (consecutiveCount < 2) { // Respect the MAX_CONSECUTIVE limit
             const cards = cardsByType[type as keyof typeof cardsByType];
