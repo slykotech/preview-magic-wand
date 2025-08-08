@@ -486,16 +486,16 @@ export const DatePlanner = () => {
         <div className="w-full">
           <Tabs defaultValue="planned" className="w-full">
             <TabsList className="grid grid-cols-3 gap-2 mb-6">
-              <TabsTrigger value="planned" className="flex items-center gap-2">
-                <Heart className="w-4 h-4" />
+              <TabsTrigger value="planned" className="flex items-center gap-1 px-2 py-1 text-xs">
+                <Heart className="w-3 h-3" />
                 Planned Dates
               </TabsTrigger>
-              <TabsTrigger value="events" className="flex items-center gap-2">
-                <Calendar className="w-4 h-4" />
+              <TabsTrigger value="events" className="flex items-center gap-1 px-2 py-1 text-xs">
+                <Calendar className="w-3 h-3" />
                 Sweet Suggestions
               </TabsTrigger>
-              <TabsTrigger value="suggestions" className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4" />
+              <TabsTrigger value="suggestions" className="flex items-center gap-1 px-2 py-1 text-xs">
+                <Sparkles className="w-3 h-3" />
                 Local Events
               </TabsTrigger>
             </TabsList>
