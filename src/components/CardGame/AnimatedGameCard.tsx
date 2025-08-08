@@ -506,14 +506,14 @@ export const AnimatedGameCard: React.FC<AnimatedGameCardProps> = ({
 
         {/* Action Buttons - Only show when popup is not open and card is revealed */}
         {isRevealed && !showResponsePopup && (
-          <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
+          <div className="flex flex-row gap-4 justify-center items-center w-full max-w-md mx-auto mt-6 px-4">
             {isMyTurn && (
               <>
                 {card.response_type === 'text' ? (
                   <Button
                     onClick={() => handleComplete(false)}
                     disabled={!response.trim()}
-                    className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold"
+                    className="flex-1 h-12 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
                     size="lg"
                   >
                     Submit & End Turn
@@ -521,7 +521,7 @@ export const AnimatedGameCard: React.FC<AnimatedGameCardProps> = ({
                 ) : card.response_type === 'action' ? (
                   <Button
                     onClick={() => handleComplete(false)}
-                    className="px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold"
+                    className="flex-1 h-12 bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
                     size="lg"
                   >
                     Complete Turn
@@ -531,7 +531,7 @@ export const AnimatedGameCard: React.FC<AnimatedGameCardProps> = ({
                 {skipsRemaining > 0 && (
                   <Button
                     variant="destructive"
-                    size="sm"
+                    className="flex-1 h-12 font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
                     onClick={onSkip}
                   >
                     Skip ({skipsRemaining})
@@ -542,8 +542,8 @@ export const AnimatedGameCard: React.FC<AnimatedGameCardProps> = ({
             
             {/* Waiting message */}
             {!isMyTurn && (
-              <div className="text-center p-4 bg-purple-50 rounded-lg">
-                <p className="text-purple-700">
+              <div className="text-center p-6 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-200 w-full">
+                <p className="text-purple-700 font-medium text-lg">
                   ⏳ Waiting for partner...
                 </p>
               </div>
