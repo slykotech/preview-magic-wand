@@ -161,6 +161,7 @@ const CardDistribution: React.FC<CardDistributionProps> = ({ gameState }) => {
             {distribution.currentCycle.photo}/3
           </span>
         </div>
+        
       </div>
 
       {/* Show total cards played by user */}
