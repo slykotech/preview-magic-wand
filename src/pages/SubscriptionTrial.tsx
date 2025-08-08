@@ -9,6 +9,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { EnhancedTrialFlow } from '@/components/subscription/EnhancedTrialFlow';
 import { TrialAnalytics } from '@/components/subscription/TrialAnalytics';
+import { Capacitor } from '@capacitor/core';
 
 const features = [
   {
@@ -54,7 +55,8 @@ export const SubscriptionTrial: React.FC = () => {
   const { user } = useAuth();
   const { plans } = useSubscription();
   const [showTrialFlow, setShowTrialFlow] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+  const isNative = Capacitor.isNativePlatform();
 
   useEffect(() => {
     // Redirect non-authenticated users to auth
@@ -117,53 +119,69 @@ export const SubscriptionTrial: React.FC = () => {
             </CardContent>
           </Card>
 
-          {/* Subscription Plans */}
-          <div className="grid md:grid-cols-2 gap-6 mb-8">
-            {plans.map((plan) => (
-              <Card 
-                key={plan.id} 
-                className={`relative h-full hover:shadow-lg transition-all cursor-pointer border-2 ${
-                  plan.name.toLowerCase().includes('premium') ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
-                }`}
-                onClick={() => handlePlanSelect(plan.id)}
-              >
-                {plan.name.toLowerCase().includes('premium') && (
-                  <Badge className="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-primary text-primary-foreground">
-                    Most Popular
-                  </Badge>
-                )}
-                <CardHeader className="pb-4">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-xl">{plan.name}</CardTitle>
-                    <Crown className="w-6 h-6 text-primary" />
-                  </div>
-                  <div className="text-3xl font-bold text-primary">
-                    ${plan.price}
-                    <span className="text-lg font-normal text-muted-foreground">/{plan.period}</span>
-                  </div>
-                  {plan.discount && (
-                    <Badge variant="secondary" className="w-fit">
-                      Save {plan.discount}%
+          {/* Subscription Plans / Mobile Subscription Notice */}
+          {isNative ? (
+            <div className="grid md:grid-cols-2 gap-6 mb-8">
+              {plans.map((plan) => (
+                <Card 
+                  key={plan.id} 
+                  className={`relative h-full hover:shadow-lg transition-all cursor-pointer border-2 ${
+                    plan.name.toLowerCase().includes('premium') ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
+                  }`}
+                  onClick={() => handlePlanSelect(plan.id)}
+                >
+                  {plan.name.toLowerCase().includes('premium') && (
+                    <Badge className="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-primary text-primary-foreground">
+                      Most Popular
                     </Badge>
                   )}
-                </CardHeader>
-                <CardContent>
-                  <Button 
-                    className="w-full mb-4 bg-gradient-to-r from-primary to-primary-glow"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handlePlanSelect(plan.id);
-                    }}
-                  >
-                    Start Free Trial
-                  </Button>
-                  <div className="text-xs text-center text-muted-foreground">
-                    7 days free, then ${plan.price}/{plan.period}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  <CardHeader className="pb-4">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-xl">{plan.name}</CardTitle>
+                      <Crown className="w-6 h-6 text-primary" />
+                    </div>
+                    <div className="text-3xl font-bold text-primary">
+                      ${plan.price}
+                      <span className="text-lg font-normal text-muted-foreground">/{plan.period}</span>
+                    </div>
+                    {plan.discount && (
+                      <Badge variant="secondary" className="w-fit">
+                        Save {plan.discount}%
+                      </Badge>
+                    )}
+                  </CardHeader>
+                  <CardContent>
+                    <Button 
+                      className="w-full mb-4 bg-gradient-to-r from-primary to-primary-glow"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handlePlanSelect(plan.id);
+                      }}
+                    >
+                      Start Free Trial
+                    </Button>
+                    <div className="text-xs text-center text-muted-foreground">
+                      7 days free, then ${plan.price}/{plan.period}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <Card className="mb-8">
+              <CardHeader>
+                <CardTitle className="text-center">Subscribe in the mobile app</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-center text-muted-foreground mb-4">
+                  Payments are handled by the App Store and Google Play. Please use the mobile app to start your 7-day free trial.
+                </p>
+                <div className="flex justify-center">
+                  <Button disabled>Start Free Trial on Mobile</Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Trial Benefits */}
           <Card className="mb-8">
@@ -197,7 +215,7 @@ export const SubscriptionTrial: React.FC = () => {
           {/* Call to Action */}
           <div className="text-center space-y-4">
             <p className="text-muted-foreground">
-              Choose a plan above to start your 7-day free trial
+              {isNative ? 'Choose a plan above to start your 7-day free trial' : 'Open the mobile app to start your 7-day free trial via the App Store or Google Play.'}
             </p>
           </div>
 
