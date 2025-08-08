@@ -335,12 +335,8 @@ export function useCardGame(sessionId: string | null) {
         };
 
         if (responseType === 'photo') {
-          // Get the public URL for the uploaded file
-          const { data: urlData } = supabase.storage
-            .from('card-responses')
-            .getPublicUrl(responseText);
-          
-          responseUpdateData.last_response_photo_url = urlData.publicUrl;
+          // For photo responses, responseText should already be the public URL from photo upload
+          responseUpdateData.last_response_photo_url = responseText;
           responseUpdateData.last_response_photo_caption = caption || '';
           responseUpdateData.last_response_text = null; // Clear text response
         } else {
