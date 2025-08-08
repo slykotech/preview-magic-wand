@@ -10,6 +10,7 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { EnhancedTrialFlow } from '@/components/subscription/EnhancedTrialFlow';
 import { TrialAnalytics } from '@/components/subscription/TrialAnalytics';
 import { Capacitor } from '@capacitor/core';
+import { useToast } from '@/hooks/use-toast';
 
 const features = [
   {
@@ -53,10 +54,26 @@ const features = [
 export const SubscriptionTrial: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { plans } = useSubscription();
+  const { plans, restorePurchases } = useSubscription();
   const [showTrialFlow, setShowTrialFlow] = useState(false);
 const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const isNative = Capacitor.isNativePlatform();
+  const { toast } = useToast();
+  const [isRestoring, setIsRestoring] = useState(false);
+  const handleRestore = async () => {
+    setIsRestoring(true);
+    try {
+      const restored = await restorePurchases();
+      if (restored) {
+        toast({ title: "Purchases restored", description: "Your subscription is now active." });
+        navigate('/dashboard');
+      } else {
+        toast({ title: "No subscription found", description: "We could not find an active subscription linked to this account." });
+      }
+    } finally {
+      setIsRestoring(false);
+    }
+  };
 
   useEffect(() => {
     // Redirect non-authenticated users to auth
@@ -177,7 +194,9 @@ const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
                   Payments are handled by the App Store and Google Play. Please use the mobile app to start your 7-day free trial.
                 </p>
                 <div className="flex justify-center">
-                  <Button disabled>Start Free Trial on Mobile</Button>
+                  <Button variant="outline" onClick={handleRestore} disabled={isRestoring}>
+                    {isRestoring ? 'Restoring…' : 'I already subscribed on my phone — Restore Purchases'}
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -219,16 +238,6 @@ const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
             </p>
           </div>
 
-          {/* Testimonial */}
-          <Card className="mt-8 bg-gradient-to-r from-pink-50 to-purple-50 border-pink-200">
-            <CardContent className="p-6 text-center">
-              <div className="text-4xl mb-3">💕</div>
-              <blockquote className="text-lg italic text-muted-foreground mb-3">
-                "Love Sync has completely transformed how my partner and I connect. The card games are so fun and the AI coach gives amazing advice!"
-              </blockquote>
-              <cite className="text-sm font-medium">- Sarah M., Premium User</cite>
-            </CardContent>
-          </Card>
         </div>
       </div>
     </div>
