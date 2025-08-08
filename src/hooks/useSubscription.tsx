@@ -34,13 +34,17 @@ const initializeRevenueCat = async (): Promise<boolean> => {
     console.log(`RevenueCat: Initializing for platform: ${platform}`);
     
     // Get API key from Supabase edge function
-    const response = await fetch('/functions/v1/get-revenuecat-config', {
+    const response = await fetch('https://kdbgwmtihgmialrmaecn.supabase.co/functions/v1/get-revenuecat-config', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkYmd3bXRpaGdtaWFscm1hZWNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM3MjA0MzAsImV4cCI6MjA2OTI5NjQzMH0.9tugXDyBuaIaf8fAS0z6cyb-y8Rtykl2zrPxd8bnnOw`
+      },
       body: JSON.stringify({ platform })
     });
     
     const config = await response.json();
+    console.log('RevenueCat config response:', config);
     
     if (!config.configured) {
       console.log('RevenueCat: API keys not configured, using fallback mode');
