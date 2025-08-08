@@ -483,9 +483,6 @@ export function useCardGame(sessionId: string | null) {
 
       if (!nextCard) {
         toast.success("🎉 Game completed! No more cards available!");
-      } else {
-        const totalSkipsLeft = newUser1Skips + newUser2Skips;
-        toast.success(`⏭️ Card skipped! ${totalSkipsLeft} total skips remaining`);
       }
       
     } catch (error) {
