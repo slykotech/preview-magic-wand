@@ -110,76 +110,7 @@ const CardDistribution: React.FC<CardDistributionProps> = ({ gameState }) => {
     fetchUserDistribution();
   }, [gameState?.id, user?.id, gameState?.total_cards_played]);
 
-  return (
-    <div className="bg-card p-3 rounded-lg border mb-4">
-      <h4 className="text-sm font-semibold text-card-foreground mb-2">
-        My Card Distribution (Cycle {Math.floor(distribution.userCards / 10) + 1})
-      </h4>
-      
-      {/* Current Cycle Progress */}
-      <div className="mb-3">
-        <div className="flex justify-between text-xs text-muted-foreground mb-1">
-          <span>My Cycle Progress</span>
-          <span>{distribution.cyclePosition}/10</span>
-        </div>
-        <div className="w-full bg-muted rounded-full h-2">
-          <div 
-            className="bg-primary h-2 rounded-full transition-all"
-            style={{ width: `${(distribution.cyclePosition / 10) * 100}%` }}
-          />
-        </div>
-      </div>
-
-      {/* Type Distribution in Current Cycle */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between text-xs">
-          <span className="flex items-center gap-1">
-            <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-            Action
-          </span>
-          <span className={distribution.currentCycle.action >= 4 ? 'text-green-600 font-bold' : ''}>
-            {distribution.currentCycle.action}/4
-          </span>
-        </div>
-        
-        <div className="flex items-center justify-between text-xs">
-          <span className="flex items-center gap-1">
-            <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-            Text
-          </span>
-          <span className={distribution.currentCycle.text >= 3 ? 'text-green-600 font-bold' : ''}>
-            {distribution.currentCycle.text}/3
-          </span>
-        </div>
-        
-        <div className="flex items-center justify-between text-xs">
-          <span className="flex items-center gap-1">
-            <span className="w-2 h-2 bg-pink-500 rounded-full"></span>
-            Photo
-          </span>
-          <span className={distribution.currentCycle.photo >= 3 ? 'text-green-600 font-bold' : ''}>
-            {distribution.currentCycle.photo}/3
-          </span>
-        </div>
-        
-      </div>
-
-      {/* Show total cards played by user */}
-      <div className="mt-2 pt-2 border-t border-border">
-        <div className="flex justify-between text-xs text-muted-foreground">
-          <span>Total cards played by me:</span>
-          <span className="font-medium">{distribution.userCards}</span>
-        </div>
-      </div>
-
-      {/* Warning if photo cards are behind in user's cycle */}
-      {distribution.cyclePosition >= 5 && distribution.currentCycle.photo === 0 && (
-        <p className="text-xs text-destructive mt-2 font-semibold">
-          ⚠️ You need photo cards in this cycle!
-        </p>
-      )}
-    </div>
-  );
+  return null;
 };
 
 export default CardDistribution;
