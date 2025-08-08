@@ -55,18 +55,16 @@ export function useCardGame(sessionId: string | null) {
   const [partnerInfo, setPartnerInfo] = useState<{id: string, name: string} | null>(null);
   const [cardRevealed, setCardRevealed] = useState(false);
   const [blockAutoAdvance, setBlockAutoAdvance] = useState(false);
+  const [lastNotificationTurn, setLastNotificationTurn] = useState<string>(''); // Track last notified turn to prevent duplicates
 
-  // Initialize game
+  // Initialize game - consolidated initialization
   useEffect(() => {
-    if (!user || !coupleData) return;
+    if (!user || !coupleData || !sessionId) return;
 
     const initializeGame = async () => {
       try {
-        if (!sessionId) {
-          await createNewSession();
-          return;
-        }
-
+        console.log('Initializing game:', sessionId);
+        
         // Fetch game session
         const { data: gameData, error: gameError } = await supabase
           .from("card_deck_game_sessions")
@@ -80,28 +78,17 @@ export function useCardGame(sessionId: string | null) {
           return;
         }
 
-        setGameState({
+        const processedGameData = {
           ...gameData,
           played_cards: Array.isArray(gameData.played_cards) ? gameData.played_cards : [],
           skipped_cards: Array.isArray(gameData.skipped_cards) ? gameData.skipped_cards : []
-        });
+        };
         
-        // Debug logging
-        console.log('Game initialized:', {
-          gameData,
-          currentUserId: user.id,
-          currentTurn: gameData.current_turn,
-          isMyTurn: gameData.current_turn === user.id,
-          user1_id: gameData.user1_id,
-          user2_id: gameData.user2_id
-        });
-        
+        setGameState(processedGameData);
         setIsMyTurn(gameData.current_turn === user.id);
 
-        // Set partner info with actual name from profiles
+        // Set partner info
         const partnerId = gameData.user1_id === user.id ? gameData.user2_id : gameData.user1_id;
-        
-        // Fetch partner's profile to get their display name
         const { data: partnerProfile } = await supabase
           .from('profiles')
           .select('display_name')
@@ -115,24 +102,14 @@ export function useCardGame(sessionId: string | null) {
 
         // Fetch current card if exists
         if (gameData.current_card_id) {
-          console.log('Fetching current card:', gameData.current_card_id);
           const { data: cardData, error: cardError } = await supabase
             .from("deck_cards")
             .select("*")
             .eq("id", gameData.current_card_id)
             .single();
           
-          if (cardError) {
-            console.error('Failed to fetch current card:', cardError);
-            // If card fetch fails, clear the current_card_id
-            await supabase
-              .from("card_deck_game_sessions")
-              .update({ current_card_id: null })
-              .eq("id", sessionId);
-          } else if (cardData) {
-            console.log('Current card fetched successfully:', cardData);
+          if (!cardError && cardData) {
             setCurrentCard(cardData as CardData);
-            // Set reveal state based on database
             setCardRevealed(gameData.current_card_revealed || false);
           }
         }
@@ -147,114 +124,80 @@ export function useCardGame(sessionId: string | null) {
     };
 
     initializeGame();
-
-    // Set up real-time subscription
-    if (sessionId) {
-      const channel = supabase
-        .channel(`card-game-${sessionId}`)
-        .on(
-          "postgres_changes",
-          { 
-            event: "UPDATE", 
-            schema: "public", 
-            table: "card_deck_game_sessions",
-            filter: `id=eq.${sessionId}`
-          },
-          async (payload) => {
-            console.group("📨 REAL-TIME UPDATE RECEIVED");
-            console.log("Event Type:", payload.eventType);
-            console.log("Full Payload:", payload);
-            
-            const newState = payload.new as any;
-            const oldState = payload.old as any;
-            
-            // Check for response updates specifically
-            const responseChanged = newState.current_card_response !== oldState?.current_card_response;
-            const cardChanged = newState.current_card_id !== oldState?.current_card_id;
-            const turnChanged = newState.current_turn !== oldState?.current_turn;
-            
-            console.log("🔍 Change Detection:", {
-              responseChanged,
-              cardChanged,
-              turnChanged,
-              oldResponse: oldState?.current_card_response,
-              newResponse: newState.current_card_response,
-              oldTurn: oldState?.current_turn,
-              newTurn: newState.current_turn
-            });
-            
-            if (responseChanged) {
-              console.log("🎉 RESPONSE UPDATE DETECTED!");
-              console.log("Response Details:", {
-                text: newState.current_card_response,
-                type: newState.current_card_response_type,
-                timestamp: newState.current_card_responded_at,
-                cardId: newState.current_card_id
-              });
-            }
-            
-            const processedState = {
-              ...newState,
-              played_cards: Array.isArray(newState.played_cards) ? newState.played_cards : [],
-              skipped_cards: Array.isArray(newState.skipped_cards) ? newState.skipped_cards : []
-            };
-            
-            // Debug logging for real-time updates
-            console.log('Real-time turn update:', {
-              newCurrentTurn: newState.current_turn,
-              myUserId: user.id,
-              isNowMyTurn: newState.current_turn === user.id,
-              payload
-            });
-            
-            setGameState(processedState);
-            setIsMyTurn(newState.current_turn === user.id);
-            console.groupEnd();
-            
-            // Sync card reveal state
-            if (newState.current_card_revealed !== undefined) {
-              setCardRevealed(newState.current_card_revealed);
-            }
-            
-            // IMPORTANT: Fetch the card data when current_card_id changes
-            if (newState.current_card_id) {
-              console.log('Fetching card from real-time update:', newState.current_card_id);
-              
-              const { data: cardData, error: cardError } = await supabase
-                .from("deck_cards")
-                .select("*")
-                .eq("id", newState.current_card_id)
-                .single();
-              
-              if (cardError) {
-                console.error('Failed to fetch card from real-time:', cardError);
-              } else {
-                console.log('Card fetched successfully from real-time:', cardData);
-                setCurrentCard(cardData as CardData);
-              }
-              
-              // Show notification if it's now my turn
-              if (newState.current_turn === user.id) {
-                toast.success("It's your turn! 🎯");
-              }
-            } else {
-              // Clear card when no current_card_id
-              console.log('No current_card_id, clearing card');
-              setCurrentCard(null);
-              setCardRevealed(false);
-            }
-          }
-        )
-        .subscribe((status) => {
-          console.log("Subscription status:", status);
-          setConnectionStatus(status === 'SUBSCRIBED' ? 'connected' : 'connecting');
-        });
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    }
   }, [user, coupleData, sessionId]);
+
+  // Real-time subscription - optimized to prevent duplicate notifications
+  useEffect(() => {
+    if (!sessionId || !user) return;
+
+    const channel = supabase
+      .channel(`card-game-${sessionId}`)
+      .on(
+        "postgres_changes",
+        { 
+          event: "UPDATE", 
+          schema: "public", 
+          table: "card_deck_game_sessions",
+          filter: `id=eq.${sessionId}`
+        },
+        async (payload) => {
+          const newState = payload.new as any;
+          const oldState = payload.old as any;
+          
+          // Detect actual changes
+          const turnChanged = newState.current_turn !== oldState?.current_turn;
+          const cardChanged = newState.current_card_id !== oldState?.current_card_id;
+          
+          // Process state update
+          const processedState = {
+            ...newState,
+            played_cards: Array.isArray(newState.played_cards) ? newState.played_cards : [],
+            skipped_cards: Array.isArray(newState.skipped_cards) ? newState.skipped_cards : []
+          };
+          
+          setGameState(processedState);
+          setIsMyTurn(newState.current_turn === user.id);
+          
+          // Sync card reveal state
+          if (newState.current_card_revealed !== undefined) {
+            setCardRevealed(newState.current_card_revealed);
+          }
+          
+          // Handle card updates
+          if (newState.current_card_id && cardChanged) {
+            const { data: cardData, error: cardError } = await supabase
+              .from("deck_cards")
+              .select("*")
+              .eq("id", newState.current_card_id)
+              .single();
+            
+            if (!cardError) {
+              setCurrentCard(cardData as CardData);
+            }
+            
+            // Show notification ONLY for meaningful turn changes to prevent spam
+            const shouldNotify = turnChanged && 
+                               newState.current_turn === user.id && 
+                               lastNotificationTurn !== newState.current_turn;
+            
+            if (shouldNotify) {
+              setLastNotificationTurn(newState.current_turn);
+              toast.success("🎯 It's your turn!");
+            }
+          } else if (!newState.current_card_id) {
+            setCurrentCard(null);
+            setCardRevealed(false);
+          }
+        }
+      )
+      .subscribe((status) => {
+        setConnectionStatus(status === 'SUBSCRIBED' ? 'connected' : 'connecting');
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, sessionId, lastNotificationTurn]);
 
 
   // Reveal card function - syncs with database
