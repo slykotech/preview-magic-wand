@@ -31,39 +31,16 @@ export const GameTimer: React.FC<GameTimerProps> = ({
     console.log('🚨 Timer expired! Handling failed task...');
     setHasExpired(true);
 
-    try {
-      // Call dedicated edge function to handle timer expiration
-      const { error } = await supabase.functions.invoke('handle-timer-expiration', {
-        body: {
-          sessionId,
-          userId: user.id
-        }
-      });
+    // Show immediate feedback
+    toast({
+      title: "Time's Up!",
+      description: "Task failed due to timeout",
+      variant: "destructive"
+    });
 
-      if (error) {
-        console.error('Error handling timer expiration:', error);
-        throw error;
-      }
-
-      // Show immediate feedback
-      toast({
-        title: "Time's Up!",
-        description: "Task failed due to timeout",
-        variant: "destructive"
-      });
-
-      // Notify parent component
-      onTimeUp();
-
-    } catch (error) {
-      console.error('Failed to handle timer expiration:', error);
-      toast({
-        title: "Error",
-        description: "Failed to process timeout. Please try again.",
-        variant: "destructive"
-      });
-    }
-  }, [sessionId, user, isMyTurn, hasExpired, onTimeUp]);
+    // Notify parent component to handle the timeout
+    onTimeUp();
+  }, [user, isMyTurn, hasExpired, onTimeUp]);
 
   // Timer countdown logic
   useEffect(() => {

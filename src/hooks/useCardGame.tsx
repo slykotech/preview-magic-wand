@@ -18,6 +18,8 @@ interface GameState {
   user2_skips_remaining: number;
   user1_failed_tasks?: number;
   user2_failed_tasks?: number;
+  max_failed_tasks?: number;
+  max_skips?: number;
   winner_id?: string;
   win_reason?: string;
   game_mode: string;
@@ -274,9 +276,12 @@ export function useCardGame(sessionId: string | null) {
 
       // Handle failed task if timed out or no response for required types
       let isFailedTask = false;
-      if (timedOut || (!response && (currentCard.response_type === 'text' || currentCard.response_type === 'photo'))) {
+      if (timedOut) {
         isFailedTask = true;
-        console.log('⚠️ Failed task detected');
+        console.log('⚠️ Failed task detected: Timer expired');
+      } else if (!response && (currentCard.response_type === 'text' || currentCard.response_type === 'photo')) {
+        isFailedTask = true;
+        console.log('⚠️ Failed task detected: No response provided');
       }
 
       // Save response if provided and not failed
@@ -331,10 +336,11 @@ export function useCardGame(sessionId: string | null) {
         isUser1
       });
 
-      // Check for game over due to failed tasks
-      if (newUser1FailedTasks >= 3 || newUser2FailedTasks >= 3) {
-        const winnerId = newUser1FailedTasks >= 3 ? gameState.user2_id : gameState.user1_id;
-        const loserId = newUser1FailedTasks >= 3 ? gameState.user1_id : gameState.user2_id;
+      // Check for game over due to failed tasks (3 strikes rule)
+      const maxFailedTasks = gameState.max_failed_tasks || 3;
+      if (newUser1FailedTasks >= maxFailedTasks || newUser2FailedTasks >= maxFailedTasks) {
+        const winnerId = newUser1FailedTasks >= maxFailedTasks ? gameState.user2_id : gameState.user1_id;
+        const winReason = timedOut ? 'opponent_timeout_failure' : 'opponent_failed_tasks';
         
         await supabase
           .from("card_deck_game_sessions")
@@ -342,7 +348,7 @@ export function useCardGame(sessionId: string | null) {
             status: 'completed',
             completed_at: new Date().toISOString(),
             winner_id: winnerId,
-            win_reason: 'opponent_failed_tasks',
+            win_reason: winReason,
             user1_failed_tasks: newUser1FailedTasks,
             user2_failed_tasks: newUser2FailedTasks,
             last_activity_at: new Date().toISOString()
@@ -350,9 +356,11 @@ export function useCardGame(sessionId: string | null) {
           .eq("id", sessionId);
           
         const isWinner = winnerId === user.id;
+        const failureReason = timedOut ? 'timed out' : 'failed too many tasks';
+        
         toast.success(isWinner ? 
-          "🎉 You win! Your partner failed too many tasks!" : 
-          "💔 Game Over! You failed too many tasks. Partner wins!"
+          `🎉 You win! Your partner ${failureReason}!` : 
+          `💔 Game Over! You ${failureReason}. Partner wins!`
         );
         return;
       }
@@ -440,7 +448,11 @@ export function useCardGame(sessionId: string | null) {
           })
           .eq("id", sessionId);
           
-        toast.success("🎉 Game Over! You ran out of skips. Your partner wins!");
+        const isWinner = winnerId === user.id;
+        toast.success(isWinner ? 
+          "🎉 You win! Your partner ran out of skips!" : 
+          "💔 Game Over! You ran out of skips. Partner wins!"
+        );
         return;
       }
 
@@ -545,7 +557,11 @@ export function useCardGame(sessionId: string | null) {
       skipsRemaining: gameState && user ? 
         (user.id === gameState.user1_id ? 
           gameState.user1_skips_remaining : 
-          gameState.user2_skips_remaining) : 0
+          gameState.user2_skips_remaining) : 0,
+      failedTasks: gameState && user ? 
+        (user.id === gameState.user1_id ? 
+          gameState.user1_failed_tasks || 0 : 
+          gameState.user2_failed_tasks || 0) : 0
     },
     actions: {
       drawCard,
