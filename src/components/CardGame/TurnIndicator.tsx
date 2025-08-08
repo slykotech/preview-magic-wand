@@ -12,7 +12,7 @@ export const TurnIndicator: React.FC<TurnIndicatorProps> = ({
   connectionStatus 
 }) => {
   return (
-    <div className={`p-4 rounded-lg transition-all duration-300 ${
+    <div className={`p-4 rounded-lg transition-all duration-300 -mt-2 ${
       isMyTurn 
         ? 'bg-gradient-to-r from-primary/90 to-purple-500/90 text-primary-foreground shadow-lg border border-primary/20' 
         : 'bg-gradient-to-r from-primary/90 to-purple-500/90 text-primary-foreground shadow-lg border border-primary/20'
