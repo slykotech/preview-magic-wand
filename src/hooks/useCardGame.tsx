@@ -543,18 +543,19 @@ export function useCardGame(sessionId: string | null) {
     }
   }, [sessionId]);
 
-  // Rematch function - Reset all game stats to initial values
+  // Rematch function - Automatically restart game for both users
   const rematchGame = useCallback(async () => {
     if (!gameState || !user) return;
 
     try {
+      // Create new session with completely reset stats
       const { data: newSession, error } = await supabase
         .from('card_deck_game_sessions')
         .insert({
           couple_id: gameState.couple_id,
           user1_id: gameState.user1_id,
           user2_id: gameState.user2_id,
-          current_turn: gameState.user1_id,
+          current_turn: gameState.user1_id, // Always start with user1
           status: 'active',
           game_mode: gameState.game_mode || 'classic',
           // Reset all stats to initial values
@@ -579,14 +580,26 @@ export function useCardGame(sessionId: string | null) {
 
       if (error) throw error;
 
-      toast.success("Rematch started! 🎮 All stats reset!");
+      // Mark the old session as ended to trigger partner redirection
+      await supabase
+        .from('card_deck_game_sessions')
+        .update({
+          status: 'rematch_started',
+          rematch_session_id: newSession.id,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', sessionId);
+
+      toast.success("🎮 Rematch started! Both players being redirected...");
+      
+      // Redirect current user immediately
       window.location.href = `/games/card-deck/${newSession.id}`;
 
     } catch (error) {
       console.error("Failed to start rematch:", error);
       toast.error("Failed to start rematch");
     }
-  }, [gameState, user]);
+  }, [gameState, user, sessionId]);
 
   // Mark response as seen
   const markResponseAsSeen = useCallback(async () => {
