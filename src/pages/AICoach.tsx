@@ -397,7 +397,7 @@ export const AICoach = () => {
         </div>}
 
       {/* Input (fixed above safe area) */}
-      <div ref={composerRef} className="fixed bottom-0 left-0 right-0 z-40 p-3 sm:p-4 bg-card border-t border-border pb-[max(env(safe-area-inset-bottom),0px)]">
+      <div ref={composerRef} className="fixed left-0 right-0 z-40 p-3 sm:p-4 bg-card border-t border-border pb-[max(env(safe-area-inset-bottom),0px)]" style={{ bottom: keyboardOpen ? '0px' : '64px' }}>
         <div className="max-w-md mx-auto flex gap-3">
           <Input
             value={newMessage}
