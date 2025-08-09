@@ -1,9 +1,9 @@
-import { Home, MessageCircle, Calendar, Heart, User } from "lucide-react";
+import { Home, Brain, Calendar, Heart, User } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 const navItems = [
   { id: 'home', icon: Home, label: 'Home', path: '/dashboard' },
-  { id: 'therapy', icon: MessageCircle, label: 'Therapy', path: '/therapy' },
+  { id: 'therapy', icon: Brain, label: 'Therapy', path: '/therapy' },
   { id: 'dates', icon: Calendar, label: 'Dates', path: '/dates' },
   { id: 'vault', icon: Heart, label: 'Vault', path: '/vault' },
   { id: 'profile', icon: User, label: 'Profile', path: '/profile' },
