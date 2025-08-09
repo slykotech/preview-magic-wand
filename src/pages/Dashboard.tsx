@@ -1048,7 +1048,7 @@ export const Dashboard = () => {
 
       {/* Check-in Insights Modal */}
       <Dialog open={showCheckinInsights} onOpenChange={setShowCheckinInsights}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto pb-24">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Heart className="h-5 w-5 text-red-500" />
