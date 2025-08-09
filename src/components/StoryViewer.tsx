@@ -63,17 +63,23 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
   const [isPaused, setIsPaused] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [storyToDelete, setStoryToDelete] = useState<string | null>(null);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   const quickEmojis = ['❤️', '😂', '😍', '🔥', '👏', '😢', '😮', '👍'];
 
   useEffect(() => {
+    console.log('StoryViewer useEffect triggered:', { isOpen, showUploadInterface, isOwnStory });
     if (isOpen) {
+      setIsInitialLoad(true);
       // If showUploadInterface is true, immediately show create story interface
       if (showUploadInterface && isOwnStory) {
+        console.log('Showing upload interface immediately');
         setShowCreateStory(true);
+        setIsInitialLoad(false);
         // Don't fetch stories if we're in upload mode
         return;
       } else {
+        console.log('Showing story viewer, fetching stories');
         setShowCreateStory(false);
         fetchStories();
       }
@@ -93,6 +99,7 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
   }, [currentStoryIndex, currentStories, isOwnStory]);
 
   const fetchStories = async () => {
+    console.log('fetchStories called');
     try {
       const { data, error } = await supabase
         .from('stories')
@@ -116,9 +123,13 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
       // Separate user and partner stories
       if (isOwnStory) {
         setUserStories(storiesWithViewStatus);
+        console.log('Set user stories:', storiesWithViewStatus.length);
       } else {
         setPartnerStories(storiesWithViewStatus);
+        console.log('Set partner stories:', storiesWithViewStatus.length);
       }
+      
+      setIsInitialLoad(false);
       
     } catch (error) {
       console.error('Error fetching stories:', error);
@@ -146,9 +157,12 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
         } else {
           setPartnerStories(storiesWithFallbackStatus);
         }
+        
+        setIsInitialLoad(false);
       } catch (fallbackError) {
         console.error('Fallback fetch also failed:', fallbackError);
         toast.error('Failed to load stories');
+        setIsInitialLoad(false);
       }
     }
   };
@@ -700,7 +714,24 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
     );
   }
 
-  if (currentStories.length === 0) {
+  // Show loading state while fetching stories (not upload mode)
+  if (isInitialLoad && !showUploadInterface) {
+    return (
+      <div className="fixed inset-0 bg-black/95 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
+        <div className="text-center text-white space-y-6 p-8">
+          <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-full w-24 h-24 mx-auto flex items-center justify-center">
+            <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          </div>
+          <div>
+            <h3 className="text-xl font-semibold mb-2">Loading Stories...</h3>
+            <p className="text-muted-foreground">Please wait</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (currentStories.length === 0 && !isInitialLoad) {
     return (
       <div className="fixed inset-0 bg-black/95 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
         <div className="text-center text-white space-y-6 p-8">
