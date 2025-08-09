@@ -646,7 +646,7 @@ export const Dashboard = () => {
         <GradientHeader 
           title={getTimeBasedMessage()} 
           subtitle="Your love journey continues" 
-          icon={<Heart size={24} />} 
+          icon={<Sparkles size={24} />} 
           showBackButton={false}
         />
          
