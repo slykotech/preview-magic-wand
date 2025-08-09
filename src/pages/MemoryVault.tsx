@@ -997,14 +997,25 @@ const MemoryVault: React.FC = () => {
                         <img 
                           src={image.image_url} 
                           alt={selectedItem.title}
-                          className="w-full h-64 object-cover rounded-lg" 
+                          className="w-full h-64 object-contain bg-muted rounded-lg cursor-default" 
+                          style={{ maxHeight: '256px' }}
+                          onLoad={(e) => {
+                            // Ensure image doesn't exceed container bounds
+                            const img = e.currentTarget;
+                            img.style.maxWidth = '100%';
+                            img.style.height = 'auto';
+                          }}
                         />
                         {/* Image action buttons */}
                         <div className="absolute top-2 right-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <Button
                             size="sm"
                             variant="secondary"
-                            onClick={() => deleteImage(image.id, image.image_url)}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              deleteImage(image.id, image.image_url);
+                            }}
                             className="h-8 w-8 p-0 bg-red-500/90 hover:bg-red-600 text-white"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -1016,21 +1027,25 @@ const MemoryVault: React.FC = () => {
                 )}
 
                 {/* Description/Content */}
-                {('description' in selectedItem) && selectedItem.description && (
+                {('description' in selectedItem) && selectedItem.description && selectedItem.description.trim() && (
                   <div>
                     <h3 className="font-semibold mb-2">Description</h3>
-                    <p className="text-muted-foreground leading-relaxed">{selectedItem.description}</p>
+                    <p className="text-muted-foreground leading-relaxed break-words">
+                      {selectedItem.description.replace(/[^\x00-\x7F]/g, "").trim() || selectedItem.description}
+                    </p>
                   </div>
                 )}
 
-                {('content' in selectedItem) && selectedItem.content && (
+                {('content' in selectedItem) && selectedItem.content && selectedItem.content.trim() && (
                   <div>
                     <h3 className="font-semibold mb-2">Content</h3>
-                    <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">{selectedItem.content}</p>
+                    <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap break-words">
+                      {selectedItem.content.replace(/[^\x00-\x7F]/g, "").trim() || selectedItem.content}
+                    </p>
                   </div>
                 )}
 
-                <div className="flex gap-2 pt-4">
+                <div className="flex gap-2 pt-4 pb-6">
                   <Button 
                     variant="destructive" 
                     onClick={() => {
@@ -1268,11 +1283,12 @@ const MobileMemoryCard: React.FC<{
       }}
     >
       {firstImage && (
-        <div className="relative h-48">
+        <div className="relative h-48 overflow-hidden">
           <img
             src={firstImage}
             alt={memory.title}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover cursor-pointer"
+            style={{ maxWidth: '100%', maxHeight: '100%' }}
           />
           {/* Dark overlay only at bottom for text readability */}
           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent h-20" />
@@ -1282,10 +1298,10 @@ const MobileMemoryCard: React.FC<{
             <h3 className="text-white font-bold text-sm leading-tight drop-shadow-lg line-clamp-1">
               {memory.title}
             </h3>
-            {memory.description && (
+            {memory.description && memory.description.trim() && (
               <div className="mt-1">
                 <p className="text-white/90 text-xs drop-shadow line-clamp-1">
-                  {displayDescription}
+                  {displayDescription?.replace(/[^\x00-\x7F]/g, "").trim() || displayDescription}
                 </p>
                 {shouldTruncateDescription && (
                   <button
@@ -1345,10 +1361,10 @@ const MobileMemoryCard: React.FC<{
               <h3 className="font-bold text-lg text-gray-900 mb-1">
                 {memory.title}
               </h3>
-              {memory.description && (
+              {memory.description && memory.description.trim() && (
                 <div className="mb-2">
-                  <p className="text-gray-600 text-sm">
-                    {displayDescription}
+                  <p className="text-gray-600 text-sm break-words">
+                    {displayDescription?.replace(/[^\x00-\x7F]/g, "").trim() || displayDescription}
                   </p>
                    {shouldTruncateDescription && (
                      <button
