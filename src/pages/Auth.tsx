@@ -14,12 +14,19 @@ export const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
+  const [passwordStatus, setPasswordStatus] = useState<'mismatch' | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirectUrl = searchParams.get('redirect');
 
   useEffect(() => {
+    // Prefill email from query param if present
+    const emailParam = searchParams.get('email');
+    if (emailParam) {
+      setEmail(emailParam);
+    }
+
     // Check if this is a password reset redirect
     const isPasswordReset = searchParams.get('reset') === 'true';
     if (isPasswordReset) {
@@ -57,17 +64,20 @@ export const Auth = () => {
     setLoading(false);
 
     if (error) {
+      // Show friendly message and inline hint below password
+      const isInvalidCreds = /invalid login credentials/i.test(error.message);
+      setPasswordStatus(isInvalidCreds ? 'mismatch' : null);
       toast({
         title: "Sign in failed",
-        description: error.message,
+        description: isInvalidCreds ? "Email and password do not match" : error.message,
         variant: "destructive"
       });
     } else {
+      setPasswordStatus(null);
       toast({
         title: "Welcome back! 💕",
         description: "Successfully signed in"
       });
-      
       // Navigation is handled by the auth state change listener
     }
   };
@@ -230,7 +240,7 @@ export const Auth = () => {
                   type={showPassword ? "text" : "password"}
                   placeholder="Password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => { setPassword(e.target.value); setPasswordStatus(null); }}
                   className="pl-10 pr-10 font-medium h-11 text-sm"
                   disabled={loading}
                 />
@@ -242,6 +252,9 @@ export const Auth = () => {
                 >
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
+                {passwordStatus === 'mismatch' && (
+                  <p className="mt-1 text-xs text-destructive">Email and password do not match</p>
+                )}
               </div>
             </div>
             

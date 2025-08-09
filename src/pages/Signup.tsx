@@ -14,6 +14,7 @@ export const Signup = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [verificationSent, setVerificationSent] = useState(false);
+  const [existingAccountMessage, setExistingAccountMessage] = useState<string | null>(null);
   const {
     toast
   } = useToast();
@@ -112,12 +113,22 @@ export const Signup = () => {
         stack: error.stack
       });
 
-      // Show user-friendly error message
-      toast({
-        title: "Sign up failed",
-        description: error.message || "An unexpected error occurred. Please try again.",
-        variant: "destructive"
-      });
+      // Handle existing account gracefully
+      if (typeof error.message === 'string' && /already exists/i.test(error.message)) {
+        setExistingAccountMessage('An account with this email already exists. Please sign in instead.');
+        toast({
+          title: 'Account already exists',
+          description: 'Please sign in or reset your password.',
+        });
+        navigate(`/auth?email=${encodeURIComponent(email)}`);
+      } else {
+        // Show user-friendly error message
+        toast({
+          title: 'Sign up failed',
+          description: error.message || 'An unexpected error occurred. Please try again.',
+          variant: 'destructive'
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -229,7 +240,16 @@ export const Signup = () => {
                     </button>
                   </div>
                 </div>
-                
+                {existingAccountMessage && (
+                  <div className="mt-3 bg-red-50 border border-destructive/30 text-destructive text-xs p-3 rounded-lg">
+                    {existingAccountMessage}
+                    <div className="mt-2">
+                      <Button variant="outline" size="sm" onClick={() => navigate(`/auth?email=${encodeURIComponent(email)}`)}>
+                        Go to Sign In
+                      </Button>
+                    </div>
+                  </div>
+                )}
                 <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 p-3 rounded-lg mt-4">
                   <div className="flex items-center gap-2 text-amber-800 mb-1">
                     <Mail size={14} />
