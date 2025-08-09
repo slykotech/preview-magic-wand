@@ -333,7 +333,7 @@ export const AICoach = () => {
       <GradientHeader 
         title="Soul syncing Therapy" 
         subtitle="Always here to help your love grow" 
-        icon={<Sparkles size={20} />} 
+        icon={<Lightbulb size={20} />} 
         showBackButton={false}
       >
         {/* Clear Chat Button positioned at top right */}
