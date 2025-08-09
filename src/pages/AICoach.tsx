@@ -20,7 +20,7 @@ interface Message {
   timestamp: Date;
 }
 
-export const AICoach = () => {
+export const soulSyncing = () => {
   const [newMessage, setNewMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -304,7 +304,7 @@ export const AICoach = () => {
     }
     toast({
       title: isVoiceMode ? "Voice mode disabled" : "Voice mode enabled",
-      description: isVoiceMode ? "AI responses will be text only" : "AI responses will be spoken aloud"
+      description: isVoiceMode ? "Soul syncing responses will be text only" : "Soul syncing responses will be spoken aloud"
     });
   };
 
@@ -331,7 +331,7 @@ export const AICoach = () => {
   return <div className="min-h-[100dvh] bg-background flex flex-col">
       {/* Gradient Header */}
       <GradientHeader 
-        title="AI Relationship Coach" 
+        title="Soul syncing Therapy" 
         subtitle="Always here to help your love grow" 
         icon={<Sparkles size={20} />} 
         showBackButton={false}
@@ -414,7 +414,7 @@ export const AICoach = () => {
               <span className="text-sm font-semibold text-destructive">Daily Limit Reached</span>
             </div>
             <p className="text-sm text-muted-foreground mb-3">
-              You've used your daily AI coach allowance of 10,000 tokens. Your limit will reset tomorrow.
+              You've used your daily Therapy allowance of 10,000 tokens. Your limit will reset tomorrow.
             </p>
             <div className="text-xs text-muted-foreground">
               Come back tomorrow for more personalized relationship guidance! 💕
