@@ -74,7 +74,7 @@ const Index = () => {
           </div>
           <div className="flex items-center gap-4 p-4 bg-white/20 rounded-2xl backdrop-blur-sm">
             <div className="w-10 h-10 bg-white/30 rounded-xl flex items-center justify-center">
-              <Sparkles className="text-white" size={20} />
+              <Calendar className="text-white" size={20} />
             </div>
             <div className="flex-1">
               <h3 className="font-poppins font-bold text-white">Plan Dates Together</h3>
