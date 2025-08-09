@@ -959,7 +959,7 @@ const MemoryVault: React.FC = () => {
 
         {/* View Item Dialog */}
         <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
-          <DialogContent className="max-w-lg w-[88vw] max-h-[85vh] overflow-y-auto rounded-2xl shadow-2xl border-0 bg-background/95 backdrop-blur-sm">
+          <DialogContent className="max-w-2xl w-[95vw] max-h-[90vh] overflow-y-auto p-6 pb-24 mx-auto">
             <DialogHeader>
               <DialogTitle>
                 {selectedItem && ('images' in selectedItem ? 'Memory Details' : 'Note Details')}
@@ -991,20 +991,14 @@ const MemoryVault: React.FC = () => {
 
                 {/* Images for memories with action buttons */}
                 {('images' in selectedItem) && selectedItem.images && selectedItem.images.length > 0 && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-4">
                     {selectedItem.images.map((image) => (
                       <div key={image.id} className="relative group">
                         <img 
                           src={image.image_url} 
                           alt={selectedItem.title}
-                          className="w-full h-64 object-contain bg-muted rounded-lg cursor-default" 
-                          style={{ maxHeight: '256px' }}
-                          onLoad={(e) => {
-                            // Ensure image doesn't exceed container bounds
-                            const img = e.currentTarget;
-                            img.style.maxWidth = '100%';
-                            img.style.height = 'auto';
-                          }}
+                          className="w-full max-w-full h-auto max-h-80 object-contain rounded-lg mx-auto block" 
+                          style={{ maxWidth: '100%' }}
                         />
                         {/* Image action buttons */}
                         <div className="absolute top-2 right-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
