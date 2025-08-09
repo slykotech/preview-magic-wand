@@ -17,9 +17,10 @@ export const usePresence = (coupleId?: string) => {
       return;
     }
 
-    // For single users (no couple), just set them as online
+    // Only track presence when we have a couple ID
     if (!coupleId) {
-      setIsUserOnline(true);
+      setIsUserOnline(false);
+      setIsPartnerOnline(false);
       return;
     }
 
