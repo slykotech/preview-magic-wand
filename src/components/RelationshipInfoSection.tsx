@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,13 +15,15 @@ import {
 import { usePartnerConnectionV2 } from "@/hooks/usePartnerConnectionV2";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
 
 export const RelationshipInfoSection = () => {
   const {
     isProcessing,
     connectionStatus,
     coupleData,
-    updateRelationshipDetails
+    updateRelationshipDetails,
+    refreshData
   } = usePartnerConnectionV2();
 
   const [isEditing, setIsEditing] = useState(false);
@@ -63,6 +65,38 @@ export const RelationshipInfoSection = () => {
   };
 
   const statusDisplay = getConnectionStatusDisplay();
+
+  // Set up real-time subscription for couple data updates
+  useEffect(() => {
+    if (!coupleData?.id) return;
+
+    const subscription = supabase
+      .channel('couple_updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'couples',
+          filter: `id=eq.${coupleData.id}`
+        },
+        () => {
+          refreshData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [coupleData?.id, refreshData]);
+
+  // Also refresh data when connection status changes
+  useEffect(() => {
+    if (connectionStatus === 'paired') {
+      refreshData();
+    }
+  }, [connectionStatus, refreshData]);
 
   return (
     <Card className="shadow-lg border-0 bg-card">

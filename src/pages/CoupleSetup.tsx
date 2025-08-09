@@ -220,7 +220,7 @@ export const CoupleSetup = () => {
         </div>
       </div>
 
-      <div className="p-6 space-y-6">
+      <div className="p-6 space-y-6 pb-24">
         {coupleData ? (
           <>
             {/* Your Profile Section */}

@@ -594,7 +594,7 @@ export const PartnerConnectionSection = () => {
                         Received {format(new Date(request.created_at), "PPP")}
                       </p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 pb-2">
                       <Button
                         size="sm"
                         onClick={() => acceptPartnerRequest(request.id)}
