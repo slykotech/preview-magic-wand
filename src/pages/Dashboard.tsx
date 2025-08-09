@@ -836,7 +836,7 @@ export const Dashboard = () => {
               </div>
 
               {/* Plan Date */}
-              <div className="bg-card border rounded-xl p-4 text-center cursor-pointer hover:shadow-sm transition-all shadow-sm hover:scale-105 duration-200" onClick={handlePlanDateClick}>
+              <div className="bg-card border rounded-xl p-4 text-center cursor-pointer hover:shadow-sm transition-all shadow-sm hover:scale-105 duration-200" onClick={() => navigate('/dates?tab=suggestions')}>
                 <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center mx-auto mb-3">
                   <Calendar className="text-white" size={24} />
                 </div>
