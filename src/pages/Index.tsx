@@ -5,14 +5,21 @@ import { Button } from "@/components/ui/button";
 import { LoveSyncLogo } from "@/components/LoveSyncLogo";
 import { Heart, Sparkles, Calendar, Camera } from "lucide-react";
 const Index = () => {
-  const { user, loading } = useAuth();
+  const {
+    user,
+    loading
+  } = useAuth();
   const navigate = useNavigate();
   useEffect(() => {
     if (loading) return;
     if (user) {
-      navigate('/dashboard', { replace: true });
+      navigate('/dashboard', {
+        replace: true
+      });
     } else if (localStorage.getItem('onboarding_completed') === 'true') {
-      navigate('/auth', { replace: true });
+      navigate('/auth', {
+        replace: true
+      });
     }
   }, [user, loading, navigate]);
   if (loading) {
@@ -48,11 +55,7 @@ const Index = () => {
         <div className="space-y-3 text-left">
           <div className="flex items-center gap-4 p-4 bg-white/20 rounded-2xl backdrop-blur-sm relative">
             <div className="relative z-10 w-16 h-16 -mt-2 -mb-2">
-              <img 
-                src="/lovable-uploads/e96cb636-6076-4256-8622-93e09fe2fd42.png" 
-                alt="Quality Time" 
-                className="w-full h-full object-contain drop-shadow-lg"
-              />
+              <img src="/lovable-uploads/e96cb636-6076-4256-8622-93e09fe2fd42.png" alt="Quality Time" className="w-full h-full object-contain drop-shadow-lg" />
             </div>
             <div className="flex-1">
               <h3 className="font-poppins font-bold text-white">Quality Time</h3>
@@ -66,25 +69,17 @@ const Index = () => {
               <h3 className="font-poppins font-bold text-white">Soul Syncing</h3>
             </div>
             <div className="w-16 h-16">
-              <img 
-                src="/lovable-uploads/ea943bb4-0f80-4b60-8dab-9824039f4bc1.png" 
-                alt="Soul Syncing Avatar" 
-                className="w-full h-full object-contain"
-              />
+              <img src="/lovable-uploads/ea943bb4-0f80-4b60-8dab-9824039f4bc1.png" alt="Soul Syncing Avatar" className="w-full h-full object-contain" />
             </div>
           </div>
           <div className="flex items-center gap-4 p-4 bg-white/20 rounded-2xl backdrop-blur-sm">
             <div className="w-16 h-16">
-              <img 
-                src="/lovable-uploads/d445b99d-8fa2-4613-9412-94521632578d.png" 
-                alt="Connection Check-In Avatar" 
-                className="w-full h-full object-contain"
-              />
+              <img src="/lovable-uploads/d445b99d-8fa2-4613-9412-94521632578d.png" alt="Connection Check-In Avatar" className="w-full h-full object-contain" />
             </div>
             <div className="flex-1">
               <h3 className="font-poppins font-bold text-white">Connection Check-In</h3>
             </div>
-            <div className="text-2xl">👫</div>
+            
           </div>
           <div className="flex items-center gap-4 p-4 bg-white/20 rounded-2xl backdrop-blur-sm">
             <div className="w-10 h-10 bg-white/30 rounded-xl flex items-center justify-center">
@@ -94,11 +89,7 @@ const Index = () => {
               <h3 className="font-poppins font-bold text-white">Memory Vault</h3>
             </div>
             <div className="w-16 h-16">
-              <img 
-                src="/lovable-uploads/5a655e7e-3004-45ee-bc2a-35b5292a98e2.png" 
-                alt="Memory Vault Couple" 
-                className="w-full h-full object-contain"
-              />
+              <img src="/lovable-uploads/5a655e7e-3004-45ee-bc2a-35b5292a98e2.png" alt="Memory Vault Couple" className="w-full h-full object-contain" />
             </div>
           </div>
         </div>
