@@ -347,6 +347,28 @@ export const AICoach = () => {
             </div>
           </div>}
         
+        {/* Suggestions */}
+        {suggestions.length > 0 && !isOutOfTokens && (
+          <div className="mt-2">
+            <div className="flex items-center gap-2 mb-3">
+              <Lightbulb size={16} className="text-secondary" />
+              <span className="text-sm font-medium text-muted-foreground">Quick suggestions:</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {suggestions.map((suggestion, index) => (
+                <Badge
+                  key={index}
+                  variant="secondary"
+                  className="cursor-pointer hover:bg-secondary/80 transition-colors"
+                  onClick={() => handleSendMessage(suggestion)}
+                >
+                  {suggestion}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+        
         <div ref={messagesEndRef} />
       </div>
 
@@ -368,18 +390,6 @@ export const AICoach = () => {
         </div>}
       
 
-      {/* Suggestions */}
-      {suggestions.length > 0 && !isOutOfTokens && <div className="px-4 pb-2">
-          <div className="flex items-center gap-2 mb-3">
-            <Lightbulb size={16} className="text-secondary" />
-            <span className="text-sm font-medium text-muted-foreground">Quick suggestions:</span>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {suggestions.map((suggestion, index) => <Badge key={index} variant="secondary" className="cursor-pointer hover:bg-secondary/80 transition-colors" onClick={() => handleSendMessage(suggestion)}>
-                {suggestion}
-              </Badge>)}
-          </div>
-        </div>}
 
       {/* Voice Controls */}
       {isVoiceMode && <div className="px-4 pb-2">
@@ -397,7 +407,7 @@ export const AICoach = () => {
         </div>}
 
       {/* Input (fixed above safe area) */}
-      <div ref={composerRef} className="fixed left-0 right-0 z-40 p-3 sm:p-4 bg-card border-t border-border pb-[max(env(safe-area-inset-bottom),0px)]" style={{ bottom: keyboardOpen ? '0px' : '64px' }}>
+      <div ref={composerRef} className="fixed left-0 right-0 z-40 p-3 sm:p-4 bg-card border-t border-border pb-[max(env(safe-area-inset-bottom),0px)]" style={{ bottom: keyboardOpen ? 'env(safe-area-inset-bottom, 0px)' : 'calc(64px + env(safe-area-inset-bottom, 0px))' }}>
         <div className="max-w-md mx-auto flex gap-3">
           <Input
             value={newMessage}
