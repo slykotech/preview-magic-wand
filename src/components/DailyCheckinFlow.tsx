@@ -350,9 +350,11 @@ export const DailyCheckinFlow: React.FC<DailyCheckinFlowProps> = ({
                         ⏰ Return back tomorrow to check in again
                       </p>
                     </div>
-                    <Button onClick={onClose} className="w-full bg-secondary hover:bg-secondary/90">
-                      Got it!
-                    </Button>
+                    <div className="pb-20">
+                      <Button onClick={onClose} className="w-full bg-secondary hover:bg-secondary/90">
+                        Got it!
+                      </Button>
+                    </div>
                   </div> : isLoading ? <div className="text-center py-8">
                     <div className="text-muted-foreground">Loading...</div>
                   </div> : renderStepContent()}
