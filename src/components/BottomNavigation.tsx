@@ -50,8 +50,15 @@ export const BottomNavigation = () => {
             <button
               key={item.id}
               onClick={() => {
+                try {
+                  // Blur any focused input (iOS fix) before navigating
+                  if (document && document.activeElement instanceof HTMLElement) {
+                    document.activeElement.blur();
+                  }
+                } catch (e) {}
                 console.info('BottomNavigation click', { id: item.id, path: item.path });
-                navigate(item.path);
+                // small timeout improves reliability on mobile
+                setTimeout(() => navigate(item.path), 0);
               }}
               className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all duration-300 ${
                 isActive 
