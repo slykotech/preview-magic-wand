@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
 import CompleteSignup from './CompleteSignup';
 
-type FlowType = 'loading' | 'complete' | 'error';
+type FlowType = 'loading' | 'complete' | 'already' | 'error';
 
 const SignupResolver = () => {
   const [searchParams] = useSearchParams();
@@ -38,13 +38,34 @@ const SignupResolver = () => {
         
         if (verifyError || !data?.success) {
           console.error('Token verification failed:', verifyError || data?.error);
+          // If token invalid/expired, check if the user already has an account
+          try {
+            const { data: existsData } = await supabase.functions.invoke('check-email-exists', {
+              body: { email }
+            });
+            if (existsData?.exists) {
+              console.log('Email already registered. Showing already verified message');
+              setFlow('already');
+              return;
+            }
+          } catch (existsErr) {
+            console.warn('check-email-exists failed, falling back to generic error', existsErr);
+          }
           setFlow('error');
-          setError(data?.error || verifyError?.message || 'Failed to verify signup token');
+          setError(data?.error || verifyError?.message || 'This verification link is invalid or has expired.');
           return;
         }
 
         console.log('Token verification successful, proceeding to complete signup');
         setFlow('complete');
+        // Redirect straight to the app sign-in with prefilled email
+        try {
+          if (email) {
+            window.location.href = `/auth?email=${encodeURIComponent(email)}`;
+          } else {
+            window.location.href = '/auth';
+          }
+        } catch {/* noop */}
         
       } catch (error: any) {
         console.error('Error in signup resolution:', error);
@@ -87,6 +108,32 @@ const SignupResolver = () => {
               className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:opacity-90 w-full"
             >
               Go to Sign In
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Already verified / account exists state
+  if (flow === 'already') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary/10 to-romantic/10 flex items-center justify-center p-4">
+        <div className="bg-white rounded-lg p-6 max-w-md w-full text-center space-y-4">
+          <h2 className="text-xl font-semibold text-primary">Account Already Verified</h2>
+          <p className="text-gray-600">It looks like this email is already registered. You can sign in to continue.</p>
+          <div className="space-y-2">
+            <button 
+              onClick={() => window.location.href = `/auth?email=${encodeURIComponent(email || '')}`}
+              className="bg-primary text-white px-4 py-2 rounded-lg hover:opacity-90 w-full"
+            >
+              Go to Sign In
+            </button>
+            <button 
+              onClick={() => window.location.href = '/signup'}
+              className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:opacity-90 w-full"
+            >
+              Use a Different Email
             </button>
           </div>
         </div>
