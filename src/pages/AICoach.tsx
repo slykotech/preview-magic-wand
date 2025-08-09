@@ -33,6 +33,9 @@ export const AICoach = () => {
     dailyLimit: number;
   } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const composerRef = useRef<HTMLDivElement>(null);
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
+  const [messagesPad, setMessagesPad] = useState(120);
   const {
     toast
   } = useToast();
@@ -104,6 +107,41 @@ export const AICoach = () => {
       addMessage(welcomeMessage);
     }
   }, [sessionId, isLoaded, messages.length, addMessage]);
+
+  // Keyboard and viewport handlers to keep composer visible
+  useEffect(() => {
+    const vv: any = (window as any).visualViewport;
+    const handleResize = () => {
+      if (!vv) return;
+      const keyboard = Math.max(0, window.innerHeight - vv.height - (vv.offsetTop || 0));
+      setKeyboardOpen(keyboard > 80);
+    };
+    const onFocusIn = () => setKeyboardOpen(true);
+    const onFocusOut = () => setKeyboardOpen(false);
+
+    if (vv) {
+      vv.addEventListener('resize', handleResize);
+      handleResize();
+    }
+    window.addEventListener('focusin', onFocusIn);
+    window.addEventListener('focusout', onFocusOut);
+
+    return () => {
+      if (vv) vv.removeEventListener('resize', handleResize);
+      window.removeEventListener('focusin', onFocusIn);
+      window.removeEventListener('focusout', onFocusOut);
+    };
+  }, []);
+
+  // Recompute message padding when composer/nav changes and auto-scroll when keyboard opens
+  useEffect(() => {
+    const h = composerRef.current?.offsetHeight ?? 0;
+    const navH = keyboardOpen ? 0 : 64; // approx bottom nav height
+    setMessagesPad(h + navH + 16);
+    if (keyboardOpen) {
+      setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+    }
+  }, [keyboardOpen, newMessage, isTyping]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({
@@ -261,7 +299,7 @@ export const AICoach = () => {
     }
   };
 
-  return <div className="min-h-screen bg-background flex flex-col pb-20">
+  return <div className="min-h-[100dvh] bg-background flex flex-col">
       {/* Gradient Header */}
       <GradientHeader title="AI Relationship Coach" subtitle="Always here to help your love grow" icon={<Sparkles size={24} />} showBackButton={false}>
         {/* Clear Chat Button */}
@@ -281,7 +319,7 @@ export const AICoach = () => {
       </GradientHeader>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4" style={{ paddingBottom: messagesPad }}>
         {messages.map(message => <div key={message.id} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}>
             <div className={`max-w-[80%] rounded-2xl p-4 ${message.role === 'user' ? 'bg-primary text-primary-foreground ml-12' : 'bg-card shadow-soft mr-12'}`}>
               <p className="font-inter text-sm leading-relaxed font-medium">{message.content}</p>
@@ -358,21 +396,31 @@ export const AICoach = () => {
           </div>
         </div>}
 
-      {/* Input */}
-      <div className="p-4 bg-card border-t border-border">
-        <div className="flex gap-3">
-          <Input value={newMessage} onChange={e => setNewMessage(e.target.value)} onKeyPress={handleKeyPress} placeholder={isOutOfTokens ? "Daily token limit reached - come back tomorrow!" : isVoiceMode ? "Tap mic to speak or type..." : "Share what's on your mind..."} className="flex-1 rounded-full border-muted focus:border-secondary font-inter" disabled={isTyping || isRecording || isProcessing || isOutOfTokens} />
-          
-          {/* Voice Button */}
-          
+      {/* Input (fixed above safe area) */}
+      <div ref={composerRef} className="fixed bottom-0 left-0 right-0 z-40 p-3 sm:p-4 bg-card border-t border-border pb-[max(env(safe-area-inset-bottom),0px)]">
+        <div className="max-w-md mx-auto flex gap-3">
+          <Input
+            value={newMessage}
+            onChange={e => setNewMessage(e.target.value)}
+            onKeyPress={handleKeyPress}
+            placeholder={isOutOfTokens ? "Daily token limit reached - come back tomorrow!" : isVoiceMode ? "Tap mic to speak or type..." : "Share what's on your mind..."}
+            className="flex-1 rounded-full border-muted focus:border-secondary font-inter"
+            disabled={isTyping || isRecording || isProcessing || isOutOfTokens}
+          />
 
           {/* Send Button */}
-          <Button onClick={() => handleSendMessage()} disabled={!newMessage.trim() || isTyping || isRecording || isProcessing || isOutOfTokens} variant="floating" size="fab" className="shrink-0">
+          <Button
+            onClick={() => handleSendMessage()}
+            disabled={!newMessage.trim() || isTyping || isRecording || isProcessing || isOutOfTokens}
+            variant="floating"
+            size="fab"
+            className="shrink-0"
+          >
             <Send size={20} className={newMessage.trim() && !isOutOfTokens ? 'animate-pulse' : ''} />
           </Button>
         </div>
       </div>
 
-      <BottomNavigation />
+      {!keyboardOpen && <BottomNavigation />}
     </div>;
-};
+  };
