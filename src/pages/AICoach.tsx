@@ -407,8 +407,8 @@ export const AICoach = () => {
         </div>}
 
       {/* Input (fixed above safe area) */}
-      <div ref={composerRef} className="fixed left-0 right-0 z-40 p-3 sm:p-4 bg-card border-t border-border pb-[max(env(safe-area-inset-bottom),0px)]" style={{ bottom: keyboardOpen ? 'env(safe-area-inset-bottom, 0px)' : 'calc(64px + env(safe-area-inset-bottom, 0px))' }}>
-        <div className="max-w-md mx-auto flex gap-3">
+      <div ref={composerRef} className="fixed left-0 right-0 z-30 p-3 sm:p-4 bg-card border-t border-border pb-[max(env(safe-area-inset-bottom),0px)] pointer-events-none" style={{ bottom: keyboardOpen ? 'env(safe-area-inset-bottom, 0px)' : 'calc(64px + env(safe-area-inset-bottom, 0px))' }}>
+        <div className="max-w-md mx-auto flex gap-3 pointer-events-auto">
           <Input
             value={newMessage}
             onChange={e => setNewMessage(e.target.value)}
