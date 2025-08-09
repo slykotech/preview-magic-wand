@@ -4,7 +4,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 const navItems = [
   { id: 'home', icon: Home, label: 'Home', path: '/dashboard' },
   { id: 'therapy', icon: MessageCircle, label: 'Therapy', path: '/therapy' },
-  { id: 'planner', icon: Calendar, label: 'Planner', path: '/planner' },
+  { id: 'dates', icon: Calendar, label: 'Dates', path: '/dates' },
   { id: 'vault', icon: Heart, label: 'Vault', path: '/vault' },
   { id: 'profile', icon: User, label: 'Profile', path: '/profile' },
 ];
@@ -26,7 +26,7 @@ export const BottomNavigation = () => {
         return 'animate-float-love';
       case 'coach':
         return 'animate-pulse';
-      case 'planner':
+      case 'dates':
         return 'animate-bounce';
       case 'vault':
         return 'animate-heart-pulse';
