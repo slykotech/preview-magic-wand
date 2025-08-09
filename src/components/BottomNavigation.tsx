@@ -66,10 +66,24 @@ export const BottomNavigation = () => {
                   : 'text-muted-foreground hover:text-foreground hover:scale-105'
               }`}
             >
-              <Icon 
-                size={22} 
-                className={`${getIconAnimation(item.id, isActive)}`}
-              />
+              <div className={item.id === 'therapy' ? 'relative' : ''}>
+                {item.id === 'therapy' ? (
+                  <div className="relative">
+                    <div className="absolute inset-0 rounded-full bg-gradient-to-br from-blue-400 via-purple-500 to-pink-500 opacity-80"></div>
+                    <div className="relative bg-white/20 backdrop-blur-sm rounded-full p-1">
+                      <Icon 
+                        size={18} 
+                        className={`${getIconAnimation(item.id, isActive)} text-white`}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <Icon 
+                    size={22} 
+                    className={`${getIconAnimation(item.id, isActive)}`}
+                  />
+                )}
+              </div>
               <span className={`text-xs font-inter ${isActive ? 'font-medium' : ''}`}>
                 {item.label}
               </span>
