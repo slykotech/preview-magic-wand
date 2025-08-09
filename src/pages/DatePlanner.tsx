@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useCoupleData } from '@/hooks/useCoupleData';
@@ -40,6 +40,7 @@ interface DateIdea {
 
 export const DatePlanner = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { coupleData, loading: coupleLoading } = useCoupleData();
   const { toast } = useToast();
@@ -506,7 +507,7 @@ export const DatePlanner = () => {
 
       <div className="flex-1 overflow-y-auto container mx-auto px-4 py-6">
         <div className="w-full">
-          <Tabs defaultValue="planned" className="w-full">
+          <Tabs defaultValue={searchParams.get('tab') || 'planned'} className="w-full">
             <TabsList className="grid grid-cols-3 gap-2 mb-6">
               <TabsTrigger value="planned" className="flex items-center gap-1 px-2 py-1 text-xs">
                 <Heart className="w-3 h-3" />
