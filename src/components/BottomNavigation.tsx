@@ -24,7 +24,7 @@ export const BottomNavigation = () => {
     switch (iconId) {
       case 'home':
         return 'animate-float-love';
-      case 'coach':
+      case 'therapy':
         return 'animate-pulse';
       case 'dates':
         return 'animate-bounce';

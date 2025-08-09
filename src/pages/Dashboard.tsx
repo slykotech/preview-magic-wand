@@ -510,7 +510,7 @@ export const Dashboard = () => {
     }
   };
   const handlePlanDateClick = () => {
-    navigate('/planner?tab=upcoming');
+    navigate('/dates?tab=upcoming');
     toast({
       title: "Time to plan something special! ✨",
       description: "Let's find the perfect date idea for you two"
@@ -825,7 +825,7 @@ export const Dashboard = () => {
               </div>
 
               {/* Weekly Planning */}
-              <div className="bg-card border rounded-xl p-4 text-center cursor-pointer hover:shadow-sm transition-all shadow-sm hover:scale-105 duration-200" onClick={() => navigate('/planner')}>
+              <div className="bg-card border rounded-xl p-4 text-center cursor-pointer hover:shadow-sm transition-all shadow-sm hover:scale-105 duration-200" onClick={() => navigate('/dates')}>
                 <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center mx-auto mb-3">
                    <Calendar className="text-accent-foreground" size={24} />
                 </div>
@@ -864,7 +864,7 @@ export const Dashboard = () => {
         <div className={`${isLoaded ? 'animate-fade-in' : 'opacity-0'}`} style={{
           animationDelay: '700ms'
         }}>
-          {isLoaded ? <Button size="lg" className="w-full rounded-xl bg-yellow-400 hover:bg-yellow-500 text-black font-medium transition-all hover:scale-[1.02] duration-200" onClick={() => navigate('/coach')}>
+          {isLoaded ? <Button size="lg" className="w-full rounded-xl bg-yellow-400 hover:bg-yellow-500 text-black font-medium transition-all hover:scale-[1.02] duration-200" onClick={() => navigate('/therapy')}>
               <Sparkles className="mr-2" size={18} />
               Get Relationship Insights
             </Button> : <div className="w-full h-12 bg-muted animate-pulse rounded-xl"></div>}

@@ -85,8 +85,8 @@ const App = () => {
                 <Route path="/subscription/partner-invite" element={<SubscriptionPartnerInvite />} />
                 <Route path="/dashboard" element={<SubscriptionGate><Dashboard /></SubscriptionGate>} />
                 <Route path="/messages" element={<SubscriptionGate><Messages /></SubscriptionGate>} />
-                <Route path="/coach" element={<SubscriptionGate><AICoach /></SubscriptionGate>} />
-              <Route path="/planner" element={<SubscriptionGate><DatePlanner /></SubscriptionGate>} />
+                <Route path="/therapy" element={<SubscriptionGate><AICoach /></SubscriptionGate>} />
+              <Route path="/dates" element={<SubscriptionGate><DatePlanner /></SubscriptionGate>} />
                 <Route path="/games" element={<SubscriptionGate><Games /></SubscriptionGate>} />
                 <Route path="/games/:sessionId" element={<SubscriptionGate><GameSession /></SubscriptionGate>} />
                 <Route path="/games/card-deck/:sessionId" element={<SubscriptionGate><CardDeckGame /></SubscriptionGate>} />
