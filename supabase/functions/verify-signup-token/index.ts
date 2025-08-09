@@ -71,22 +71,37 @@ Deno.serve(async (req) => {
 
     console.log('Creating standalone user account...');
 
-    // For hashed passwords, we need to generate a new password
-    // Since we can't reverse the hash, we'll generate a secure temporary password
-    // The user can reset it if needed
+    // Decode the password from the stored encoding
     let userPassword = '';
     
     if (pendingVerification.password_is_hashed) {
-      // Generate a secure random password for hashed entries
+      // This shouldn't happen with the new approach, but handle legacy data
+      console.warn('Found legacy hashed password, user will need to reset password');
+      // Generate a temporary password - user will need to reset
       const randomBytes = new Uint8Array(16);
       crypto.getRandomValues(randomBytes);
       userPassword = Array.from(randomBytes, b => b.toString(16).padStart(2, '0')).join('');
     } else {
-      // For legacy unhashed passwords (should be rare after our security fix)
-      userPassword = pendingVerification.password_hash;
+      // Decode the password using base64 and token
+      try {
+        const decoded = atob(pendingVerification.password_hash);
+        const [originalPassword, tokenUsed] = decoded.split('::');
+        
+        // Verify the token matches for security
+        if (tokenUsed === token) {
+          userPassword = originalPassword;
+          console.log('Successfully decoded original password');
+        } else {
+          console.error('Token mismatch during password decode');
+          throw new Error('Security validation failed');
+        }
+      } catch (decodeError) {
+        console.error('Failed to decode password:', decodeError);
+        throw new Error('Failed to process verification data');
+      }
     }
 
-    // Create the user account for standalone signup
+    // Create the user account with the original password
     const { data: authData, error: signUpError } = await supabase.auth.admin.createUser({
       email: pendingVerification.email,
       password: userPassword,
@@ -95,16 +110,17 @@ Deno.serve(async (req) => {
         first_name: pendingVerification.first_name,
         last_name: pendingVerification.last_name,
         display_name: `${pendingVerification.first_name} ${pendingVerification.last_name}`.trim(),
+        signup_completed: true
       }
-    })
+    });
 
     if (signUpError) {
-      console.error('Signup error:', signUpError)
-      throw new Error(`Failed to create account: ${signUpError.message}`)
+      console.error('Signup error:', signUpError);
+      throw new Error(`Failed to create account: ${signUpError.message}`);
     }
 
     if (!authData.user) {
-      throw new Error('Account creation failed')
+      throw new Error('Account creation failed');
     }
 
     console.log('User account created successfully:', authData.user.id);
@@ -117,7 +133,7 @@ Deno.serve(async (req) => {
         completed_at: new Date().toISOString(),
         user_id: authData.user.id 
       })
-      .eq('id', pendingVerification.id)
+      .eq('id', pendingVerification.id);
 
     console.log('Verification marked as completed');
 

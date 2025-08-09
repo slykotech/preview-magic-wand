@@ -209,14 +209,10 @@ Deno.serve(async (req) => {
 
     console.log(`Generated verification token: ${verificationToken}`);
 
-    // Hash the password before storing (SECURITY FIX)
-    console.log('Hashing password securely...');
-    const hashedPassword = await crypto.subtle.digest(
-      'SHA-256',
-      new TextEncoder().encode(password + verificationToken) // Use token as salt
-    );
-    const passwordHash = Array.from(new Uint8Array(hashedPassword))
-      .map(b => b.toString(16).padStart(2, '0')).join('');
+    // Store password temporarily with basic encoding (not for security, just to avoid plain text storage)
+    // We'll use base64 encoding with the token for basic obfuscation
+    console.log('Encoding password for temporary storage...');
+    const encodedPassword = btoa(password + '::' + verificationToken);
 
     // Store verification data temporarily (no invitation context for standalone signup)
     console.log('Storing verification data...');
@@ -226,8 +222,8 @@ Deno.serve(async (req) => {
         email,
         first_name: firstName,
         last_name: lastName,
-        password_hash: passwordHash, // Store hashed password
-        password_is_hashed: true, // Mark as hashed
+        password_hash: encodedPassword, // Store encoded password temporarily
+        password_is_hashed: false, // Mark as not hashed so we know to decode it
         verification_token: verificationToken,
         expires_at: expiresAt.toISOString(),
         invitation_context: null // Standalone signup, no invitation context
