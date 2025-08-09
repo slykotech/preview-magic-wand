@@ -760,8 +760,13 @@ export const Chat: React.FC<ChatProps> = ({
           </div>
         </div>}
 
-      {/* Message Input - Fixed at bottom like nav bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-lg border-t border-border z-50">
+      {/* Message Input - Fixed at bottom with keyboard awareness */}
+      <div 
+        className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-lg border-t border-border z-50 transition-all duration-300 ease-in-out"
+        style={{
+          paddingBottom: 'max(env(safe-area-inset-bottom, 0px), env(keyboard-inset-height, 0px))'
+        }}
+      >
         <div className="max-w-md mx-auto px-3 py-2">
           <div className="flex gap-1 items-center">
             {/* Gallery Button */}

@@ -108,39 +108,68 @@ export const AICoach = () => {
     }
   }, [sessionId, isLoaded, messages.length, addMessage]);
 
-  // Keyboard and viewport handlers to keep composer visible
+  // Enhanced keyboard and viewport handlers for mobile
   useEffect(() => {
     const vv: any = (window as any).visualViewport;
+    let keyboardHeight = 0;
+    
     const handleResize = () => {
-      if (!vv) return;
-      const keyboard = Math.max(0, window.innerHeight - vv.height - (vv.offsetTop || 0));
-      setKeyboardOpen(keyboard > 80);
+      if (!vv) {
+        // Fallback for browsers without visualViewport
+        const heightDiff = window.innerHeight - document.documentElement.clientHeight;
+        setKeyboardOpen(heightDiff > 150);
+        return;
+      }
+      
+      keyboardHeight = Math.max(0, window.innerHeight - vv.height - (vv.offsetTop || 0));
+      const isKeyboardOpen = keyboardHeight > 150; // More reliable threshold
+      setKeyboardOpen(isKeyboardOpen);
+      
+      // Auto-scroll when keyboard opens
+      if (isKeyboardOpen) {
+        setTimeout(() => {
+          messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }, 150);
+      }
     };
-    const onFocusIn = () => setKeyboardOpen(true);
-    const onFocusOut = () => setKeyboardOpen(false);
+
+    const onFocusIn = (e: FocusEvent) => {
+      if (e.target && (e.target as HTMLElement).tagName === 'INPUT') {
+        setKeyboardOpen(true);
+        setTimeout(() => {
+          messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }, 300);
+      }
+    };
+    
+    const onFocusOut = () => {
+      setTimeout(() => setKeyboardOpen(false), 100);
+    };
 
     if (vv) {
       vv.addEventListener('resize', handleResize);
       handleResize();
     }
-    window.addEventListener('focusin', onFocusIn);
-    window.addEventListener('focusout', onFocusOut);
+    
+    // Use document for better mobile support
+    document.addEventListener('focusin', onFocusIn);
+    document.addEventListener('focusout', onFocusOut);
+    window.addEventListener('resize', handleResize);
 
     return () => {
       if (vv) vv.removeEventListener('resize', handleResize);
-      window.removeEventListener('focusin', onFocusIn);
-      window.removeEventListener('focusout', onFocusOut);
+      document.removeEventListener('focusin', onFocusIn);
+      document.removeEventListener('focusout', onFocusOut);
+      window.removeEventListener('resize', handleResize);
     };
   }, []);
 
-  // Recompute message padding when composer/nav changes and auto-scroll when keyboard opens
+  // Compute message padding dynamically based on keyboard state
   useEffect(() => {
-    const h = composerRef.current?.offsetHeight ?? 0;
-    const navH = keyboardOpen ? 0 : 64; // approx bottom nav height
-    setMessagesPad(h + navH + 16);
-    if (keyboardOpen) {
-      setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
-    }
+    const composerHeight = composerRef.current?.offsetHeight ?? 80;
+    const navHeight = keyboardOpen ? 0 : 64;
+    const safeAreaBottom = keyboardOpen ? 0 : 16;
+    setMessagesPad(composerHeight + navHeight + safeAreaBottom);
   }, [keyboardOpen, newMessage, isTyping]);
 
   const scrollToBottom = () => {
@@ -410,8 +439,17 @@ export const AICoach = () => {
           </div>
         </div>}
 
-      {/* Input (fixed above safe area) */}
-      <div ref={composerRef} className="fixed left-0 right-0 z-10 p-3 sm:p-4 bg-card border-t border-border pb-[max(env(safe-area-inset-bottom),0px)] pointer-events-none" style={{ bottom: keyboardOpen ? 'env(safe-area-inset-bottom, 0px)' : 'calc(64px + env(safe-area-inset-bottom, 0px))' }}>
+      {/* Input (fixed above keyboard and safe area) */}
+      <div 
+        ref={composerRef} 
+        className="fixed left-0 right-0 z-50 p-3 sm:p-4 bg-card/95 backdrop-blur-lg border-t border-border transition-all duration-300 ease-in-out pointer-events-none" 
+        style={{ 
+          bottom: keyboardOpen 
+            ? `max(env(safe-area-inset-bottom, 0px), env(keyboard-inset-height, 0px))` 
+            : `calc(64px + env(safe-area-inset-bottom, 0px))`,
+          transform: keyboardOpen ? 'translateY(0)' : 'translateY(0)'
+        }}
+      >
         <div className="max-w-md mx-auto flex gap-3 pointer-events-auto">
           <Input
             value={newMessage}
