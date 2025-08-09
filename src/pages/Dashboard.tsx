@@ -912,7 +912,7 @@ export const Dashboard = () => {
           setShowMoodCheckin(false);
           refreshDashboard();
         }} />
-            <div className="mt-4 text-center">
+            <div className="mt-4 text-center pb-20">
               <button onClick={() => setShowMoodCheckin(false)} className="text-white hover:text-gray-300 text-sm">
                 Close
               </button>
@@ -936,7 +936,7 @@ export const Dashboard = () => {
 
       {/* Relationship Health Tips Modal */}
       <Dialog open={showHealthTips} onOpenChange={setShowHealthTips}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto pb-24">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Lightbulb className="h-5 w-5 text-yellow-500" />
