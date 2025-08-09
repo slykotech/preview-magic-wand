@@ -301,18 +301,22 @@ export const AICoach = () => {
 
   return <div className="min-h-[100dvh] bg-background flex flex-col">
       {/* Gradient Header */}
-      <GradientHeader title="AI Relationship Coach" subtitle="Always here to help your love grow" icon={<Sparkles size={24} />} showBackButton={false}>
-        {/* Clear Chat Button */}
+      <GradientHeader 
+        title="AI Relationship Coach" 
+        subtitle="Always here to help your love grow" 
+        icon={<Sparkles size={20} />} 
+        showBackButton={false}
+      >
+        {/* Clear Chat Button positioned at top right */}
         {messages.length > 1 && (
-          <div className="flex justify-end mt-4">
+          <div className="absolute top-3 right-3 z-20">
             <Button
               onClick={handleClearChat}
               variant="ghost"
               size="sm"
-              className="text-white/80 hover:text-white hover:bg-white/10 h-8 px-3"
+              className="text-white/80 hover:text-white hover:bg-white/10 h-8 w-8 p-0 rounded-full"
             >
-              <Trash2 size={14} className="mr-1" />
-              Clear
+              <Trash2 size={16} />
             </Button>
           </div>
         )}
