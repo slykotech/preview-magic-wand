@@ -40,7 +40,7 @@ const SignupResolver = () => {
           console.error('Token verification failed:', verifyError || data?.error);
           // If token invalid/expired, check if the user already has an account
           try {
-            const { data: existsData } = await supabase.functions.invoke('check-email-exists', {
+            const { data: existsData } = await supabase.functions.invoke('check-user-exists', {
               body: { email }
             });
             if (existsData?.exists) {
@@ -49,10 +49,10 @@ const SignupResolver = () => {
               return;
             }
           } catch (existsErr) {
-            console.warn('check-email-exists failed, falling back to generic error', existsErr);
+            console.warn('check-user-exists failed, falling back to generic error', existsErr);
           }
           setFlow('error');
-          setError(data?.error || verifyError?.message || 'This verification link is invalid or has expired.');
+          setError(data?.error || verifyError?.message || 'This verification link is invalid or has expired. Please try signing up again.');
           return;
         }
 

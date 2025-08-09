@@ -67,11 +67,20 @@ export const Auth = () => {
       // Show friendly message and inline hint below password
       const isInvalidCreds = /invalid login credentials/i.test(error.message);
       setPasswordStatus(isInvalidCreds ? 'mismatch' : null);
-      toast({
-        title: "Sign in failed",
-        description: isInvalidCreds ? "Email and password do not match" : error.message,
-        variant: "destructive"
-      });
+      
+      if (isInvalidCreds) {
+        toast({
+          title: "Sign in failed",
+          description: "Email and password do not match. If you just signed up, make sure you clicked the verification link in your email first.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Sign in failed", 
+          description: error.message,
+          variant: "destructive"
+        });
+      }
     } else {
       setPasswordStatus(null);
       toast({
