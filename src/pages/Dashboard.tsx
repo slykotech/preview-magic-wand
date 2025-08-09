@@ -1096,7 +1096,7 @@ export const Dashboard = () => {
                 <p className="text-sm text-muted-foreground">No check-in data available. Complete your first daily check-in to see your responses here!</p>
               </div>}
             
-            <div className="pt-4 border-t space-y-2">
+            <div className="pt-4 border-t space-y-2 flex flex-col items-center">
               <Button className="w-full" onClick={() => {
               setShowCheckinInsights(false);
               handleCheckinClick();
