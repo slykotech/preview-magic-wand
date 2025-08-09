@@ -71,6 +71,8 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
       // If showUploadInterface is true, immediately show create story interface
       if (showUploadInterface && isOwnStory) {
         setShowCreateStory(true);
+        // Don't fetch stories if we're in upload mode
+        return;
       } else {
         setShowCreateStory(false);
         fetchStories();

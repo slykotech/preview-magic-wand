@@ -545,17 +545,19 @@ export const Dashboard = () => {
   // Only handle story viewing if story exists
   const handleUserAvatarClick = () => {
     if (user?.id && coupleId && hasUserStory) {
+      // Set all states atomically to prevent flash
+      setShowUploadInterface(false);
       setStoryTargetUserId(user.id);
       setIsOwnStory(true);
-      setShowUploadInterface(false); // Explicitly set to false for avatar clicks
       setShowStoryViewer(true);
     }
   };
   const handlePartnerAvatarClick = () => {
     if (partnerId && coupleId && partnerId !== user?.id && hasPartnerStory) {
+      // Set all states atomically to prevent flash
+      setShowUploadInterface(false);
       setStoryTargetUserId(partnerId);
       setIsOwnStory(false);
-      setShowUploadInterface(false); // Explicitly set to false for avatar clicks
       setShowStoryViewer(true);
     }
   };
