@@ -20,7 +20,7 @@ interface Message {
   timestamp: Date;
 }
 
-export const soulSyncing = () => {
+export const AICoach = () => {
   const [newMessage, setNewMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
