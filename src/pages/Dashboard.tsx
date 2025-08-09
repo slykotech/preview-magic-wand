@@ -1056,7 +1056,7 @@ export const Dashboard = () => {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="text-center p-4 bg-gradient-to-r from-secondary/10 to-primary/10 rounded-lg">
+            <div className="text-center p-4 bg-gradient-to-r from-secondary/10 to-primary/10 rounded-2xl">
               <div className="text-lg font-bold text-secondary mb-1">
                 {lastCheckin ? format(new Date(lastCheckin.checkin_date), 'd MMMM') : 'No recent check-in'}
               </div>
@@ -1069,30 +1069,48 @@ export const Dashboard = () => {
             </div>
             
             {lastCheckin ? <div className="space-y-3">
+                {/* Curved Tab View */}
+                <div className="bg-background/50 backdrop-blur-sm rounded-3xl p-1 border border-border/20">
+                  <div className="grid grid-cols-2 gap-1">
+                    <div className="bg-primary/10 text-center py-2 px-3 rounded-2xl transition-all">
+                      <span className="text-xs font-medium text-primary">Feelings</span>
+                    </div>
+                    <div className="bg-card text-center py-2 px-3 rounded-2xl transition-all hover:bg-muted/50">
+                      <span className="text-xs font-medium text-muted-foreground">Details</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Tab Content - Feelings Tab */}
+                <div className="space-y-3">
+                  {lastCheckin.energy_level && <div className="p-4 bg-card/50 backdrop-blur-sm rounded-2xl border border-border/20">
+                      <h4 className="font-medium text-sm mb-2 text-primary">Energy Level</h4>
+                      <div className="flex items-center gap-2">
+                        <div className="w-full bg-muted rounded-full h-2">
+                          <div className="bg-gradient-to-r from-primary to-accent h-2 rounded-full transition-all" 
+                               style={{width: `${(parseInt(lastCheckin.energy_level) / 10) * 100}%`}}></div>
+                        </div>
+                        <span className="text-sm font-bold text-foreground">{lastCheckin.energy_level}/10</span>
+                      </div>
+                    </div>}
+
+                  {lastCheckin.relationship_feeling && <div className="p-4 bg-card/50 backdrop-blur-sm rounded-2xl border border-border/20">
+                      <h4 className="font-medium text-sm mb-2 text-primary">Relationship Feeling</h4>
+                      <p className="text-sm text-foreground bg-gradient-to-r from-secondary/10 to-primary/10 p-3 rounded-xl">{lastCheckin.relationship_feeling}</p>
+                    </div>}
+
+                  {lastCheckin.gratitude && <div className="p-4 bg-card/50 backdrop-blur-sm rounded-2xl border border-border/20">
+                      <h4 className="font-medium text-sm mb-2 text-primary">Gratitude</h4>
+                      <p className="text-sm text-foreground bg-gradient-to-r from-secondary/10 to-primary/10 p-3 rounded-xl">{lastCheckin.gratitude}</p>
+                    </div>}
+
+                  {lastCheckin.notes && <div className="p-4 bg-card/50 backdrop-blur-sm rounded-2xl border border-border/20">
+                      <h4 className="font-medium text-sm mb-2 text-primary">Notes</h4>
+                      <p className="text-sm text-foreground bg-gradient-to-r from-secondary/10 to-primary/10 p-3 rounded-xl">{lastCheckin.notes}</p>
+                    </div>}
+                </div>
                 
-
-                {lastCheckin.energy_level && <div className="p-3 bg-card rounded-lg border">
-                    <h4 className="font-medium text-sm mb-2">What's your energy level?</h4>
-                    <p className="text-sm text-foreground">{lastCheckin.energy_level}/10</p>
-                  </div>}
-
-                {lastCheckin.relationship_feeling && <div className="p-3 bg-card rounded-lg border">
-                    <h4 className="font-medium text-sm mb-2">How are you feeling about your relationship?</h4>
-                    <p className="text-sm text-foreground">{lastCheckin.relationship_feeling}</p>
-                  </div>}
-
-                {lastCheckin.gratitude && <div className="p-3 bg-card rounded-lg border">
-                    <h4 className="font-medium text-sm mb-2">What are you grateful for today?</h4>
-                    <p className="text-sm text-foreground">{lastCheckin.gratitude}</p>
-                  </div>}
-
-                {lastCheckin.notes && <div className="p-3 bg-card rounded-lg border">
-                    <h4 className="font-medium text-sm mb-2">Additional notes</h4>
-                    <p className="text-sm text-foreground">{lastCheckin.notes}</p>
-                  </div>}
-
-                
-              </div> : <div className="text-center p-4">
+              </div> : <div className="text-center p-6 bg-card/30 backdrop-blur-sm rounded-3xl border border-border/20">
                 <p className="text-sm text-muted-foreground">No check-in data available. Complete your first daily check-in to see your responses here!</p>
               </div>}
             
