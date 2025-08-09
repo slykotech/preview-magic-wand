@@ -959,107 +959,115 @@ const MemoryVault: React.FC = () => {
 
         {/* View Item Dialog */}
         <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
-          <DialogContent className="max-w-2xl w-[95vw] max-h-[90vh] overflow-y-auto p-6 pb-24 mx-auto">
-            <DialogHeader>
-              <DialogTitle>
+          <DialogContent className="sm:max-w-[600px] w-[90vw] h-[80vh] flex flex-col p-0">
+            <DialogHeader className="p-6 pb-4">
+              <DialogTitle className="text-lg font-semibold">
                 {selectedItem && ('images' in selectedItem ? 'Memory Details' : 'Note Details')}
               </DialogTitle>
             </DialogHeader>
 
             {selectedItem && (
-              <div className="space-y-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h2 className="text-xl font-bold text-foreground mb-2">{selectedItem.title}</h2>
-                    <p className="text-sm text-muted-foreground">
-                      Created on {format(parseISO(selectedItem.created_at), 'MMMM d, yyyy')}
-                    </p>
-                    {('memory_date' in selectedItem) && selectedItem.memory_date && (
+              <>
+                <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <h2 className="text-xl font-bold text-foreground mb-2">{selectedItem.title}</h2>
                       <p className="text-sm text-muted-foreground">
-                        Memory from {format(parseISO(selectedItem.memory_date), 'MMMM d, yyyy')}
+                        Created on {format(parseISO(selectedItem.created_at), 'MMMM d, yyyy')}
                       </p>
-                    )}
+                      {('memory_date' in selectedItem) && selectedItem.memory_date && (
+                        <p className="text-sm text-muted-foreground">
+                          Memory from {format(parseISO(selectedItem.memory_date), 'MMMM d, yyyy')}
+                        </p>
+                      )}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => toggleFavorite(selectedItem.id, 'images' in selectedItem ? 'memory' : 'note', selectedItem.is_favorite)}
+                    >
+                      <Star className={`h-5 w-5 ${selectedItem.is_favorite ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'}`} />
+                    </Button>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => toggleFavorite(selectedItem.id, 'images' in selectedItem ? 'memory' : 'note', selectedItem.is_favorite)}
-                  >
-                    <Star className={`h-5 w-5 ${selectedItem.is_favorite ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'}`} />
-                  </Button>
-                </div>
 
-                {/* Images for memories with action buttons */}
-                {('images' in selectedItem) && selectedItem.images && selectedItem.images.length > 0 && (
-                  <div className="space-y-4">
-                    {selectedItem.images.map((image) => (
-                      <div key={image.id} className="relative group">
-                        <img 
-                          src={image.image_url} 
-                          alt={selectedItem.title}
-                          className="w-full max-w-full h-auto max-h-80 object-contain rounded-lg mx-auto block" 
-                          style={{ maxWidth: '100%' }}
-                        />
-                        {/* Image action buttons */}
-                        <div className="absolute top-2 right-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              deleteImage(image.id, image.image_url);
-                            }}
-                            className="h-8 w-8 p-0 bg-red-500/90 hover:bg-red-600 text-white"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                  {/* Images for memories */}
+                  {('images' in selectedItem) && selectedItem.images && selectedItem.images.length > 0 && (
+                    <div className="space-y-4">
+                      {selectedItem.images.map((image) => (
+                        <div key={image.id} className="relative group">
+                          <img 
+                            src={image.image_url} 
+                            alt={selectedItem.title}
+                            className="w-full max-w-full h-auto max-h-80 object-contain rounded-lg mx-auto block" 
+                            style={{ maxWidth: '100%' }}
+                          />
+                          <div className="absolute top-2 right-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                deleteImage(image.id, image.image_url);
+                              }}
+                              className="h-8 w-8 p-0 bg-red-500/90 hover:bg-red-600 text-white"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Description/Content */}
+                  {('description' in selectedItem) && selectedItem.description && selectedItem.description.trim() && (
+                    <div>
+                      <h3 className="font-semibold mb-2 text-foreground">Description</h3>
+                      <div className="bg-muted/50 rounded-lg p-4">
+                        <p className="text-foreground leading-relaxed break-words whitespace-pre-wrap">
+                          {selectedItem.description.replace(/[^\w\s.,!?;:()\-\'\"\n\r]/g, "").trim()}
+                        </p>
                       </div>
-                    ))}
-                  </div>
-                )}
+                    </div>
+                  )}
 
-                {/* Description/Content */}
-                {('description' in selectedItem) && selectedItem.description && selectedItem.description.trim() && (
-                  <div>
-                    <h3 className="font-semibold mb-2">Description</h3>
-                    <p className="text-muted-foreground leading-relaxed break-words">
-                      {selectedItem.description.replace(/[^\x00-\x7F]/g, "").trim() || selectedItem.description}
-                    </p>
-                  </div>
-                )}
-
-                {('content' in selectedItem) && selectedItem.content && selectedItem.content.trim() && (
-                  <div>
-                    <h3 className="font-semibold mb-2">Content</h3>
-                    <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap break-words">
-                      {selectedItem.content.replace(/[^\x00-\x7F]/g, "").trim() || selectedItem.content}
-                    </p>
-                  </div>
-                )}
-
-                <div className="flex gap-2 pt-4 pb-6">
-                  <Button 
-                    variant="destructive" 
-                    onClick={() => {
-                      setShowViewDialog(false);
-                      setShowDeleteDialog(true);
-                    }}
-                    className="flex-1"
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Delete
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setShowViewDialog(false)}
-                    className="flex-1"
-                  >
-                    Close
-                  </Button>
+                  {('content' in selectedItem) && selectedItem.content && selectedItem.content.trim() && (
+                    <div>
+                      <h3 className="font-semibold mb-2 text-foreground">Content</h3>
+                      <div className="bg-muted/50 rounded-lg p-4">
+                        <p className="text-foreground leading-relaxed break-words whitespace-pre-wrap">
+                          {selectedItem.content.replace(/[^\w\s.,!?;:()\-\'\"\n\r]/g, "").trim()}
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
+                
+                {/* Fixed footer with buttons */}
+                <div className="border-t p-6">
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="destructive" 
+                      onClick={() => {
+                        setShowViewDialog(false);
+                        setShowDeleteDialog(true);
+                      }}
+                      className="flex-1"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setShowViewDialog(false)}
+                      className="flex-1"
+                    >
+                      Close
+                    </Button>
+                  </div>
+                </div>
+              </>
             )}
           </DialogContent>
         </Dialog>
