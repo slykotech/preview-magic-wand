@@ -198,8 +198,8 @@ export const CoupleSetup = () => {
   return (
     <div className="min-h-screen bg-background pb-20">
       {/* Header */}
-      <div className="bg-gradient-romance text-white p-6">
-        <div className="flex items-center gap-3 mb-4">
+      <div className="bg-gradient-romance text-white p-4 sm:p-6">
+        <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
           <Button
             variant="ghost"
             size="sm"
@@ -208,11 +208,11 @@ export const CoupleSetup = () => {
           >
             <ArrowLeft size={20} />
           </Button>
-          <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 rounded-full flex items-center justify-center">
             <Users size={24} />
           </div>
           <div>
-            <h1 className="text-xl font-extrabold font-poppins">Manage Couple Profile</h1>
+            <h1 className="text-lg sm:text-xl font-extrabold font-poppins">Manage Couple Profile</h1>
             <p className="text-white/80 text-sm font-inter font-bold">
               {coupleData ? 'Update your connection' : 'Get started with LoveSync'}
             </p>

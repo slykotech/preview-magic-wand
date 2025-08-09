@@ -202,8 +202,8 @@ export const AppSettings = () => {
   return (
     <div className="min-h-screen bg-background pb-20">
       {/* Header */}
-      <div className="bg-gradient-romance text-white p-6 shadow-romantic">
-        <div className="flex items-center gap-4 mb-2">
+      <div className="bg-gradient-romance text-white p-4 sm:p-6 shadow-romantic">
+        <div className="flex items-center gap-3 sm:gap-4 mb-2">
           <Button
             variant="ghost"
             size="icon"
@@ -212,7 +212,7 @@ export const AppSettings = () => {
           >
             <ArrowLeft size={24} />
           </Button>
-          <h1 className="text-2xl font-extrabold font-poppins">App Settings</h1>
+          <h1 className="text-xl sm:text-2xl font-extrabold font-poppins">App Settings</h1>
         </div>
         <p className="text-white/80 font-inter text-sm font-semibold">
           Customize your LoveSync experience
