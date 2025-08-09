@@ -66,15 +66,42 @@ export const Auth = () => {
     if (error) {
       // Show friendly message and inline hint below password
       const isInvalidCreds = /invalid login credentials/i.test(error.message);
-      setPasswordStatus(isInvalidCreds ? 'mismatch' : null);
       
       if (isInvalidCreds) {
-        toast({
-          title: "Sign in failed",
-          description: "Email and password do not match. If you just signed up, make sure you clicked the verification link in your email first.",
-          variant: "destructive"
-        });
+        // Check if email exists to provide better error message
+        try {
+          const { data: existsData } = await supabase.functions.invoke('check-user-exists', {
+            body: { email }
+          });
+          
+          if (existsData?.exists) {
+            // Email exists, so it's a password issue
+            setPasswordStatus('mismatch');
+            toast({
+              title: "Incorrect password",
+              description: "The password you entered is incorrect. Please try again or reset your password.",
+              variant: "destructive"
+            });
+          } else {
+            // Email doesn't exist
+            setPasswordStatus(null);
+            toast({
+              title: "No account found",
+              description: "We couldn't find an account with this email address. Please sign up first.",
+              variant: "destructive"
+            });
+          }
+        } catch (checkError) {
+          // Fallback to generic message if check fails
+          setPasswordStatus('mismatch');
+          toast({
+            title: "Sign in failed",
+            description: "Email and password do not match. If you just signed up, make sure you clicked the verification link in your email first.",
+            variant: "destructive"
+          });
+        }
       } else {
+        setPasswordStatus(null);
         toast({
           title: "Sign in failed", 
           description: error.message,
