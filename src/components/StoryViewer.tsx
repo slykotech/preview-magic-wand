@@ -72,6 +72,7 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
       if (showUploadInterface && isOwnStory) {
         setShowCreateStory(true);
       } else {
+        setShowCreateStory(false);
         fetchStories();
       }
     }
@@ -79,15 +80,6 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
 
   // Get current stories array based on context
   const currentStories = isOwnStory ? userStories : partnerStories;
-
-  // Only show create story interface when no existing stories AND not explicitly from avatar click
-  useEffect(() => {
-    if (isOpen && isOwnStory && showUploadInterface && currentStories.length === 0) {
-      setShowCreateStory(true);
-    } else if (isOpen && !showUploadInterface) {
-      setShowCreateStory(false); // Ensure upload interface is hidden for avatar clicks
-    }
-  }, [isOpen, isOwnStory, showUploadInterface, currentStories.length]);
 
   useEffect(() => {
     if (currentStories.length > 0 && currentStoryIndex < currentStories.length) {
