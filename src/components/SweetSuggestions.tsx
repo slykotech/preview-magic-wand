@@ -219,8 +219,8 @@ export const SweetSuggestions: React.FC<SweetSuggestionsProps> = ({
       {/* Location Selection */}
       <Card>
         
-        <CardContent className="space-y-4">
-          <div className="flex flex-col sm:flex-row gap-4">
+        <CardContent className="space-y-4 p-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
             <div className="flex-1">
               <CitySearchInput onLocationSet={handleLocationSet} onCurrentLocation={getCurrentLocation} className="w-full" />
             </div>
