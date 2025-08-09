@@ -1173,6 +1173,39 @@ export type Database = {
         }
         Relationships: []
       }
+      function_rate_limits: {
+        Row: {
+          count: number
+          created_at: string
+          function_name: string
+          id: string
+          key: string
+          max_per_window: number
+          updated_at: string
+          window_start: string
+        }
+        Insert: {
+          count?: number
+          created_at?: string
+          function_name: string
+          id?: string
+          key: string
+          max_per_window?: number
+          updated_at?: string
+          window_start?: string
+        }
+        Update: {
+          count?: number
+          created_at?: string
+          function_name?: string
+          id?: string
+          key?: string
+          max_per_window?: number
+          updated_at?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       game_achievements: {
         Row: {
           achievement_name: string
@@ -2158,6 +2191,45 @@ export type Database = {
           resource_type?: string | null
           user_agent?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      security_audit_logs: {
+        Row: {
+          actor_email: string | null
+          actor_user_id: string | null
+          created_at: string
+          details: Json
+          event: string
+          id: string
+          ip_address: string | null
+          target_email: string | null
+          target_user_id: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          actor_email?: string | null
+          actor_user_id?: string | null
+          created_at?: string
+          details?: Json
+          event: string
+          id?: string
+          ip_address?: string | null
+          target_email?: string | null
+          target_user_id?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          actor_email?: string | null
+          actor_user_id?: string | null
+          created_at?: string
+          details?: Json
+          event?: string
+          id?: string
+          ip_address?: string | null
+          target_email?: string | null
+          target_user_id?: string | null
+          user_agent?: string | null
         }
         Relationships: []
       }
