@@ -38,7 +38,7 @@ export const BottomNavigation = () => {
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-lg border-t border-border z-50">
+    <nav className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-lg border-t border-border z-[100] pointer-events-auto">
       <div className="flex items-center justify-around py-2 px-4 max-w-md mx-auto">
         {navItems.map((item) => {
           const isActive = item.id === 'home' 
@@ -49,7 +49,10 @@ export const BottomNavigation = () => {
           return (
             <button
               key={item.id}
-              onClick={() => navigate(item.path)}
+              onClick={() => {
+                console.info('BottomNavigation click', { id: item.id, path: item.path });
+                navigate(item.path);
+              }}
               className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all duration-300 ${
                 isActive 
                   ? 'text-primary transform scale-110' 
