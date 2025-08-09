@@ -32,7 +32,7 @@ const Index = () => {
         </div>
       </div>;
   }
-  return <div className="min-h-screen bg-gradient-romance flex flex-col items-center justify-center p-6 text-white">
+  return <div className="min-h-[80vh] bg-gradient-romance flex flex-col items-center justify-center p-6 text-white">
       <div className="max-w-md w-full text-center space-y-8">
         {/* Logo */}
         <div className="space-y-6">
