@@ -501,7 +501,7 @@ export const DatePlanner = () => {
       <GradientHeader 
         title="Date Planner" 
         subtitle="Plan your perfect dates together" 
-        icon={<Heart size={24} />} 
+        icon={<Calendar size={24} />}
         showBackButton={false}
       />
 
