@@ -43,6 +43,11 @@ input, textarea, [contenteditable] {
   padding-top: env(safe-area-inset-top);
 }
 
+/* Adds a little extra breathing room above the status bar */
+.safe-area-top-lg {
+  padding-top: calc(env(safe-area-inset-top) + 12px);
+}
+
 .safe-area-bottom {
   padding-bottom: env(safe-area-inset-bottom);
 }

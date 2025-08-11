@@ -28,7 +28,7 @@ export const GradientHeader = ({
       navigate(-1);
     }
   };
-  return <div className={`bg-gradient-romance text-white p-3 sm:p-4 pb-4 sm:pb-5 safe-area-top shadow-romantic relative overflow-hidden rounded-b-[2rem] ${className}`}>
+  return <div className={`bg-gradient-romance text-white p-3 sm:p-4 pb-4 sm:pb-5 safe-area-top-lg shadow-romantic relative overflow-hidden rounded-b-[2rem] ${className}`}>
       {/* Background Pattern with curved overlay */}
       <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-black/10 rounded-b-[2rem]" />
       <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl transform translate-x-24 -translate-y-24" />
