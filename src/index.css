@@ -48,6 +48,10 @@ input, textarea, [contenteditable] {
   padding-top: calc(env(safe-area-inset-top) + 12px);
 }
 
+/* Larger header spacing for compact devices */
+.safe-area-top-xl {
+  padding-top: calc(env(safe-area-inset-top) + 24px);
+}
 .safe-area-bottom {
   padding-bottom: env(safe-area-inset-bottom);
 }
