@@ -13,7 +13,7 @@ const NotificationBell: React.FC = () => {
   const sorted = useMemo(() => notifications.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()), [notifications]);
 
   return (
-    <div className="fixed right-3 z-[120]" style={{ top: `calc(env(safe-area-inset-top, 0px) + 8px)` }}>
+    <div className="fixed right-3 z-[120]" style={{ top: `calc(env(safe-area-inset-top, 0px) + 16px)` }}>
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger asChild>
           <Button variant="ghost" size="icon" className="relative rounded-full bg-card/60 backdrop-blur-sm border border-border">
