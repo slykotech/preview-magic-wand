@@ -15,7 +15,7 @@ import { DateHistory } from "@/components/DateHistory";
 import { ProfileImageUpload } from "@/components/ProfileImageUpload";
 import { supabase } from "@/integrations/supabase/client";
 import coupleImage from "@/assets/couple-avatars.jpg";
-
+import NotificationBell from "@/components/NotificationBell";
 interface ProfileMenuItemProps {
   icon: React.ReactNode;
   title: string;
@@ -248,6 +248,7 @@ export const Profile = () => {
         {/* Profile Avatars - Conditional display based on partner connection */}
         <ProfileAvatarSection />
       </GradientHeader>
+      <NotificationBell />
 
       {/* Content */}
       <div className="p-6 space-y-6">
