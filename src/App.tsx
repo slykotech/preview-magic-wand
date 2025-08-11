@@ -10,6 +10,7 @@ import SplashScreen from "./components/SplashScreen";
 import { SignupPermissionsFlow } from "./components/SignupPermissionsFlow";
 import { usePermissions } from "./hooks/usePermissions";
 import Index from "./pages/Index";
+import { PushRegistrar } from "./components/PushRegistrar";
 import { Auth } from "./pages/Auth";
 import { Dashboard } from "./pages/Dashboard";
 import { AICoach } from "./pages/AICoach";
@@ -70,6 +71,7 @@ const App = () => {
           <TooltipProvider>
             <Toaster />
             <Sonner />
+            <PushRegistrar />
             <SignupPermissionsFlow 
               isOpen={showPermissionsFlow}
               onComplete={() => setShowPermissionsFlow(false)}

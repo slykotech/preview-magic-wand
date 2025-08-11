@@ -74,6 +74,10 @@ verify_jwt = false
 [functions.verify-email-and-signup]
 verify_jwt = false
 
+# Push notifications sender (requires user auth to respect RLS)
+[functions.send-push]
+verify_jwt = true
+
 [auth]
 enabled = true
 port = 54329
