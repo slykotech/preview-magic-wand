@@ -324,9 +324,7 @@ export const Chat: React.FC<ChatProps> = ({
   const sendMessage = async (text: string, type: 'text' | 'emoji' | 'sticker' | 'image' | 'video' = 'text') => {
     if (!text.trim() || !conversation?.id || !user?.id) return;
     try {
-      const {
-        error
-      } = await supabase.from('messages').insert({
+      const { error } = await supabase.from('messages').insert({
         conversation_id: conversation.id,
         sender_id: user.id,
         message_text: text.trim(),
@@ -334,6 +332,22 @@ export const Chat: React.FC<ChatProps> = ({
         is_read: false
       });
       if (error) throw error;
+
+      // Create a realtime notification for your partner
+      if (partnerProfile?.user_id && partnerProfile.user_id !== user.id) {
+        try {
+          await supabase.rpc('create_notification', {
+            p_target_user_id: partnerProfile.user_id,
+            p_title: 'New message',
+            p_body: type === 'text' ? text.trim() : `Sent a ${type}`,
+            p_link_url: '/messages',
+            p_type: 'message'
+          });
+        } catch (e) {
+          console.warn('Notification RPC failed (non-blocking):', e);
+        }
+      }
+
       setNewMessage('');
       setShowEmojiPicker(false);
       setShowStickers(false);

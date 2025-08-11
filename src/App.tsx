@@ -46,6 +46,7 @@ import { SubscriptionGate } from "./components/SubscriptionGate";
 import GooglePlacesTestPage from "./pages/GooglePlacesTest";
 import EventScraper from "./pages/EventScraper";
 import EventMonitoring from "./pages/EventMonitoring";
+import NotificationBell from "@/components/NotificationBell";
 
 const queryClient = new QueryClient();
 
@@ -73,6 +74,7 @@ const App = () => {
               isOpen={showPermissionsFlow}
               onComplete={() => setShowPermissionsFlow(false)}
             />
+            <NotificationBell />
             <BrowserRouter>
               <Routes>
                 <Route path="/" element={<Index />} />

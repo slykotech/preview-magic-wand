@@ -1736,6 +1736,42 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          id: string
+          link_url: string | null
+          read: boolean
+          title: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          link_url?: string | null
+          read?: boolean
+          title: string
+          type?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          link_url?: string | null
+          read?: boolean
+          title?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       partner_invitations: {
         Row: {
           accepted_at: string | null
@@ -3270,6 +3306,16 @@ export type Database = {
       cleanup_old_ai_events: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      create_notification: {
+        Args: {
+          p_target_user_id: string
+          p_title: string
+          p_body?: string
+          p_link_url?: string
+          p_type?: string
+        }
+        Returns: string
       }
       create_shuffled_deck: {
         Args: { p_session_id: string; p_deck_size?: number }
