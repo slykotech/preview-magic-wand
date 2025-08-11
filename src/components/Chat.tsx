@@ -346,6 +346,20 @@ export const Chat: React.FC<ChatProps> = ({
         } catch (e) {
           console.warn('Notification RPC failed (non-blocking):', e);
         }
+
+        // OS push notification
+        try {
+          await supabase.functions.invoke('send-push', {
+            body: {
+              target_user_id: partnerProfile.user_id,
+              title: `New message`,
+              body: type === 'text' ? text.trim() : `Sent a ${type}`,
+              data: { route: '/messages' }
+            }
+          });
+        } catch (e) {
+          console.warn('send-push failed (non-blocking):', e);
+        }
       }
 
       setNewMessage('');

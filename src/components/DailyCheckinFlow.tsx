@@ -143,6 +143,27 @@ export const DailyCheckinFlow: React.FC<DailyCheckinFlowProps> = ({
           checkin_date: today,
           ...checkinData
         });
+        // Push notify partner about completed check-in
+        try {
+          const { data: couple } = await supabase
+            .from('couples')
+            .select('user1_id, user2_id')
+            .eq('id', coupleId)
+            .single();
+          const partnerId = couple ? (couple.user1_id === userId ? couple.user2_id : couple.user1_id) : null;
+          if (partnerId) {
+            await supabase.functions.invoke('send-push', {
+              body: {
+                target_user_id: partnerId,
+                title: 'Daily check-in complete',
+                body: 'Your partner just completed their daily check-in',
+                data: { route: '/dashboard' }
+              }
+            });
+          }
+        } catch (e) {
+          console.warn('send-push checkin failed (non-blocking):', e);
+        }
       }
 
       // Log activity for enhanced sync score

@@ -66,7 +66,7 @@ interface UnifiedItem {
 const MemoryVault: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { coupleData, loading: coupleLoading } = useCoupleData();
+  const { coupleData, loading: coupleLoading, partnerProfile } = useCoupleData();
   const navigate = useNavigate();
 
   // State
@@ -291,6 +291,23 @@ const MemoryVault: React.FC = () => {
         .single();
 
       setMemories([updatedMemory, ...memories]);
+      
+      // Notify partner via push
+      try {
+        const partnerId = partnerProfile?.user_id;
+        if (partnerId && partnerId !== user?.id) {
+          await supabase.functions.invoke('send-push', {
+            body: {
+              target_user_id: partnerId,
+              title: 'New memory added',
+              body: updatedMemory?.title || 'Your partner added a new memory',
+              data: { route: '/vault' }
+            }
+          });
+        }
+      } catch (e) {
+        console.warn('send-push memory failed (non-blocking):', e);
+      }
       
       // Reset form
       setNewMemory({ title: "", description: "", memory_date: "", image_url: "" });

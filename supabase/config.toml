@@ -78,6 +78,10 @@ verify_jwt = false
 [functions.send-push]
 verify_jwt = true
 
+# Scheduled engagement notifier (invoked by scheduler or manually)
+[functions.engagement-notifier]
+verify_jwt = false
+
 [auth]
 enabled = true
 port = 54329

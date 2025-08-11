@@ -107,6 +107,27 @@ export const CoupleMoodDisplay: React.FC<CoupleMoodDisplayProps> = ({
           checkin_date: today,
           mood
         });
+        // Notify partner via push
+        try {
+          const { data: couple } = await supabase
+            .from('couples')
+            .select('user1_id, user2_id')
+            .eq('id', coupleId)
+            .single();
+          const partnerId = couple ? (couple.user1_id === userId ? couple.user2_id : couple.user1_id) : null;
+          if (partnerId) {
+            await supabase.functions.invoke('send-push', {
+              body: {
+                target_user_id: partnerId,
+                title: 'Mood check-in',
+                body: `Your partner shared a mood: ${mood}`,
+                data: { route: '/dashboard' }
+              }
+            });
+          }
+        } catch (e) {
+          console.warn('send-push mood failed (non-blocking):', e);
+        }
       }
       onMoodUpdate?.();
       setShowMoodSelector(false);

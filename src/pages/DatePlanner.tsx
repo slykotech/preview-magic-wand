@@ -42,7 +42,7 @@ export const DatePlanner = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
-  const { coupleData, loading: coupleLoading } = useCoupleData();
+  const { coupleData, loading: coupleLoading, partnerProfile } = useCoupleData();
   const { toast } = useToast();
   
   const [plannedDates, setPlannedDates] = useState<DateIdea[]>([]);
