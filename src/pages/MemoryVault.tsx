@@ -657,7 +657,7 @@ const MemoryVault: React.FC = () => {
         />
         
         {/* View Toggle - Repositioned */}
-        <div className="absolute top-5 right-4 z-20 flex border border-border rounded-full p-0.5 bg-background/80 backdrop-blur-sm">
+        <div className="absolute top-8 right-4 z-20 flex border border-border rounded-full p-0.5 bg-background/80 backdrop-blur-sm">
           <button
             onClick={() => setViewMode('grid')}
             className={`p-1 rounded-full transition-colors ${
