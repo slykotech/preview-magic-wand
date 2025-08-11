@@ -1,8 +1,17 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.53.0'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+// Strict, dynamic CORS with an allowlist
+const allowedOrigins = new Set<string>([
+  'http://127.0.0.1:3000',
+  'https://f135fec0-7ff2-4c8c-a0e2-4c5badf6f0b1.lovableproject.com',
+])
+const buildCorsHeaders = (req: Request) => {
+  const origin = req.headers.get('Origin') ?? ''
+  const allowOrigin = allowedOrigins.has(origin) ? origin : 'null'
+  return {
+    'Access-Control-Allow-Origin': allowOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  } as const
 }
 
 interface InvitationFlowRequest {
@@ -12,9 +21,11 @@ interface InvitationFlowRequest {
 }
 
 Deno.serve(async (req) => {
+  const corsHeaders = buildCorsHeaders(req)
+
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: corsHeaders })
   }
 
   try {
@@ -88,7 +99,7 @@ Deno.serve(async (req) => {
       }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Edge function error:', error);
     return new Response(
       JSON.stringify({ 
@@ -97,7 +108,7 @@ Deno.serve(async (req) => {
       }),
       { 
         status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        headers: { ...buildCorsHeaders(req), 'Content-Type': 'application/json' } 
       }
     );
   }

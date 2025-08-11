@@ -35,7 +35,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        console.log('Auth state change:', { event, hasSession: !!session, user: session?.user?.email });
+        console.log('Auth state change:', { event, hasSession: !!session });
         
         // Handle logout events
         if (event === 'SIGNED_OUT') {
@@ -64,7 +64,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('Initial session check:', { hasSession: !!session, user: session?.user?.email });
+      console.log('Initial session check:', { hasSession: !!session });
       
       const isVerified = session?.user?.email_confirmed_at != null;
       

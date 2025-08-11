@@ -1,8 +1,17 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.53.0'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+// Strict, dynamic CORS with an allowlist
+const allowedOrigins = new Set<string>([
+  'http://127.0.0.1:3000',
+  'https://f135fec0-7ff2-4c8c-a0e2-4c5badf6f0b1.lovableproject.com',
+])
+const buildCorsHeaders = (req: Request) => {
+  const origin = req.headers.get('Origin') ?? ''
+  const allowOrigin = allowedOrigins.has(origin) ? origin : 'null'
+  return {
+    'Access-Control-Allow-Origin': allowOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  } as const
 }
 
 interface GrantPartnerAccessRequest {
@@ -11,9 +20,11 @@ interface GrantPartnerAccessRequest {
 }
 
 Deno.serve(async (req) => {
+  const corsHeaders = buildCorsHeaders(req)
+
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: corsHeaders })
   }
 
   try {
@@ -48,21 +59,21 @@ Deno.serve(async (req) => {
     console.log('Granting partner access:', partnerUserId)
 
     // Check if user has an active subscription
-    let userSubscription;
+    let userSubscription
     if (subscriptionId) {
       const { data: subscription, error: subError } = await supabase
         .from('subscriptions')
         .select('*')
         .eq('id', subscriptionId)
         .eq('user_id', user.id)
-        .maybeSingle();
+        .maybeSingle()
 
       if (subError) {
-        console.error('Error fetching subscription:', subError);
-        throw new Error('Failed to verify subscription');
+        console.error('Error fetching subscription:', subError)
+        throw new Error('Failed to verify subscription')
       }
 
-      userSubscription = subscription;
+      userSubscription = subscription
     } else {
       // Find user's active subscription
       const { data: subscription, error: subError } = await supabase
@@ -70,14 +81,14 @@ Deno.serve(async (req) => {
         .select('*')
         .eq('user_id', user.id)
         .in('status', ['trial', 'active'])
-        .maybeSingle();
+        .maybeSingle()
 
       if (subError) {
-        console.error('Error fetching subscription:', subError);
-        throw new Error('Failed to verify subscription');
+        console.error('Error fetching subscription:', subError)
+        throw new Error('Failed to verify subscription')
       }
 
-      userSubscription = subscription;
+      userSubscription = subscription
     }
 
     if (!userSubscription) {
@@ -90,7 +101,7 @@ Deno.serve(async (req) => {
           status: 400, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
-      );
+      )
     }
 
     // Check if partner is already linked to another subscription
@@ -99,11 +110,11 @@ Deno.serve(async (req) => {
       .select('*')
       .eq('partner_user_id', partnerUserId)
       .eq('is_active', true)
-      .maybeSingle();
+      .maybeSingle()
 
     if (partnerSubError) {
-      console.error('Error checking existing partner subscription:', partnerSubError);
-      throw new Error('Failed to check partner subscription status');
+      console.error('Error checking existing partner subscription:', partnerSubError)
+      throw new Error('Failed to check partner subscription status')
     }
 
     if (existingPartnerSub) {
@@ -116,7 +127,7 @@ Deno.serve(async (req) => {
           status: 400, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
-      );
+      )
     }
 
     // Grant partner access
@@ -129,11 +140,11 @@ Deno.serve(async (req) => {
         access_type: 'partner-linked'
       })
       .select()
-      .single();
+      .single()
 
     if (grantError) {
-      console.error('Error granting partner access:', grantError);
-      throw new Error('Failed to grant partner access');
+      console.error('Error granting partner access:', grantError)
+      throw new Error('Failed to grant partner access')
     }
 
     // Create notification for partner
@@ -144,9 +155,9 @@ Deno.serve(async (req) => {
         notification_type: 'partner_access_granted',
         title: 'Premium Access Granted!',
         message: 'Your partner has shared their premium subscription with you. Enjoy all premium features!'
-      });
+      })
 
-    console.log('Successfully granted partner access:', partnerAccess);
+    console.log('Successfully granted partner access:', partnerAccess)
 
     return new Response(
       JSON.stringify({ 
@@ -158,10 +169,10 @@ Deno.serve(async (req) => {
         status: 200, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }
-    );
+    )
 
-  } catch (error) {
-    console.error('Edge function error:', error);
+  } catch (error: any) {
+    console.error('Edge function error:', error)
     return new Response(
       JSON.stringify({ 
         success: false, 
@@ -169,8 +180,8 @@ Deno.serve(async (req) => {
       }),
       { 
         status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        headers: { ...buildCorsHeaders(req), 'Content-Type': 'application/json' } 
       }
-    );
+    )
   }
-});
+})
