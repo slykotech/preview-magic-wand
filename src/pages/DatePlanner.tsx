@@ -236,6 +236,23 @@ export const DatePlanner = () => {
       console.log('Successfully added date:', data);
       setPlannedDates(prev => [data, ...prev]);
       
+      // Notify partner via push
+      try {
+        const partnerId = partnerProfile?.user_id;
+        if (partnerId && partnerId !== user?.id) {
+          await supabase.functions.invoke('send-push', {
+            body: {
+              target_user_id: partnerId,
+              title: 'New date added',
+              body: dataToAdd.title?.trim() ? `${dataToAdd.title} was added to your planner` : 'A new date was added',
+              data: { route: '/date-planner' }
+            }
+          });
+        }
+      } catch (e) {
+        console.warn('send-push date failed (non-blocking):', e);
+      }
+      
       if (!dateData) {
         // Only reset form if this was from the manual form
         setFormData({

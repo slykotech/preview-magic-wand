@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 
@@ -11,6 +11,7 @@ export const usePresence = (coupleId?: string) => {
   const [isUserOnline, setIsUserOnline] = useState(false);
   const [isPartnerOnline, setIsPartnerOnline] = useState(false);
   const { user } = useAuth();
+  const notifiedOnlineRef = useRef(false);
 
   useEffect(() => {
     if (!user) {
@@ -66,6 +67,33 @@ export const usePresence = (coupleId?: string) => {
           // Track the current user's presence
           await channel.track(userStatus);
           setIsUserOnline(true);
+
+          // Notify partner once when coming online
+          if (!notifiedOnlineRef.current) {
+            notifiedOnlineRef.current = true;
+            try {
+              if (coupleId) {
+                const { data: couple } = await supabase
+                  .from('couples')
+                  .select('user1_id, user2_id')
+                  .eq('id', coupleId)
+                  .single();
+                const partnerId = couple ? (couple.user1_id === user.id ? couple.user2_id : couple.user1_id) : null;
+                if (partnerId) {
+                  await supabase.functions.invoke('send-push', {
+                    body: {
+                      target_user_id: partnerId,
+                      title: 'Partner is online',
+                      body: 'Your partner just came online',
+                      data: { route: '/dashboard' }
+                    }
+                  });
+                }
+              }
+            } catch (e) {
+              console.warn('send-push partner-online failed (non-blocking):', e);
+            }
+          }
         }
       });
 
@@ -104,6 +132,7 @@ export const usePresence = (coupleId?: string) => {
       supabase.removeChannel(channel);
       setIsUserOnline(false);
       setIsPartnerOnline(false);
+      notifiedOnlineRef.current = false;
     };
   }, [coupleId, user]);
 

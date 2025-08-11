@@ -460,6 +460,60 @@ export const TestingPanel: React.FC = () => {
             >
               Reset All Data
             </Button>
+
+            <div className="grid grid-cols-2 gap-1">
+              <Button
+                size="sm"
+                onClick={async () => {
+                  setIsLoading(true);
+                  try {
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (!user) {
+                      toast.error('Please login first');
+                      return;
+                    }
+                    await supabase.functions.invoke('send-push', {
+                      body: {
+                        target_user_id: user.id,
+                        title: 'Test Push',
+                        body: 'Hello from Testing Panel',
+                        data: { route: '/dashboard' }
+                      }
+                    });
+                    toast.success('Test push sent');
+                  } catch (e) {
+                    console.error('Test push failed', e);
+                    toast.error('Failed to send test push');
+                  } finally {
+                    setIsLoading(false);
+                  }
+                }}
+                disabled={isLoading}
+                className="w-full text-xs p-1 h-auto"
+              >
+                Send Test Push
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={async () => {
+                  setIsLoading(true);
+                  try {
+                    await supabase.functions.invoke('engagement-notifier');
+                    toast.success('Engagement notifier executed');
+                  } catch (e) {
+                    console.error('Engagement notifier failed', e);
+                    toast.error('Failed to run notifier');
+                  } finally {
+                    setIsLoading(false);
+                  }
+                }}
+                disabled={isLoading}
+                className="w-full text-xs p-1 h-auto"
+              >
+                Run Engagement Notifier
+              </Button>
+            </div>
           </div>
 
           {/* Errors */}
