@@ -657,22 +657,22 @@ const MemoryVault: React.FC = () => {
         />
         
         {/* View Toggle - Repositioned */}
-        <div className="absolute top-6 right-6 z-20 flex border border-border rounded-full p-1 bg-background/80 backdrop-blur-sm">
+        <div className="absolute top-5 right-4 z-20 flex border border-border rounded-full p-0.5 bg-background/80 backdrop-blur-sm">
           <button
             onClick={() => setViewMode('grid')}
-            className={`p-1.5 rounded-full transition-colors ${
+            className={`p-1 rounded-full transition-colors ${
               viewMode === 'grid' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'
             }`}
           >
-            <Grid3X3 size={18} />
+            <Grid3X3 size={14} />
           </button>
           <button
             onClick={() => setViewMode('timeline')}
-            className={`p-1.5 rounded-full transition-colors ${
+            className={`p-1 rounded-full transition-colors ${
               viewMode === 'timeline' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'
             }`}
           >
-            <List size={18} />
+            <List size={14} />
           </button>
         </div>
 
