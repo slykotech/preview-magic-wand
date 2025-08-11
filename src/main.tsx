@@ -11,8 +11,11 @@ if (Capacitor.isNativePlatform()) {
     SplashScreen.hide();
   });
   
-  // Set status bar style for mobile
+  // Set status bar style for mobile and avoid overlap with app content
   import('@capacitor/status-bar').then(({ StatusBar, Style }) => {
+    // Ensure the WebView sits below the OS status bar (prevents header overlap)
+    StatusBar.setOverlaysWebView({ overlay: false });
+    // Keep light content so icons are visible on dark headers
     StatusBar.setStyle({ style: Style.Light });
   }).catch(() => {
     // Status bar plugin not available
