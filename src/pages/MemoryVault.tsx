@@ -685,11 +685,11 @@ const MemoryVault: React.FC = () => {
                 variant={filterType === filter ? "default" : "ghost"}
                 size="sm"
                 onClick={() => setFilterType(filter)}
-                className="capitalize text-sm"
+                className="capitalize text-xs"
               >
-                {filter === 'photos' && <Camera className="h-4 w-4 mr-1" />}
-                {filter === 'notes' && <FileText className="h-4 w-4 mr-1" />}
-                {filter === 'favorites' && <Star className="h-4 w-4 mr-1" />}
+                {filter === 'photos' && <Camera className="h-3 w-3 mr-1" />}
+                {filter === 'notes' && <FileText className="h-3 w-3 mr-1" />}
+                {filter === 'favorites' && <Star className="h-3 w-3 mr-1" />}
                 {filter}
               </Button>
             ))}
