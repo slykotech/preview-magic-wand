@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
+import { Capacitor } from '@capacitor/core';
 
 interface Story {
   id: string;
@@ -47,6 +48,7 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraFileInputRef = useRef<HTMLInputElement>(null);
   const [userStories, setUserStories] = useState<Story[]>([]);
   const [partnerStories, setPartnerStories] = useState<Story[]>([]);
   const [currentStoryIndex, setCurrentStoryIndex] = useState(0);
@@ -278,6 +280,13 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
   };
 
   const startCamera = async () => {
+    // On native mobile (Capacitor), prefer the camera via file input capture for reliability
+    try {
+      if (typeof Capacitor !== 'undefined' && Capacitor.isNativePlatform()) {
+        cameraFileInputRef.current?.click();
+        return;
+      }
+    } catch {}
     try {
       console.log('=== CAMERA ACCESS ATTEMPT ===');
       console.log('Navigator.mediaDevices available:', !!navigator.mediaDevices);
@@ -316,6 +325,8 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
       if (videoRef.current) {
         console.log('Video element found, setting stream...');
         videoRef.current.srcObject = stream;
+        videoRef.current.muted = true;
+        try { videoRef.current.setAttribute('muted', 'true'); } catch {}
         
         // Wait for video to be ready
         await new Promise<void>((resolve, reject) => {
@@ -407,6 +418,8 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
       
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        videoRef.current.muted = true;
+        try { videoRef.current.setAttribute('muted', 'true'); } catch {}
         await videoRef.current.play();
         setShowCamera(true);
         toast.success('Camera is ready with basic settings!');
@@ -595,6 +608,7 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
                 <video
                   ref={videoRef}
                   autoPlay
+                  muted
                   playsInline
                   className="w-full h-72 object-cover bg-gradient-to-br from-muted to-muted/50 transition-all duration-500"
                 />
@@ -640,6 +654,15 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
                   ref={fileInputRef}
                   type="file"
                   accept="image/*"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+                <input
+                  id="story-camera"
+                  ref={cameraFileInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
                   onChange={handleFileSelect}
                   className="hidden"
                 />
