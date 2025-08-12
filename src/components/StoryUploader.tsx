@@ -595,13 +595,13 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
 
           {showCamera ? (
             <div className="space-y-6 animate-fade-in">
-              <div className="relative overflow-hidden rounded-xl border border-border/20 animate-scale-in" style={{ animationDelay: '200ms' }}>
+              <div className="relative overflow-hidden rounded-xl border border-border/20 animate-scale-in bg-black" style={{ animationDelay: '200ms' }}>
                 <video
                   ref={videoRef}
                   autoPlay
                   muted
                   playsInline
-                  className="w-full h-72 object-cover bg-gradient-to-br from-muted to-muted/50 transition-all duration-500"
+                  className="w-full h-72 object-contain bg-black transition-all duration-500"
                 />
                 <canvas ref={canvasRef} className="hidden" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
@@ -690,11 +690,11 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
             </div>
           ) : (
             <div className="space-y-6 animate-fade-in">
-              <div className="relative overflow-hidden rounded-xl border border-border/20 animate-scale-in" style={{ animationDelay: '200ms' }}>
+              <div className="relative overflow-hidden rounded-xl border border-border/20 animate-scale-in bg-black" style={{ animationDelay: '200ms' }}>
                 <img
                   src={URL.createObjectURL(selectedFile)}
                   alt="Selected story"
-                  className="w-full h-72 object-cover transition-all duration-500"
+                  className="w-full h-72 object-contain bg-black transition-all duration-500"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
               </div>
