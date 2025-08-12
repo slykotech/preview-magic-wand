@@ -47,7 +47,7 @@ export const BottomNavigation = () => {
         style={{ height: `calc(${NAV_BAR_HEIGHT}px + env(safe-area-inset-bottom))` }}
       />
       <nav
-        className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-lg border-t border-border z-[100] pointer-events-auto"
+        className="fixed bottom-0 left-0 right-0 bg-white border-t border-border z-[100] pointer-events-auto"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         <div className="flex items-center justify-around py-1 px-2 sm:py-2 sm:px-4 max-w-md mx-auto">
