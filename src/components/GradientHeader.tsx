@@ -46,7 +46,7 @@ export const GradientHeader = ({
             {icon}
           </div>
           <div className="flex-1">
-            <h1 className="text-lg sm:text-xl font-extrabold font-poppins tracking-tight">{title}</h1>
+            <h1 className="text-lg sm:text-xl font-bold font-poppins tracking-tight">{title}</h1>
             <p className="text-white/90 text-xs font-inter font-semibold mt-0.5">
               {subtitle}
             </p>

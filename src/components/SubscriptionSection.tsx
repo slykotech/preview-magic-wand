@@ -33,9 +33,9 @@ const PlanCard = ({
     
     <div className="text-center space-y-3">
       <div>
-        <h3 className="font-poppins font-bold text-lg">{plan.name}</h3>
+        <h3 className="font-poppins font-semibold text-lg">{plan.name}</h3>
         <div className="flex items-baseline justify-center gap-1">
-          <span className="text-2xl font-bold text-primary">{plan.price}</span>
+          <span className="text-2xl font-semibold text-primary">{plan.price}</span>
           <span className="text-muted-foreground">/{plan.period}</span>
         </div>
         {plan.discount && (

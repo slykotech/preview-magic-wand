@@ -80,7 +80,7 @@ export const DateHistory = ({ onClose }: DateHistoryProps) => {
     <Card className="w-full max-w-2xl mx-auto">
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="text-2xl font-extrabold font-poppins flex items-center gap-2">
+          <CardTitle className="text-2xl font-bold font-poppins flex items-center gap-2">
             <Heart className="text-red-500" size={24} />
             Date History
           </CardTitle>
@@ -119,7 +119,7 @@ export const DateHistory = ({ onClose }: DateHistoryProps) => {
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
-                    <h3 className="text-lg font-extrabold font-poppins text-foreground mb-1">
+                    <h3 className="text-lg font-bold font-poppins text-foreground mb-1">
                       {date.title} {getCategoryIcon(date.category)}
                     </h3>
                     <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
