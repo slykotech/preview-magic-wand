@@ -843,12 +843,12 @@ const MemoryVault: React.FC = () => {
 
           <Button 
             size="lg" 
-            className={`bg-primary hover:bg-primary/90 w-16 h-16 rounded-full shadow-lg transition-all duration-300 ${
+            className={`bg-primary hover:bg-primary/90 w-12 h-12 rounded-full shadow-lg transition-all duration-300 ${
               showFabOptions ? 'rotate-45' : 'rotate-0'
             }`}
             onClick={() => setShowFabOptions(!showFabOptions)}
           >
-            <Plus className="h-8 w-8" />
+            <Plus className="h-6 w-6" />
           </Button>
         </div>
 
