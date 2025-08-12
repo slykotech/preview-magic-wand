@@ -510,7 +510,7 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
 
           {/* Caption */}
           {currentStory.caption && (
-            <div className="absolute bottom-20 left-4 right-4 text-white">
+            <div className="absolute bottom-4 left-4 right-4 text-white">
               <p className="text-sm bg-black/50 p-2 rounded">{currentStory.caption}</p>
             </div>
           )}
@@ -567,18 +567,6 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
           </div>
         )}
 
-        {/* Add Story Button for own stories */}
-        {isOwnStory && (
-          <div className="absolute bottom-4 right-4">
-            <Button
-              onClick={() => setShowCreateStory(true)}
-              size="icon"
-              className="rounded-full bg-primary hover:bg-primary/90 shadow-lg"
-            >
-              <Camera className="h-4 w-4" />
-            </Button>
-          </div>
-        )}
       </div>
 
       {/* Delete Confirmation Modal */}
