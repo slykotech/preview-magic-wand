@@ -1144,6 +1144,11 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
               💙 Your partner won! 🏆
             </Badge>
           )}
+          {gameState.game_status === 'draw' && (
+            <Badge className="mx-auto bg-yellow-500 text-white">
+              🤝 It's a Draw! Great match! 💕
+            </Badge>
+          )}
         </CardHeader>
         
         <CardContent>
@@ -1185,10 +1190,24 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
             </div>
           )}
 
-          {/* Winner Celebration */}
+          {/* Winner/Draw Celebration */}
           {showCelebration && (
             <div className="text-center p-6 bg-gradient-to-r from-pink-100 to-purple-100 dark:from-pink-900/30 dark:to-purple-900/30 rounded-lg border-2 border-pink-300 animate-scale-in">
-              {gameState.winner_id === user?.id ? (
+              {gameState.game_status === 'draw' ? (
+                <div className="space-y-3">
+                  <div className="flex justify-center items-center gap-2">
+                    <Heart className="h-6 w-6 text-yellow-500" />
+                    <Sparkles className="h-8 w-8 text-yellow-500" />
+                    <Heart className="h-6 w-6 text-yellow-500" />
+                  </div>
+                  <h3 className="text-xl font-bold text-yellow-700 dark:text-yellow-300">
+                    🤝 It's a Draw! 🤝
+                  </h3>
+                  <p className="text-yellow-600 dark:text-yellow-400">
+                    Great match! You're both equally strategic! 💕✨
+                  </p>
+                </div>
+              ) : gameState.winner_id === user?.id ? (
                 <div className="space-y-3">
                   <div className="flex justify-center items-center gap-2">
                     <Sparkles className="h-6 w-6 text-yellow-500 animate-spin" />
