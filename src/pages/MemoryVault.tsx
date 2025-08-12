@@ -694,15 +694,15 @@ const MemoryVault: React.FC = () => {
         </div>
 
         {/* Filter Tabs */}
-        <div className="bg-background/95 backdrop-blur-sm px-3 py-2 border-b border-border/50 rounded-lg mx-2 mb-4">
-          <div className="flex flex-wrap gap-1.5">
+        <div className="bg-background/95 backdrop-blur-sm px-3 py-2 border-b border-border/50 rounded-lg mx-2 mb-4 overflow-x-auto scrollbar-hide">
+          <div className="flex gap-2 min-w-max">
             {(['all', 'photos', 'notes', 'favorites'] as const).map((filter) => (
               <Button
                 key={filter}
                 variant={filterType === filter ? "default" : "ghost"}
                 size="sm"
                 onClick={() => setFilterType(filter)}
-                className="capitalize text-xs h-7 px-3"
+                className="capitalize text-xs h-7 px-3 whitespace-nowrap flex-shrink-0"
               >
                 {filter === 'photos' && <Camera className="h-3 w-3 mr-1" />}
                 {filter === 'notes' && <FileText className="h-3 w-3 mr-1" />}
