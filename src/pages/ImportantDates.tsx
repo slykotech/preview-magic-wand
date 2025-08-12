@@ -170,7 +170,7 @@ export const ImportantDates = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Gradient Header */}
-      <div className="relative bg-gradient-to-br from-pink-500 via-purple-500 to-indigo-600 overflow-hidden">
+      <div className="relative bg-gradient-to-br from-red-500 via-pink-500 to-rose-600 overflow-hidden">
         {/* Decorative background patterns */}
         <div className="absolute inset-0 opacity-20">
           <div className="absolute top-4 left-4 w-8 h-8 border-2 border-white rounded-full"></div>
