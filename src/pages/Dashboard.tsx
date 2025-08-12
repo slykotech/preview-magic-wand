@@ -565,16 +565,41 @@ export const Dashboard = () => {
   // Separate camera handler for uploading new stories
   const [showUploadInterface, setShowUploadInterface] = useState(false);
   const handleCameraClick = () => {
-    console.log('[Dashboard] Camera button clicked', { userId: user?.id, coupleId });
+    console.log('🎬 [Dashboard] Camera button clicked - START DEBUGGING');
+    console.log('🎬 [Dashboard] User ID:', user?.id);
+    console.log('🎬 [Dashboard] Couple ID:', coupleId);
+    console.log('🎬 [Dashboard] Current showStoryViewer state:', showStoryViewer);
+    console.log('🎬 [Dashboard] Current showUploadInterface state:', showUploadInterface);
+    
     if (user?.id && coupleId) {
+      console.log('🎬 [Dashboard] Setting story states...');
       setStoryTargetUserId(user.id);
+      console.log('🎬 [Dashboard] Set storyTargetUserId to:', user.id);
+      
       setIsOwnStory(true);
-      setShowUploadInterface(true); // Set flag to show upload interface
+      console.log('🎬 [Dashboard] Set isOwnStory to: true');
+      
+      setShowUploadInterface(true);
+      console.log('🎬 [Dashboard] Set showUploadInterface to: true');
+      
       setShowStoryViewer(true);
+      console.log('🎬 [Dashboard] Set showStoryViewer to: true');
+      
+      console.log('🎬 [Dashboard] About to show toast...');
       try {
-        toast({ title: 'Opening story creator…', description: 'If nothing appears, please share Logcat output.' });
-      } catch {}
+        toast({ title: 'Opening story creator…', description: 'Debug: Camera flow initiated successfully' });
+        console.log('🎬 [Dashboard] Toast shown successfully');
+      } catch (error) {
+        console.error('🎬 [Dashboard] Toast error:', error);
+      }
+      
+      console.log('🎬 [Dashboard] Camera click handler completed successfully');
     } else {
+      console.error('🎬 [Dashboard] Missing requirements - User ID or Couple ID');
+      console.log('🎬 [Dashboard] User exists:', !!user);
+      console.log('🎬 [Dashboard] User ID:', user?.id);
+      console.log('🎬 [Dashboard] Couple ID:', coupleId);
+      
       toast({
         title: 'Setup Required',
         description: 'Please complete your couple setup first',

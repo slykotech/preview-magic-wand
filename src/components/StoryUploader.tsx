@@ -19,12 +19,17 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
   onSuccess,
   user
 }) => {
+  console.log('🎥 [StoryUploader] Component rendered with props:', {
+    isOpen,
+    user: user ? { id: user.id, email: user.email } : null
+  });
+
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [caption, setCaption] = useState('');
   const [uploading, setUploading] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const [showCameraOptions, setShowCameraOptions] = useState(false);
+  const [showCameraOptions, setShowCameraOptions] = useState(true); // Start with camera options visible
   const [currentCamera, setCurrentCamera] = useState<'user' | 'environment'>('user'); // front camera by default
   
   const { toast } = useToast();
@@ -384,7 +389,17 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
     setShowEmojiPicker(false);
   };
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    console.log('🎥 [StoryUploader] Component not open, returning null');
+    return null;
+  }
+
+  console.log('🎥 [StoryUploader] Rendering component with states:', {
+    showCamera,
+    showCameraOptions,
+    selectedFile: !!selectedFile,
+    isOpen
+  });
 
   return (
     <div className="fixed inset-0 bg-black/95 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">

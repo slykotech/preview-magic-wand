@@ -60,21 +60,34 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
   const quickEmojis = ['❤️', '😂', '😍', '🔥', '👏', '😢', '😮', '👍'];
 
   useEffect(() => {
-    console.log('StoryViewer useEffect triggered:', { isOpen, showUploadInterface, isOwnStory });
+    console.log('📖 [StoryViewer] useEffect triggered - START DEBUGGING');
+    console.log('📖 [StoryViewer] Props received:', { 
+      isOpen, 
+      showUploadInterface, 
+      isOwnStory, 
+      targetUserId,
+      coupleId 
+    });
+    
     if (isOpen) {
+      console.log('📖 [StoryViewer] StoryViewer is opening...');
       setIsInitialLoad(true);
+      
       // If showUploadInterface is true, immediately show create story interface
       if (showUploadInterface && isOwnStory) {
-        console.log('Showing upload interface immediately');
+        console.log('📖 [StoryViewer] Upload interface requested - showing create story');
         setShowCreateStory(true);
         setIsInitialLoad(false);
+        console.log('📖 [StoryViewer] Set showCreateStory to: true');
         // Don't fetch stories if we're in upload mode
         return;
       } else {
-        console.log('Showing story viewer, fetching stories');
+        console.log('📖 [StoryViewer] Normal story viewer mode - fetching stories');
         setShowCreateStory(false);
         fetchStories();
       }
+    } else {
+      console.log('📖 [StoryViewer] StoryViewer is closed');
     }
   }, [isOpen, targetUserId, showUploadInterface, isOwnStory]);
 
