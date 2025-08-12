@@ -745,13 +745,13 @@ export const Chat: React.FC<ChatProps> = ({
                           {message.message_text}
                         </div>}
                       
-                      {message.message_type !== 'emoji' && message.message_type !== 'sticker' && <div className="mt-2 text-xs opacity-70 text-right">
+                      {message.message_type !== 'emoji' && message.message_type !== 'sticker' && <div className="mt-1.5 text-[10px] opacity-60 text-right">
                           {new Date(message.created_at).toLocaleTimeString('en-US', {
                   hour: 'numeric',
                   minute: '2-digit',
                   hour12: true
                 })}
-                          {isOwn && <span className={`ml-1 ${message.is_read ? 'text-blue-400' : 'text-muted-foreground'}`}>
+                          {isOwn && <span className={`ml-1 text-[9px] ${message.is_read ? 'text-blue-400' : 'text-muted-foreground'}`}>
                               {message.is_read ? '✓✓' : '✓'}
                             </span>}
                         </div>}
