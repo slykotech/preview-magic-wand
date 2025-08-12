@@ -15,7 +15,7 @@ import { useEnhancedSyncScore } from "@/hooks/useEnhancedSyncScore";
 import { usePresence } from "@/hooks/usePresence";
 import { useCardGames } from "@/hooks/useCardGames";
 import { SyncScoreSkeleton, DashboardCardSkeleton, CompactCardSkeleton, MoodDisplaySkeleton } from "@/components/ui/skeleton";
-import { Calendar, Heart, MessageCircle, Sparkles, Clock, Lightbulb, X, Activity, Gamepad2, Play, Trophy } from "lucide-react";
+import { Calendar, Heart, MessageCircle, Sparkles, Clock, Lightbulb, X, Activity, Gamepad2, Play, Trophy, CheckCircle, MapPin, Camera, Star } from "lucide-react";
 import { GradientHeader } from "@/components/GradientHeader";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { format } from "date-fns";
@@ -855,7 +855,7 @@ export const Dashboard = () => {
               {/* Daily Check-in */}
               <div className="bg-card border rounded-xl p-4 text-center cursor-pointer hover:shadow-sm transition-all shadow-sm hover:scale-105 duration-200" onClick={handleCheckinClick}>
                 <div className="w-12 h-12 bg-secondary rounded-full flex items-center justify-center mx-auto mb-3">
-                   <MessageCircle className="text-white" size={24} />
+                   <CheckCircle className="text-white" size={24} />
                 </div>
                 <h3 className="font-semibold text-foreground mb-1">Daily Check-in</h3>
                 <p className="text-xs text-muted-foreground">Keep the streak!</p>
@@ -875,7 +875,7 @@ export const Dashboard = () => {
               {/* Plan Date */}
               <div className="bg-card border rounded-xl p-4 text-center cursor-pointer hover:shadow-sm transition-all shadow-sm hover:scale-105 duration-200" onClick={() => navigate('/dates?tab=suggestions')}>
                 <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center mx-auto mb-3">
-                  <Calendar className="text-white" size={24} />
+                  <MapPin className="text-white" size={24} />
                 </div>
                 <h3 className="font-semibold text-foreground mb-1">Plan Date</h3>
                 <p className="text-xs text-muted-foreground">Create memories</p>
@@ -884,7 +884,7 @@ export const Dashboard = () => {
               {/* Add Memory */}
               <div className="bg-card border rounded-xl p-4 text-center cursor-pointer hover:shadow-sm transition-all shadow-sm hover:scale-105 duration-200" onClick={() => navigate('/vault')}>
                 <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center mx-auto mb-3">
-                  <Sparkles className="text-accent-foreground" size={24} />
+                  <Camera className="text-accent-foreground" size={24} />
                 </div>
                 <h3 className="font-semibold text-foreground mb-1">Add Memory</h3>
                 <p className="text-xs text-muted-foreground">Capture the moment</p>
