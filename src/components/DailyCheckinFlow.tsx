@@ -269,43 +269,43 @@ export const DailyCheckinFlow: React.FC<DailyCheckinFlowProps> = ({
   const renderStepContent = () => {
     switch (step) {
       case 1:
-        return <div className="space-y-6">
+        return <div className="space-y-4">
             <div className="text-center">
-              <h3 className="text-xl font-semibold text-foreground mb-2">How connected did you feel with your partner today?</h3>
-              <p className="text-sm text-muted-foreground">Your emotional connection is the heart of your relationship</p>
+              <h3 className="text-base font-semibold text-foreground mb-2">How connected did you feel with your partner today?</h3>
+              <p className="text-xs text-muted-foreground">Your emotional connection is the heart of your relationship</p>
             </div>
             
-            <div className="space-y-3">
-              {connectionLevels.map(level => <Button key={level.value} variant={connectionLevel === level.value ? "default" : "outline"} className={`w-full flex items-center justify-start p-4 h-auto ${connectionLevel === level.value ? 'bg-secondary text-white border-secondary' : 'hover:bg-muted'}`} onClick={() => setConnectionLevel(level.value)}>
-                  <div className="flex items-center space-x-3">
-                    <span className="text-2xl">{level.emoji}</span>
-                    <div className="text-left">
-                      <div className="font-medium text-base">{level.label}</div>
-                      <div className="text-sm opacity-70">{level.description}</div>
+            <div className="space-y-2">
+              {connectionLevels.map(level => <Button key={level.value} variant={connectionLevel === level.value ? "default" : "outline"} className={`w-full flex items-center justify-start p-2 h-auto text-left ${connectionLevel === level.value ? 'bg-secondary text-white border-secondary' : 'hover:bg-muted'}`} onClick={() => setConnectionLevel(level.value)}>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-lg">{level.emoji}</span>
+                    <div className="text-left flex-1">
+                      <div className="font-medium text-sm">{level.label}</div>
+                      <div className="text-xs opacity-70">{level.description}</div>
                     </div>
                   </div>
                 </Button>)}
             </div>
           </div>;
       case 2:
-        return <div className="space-y-6">
+        return <div className="space-y-4">
             <div className="text-center">
-              <h3 className="text-xl font-semibold text-foreground mb-2">What's one thing you want to do to strengthen your relationship tomorrow?</h3>
-              <p className="text-sm text-muted-foreground">Set an intention for building a stronger connection</p>
+              <h3 className="text-base font-semibold text-foreground mb-2">What's one thing you want to do to strengthen your relationship tomorrow?</h3>
+              <p className="text-xs text-muted-foreground">Set an intention for building a stronger connection</p>
             </div>
             
-            <div className="space-y-4">
+            <div className="space-y-3">
               <div>
-                <Label htmlFor="intention" className="text-sm font-medium">
+                <Label htmlFor="intention" className="text-xs font-medium">
                   Tomorrow's relationship intention *
                 </Label>
-                <Textarea id="intention" placeholder="I want to..." value={tomorrowIntention} onChange={e => setTomorrowIntention(e.target.value)} className="mt-2 min-h-[80px]" />
+                <Textarea id="intention" placeholder="I want to..." value={tomorrowIntention} onChange={e => setTomorrowIntention(e.target.value)} className="mt-1 min-h-[60px] text-sm" />
               </div>
               
               <div className="space-y-2">
                 <p className="text-xs text-muted-foreground font-medium">Need inspiration? Try one of these:</p>
-                <div className="flex flex-wrap gap-2">
-                   {relationshipPrompts.map((prompt, index) => <Button key={index} variant="outline" size="compact" onClick={() => setTomorrowIntention(prompt)}>
+                <div className="flex flex-wrap gap-1">
+                   {relationshipPrompts.map((prompt, index) => <Button key={index} variant="outline" size="sm" className="text-xs h-7 px-2" onClick={() => setTomorrowIntention(prompt)}>
                       {prompt}
                     </Button>)}
                 </div>
@@ -316,28 +316,28 @@ export const DailyCheckinFlow: React.FC<DailyCheckinFlowProps> = ({
         return null;
     }
   };
-  return <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-hidden">
-      <div className="w-full max-w-sm h-auto max-h-[75vh] flex flex-col">
+  return <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-2 z-50 overflow-hidden">
+      <div className="w-full max-w-sm max-h-[90vh] h-fit flex flex-col">
         <Card className="flex-1 flex flex-col overflow-hidden">
           <CardContent className="p-0 flex flex-col h-full">
             {/* Header with streak display - Fixed */}
-            <div className="bg-gradient-romance p-4 text-white flex-shrink-0">
-              <div className="flex items-center justify-between mb-3">
+            <div className="bg-gradient-romance p-3 text-white flex-shrink-0">
+              <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center space-x-2">
-                  <Flame className="text-white" size={20} />
-                  <h2 className="text-base font-bold">Daily Check-in</h2>
+                  <Flame className="text-white" size={18} />
+                  <h2 className="text-sm font-bold">Daily Check-in</h2>
                 </div>
-                <Button variant="ghost" size="sm" onClick={onClose} className="text-white hover:bg-white/20">
+                <Button variant="ghost" size="sm" onClick={onClose} className="text-white hover:bg-white/20 h-8 w-8 p-0">
                   <X size={16} />
                 </Button>
               </div>
               
               {/* Streak Display */}
-              <div className="bg-white/20 rounded-lg p-3">
+              <div className="bg-white/20 rounded-lg p-2">
                 <div className="flex items-center justify-center space-x-2">
-                  <Flame className="text-white" size={24} />
+                  <Flame className="text-white" size={20} />
                   <div className="text-center">
-                    <div className="text-xl font-bold">{currentStreak}</div>
+                    <div className="text-lg font-bold">{currentStreak}</div>
                     <div className="text-xs opacity-90">Day Streak</div>
                   </div>
                 </div>
@@ -347,52 +347,49 @@ export const DailyCheckinFlow: React.FC<DailyCheckinFlowProps> = ({
                     </p>
                   </div>}
               </div>
-
-              {/* Progress Bar */}
-              
             </div>
 
             {/* Content - Scrollable Area */}
-            <div className="flex-1 overflow-y-auto bg-background">
-              <div className="p-4">
+            <div className="flex-1 overflow-y-auto bg-background min-h-0">
+              <div className="p-3">
                 {/* Show warning if already checked in today */}
                 {hasAlreadyCheckedIn ? <div className="text-center space-y-3">
-                    <div className="w-16 h-16 mx-auto bg-green-100 rounded-full flex items-center justify-center">
-                      <div className="text-3xl">✅</div>
+                    <div className="w-12 h-12 mx-auto bg-green-100 rounded-full flex items-center justify-center">
+                      <div className="text-2xl">✅</div>
                     </div>
                     <div className="space-y-2">
-                      <h3 className="text-lg font-semibold text-foreground">You're Already Checked In Today!</h3>
-                      <p className="text-sm text-muted-foreground">
+                      <h3 className="text-base font-semibold text-foreground">You're Already Checked In Today!</h3>
+                      <p className="text-xs text-muted-foreground">
                         You've completed your daily check-in for today. Come back tomorrow to continue your streak!
                       </p>
                     </div>
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-2">
                       <p className="text-xs text-green-700 font-medium">
                         ⏰ Return back tomorrow to check in again
                       </p>
                     </div>
                     <div className="pt-1">
-                      <Button onClick={onClose} className="w-full bg-secondary hover:bg-secondary/90">
+                      <Button onClick={onClose} className="w-full bg-secondary hover:bg-secondary/90 h-9">
                         Got it!
                       </Button>
                     </div>
-                  </div> : isLoading ? <div className="text-center py-8">
-                    <div className="text-muted-foreground">Loading...</div>
+                  </div> : isLoading ? <div className="text-center py-6">
+                    <div className="text-muted-foreground text-sm">Loading...</div>
                   </div> : renderStepContent()}
               </div>
             </div>
 
             {/* Footer - Fixed at bottom */}
             {!hasAlreadyCheckedIn && !isLoading && <div className="flex-shrink-0 border-t bg-background">
-                <div className="p-6">
-                  <div className="flex space-x-3">
-                    {step > 1 && <Button variant="outline" onClick={handlePrevious} className="flex-1">
+                <div className="p-3">
+                  <div className="flex space-x-2">
+                    {step > 1 && <Button variant="outline" onClick={handlePrevious} className="flex-1 h-9 text-sm">
                         Previous
                       </Button>}
                     
-                    {step < totalSteps ? <Button onClick={handleNext} disabled={!canProceed()} className="flex-1 bg-secondary hover:bg-secondary/90">
+                    {step < totalSteps ? <Button onClick={handleNext} disabled={!canProceed()} className="flex-1 bg-secondary hover:bg-secondary/90 h-9 text-sm">
                         Next Step
-                      </Button> : <Button onClick={handleComplete} disabled={!canProceed() || isSubmitting} className="flex-1 bg-secondary hover:bg-secondary/90">
+                      </Button> : <Button onClick={handleComplete} disabled={!canProceed() || isSubmitting} className="flex-1 bg-secondary hover:bg-secondary/90 h-9 text-sm">
                         {isSubmitting ? 'Saving...' : 'Complete Check-in'}
                       </Button>}
                   </div>
