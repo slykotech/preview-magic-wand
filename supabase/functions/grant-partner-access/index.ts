@@ -149,12 +149,12 @@ Deno.serve(async (req) => {
 
     // Create notification for partner
     await supabase
-      .from('subscription_notifications')
+      .from('notifications')
       .insert({
         user_id: partnerUserId,
-        notification_type: 'partner_access_granted',
+        type: 'partner_access_granted',
         title: 'Premium Access Granted!',
-        message: 'Your partner has shared their premium subscription with you. Enjoy all premium features!'
+        body: 'Your partner has shared their premium subscription with you. Enjoy all premium features!'
       })
 
     console.log('Successfully granted partner access:', partnerAccess)

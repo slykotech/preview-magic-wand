@@ -746,6 +746,53 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
     return board.every(row => row.every(cell => cell !== null));
   };
 
+  // Validate and fix board structure if needed
+  const validateBoard = (board: any): Board => {
+    // If board is null or undefined, create empty board
+    if (!board) {
+      return [
+        [null, null, null],
+        [null, null, null], 
+        [null, null, null]
+      ];
+    }
+    
+    // If board is a string (JSONB), parse it
+    if (typeof board === 'string') {
+      try {
+        const parsed = JSON.parse(board);
+        return validateBoard(parsed);
+      } catch {
+        return [
+          [null, null, null],
+          [null, null, null],
+          [null, null, null]
+        ];
+      }
+    }
+    
+    // If board is not an array, create empty board
+    if (!Array.isArray(board)) {
+      return [
+        [null, null, null],
+        [null, null, null],
+        [null, null, null]
+      ];
+    }
+    
+    // Ensure board is 3x3 and has valid values
+    const validBoard: Board = [];
+    for (let i = 0; i < 3; i++) {
+      validBoard[i] = [];
+      for (let j = 0; j < 3; j++) {
+        const cell = board[i]?.[j];
+        validBoard[i][j] = (cell === '💖' || cell === '💘') ? cell : null;
+      }
+    }
+    
+    return validBoard;
+  };
+
   const handleCellClick = async (row: number, col: number) => {
     if (isProcessingMove) {
       console.log('❌ Move already in progress');
@@ -774,8 +821,9 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
       return;
     }
 
-    if (gameState.board[row][col] !== null) {
-      console.log('❌ Cell already occupied:', gameState.board[row][col]);
+    const validatedBoard = validateBoard(gameState.board);
+    if (validatedBoard[row][col] !== null) {
+      console.log('❌ Cell already occupied:', validatedBoard[row][col]);
       toast.error("Cell already taken!");
       console.groupEnd();
       return;
@@ -791,8 +839,9 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
       setIsProcessingMove(true);
       console.log('🎮 ✅ Processing valid move at:', row, col);
 
-      // Create optimistic board update
-      const newBoard = gameState.board.map((r, rowIndex) =>
+      // Create optimistic board update using validated board
+      const validatedBoard = validateBoard(gameState.board);
+      const newBoard = validatedBoard.map((r, rowIndex) =>
         r.map((c, colIndex) => 
           rowIndex === row && colIndex === col ? userSymbol : c
         )
@@ -1020,15 +1069,14 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
     );
   }
 
-  if (!gameState || !gameState.board || !Array.isArray(gameState.board)) {
+
+  if (!gameState) {
     return (
       <div className="space-y-6">
         <Card className="border-primary/20">
           <CardContent className="p-4">
             <div className="text-center">
-              <p className="text-muted-foreground">
-                {!gameState ? 'Failed to load game' : 'Invalid game board'}
-              </p>
+              <p className="text-muted-foreground">Failed to load game</p>
               <Button onClick={onExit} variant="outline" className="mt-2">
                 Exit Game
               </Button>
@@ -1038,6 +1086,10 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
       </div>
     );
   }
+
+  // Ensure board is valid before rendering
+  const validatedBoard = validateBoard(gameState.board);
+  const validatedGameState = { ...gameState, board: validatedBoard };
 
   const isUserTurn = gameState.current_player_id === user?.id;
   const isGameOver = gameState.game_status !== 'playing';
@@ -1118,8 +1170,8 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
                     {getPartnerDisplayName()?.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-background ${
-                  isPartnerOnline ? 'bg-success' : 'bg-muted'
+                <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${
+                  isPartnerOnline ? 'bg-green-500' : 'bg-gray-400'
                 }`}></div>
               </div>
             </div>
@@ -1144,12 +1196,17 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
               💙 Your partner won! 🏆
             </Badge>
           )}
+          {gameState.game_status === 'draw' && (
+            <Badge className="mx-auto bg-yellow-500 text-white">
+              🤝 It's a Draw! Great match! 💕
+            </Badge>
+          )}
         </CardHeader>
         
         <CardContent>
           {/* Game Board Grid */}
           <div className="grid grid-cols-3 gap-2 max-w-[300px] mx-auto mb-6">
-            {gameState.board.map((row, rowIndex) =>
+            {validatedBoard.map((row, rowIndex) =>
               row.map((cell, colIndex) => (
                 <button
                   key={`${rowIndex}-${colIndex}`}
@@ -1185,10 +1242,24 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
             </div>
           )}
 
-          {/* Winner Celebration */}
+          {/* Winner/Draw Celebration */}
           {showCelebration && (
             <div className="text-center p-6 bg-gradient-to-r from-pink-100 to-purple-100 dark:from-pink-900/30 dark:to-purple-900/30 rounded-lg border-2 border-pink-300 animate-scale-in">
-              {gameState.winner_id === user?.id ? (
+              {gameState.game_status === 'draw' ? (
+                <div className="space-y-3">
+                  <div className="flex justify-center items-center gap-2">
+                    <Heart className="h-6 w-6 text-yellow-500" />
+                    <Sparkles className="h-8 w-8 text-yellow-500" />
+                    <Heart className="h-6 w-6 text-yellow-500" />
+                  </div>
+                  <h3 className="text-xl font-bold text-yellow-700 dark:text-yellow-300">
+                    🤝 It's a Draw! 🤝
+                  </h3>
+                  <p className="text-yellow-600 dark:text-yellow-400">
+                    Great match! You're both equally strategic! 💕✨
+                  </p>
+                </div>
+              ) : gameState.winner_id === user?.id ? (
                 <div className="space-y-3">
                   <div className="flex justify-center items-center gap-2">
                     <Sparkles className="h-6 w-6 text-yellow-500 animate-spin" />

@@ -15,8 +15,6 @@ export const usePresence = (coupleId?: string) => {
 
   useEffect(() => {
     if (!user) {
-      setIsUserOnline(false);
-      setIsPartnerOnline(false);
       return;
     }
 
@@ -27,13 +25,7 @@ export const usePresence = (coupleId?: string) => {
       return;
     }
 
-    const channel = supabase.channel(`couple_presence_${coupleId}`, {
-      config: {
-        presence: {
-          key: user.id,
-        },
-      },
-    });
+    const channel = supabase.channel(`couple_presence_${coupleId}`);
 
     // Track user's presence
     const userStatus: PresenceState = {
@@ -45,7 +37,6 @@ export const usePresence = (coupleId?: string) => {
     channel
       .on('presence', { event: 'sync' }, () => {
         const newState = channel.presenceState();
-        console.log('Presence sync:', newState);
         
         // Check if current user is online
         const userPresent = Object.values(newState).some((presences: any) =>
@@ -57,29 +48,24 @@ export const usePresence = (coupleId?: string) => {
         const partnerPresent = Object.values(newState).some((presences: any) =>
           presences.some((presence: any) => presence.user_id !== user.id)
         );
-        console.log('Partner online status:', partnerPresent);
         setIsPartnerOnline(partnerPresent);
       })
-      .on('presence', { event: 'join' }, ({ key, newPresences }) => {
-        console.log('User joined:', key, newPresences);
+      .on('presence', { event: 'join' }, ({ newPresences }) => {
         const joinedUser = newPresences[0];
-        if (joinedUser && joinedUser.user_id !== user.id) {
+        if (joinedUser.user_id !== user.id) {
           setIsPartnerOnline(true);
         }
       })
-      .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
-        console.log('User left:', key, leftPresences);
+      .on('presence', { event: 'leave' }, ({ leftPresences }) => {
         const leftUser = leftPresences[0];
-        if (leftUser && leftUser.user_id !== user.id) {
+        if (leftUser.user_id !== user.id) {
           setIsPartnerOnline(false);
         }
       })
       .subscribe(async (status) => {
-        console.log('Presence channel status:', status);
         if (status === 'SUBSCRIBED') {
           // Track the current user's presence
-          const trackResult = await channel.track(userStatus);
-          console.log('Track result:', trackResult);
+          await channel.track(userStatus);
           setIsUserOnline(true);
 
           // Notify partner once when coming online
@@ -108,9 +94,6 @@ export const usePresence = (coupleId?: string) => {
               console.warn('send-push partner-online failed (non-blocking):', e);
             }
           }
-        } else if (status === 'CLOSED') {
-          setIsUserOnline(false);
-          setIsPartnerOnline(false);
         }
       });
 
