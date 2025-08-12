@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { X, Camera, Upload, Image, Smile } from 'lucide-react';
+import { X, Camera, Upload, Image, Smile, RotateCcw, SwitchCamera } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Capacitor } from '@capacitor/core';
@@ -24,6 +24,8 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
   const [uploading, setUploading] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showCameraOptions, setShowCameraOptions] = useState(false);
+  const [currentCamera, setCurrentCamera] = useState<'user' | 'environment'>('user'); // front camera by default
   
   const { toast } = useToast();
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -65,16 +67,9 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
     return true;
   };
 
-  const startCamera = async () => {
-    console.log('[StoryUploader] Camera button clicked - startCamera function called');
+  const startCamera = async (facingMode: 'user' | 'environment' = currentCamera) => {
+    console.log(`[StoryUploader] Starting camera with facing mode: ${facingMode}`);
     
-    // Skip mobile detection for now to test desktop camera
-    const userAgent = navigator.userAgent;
-    console.log('User agent:', userAgent);
-    
-    // For debugging, let's force desktop camera flow
-    console.log('Forcing desktop camera flow for debugging');
-
     try {
       console.log('=== CAMERA ACCESS ATTEMPT ===');
       
@@ -87,9 +82,13 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
 
       console.log('About to request camera stream...');
       
-      // Step 2: Request camera access with very basic constraints
+      // Step 2: Request camera access with facing mode constraint
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
+        video: {
+          facingMode: facingMode,
+          width: { ideal: 1280, min: 640, max: 1920 },
+          height: { ideal: 720, min: 480, max: 1080 }
+        },
         audio: false 
       });
       
@@ -97,9 +96,13 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
       console.log('Stream active:', stream.active);
       console.log('Video tracks:', stream.getVideoTracks().length);
       
+      // Update current camera state
+      setCurrentCamera(facingMode);
+      
       // Step 3: Show camera UI after we have the stream
       console.log('Setting showCamera to true...');
       setShowCamera(true);
+      setShowCameraOptions(false); // Hide options modal
       
       // Step 4: Wait for video element to be rendered
       console.log('Waiting for video element...');
@@ -176,6 +179,17 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
         await startBasicCamera();
       }
     }
+  };
+
+  const switchCamera = async () => {
+    console.log('Switching camera from', currentCamera, 'to', currentCamera === 'user' ? 'environment' : 'user');
+    const newFacingMode = currentCamera === 'user' ? 'environment' : 'user';
+    
+    // Stop current camera
+    stopCamera();
+    
+    // Start camera with new facing mode
+    await startCamera(newFacingMode);
   };
 
   // Fallback camera access with minimal constraints
@@ -396,6 +410,46 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
             </Button>
           </div>
 
+          {/* Camera Options Modal */}
+          {showCameraOptions && (
+            <div className="space-y-6 animate-fade-in">
+              <div className="text-center">
+                <h3 className="text-lg font-medium mb-4">Choose Camera Option</h3>
+                <div className="grid grid-cols-1 gap-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowCameraOptions(false);
+                      fileInputRef.current?.click();
+                    }}
+                    className="bg-gradient-to-br from-background to-muted/20 hover:from-muted/20 hover:to-muted/40 border-border/50 hover:border-primary/50 transition-all duration-300 hover:scale-105 py-6"
+                  >
+                    <Image className="h-6 w-6 mr-3" />
+                    Choose from Gallery
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    onClick={() => startCamera('user')}
+                    className="bg-gradient-to-br from-background to-muted/20 hover:from-muted/20 hover:to-muted/40 border-border/50 hover:border-primary/50 transition-all duration-300 hover:scale-105 py-6"
+                  >
+                    <Camera className="h-6 w-6 mr-3" />
+                    Take Photo (Front Camera)
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    onClick={() => startCamera('environment')}
+                    className="bg-gradient-to-br from-background to-muted/20 hover:from-muted/20 hover:to-muted/40 border-border/50 hover:border-primary/50 transition-all duration-300 hover:scale-105 py-6"
+                  >
+                    <Camera className="h-6 w-6 mr-3" />
+                    Take Photo (Rear Camera)
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {showCamera ? (
             <div className="space-y-6 animate-fade-in">
               <div className="relative overflow-hidden rounded-xl border border-border/20 animate-scale-in" style={{ animationDelay: '200ms' }}>
@@ -409,10 +463,25 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
                 <canvas ref={canvasRef} className="hidden" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
                 
+                {/* Camera controls overlay */}
+                <div className="absolute top-4 right-4 z-10">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={switchCamera}
+                    className="bg-black/20 text-white hover:bg-black/40 rounded-full"
+                  >
+                    <SwitchCamera className="h-5 w-5" />
+                  </Button>
+                </div>
+                
                 {/* Camera overlay with smooth pulse animation */}
                 <div className="absolute inset-0 pointer-events-none">
                   <div className="absolute top-4 left-4 w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
                   <div className="absolute top-4 left-4 w-3 h-3 bg-red-500/50 rounded-full animate-ping"></div>
+                  <div className="absolute top-8 left-4 text-xs text-white bg-black/50 px-2 py-1 rounded">
+                    {currentCamera === 'user' ? 'Front Camera' : 'Rear Camera'}
+                  </div>
                 </div>
               </div>
               
@@ -483,15 +552,15 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
                 <Button
                   variant="outline"
                   onClick={(e) => {
-                    console.log('[StoryUploader] Take Photo button clicked - initiating camera');
+                    console.log('[StoryUploader] Camera button clicked - showing options');
                     e.preventDefault();
                     e.stopPropagation();
-                    startCamera();
+                    setShowCameraOptions(true);
                   }}
                   className="bg-gradient-to-br from-background to-muted/20 hover:from-muted/20 hover:to-muted/40 border-border/50 hover:border-primary/50 transition-all duration-300 hover:scale-105"
                 >
                   <Camera className="h-4 w-4 mr-2" />
-                  Take Photo
+                  Camera
                 </Button>
               </div>
             </div>
