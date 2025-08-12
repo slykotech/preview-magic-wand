@@ -67,7 +67,6 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
 
   const startCamera = async () => {
     console.log('[StoryUploader] Camera button clicked - startCamera function called');
-    alert('Camera button clicked - debugging'); // Debug alert
     
     // Skip mobile detection for now to test desktop camera
     const userAgent = navigator.userAgent;
@@ -78,12 +77,6 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
 
     try {
       console.log('=== CAMERA ACCESS ATTEMPT ===');
-      console.log('Navigator.mediaDevices available:', !!navigator.mediaDevices);
-      console.log('getUserMedia available:', !!navigator.mediaDevices?.getUserMedia);
-      console.log('Current URL:', window.location.href);
-      console.log('User agent:', navigator.userAgent);
-      console.log('Video ref available:', !!videoRef.current);
-      console.log('showCamera state before:', showCamera);
       
       // Step 1: Check basic camera support
       if (!checkCameraSupport()) {
@@ -92,60 +85,54 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
       }
       console.log('Camera support check passed');
 
-      // Step 2: Request camera access FIRST - this will trigger the permission prompt
-      console.log('Requesting camera stream...');
+      console.log('About to request camera stream...');
+      
+      // Step 2: Request camera access with very basic constraints
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { 
-          facingMode: 'user',
-          width: { ideal: 1280, min: 640, max: 1920 },
-          height: { ideal: 720, min: 480, max: 1080 }
-        }, 
+        video: true,
         audio: false 
       });
       
-      console.log('Camera stream obtained successfully');
+      console.log('✅ Camera stream obtained successfully!', stream);
+      console.log('Stream active:', stream.active);
+      console.log('Video tracks:', stream.getVideoTracks().length);
       
-      // Step 3: Only show camera UI AFTER we have the stream
+      // Step 3: Show camera UI after we have the stream
+      console.log('Setting showCamera to true...');
       setShowCamera(true);
       
       // Step 4: Wait for video element to be rendered
-      await new Promise(resolve => setTimeout(resolve, 150));
+      console.log('Waiting for video element...');
+      await new Promise(resolve => setTimeout(resolve, 300));
       
-      // Step 5: Set up video element
-      console.log('Setting up video element, videoRef available:', !!videoRef.current);
+      console.log('Video ref current:', !!videoRef.current);
       if (videoRef.current) {
-        console.log('Video element found, setting stream...');
+        console.log('📹 Connecting stream to video element...');
         videoRef.current.srcObject = stream;
         videoRef.current.muted = true;
+        videoRef.current.setAttribute('muted', 'true');
         
-        // Ensure muted attribute is set for mobile compatibility
-        try {
-          videoRef.current.setAttribute('muted', 'true');
-        } catch (e) {
-          console.warn('Could not set muted attribute:', e);
-        }
-        
-        // Wait for video to be ready and start playing
+        console.log('Starting video playback...');
         await videoRef.current.play();
-        console.log('Camera video started playing');
+        console.log('✅ Video playing successfully!');
         
         toast({
           title: "Camera ready! 📸",
-          description: "Position yourself and click 'Capture' to take a photo."
+          description: "Camera is working!"
         });
       } else {
-        console.error('Video element not found! videoRef.current is null');
+        console.error('❌ Video element not found after waiting!');
         // Clean up the stream if video element failed
         stream.getTracks().forEach(track => track.stop());
         setShowCamera(false);
         toast({
-          title: "Camera setup failed",
-          description: "Video element not available",
+          title: "Video element missing",
+          description: "Could not find video element",
           variant: "destructive"
         });
       }
     } catch (error: any) {
-      console.error('Camera access error:', error);
+      console.error('❌ Camera access error:', error);
       setShowCamera(false); // Ensure camera UI is hidden on any error
       
       // Enhanced error handling with specific solutions
