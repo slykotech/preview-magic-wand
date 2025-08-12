@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { X, Camera, Upload, Image, Smile, RotateCcw, SwitchCamera } from 'lucide-react';
+import { X, Camera, Upload, Image, Smile, RotateCcw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Capacitor } from '@capacitor/core';
@@ -431,18 +431,18 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
             </Button>
           </div>
 
-          {/* Camera Options Modal - Tab-based Interface */}
+          {/* Simple Upload and Camera Options */}
           {(showCameraOptions || (!selectedFile && !showCamera)) && (
             <div className="space-y-6 animate-fade-in">
               <div className="text-center">
-                <h3 className="text-lg font-medium mb-6">Choose Camera Option</h3>
+                <h3 className="text-lg font-medium mb-6">Share Your Story</h3>
                 
-                {/* Tab Layout */}
-                <div className="bg-muted/20 rounded-lg p-2 space-y-3">
+                {/* Simple Two-Button Layout */}
+                <div className="grid grid-cols-2 gap-4">
                   <Button
                     variant="outline"
                     onClick={() => {
-                      console.log('🖼️ [StoryUploader] Gallery button clicked');
+                      console.log('🖼️ [StoryUploader] Upload button clicked');
                       setShowCameraOptions(false);
                       if (fileInputRef.current) {
                         console.log('🖼️ [StoryUploader] Triggering file input click');
@@ -456,54 +456,29 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
                         });
                       }
                     }}
-                    className="w-full h-16 bg-gradient-to-br from-background to-muted/20 hover:from-muted/20 hover:to-muted/40 border-border/50 hover:border-primary/50 transition-all duration-300 hover:scale-[1.02] shadow-sm hover:shadow-md"
+                    className="h-24 bg-gradient-to-br from-background to-muted/20 hover:from-muted/20 hover:to-muted/40 border-border/50 hover:border-primary/50 transition-all duration-300 hover:scale-[1.02] shadow-sm hover:shadow-md"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-primary/10 rounded-lg">
-                        <Image className="h-6 w-6 text-primary" />
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="p-3 bg-primary/10 rounded-xl">
+                        <Upload className="h-8 w-8 text-primary" />
                       </div>
-                      <div className="text-left">
-                        <div className="font-medium">Choose from Gallery</div>
-                        <div className="text-xs text-muted-foreground">Select an existing photo</div>
-                      </div>
+                      <div className="text-sm font-medium">Upload Photo</div>
                     </div>
                   </Button>
                   
                   <Button
                     variant="outline"
                     onClick={() => {
-                      console.log('📷 [StoryUploader] Front camera button clicked');
-                      startCamera('user');
+                      console.log('📷 [StoryUploader] Camera button clicked');
+                      startCamera('user'); // Start with front camera by default
                     }}
-                    className="w-full h-16 bg-gradient-to-br from-background to-muted/20 hover:from-muted/20 hover:to-muted/40 border-border/50 hover:border-primary/50 transition-all duration-300 hover:scale-[1.02] shadow-sm hover:shadow-md"
+                    className="h-24 bg-gradient-to-br from-background to-muted/20 hover:from-muted/20 hover:to-muted/40 border-border/50 hover:border-primary/50 transition-all duration-300 hover:scale-[1.02] shadow-sm hover:shadow-md"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-primary/10 rounded-lg">
-                        <Camera className="h-6 w-6 text-primary" />
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="p-3 bg-primary/10 rounded-xl">
+                        <Camera className="h-8 w-8 text-primary" />
                       </div>
-                      <div className="text-left">
-                        <div className="font-medium">Take Photo (Front Camera)</div>
-                        <div className="text-xs text-muted-foreground">Perfect for selfies</div>
-                      </div>
-                    </div>
-                  </Button>
-                  
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      console.log('📷 [StoryUploader] Rear camera button clicked');
-                      startCamera('environment');
-                    }}
-                    className="w-full h-16 bg-gradient-to-br from-background to-muted/20 hover:from-muted/20 hover:to-muted/40 border-border/50 hover:border-primary/50 transition-all duration-300 hover:scale-[1.02] shadow-sm hover:shadow-md"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-primary/10 rounded-lg">
-                        <Camera className="h-6 w-6 text-primary" />
-                      </div>
-                      <div className="text-left">
-                        <div className="font-medium">Take Photo (Rear Camera)</div>
-                        <div className="text-xs text-muted-foreground">Capture the moment</div>
-                      </div>
+                      <div className="text-sm font-medium">Take Photo</div>
                     </div>
                   </Button>
                 </div>
@@ -524,16 +499,23 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
                 <canvas ref={canvasRef} className="hidden" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
                 
-                {/* Camera controls overlay */}
-                <div className="absolute top-4 right-4 z-10">
+                {/* Camera controls overlay - Enhanced rotation options */}
+                <div className="absolute top-4 right-4 z-10 flex gap-2">
+                  {/* Camera switch button with current camera indicator */}
                   <Button
                     variant="ghost"
                     size="icon"
                     onClick={switchCamera}
-                    className="bg-black/20 text-white hover:bg-black/40 rounded-full"
+                    className="bg-black/30 text-white hover:bg-black/50 rounded-full backdrop-blur-sm border border-white/20 transition-all duration-300 hover:scale-110"
+                    title={`Switch to ${currentCamera === 'user' ? 'rear' : 'front'} camera`}
                   >
-                    <SwitchCamera className="h-5 w-5" />
+                    <RotateCcw className="h-5 w-5" />
                   </Button>
+                  
+                  {/* Current camera indicator */}
+                  <div className="bg-black/30 text-white px-3 py-2 rounded-full text-xs backdrop-blur-sm border border-white/20">
+                    {currentCamera === 'user' ? '🤳 Front' : '📷 Rear'}
+                  </div>
                 </div>
                 
                 {/* Camera overlay with smooth pulse animation */}
