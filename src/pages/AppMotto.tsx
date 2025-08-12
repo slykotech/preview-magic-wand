@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Heart, Sparkles, Shield, Users, ArrowRight, Star } from "lucide-react";
+import { Heart, Sparkles, Shield, Users, ArrowRight, Star, Gamepad2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -33,6 +33,13 @@ const AppMottoPage = ({ onNext, onBack }: AppMottoProps) => {
       subtitle: "Turn ordinary days into extraordinary memories",
       description: "From spontaneous date ideas to thoughtful check-ins, we help you discover magic in everyday moments together.",
       feature: "Smart date planning & memory tracking"
+    },
+    {
+      icon: <Gamepad2 size={48} className="text-primary" />,
+      title: "Play & Connect",
+      subtitle: "Fun games that bring you closer",
+      description: "Discover each other through interactive card games, challenges, and playful activities designed to spark conversations and create lasting memories.",
+      feature: "Interactive relationship games"
     },
     {
       icon: <Users size={48} className="text-primary" />,

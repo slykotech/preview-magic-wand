@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { LoveSyncLogo } from "@/components/LoveSyncLogo";
-import { Heart, Sparkles, Calendar, Camera } from "lucide-react";
+import { Heart, Sparkles, Calendar, Camera, Gamepad2 } from "lucide-react";
 const Index = () => {
   const {
     user,
@@ -86,6 +86,14 @@ const Index = () => {
               <h3 className="font-semibold text-white">Connection Check-In</h3>
             </div>
             
+          </div>
+          <div className="flex items-center gap-4 p-4 bg-white/20 rounded-2xl backdrop-blur-sm">
+            <div className="w-10 h-10 bg-white/30 rounded-xl flex items-center justify-center">
+              <Gamepad2 className="text-white" size={20} />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-white">Fun Couple Games</h3>
+            </div>
           </div>
           <div className="flex items-center gap-4 p-4 bg-white/20 rounded-2xl backdrop-blur-sm">
             
