@@ -808,28 +808,30 @@ export const Dashboard = () => {
         }}>
           {isLoaded ? <>
               {/* Last Check-in Card - Compact */}
-              <div className="bg-card border rounded-lg p-3 shadow-sm cursor-pointer hover:shadow-md transition-all hover:scale-105 duration-200" onClick={() => setShowCheckinInsights(true)}>
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                    <Heart className="text-primary-foreground" size={16} />
+              <div className="bg-card border rounded-xl p-4 shadow-sm cursor-pointer hover:shadow-md transition-all hover:scale-105 duration-200" onClick={() => setShowCheckinInsights(true)}>
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                    <Heart className="text-primary-foreground" size={18} />
                   </div>
-                  <div className="flex-1 space-y-1">
-                    <p className="text-xs text-muted-foreground">Last Check-in</p>
-                    <p className="text-xs font-medium">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-muted-foreground font-medium mb-1">Last Check-in</p>
+                    <p className="text-sm font-semibold text-foreground mb-2">
                       {lastCheckin ? format(new Date(lastCheckin.checkin_date), 'd MMMM') : '28 July'}
                     </p>
-                    {lastCheckin && <div className="space-y-1">
-                        
-                        {lastCheckin.energy_level && <p className="text-xs text-muted-foreground">
-                            Energy: <span className="text-foreground font-medium">{lastCheckin.energy_level}/10</span>
-                          </p>}
-                        {lastCheckin.relationship_feeling && <p className="text-xs text-muted-foreground">
-                            Feeling: <span className="text-foreground font-medium">{lastCheckin.relationship_feeling}</span>
-                          </p>}
-                      </div>}
+                    {lastCheckin && lastCheckin.relationship_feeling && (
+                      <div className="space-y-1">
+                        <p className="text-xs text-muted-foreground">
+                          Feeling: <span className="text-foreground font-medium capitalize">{lastCheckin.relationship_feeling.replace(/_/g, ' ')}</span>
+                        </p>
+                      </div>
+                    )}
+                    {lastCheckin && lastCheckin.energy_level && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Energy: <span className="text-foreground font-medium">{lastCheckin.energy_level}/10</span>
+                      </p>
+                    )}
                   </div>
                 </div>
-                
               </div>
 
               {/* Relationship Health Card - Dynamic */}
