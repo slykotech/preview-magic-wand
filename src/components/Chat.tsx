@@ -654,7 +654,7 @@ export const Chat: React.FC<ChatProps> = ({
       {/* Debug info */}
       <div className="hidden">Chat component mounted - input should be visible</div>
       {/* Header */}
-      <div className="bg-primary text-primary-foreground p-2 sm:p-3 flex items-center gap-2 sm:gap-3 shadow-lg flex-shrink-0 safe-top">
+      <div className="bg-primary text-primary-foreground p-2 sm:p-3 flex items-center gap-2 sm:gap-3 shadow-lg flex-shrink-0" style={{ paddingTop: 'max(env(safe-area-inset-top, 8px), 8px)' }}>
         <Button variant="ghost" size="sm" onClick={onClose} className="text-primary-foreground hover:bg-primary-foreground/20 h-8 w-8 p-0 rounded-full">
           <ArrowLeft className="h-4 w-4" />
         </Button>
