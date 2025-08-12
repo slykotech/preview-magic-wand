@@ -861,8 +861,8 @@ export const Dashboard = () => {
 
               {/* Weekly Planning */}
               <div className="bg-card border rounded-xl p-4 text-center cursor-pointer hover:shadow-sm transition-all shadow-sm hover:scale-105 duration-200" onClick={() => navigate('/dates')}>
-                <div className="w-12 h-12 bg-secondary rounded-full flex items-center justify-center mx-auto mb-3">
-                   <Calendar className="text-secondary-foreground" size={24} />
+                <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center mx-auto mb-3">
+                   <Calendar className="text-primary-foreground" size={24} />
                 </div>
                 <h3 className="font-semibold text-foreground mb-1">Dates Planned</h3>
                 <p className="text-xs text-muted-foreground">
@@ -881,8 +881,8 @@ export const Dashboard = () => {
 
               {/* Add Memory */}
               <div className="bg-card border rounded-xl p-4 text-center cursor-pointer hover:shadow-sm transition-all shadow-sm hover:scale-105 duration-200" onClick={() => navigate('/vault')}>
-                <div className="w-12 h-12 bg-secondary rounded-full flex items-center justify-center mx-auto mb-3">
-                  <Camera className="text-secondary-foreground" size={24} />
+                <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center mx-auto mb-3">
+                  <Camera className="text-primary-foreground" size={24} />
                 </div>
                 <h3 className="font-semibold text-foreground mb-1">Add Memory</h3>
                 <p className="text-xs text-muted-foreground">Capture the moment</p>
