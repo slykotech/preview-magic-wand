@@ -1100,7 +1100,7 @@ export const DatePlanner = () => {
 
         {/* Date Details Modal */}
         <Dialog open={!!selectedDateForDetails} onOpenChange={() => setSelectedDateForDetails(null)}>
-          <DialogContent className="max-w-md w-[95vw] max-h-[90vh] overflow-y-auto rounded-2xl p-0 gap-0">
+          <DialogContent className="max-w-sm w-[90vw] max-h-[90vh] overflow-y-auto overflow-x-hidden rounded-2xl p-0 gap-0">
             <div className="p-4 border-b">
               <DialogTitle className="flex items-center gap-2 text-lg">
                 <Heart className="h-5 w-5 text-primary" />
@@ -1109,10 +1109,10 @@ export const DatePlanner = () => {
             </div>
             
             {selectedDateForDetails && (
-              <div className="p-4 space-y-4">
+              <div className="p-3 space-y-3 overflow-hidden">
                 {/* Title Section */}
-                <div className="text-center p-3 bg-primary/10 rounded-xl">
-                  <h3 className="text-base font-bold text-primary mb-1">{selectedDateForDetails.title}</h3>
+                <div className="text-center p-2 bg-primary/10 rounded-lg">
+                  <h3 className="text-sm font-bold text-primary mb-1 break-words hyphens-auto">{selectedDateForDetails.title}</h3>
                   <Badge variant="outline" className="text-xs">
                     {selectedDateForDetails.category?.charAt(0).toUpperCase() + selectedDateForDetails.category?.slice(1)}
                   </Badge>
@@ -1120,27 +1120,27 @@ export const DatePlanner = () => {
 
                 {/* Description */}
                 {selectedDateForDetails.description && (
-                  <div className="p-3 bg-card rounded-xl border">
-                    <h4 className="font-medium text-sm mb-2 text-foreground">Description</h4>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{selectedDateForDetails.description}</p>
+                  <div className="p-2 bg-card rounded-lg border w-full overflow-hidden">
+                    <h4 className="font-medium text-xs mb-1 text-foreground">Description</h4>
+                    <p className="text-xs text-muted-foreground leading-relaxed break-words whitespace-pre-wrap word-wrap overflow-wrap-anywhere">{selectedDateForDetails.description}</p>
                   </div>
                 )}
 
                 {/* Date & Time */}
                 {(selectedDateForDetails.scheduled_date || selectedDateForDetails.scheduled_time) && (
-                  <div className="p-3 bg-card rounded-xl border">
-                    <h4 className="font-medium text-sm mb-2 text-foreground flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-primary" />
+                  <div className="p-2 bg-card rounded-lg border w-full overflow-hidden">
+                    <h4 className="font-medium text-xs mb-1 text-foreground flex items-center gap-1">
+                      <Calendar className="h-3 w-3 text-primary flex-shrink-0" />
                       When
                     </h4>
                     <div className="space-y-1">
                       {selectedDateForDetails.scheduled_date && (
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-xs text-muted-foreground break-words">
                           Date: {new Date(selectedDateForDetails.scheduled_date).toLocaleDateString()}
                         </p>
                       )}
                       {selectedDateForDetails.scheduled_time && (
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-xs text-muted-foreground break-words">
                           Time: {selectedDateForDetails.scheduled_time}
                         </p>
                       )}
@@ -1150,34 +1150,34 @@ export const DatePlanner = () => {
 
                 {/* Location */}
                 {selectedDateForDetails.location && (
-                  <div className="p-3 bg-card rounded-xl border">
-                    <h4 className="font-medium text-sm mb-2 text-foreground flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-primary" />
+                  <div className="p-2 bg-card rounded-lg border w-full overflow-hidden">
+                    <h4 className="font-medium text-xs mb-1 text-foreground flex items-center gap-1">
+                      <MapPin className="h-3 w-3 text-primary flex-shrink-0" />
                       Location
                     </h4>
-                    <p className="text-sm text-muted-foreground break-words">{selectedDateForDetails.location}</p>
+                    <p className="text-xs text-muted-foreground break-words whitespace-pre-wrap word-wrap overflow-wrap-anywhere">{selectedDateForDetails.location}</p>
                   </div>
                 )}
 
                 {/* Cost & Duration */}
                 {(selectedDateForDetails.estimated_cost || selectedDateForDetails.estimated_duration) && (
-                  <div className="grid grid-cols-1 gap-3">
+                  <div className="space-y-2">
                     {selectedDateForDetails.estimated_cost && (
-                      <div className="p-3 bg-card rounded-xl border">
-                        <h4 className="font-medium text-sm mb-1 text-foreground flex items-center gap-2">
-                          <DollarSign className="h-4 w-4 text-primary" />
+                      <div className="p-2 bg-card rounded-lg border w-full overflow-hidden">
+                        <h4 className="font-medium text-xs mb-1 text-foreground flex items-center gap-1">
+                          <DollarSign className="h-3 w-3 text-primary flex-shrink-0" />
                           Cost
                         </h4>
-                        <p className="text-sm text-muted-foreground">{selectedDateForDetails.estimated_cost}</p>
+                        <p className="text-xs text-muted-foreground break-words">{selectedDateForDetails.estimated_cost}</p>
                       </div>
                     )}
                     {selectedDateForDetails.estimated_duration && (
-                      <div className="p-3 bg-card rounded-xl border">
-                        <h4 className="font-medium text-sm mb-1 text-foreground flex items-center gap-2">
-                          <Clock className="h-4 w-4 text-primary" />
+                      <div className="p-2 bg-card rounded-lg border w-full overflow-hidden">
+                        <h4 className="font-medium text-xs mb-1 text-foreground flex items-center gap-1">
+                          <Clock className="h-3 w-3 text-primary flex-shrink-0" />
                           Duration
                         </h4>
-                        <p className="text-sm text-muted-foreground">{selectedDateForDetails.estimated_duration}</p>
+                        <p className="text-xs text-muted-foreground break-words">{selectedDateForDetails.estimated_duration}</p>
                       </div>
                     )}
                   </div>
@@ -1185,14 +1185,14 @@ export const DatePlanner = () => {
 
                 {/* Notes */}
                 {selectedDateForDetails.notes && (
-                  <div className="p-3 bg-card rounded-xl border">
-                    <h4 className="font-medium text-sm mb-2 text-foreground">Notes</h4>
-                    <p className="text-sm text-muted-foreground leading-relaxed break-words">{selectedDateForDetails.notes}</p>
+                  <div className="p-2 bg-card rounded-lg border w-full overflow-hidden">
+                    <h4 className="font-medium text-xs mb-1 text-foreground">Notes</h4>
+                    <p className="text-xs text-muted-foreground leading-relaxed break-words whitespace-pre-wrap word-wrap overflow-wrap-anywhere">{selectedDateForDetails.notes}</p>
                   </div>
                 )}
 
                 {/* Action Buttons */}
-                <div className="flex flex-col gap-2 pt-3 border-t">
+                <div className="flex flex-col gap-2 pt-2 border-t">
                   <div className="flex gap-2">
                     <Button 
                       size="sm" 
@@ -1201,9 +1201,9 @@ export const DatePlanner = () => {
                         handleDateFeedback(selectedDateForDetails.id, true);
                         setSelectedDateForDetails(null);
                       }}
-                      className="flex-1 h-8 text-xs"
+                      className="flex-1 h-7 text-xs px-2"
                     >
-                      ✅ We did this!
+                      ✅ Did this!
                     </Button>
                     <Button 
                       size="sm" 
@@ -1212,9 +1212,9 @@ export const DatePlanner = () => {
                         handleDateFeedback(selectedDateForDetails.id, false);
                         setSelectedDateForDetails(null);
                       }}
-                      className="flex-1 h-8 text-xs text-red-600 hover:text-red-700"
+                      className="flex-1 h-7 text-xs px-2 text-red-600 hover:text-red-700"
                     >
-                      ❌ Skip this
+                      ❌ Skip
                     </Button>
                   </div>
                   <div className="flex gap-2">
@@ -1225,15 +1225,15 @@ export const DatePlanner = () => {
                         handleEditDate(selectedDateForDetails);
                         setSelectedDateForDetails(null);
                       }}
-                      className="flex-1 h-8 text-xs"
+                      className="flex-1 h-7 text-xs px-2"
                     >
-                      ✏️ Edit Date
+                      ✏️ Edit
                     </Button>
                     <Button 
                       variant="outline" 
                       size="sm"
                       onClick={() => setSelectedDateForDetails(null)}
-                      className="flex-1 h-8 text-xs"
+                      className="flex-1 h-7 text-xs px-2"
                     >
                       Close
                     </Button>
