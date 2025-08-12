@@ -8,7 +8,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
-import { CalendarIcon, Plus, Trash2, ArrowLeft } from "lucide-react";
+import { CalendarIcon, Plus, Trash2, ArrowLeft, Heart } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -168,26 +168,53 @@ export const ImportantDates = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      {/* Header */}
-      <div className="flex items-center gap-4 mb-6">
-        <Button 
-          variant="ghost" 
-          size="icon"
-          onClick={() => navigate('/profile')}
-          className="rounded-full"
-        >
-          <ArrowLeft size={20} />
-        </Button>
-        <div>
-          <h1 className="text-2xl font-extrabold font-poppins text-foreground">
-            LoveLog: Dates That Matter
-          </h1>
-          <p className="text-muted-foreground font-inter text-sm font-semibold">
-            Keep track of anniversaries, birthdays, and special moments
-          </p>
+    <div className="min-h-screen bg-background">
+      {/* Gradient Header */}
+      <div className="relative bg-gradient-to-br from-pink-500 via-purple-500 to-indigo-600 overflow-hidden">
+        {/* Decorative background patterns */}
+        <div className="absolute inset-0 opacity-20">
+          <div className="absolute top-4 left-4 w-8 h-8 border-2 border-white rounded-full"></div>
+          <div className="absolute top-16 right-8 w-4 h-4 bg-white rounded-full"></div>
+          <div className="absolute bottom-8 left-12 w-6 h-6 border-2 border-white rotate-45"></div>
+          <div className="absolute top-8 right-16 w-3 h-3 bg-white rounded-full"></div>
+        </div>
+        
+        {/* Floating hearts */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <Heart className="absolute top-12 left-1/4 w-4 h-4 text-white/30 animate-float-love" />
+          <Heart className="absolute bottom-16 right-1/3 w-5 h-5 text-white/20 animate-float-love" style={{ animationDelay: '1s' }} />
+          <Heart className="absolute top-20 right-1/4 w-3 h-3 text-white/40 animate-float-love" style={{ animationDelay: '2s' }} />
+        </div>
+
+        <div className="relative p-6 pt-8 pb-8">
+          <div className="flex items-center gap-4">
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => navigate('/profile')}
+              className="rounded-full bg-white/10 hover:bg-white/20 text-white border-white/20"
+            >
+              <ArrowLeft size={20} />
+            </Button>
+            
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center">
+                <CalendarIcon className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-extrabold font-poppins text-white">
+                  LoveLog
+                </h1>
+                <p className="text-white/80 font-inter text-sm font-medium">
+                  Dates That Matter ❤️
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
+
+      <div className="p-6">
 
       {/* Add New Date Button */}
       <div className="mb-6">
@@ -363,6 +390,7 @@ export const ImportantDates = () => {
         >
           Go to Dashboard
         </Button>
+      </div>
       </div>
     </div>
   );
