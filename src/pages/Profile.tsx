@@ -42,7 +42,7 @@ const ProfileMenuItem = ({ icon, title, subtitle, onClick, variant = 'default' }
         {icon}
       </div>
       <div>
-        <h3 className={`font-poppins font-bold ${
+        <h3 className={`font-semibold ${
           variant === 'danger' ? 'text-destructive' : 'text-foreground'
         }`}>
           {title}
@@ -254,7 +254,7 @@ export const Profile = () => {
       <div className="p-6 space-y-6">
         {/* Personal Section */}
         <div className="space-y-2">
-          <h2 className="text-lg font-extrabold font-poppins text-foreground mb-4">Personal</h2>
+          <h2 className="text-lg font-bold text-foreground mb-4">Personal</h2>
           <div className="bg-card rounded-2xl p-2 shadow-soft">
             <ProfileMenuItem
               icon={<User size={20} />}
@@ -273,7 +273,7 @@ export const Profile = () => {
 
         {/* Progress Section */}
         <div className="space-y-2">
-          <h2 className="text-lg font-extrabold font-poppins text-foreground mb-4">Progress</h2>
+          <h2 className="text-lg font-bold text-foreground mb-4">Progress</h2>
           <div className="bg-card rounded-2xl p-2 shadow-soft">
             <ProfileMenuItem
               icon={<Award size={20} />}
@@ -292,7 +292,7 @@ export const Profile = () => {
 
         {/* Subscription Section */}
         <div className="space-y-2">
-          <h2 className="text-lg font-extrabold font-poppins text-foreground mb-4">
+          <h2 className="text-lg font-bold text-foreground mb-4">
             <Crown className="inline w-5 h-5 mr-2 text-primary" />
             Subscription
           </h2>
@@ -301,7 +301,7 @@ export const Profile = () => {
 
         {/* Settings Section */}
         <div className="space-y-2">
-          <h2 className="text-lg font-extrabold font-poppins text-foreground mb-4">Settings</h2>
+          <h2 className="text-lg font-bold text-foreground mb-4">Settings</h2>
           <div className="bg-card rounded-2xl p-2 shadow-soft">
             <ProfileMenuItem
               icon={<Award size={20} />}

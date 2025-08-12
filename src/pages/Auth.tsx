@@ -157,10 +157,10 @@ export const Auth = () => {
           <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 animate-pulse">
             <Heart size={32} className="text-white sm:w-10 sm:h-10" />
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold font-poppins text-white mb-2">
+          <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
             Love Sync
           </h1>
-          <p className="text-sm sm:text-base text-white/80 font-inter font-bold px-2">
+          <p className="text-sm sm:text-base text-white/80 font-semibold px-2">
             Sign in to your account
           </p>
         </div>

@@ -37,7 +37,7 @@ export const DashboardCard = ({
             <div className="p-2 bg-gradient-romance rounded-full text-white">
               {icon}
             </div>
-            <h3 className="font-poppins font-semibold text-foreground">{title}</h3>
+            <h3 className="font-semibold text-foreground">{title}</h3>
           </div>
           {expandedContent && (
             <div className="text-muted-foreground">

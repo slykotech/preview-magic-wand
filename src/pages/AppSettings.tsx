@@ -212,9 +212,9 @@ export const AppSettings = () => {
           >
             <ArrowLeft size={24} />
           </Button>
-          <h1 className="text-xl sm:text-2xl font-extrabold font-poppins">App Settings</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">App Settings</h1>
         </div>
-        <p className="text-white/80 font-inter text-sm font-semibold">
+        <p className="text-white/80 text-sm font-semibold">
           Customize your LoveSync experience
         </p>
       </div>

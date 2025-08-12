@@ -40,14 +40,14 @@ const Index = () => {
             <LoveSyncLogo size="lg" />
             <div className="text-left">
               <p className="text-lg text-white/90 font-inter font-medium">Introducing</p>
-              <h1 className="text-3xl font-extrabold font-poppins">Love Sync</h1>
+              <h1 className="text-3xl font-bold">Love Sync</h1>
             </div>
           </div>
           <div className="space-y-4">
-            <h2 className="text-2xl font-bold font-poppins text-white">
+            <h2 className="text-2xl font-bold text-white">
               Your Relationship Co-Pilot
             </h2>
-            <p className="text-base text-white/90 font-inter leading-relaxed">Strengthen emotional bonds, plan meaningful moments, and grow together one day at a time.</p>
+            <p className="text-base text-white/90 leading-relaxed">Strengthen emotional bonds, plan meaningful moments, and grow together one day at a time.</p>
           </div>
         </div>
 
@@ -58,13 +58,13 @@ const Index = () => {
               <img src="/lovable-uploads/e96cb636-6076-4256-8622-93e09fe2fd42.png" alt="Quality Time" className="w-full h-full object-contain drop-shadow-lg" />
             </div>
             <div className="flex-1">
-              <h3 className="font-poppins font-bold text-white">Quality Time</h3>
+              <h3 className="font-semibold text-white">Quality Time</h3>
             </div>
           </div>
           <div className="flex items-center gap-4 p-4 bg-white/20 rounded-2xl backdrop-blur-sm">
             
             <div className="flex-1">
-              <h3 className="font-poppins font-bold text-white">Soul Syncing</h3>
+              <h3 className="font-semibold text-white">Soul Syncing</h3>
             </div>
             <div className="w-16 h-16">
               <img src="/lovable-uploads/ea943bb4-0f80-4b60-8dab-9824039f4bc1.png" alt="Soul Syncing Avatar" className="w-full h-full object-contain" />
@@ -75,7 +75,7 @@ const Index = () => {
               <Calendar className="text-white" size={20} />
             </div>
             <div className="flex-1">
-              <h3 className="font-poppins font-bold text-white">Plan Dates Together</h3>
+              <h3 className="font-semibold text-white">Plan Dates Together</h3>
             </div>
           </div>
           <div className="flex items-center gap-4 p-4 bg-white/20 rounded-2xl backdrop-blur-sm">
@@ -83,14 +83,14 @@ const Index = () => {
               <img src="/lovable-uploads/d445b99d-8fa2-4613-9412-94521632578d.png" alt="Connection Check-In Avatar" className="w-full h-full object-contain" />
             </div>
             <div className="flex-1">
-              <h3 className="font-poppins font-bold text-white">Connection Check-In</h3>
+              <h3 className="font-semibold text-white">Connection Check-In</h3>
             </div>
             
           </div>
           <div className="flex items-center gap-4 p-4 bg-white/20 rounded-2xl backdrop-blur-sm">
             
             <div className="flex-1">
-              <h3 className="font-poppins font-bold text-white">Memory Vault</h3>
+              <h3 className="font-semibold text-white">Memory Vault</h3>
             </div>
             <div className="w-16 h-16">
               <img src="/lovable-uploads/5a655e7e-3004-45ee-bc2a-35b5292a98e2.png" alt="Memory Vault Couple" className="w-full h-full object-contain" />

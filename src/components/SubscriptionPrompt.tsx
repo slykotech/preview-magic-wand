@@ -24,7 +24,7 @@ export const SubscriptionPrompt = ({ onUpgrade, feature }: SubscriptionPromptPro
         </div>
         
         <div>
-          <h3 className="font-poppins font-semibold text-xl mb-2">
+          <h3 className="font-semibold text-xl mb-2">
             {feature ? `Unlock ${feature}` : 'Upgrade to Premium'}
           </h3>
           <p className="text-muted-foreground text-sm">

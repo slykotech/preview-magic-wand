@@ -33,7 +33,7 @@ const PlanCard = ({
     
     <div className="text-center space-y-3">
       <div>
-        <h3 className="font-poppins font-semibold text-lg">{plan.name}</h3>
+        <h3 className="font-semibold text-lg">{plan.name}</h3>
         <div className="flex items-baseline justify-center gap-1">
           <span className="text-2xl font-semibold text-primary">{plan.price}</span>
           <span className="text-muted-foreground">/{plan.period}</span>
@@ -132,7 +132,7 @@ export const SubscriptionSection = ({ onClose }: SubscriptionSectionProps) => {
       <div className="space-y-4">
         <div className="flex items-center gap-2">
           <Crown className="text-primary" size={20} />
-          <h2 className="text-lg font-extrabold font-poppins">Your Subscription</h2>
+          <h2 className="text-lg font-bold">Your Subscription</h2>
         </div>
         <Card className="p-6">
           <div className="flex items-center justify-center">
@@ -148,7 +148,7 @@ export const SubscriptionSection = ({ onClose }: SubscriptionSectionProps) => {
     <div className="space-y-4">
       <div className="flex items-center gap-2">
         <Crown className="text-primary" size={20} />
-        <h2 className="text-lg font-extrabold font-poppins">Your Subscription</h2>
+        <h2 className="text-lg font-bold">Your Subscription</h2>
       </div>
 
       {subscriptionInfo.isActive ? (
@@ -159,7 +159,7 @@ export const SubscriptionSection = ({ onClose }: SubscriptionSectionProps) => {
               <Crown className="text-primary" size={20} />
             </div>
             <div>
-              <h3 className="font-poppins font-bold">Premium Active</h3>
+              <h3 className="font-semibold">Premium Active</h3>
               <p className="text-sm text-muted-foreground">
                 {subscriptionInfo.planName} Plan
               </p>
@@ -197,7 +197,7 @@ export const SubscriptionSection = ({ onClose }: SubscriptionSectionProps) => {
                 <Sparkles className="absolute -top-1 -right-1 text-yellow-500" size={16} />
               </div>
               <div>
-                <h3 className="font-poppins font-bold text-xl">Unlock Premium Features</h3>
+                <h3 className="font-semibold text-xl">Unlock Premium Features</h3>
                 <p className="text-sm text-muted-foreground mt-1">
                   Transform your relationship with unlimited access to all tools
                 </p>
