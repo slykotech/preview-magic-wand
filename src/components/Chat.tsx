@@ -737,8 +737,8 @@ export const Chat: React.FC<ChatProps> = ({
             </div> : messages.map(message => {
           const isOwn = message.sender_id === user?.id;
           const senderName = isOwn ? getUserDisplayName() : getPartnerDisplayName();
-          return <div key={message.id} className={`flex ${isOwn ? 'justify-end' : 'justify-start'} animate-fade-in mb-2 sm:mb-3 relative`}>
-                  <div className={`max-w-[85%] sm:max-w-[80%] rounded-xl sm:rounded-2xl p-2 sm:p-3 shadow-soft relative ${message.message_type === 'emoji' || message.message_type === 'sticker' ? 'text-xl sm:text-2xl bg-transparent' : isOwn ? 'bg-gradient-to-br from-primary to-primary/80 text-primary-foreground' : 'bg-card'}`} onTouchStart={() => handleLongPressStart(message.id)} onTouchEnd={handleLongPressEnd} onMouseDown={() => handleLongPressStart(message.id)} onMouseUp={handleLongPressEnd} onMouseLeave={handleLongPressEnd}>
+          return <div key={message.id} className={`flex ${isOwn ? 'justify-end' : 'justify-start'} animate-fade-in mb-1 sm:mb-1.5 relative`}>
+                  <div className={`max-w-[75%] sm:max-w-[70%] rounded-lg sm:rounded-xl px-2.5 py-1.5 sm:px-3 sm:py-2 shadow-soft relative ${message.message_type === 'emoji' || message.message_type === 'sticker' ? 'text-lg sm:text-xl bg-transparent px-1 py-0.5' : isOwn ? 'bg-gradient-to-br from-primary to-primary/80 text-primary-foreground' : 'bg-card'}`} onTouchStart={() => handleLongPressStart(message.id)} onTouchEnd={handleLongPressEnd} onMouseDown={() => handleLongPressStart(message.id)} onMouseUp={handleLongPressEnd} onMouseLeave={handleLongPressEnd}>
                       {message.message_type === 'image' ? <img src={message.message_text} alt="Shared image" className="max-w-full h-auto rounded-lg cursor-pointer" onClick={() => window.open(message.message_text, '_blank')} /> : message.message_type === 'video' ? <video src={message.message_text} controls className="max-w-full h-auto rounded-lg" style={{
                 maxHeight: '300px'
               }} /> : <div className="text-sm leading-relaxed">
