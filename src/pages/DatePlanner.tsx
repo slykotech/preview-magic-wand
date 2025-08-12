@@ -865,17 +865,17 @@ export const DatePlanner = () => {
                             {/* Remove notes from main view too */}
 
                             {/* Date Action Buttons */}
-                            <div className="flex flex-col sm:flex-row gap-2 mt-3">
+                            <div className="flex flex-col gap-2 mt-3">
                               <Button 
                                 size="sm" 
-                                variant="outline"
+                                variant="default"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleDateFeedback(date.id, true);
                                 }}
-                                className="flex-1 text-xs h-8 rounded-lg"
+                                className="w-full text-xs h-8 rounded-lg bg-green-600 hover:bg-green-700 text-white"
                               >
-                                ✅ We did this!
+                                💕 Amazing Date!
                               </Button>
                               <Button 
                                 size="sm" 
@@ -884,9 +884,9 @@ export const DatePlanner = () => {
                                   e.stopPropagation();
                                   handleDateFeedback(date.id, false);
                                 }}
-                                className="flex-1 text-xs h-8 rounded-lg text-red-600 hover:text-red-700"
+                                className="w-full text-xs h-8 rounded-lg border-muted-foreground/30 text-muted-foreground hover:bg-muted/50"
                               >
-                                ❌ Skip this
+                                💭 Maybe Later
                               </Button>
                             </div>
                             </div>
@@ -1193,31 +1193,29 @@ export const DatePlanner = () => {
 
                 {/* Action Buttons */}
                 <div className="flex flex-col gap-2 pt-2 border-t">
-                  <div className="flex gap-2">
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      onClick={() => {
-                        handleDateFeedback(selectedDateForDetails.id, true);
-                        setSelectedDateForDetails(null);
-                      }}
-                      className="flex-1 h-7 text-xs px-2"
-                    >
-                      ✅ Did this!
-                    </Button>
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      onClick={() => {
-                        handleDateFeedback(selectedDateForDetails.id, false);
-                        setSelectedDateForDetails(null);
-                      }}
-                      className="flex-1 h-7 text-xs px-2 text-red-600 hover:text-red-700"
-                    >
-                      ❌ Skip
-                    </Button>
-                  </div>
-                  <div className="flex gap-2">
+                  <Button 
+                    size="sm" 
+                    variant="default"
+                    onClick={() => {
+                      handleDateFeedback(selectedDateForDetails.id, true);
+                      setSelectedDateForDetails(null);
+                    }}
+                    className="w-full h-8 text-xs bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    💕 Amazing Date!
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => {
+                      handleDateFeedback(selectedDateForDetails.id, false);
+                      setSelectedDateForDetails(null);
+                    }}
+                    className="w-full h-8 text-xs border-muted-foreground/30 text-muted-foreground hover:bg-muted/50"
+                  >
+                    💭 Maybe Later
+                  </Button>
+                  <div className="flex gap-2 mt-2">
                     <Button 
                       variant="outline" 
                       size="sm"
