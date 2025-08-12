@@ -119,10 +119,10 @@ export const DateHistory = ({ onClose }: DateHistoryProps) => {
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
-                    <h3 className="text-lg font-bold text-foreground mb-1">
+                    <h3 className="text-lg font-bold text-gray-900 mb-1">
                       {date.title} {getCategoryIcon(date.category)}
                     </h3>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
+                    <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
                       <div className="flex items-center gap-1">
                         <CalendarIcon size={14} />
                         <span className="font-semibold">
@@ -152,14 +152,14 @@ export const DateHistory = ({ onClose }: DateHistoryProps) => {
                 </div>
                 
                 {date.description && (
-                  <p className="text-muted-foreground text-sm mb-3 italic">
+                  <p className="text-gray-700 text-sm mb-3 italic">
                     {date.description}
                   </p>
                 )}
                 
                 {date.notes && (
-                  <div className="bg-muted/30 rounded-lg p-3">
-                    <p className="text-sm text-muted-foreground">
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <p className="text-sm text-gray-700">
                       <strong>Notes:</strong> {date.notes}
                     </p>
                   </div>
