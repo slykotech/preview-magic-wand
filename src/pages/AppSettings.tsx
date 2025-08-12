@@ -9,6 +9,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useCoupleData } from "@/hooks/useCoupleData";
 import { supabase } from "@/integrations/supabase/client";
+import { MobilePermissionManager } from "@/components/MobilePermissionManager";
 import { 
   ArrowLeft, 
   Bell, 
@@ -218,6 +219,9 @@ export const AppSettings = () => {
           Customize your LoveSync experience
         </p>
       </div>
+
+      {/* Mobile Permission Manager */}
+      <MobilePermissionManager />
 
       <div className="p-6 space-y-6">
         {/* App Notifications */}

@@ -20,6 +20,12 @@ const config: CapacitorConfig = {
       splashFullScreen: true,
       splashImmersive: true,
     },
+    FirebaseMessaging: {
+      presentationOptions: ["badge", "sound", "alert"]
+    },
+    PushNotifications: {
+      presentationOptions: ["badge", "sound", "alert"]
+    }
   },
 };
 

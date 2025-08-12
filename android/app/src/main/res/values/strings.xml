@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">LoveSync</string>
+    <string name="title_activity_main">LoveSync</string>
+    <string name="package_name">app.lovable.f135fec07ff24c8ca0e24c5badf6f0b1</string>
+    <string name="custom_url_scheme">app.lovable.f135fec07ff24c8ca0e24c5badf6f0b1</string>
+    
+    <!-- Firebase Cloud Messaging -->
+    <string name="default_notification_channel_id">fcm_default_channel</string>
+    <string name="default_notification_channel_name">LoveSync Notifications</string>
+    <string name="default_notification_channel_description">Notifications from your partner</string>
+</resources>
