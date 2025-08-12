@@ -31,6 +31,9 @@ export const CoupleAvatars = ({
 }: CoupleAvatarsProps) => {
   const [isLoaded, setIsLoaded] = useState(false);
 
+  // Debug online status
+  console.log('🎯 CoupleAvatars online status:', { isUserOnline, isPartnerOnline });
+
   useEffect(() => {
     const timer = setTimeout(() => setIsLoaded(true), 300);
     return () => clearTimeout(timer);
@@ -92,7 +95,7 @@ export const CoupleAvatars = ({
           )}
           {/* Online Status Indicator */}
           <div className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-2 border-white transition-colors duration-300 ${
-            isUserOnline ? 'bg-success' : 'bg-destructive'
+            isUserOnline ? 'bg-green-500' : 'bg-red-500'
           }`}></div>
         </div>
 
@@ -128,7 +131,7 @@ export const CoupleAvatars = ({
           )}
           {/* Online Status Indicator */}
           <div className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-2 border-white transition-colors duration-300 ${
-            isPartnerOnline ? 'bg-success' : 'bg-destructive'
+            isPartnerOnline ? 'bg-green-500' : 'bg-red-500'
           }`}></div>
         </div>
       </div>
