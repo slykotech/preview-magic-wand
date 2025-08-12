@@ -261,16 +261,15 @@ export const Dashboard = () => {
           ? supabase.from('profiles').select('*').eq('user_id', currentPartnerId).maybeSingle()
           : Promise.resolve({ data: null }),
         
-        // Date data
+        // Date data - upcoming scheduled dates
         supabase
           .from('date_ideas')
           .select('*')
           .eq('couple_id', currentCoupleId)
-          .eq('is_completed', true)
-          .gte('completed_date', today)
-          .not('notes', 'is', null)
-          .ilike('notes', '%scheduled%')
-          .order('completed_date', { ascending: true })
+          .eq('is_completed', false)
+          .not('scheduled_date', 'is', null)
+          .gte('scheduled_date', today)
+          .order('scheduled_date', { ascending: true })
           .limit(1)
           .maybeSingle(),
         
@@ -279,10 +278,9 @@ export const Dashboard = () => {
           .from('date_ideas')
           .select('*', { count: 'exact', head: true })
           .eq('couple_id', currentCoupleId)
-          .eq('is_completed', true)
-          .gte('completed_date', today)
-          .not('notes', 'is', null)
-          .ilike('notes', '%scheduled%'),
+          .eq('is_completed', false)
+          .not('scheduled_date', 'is', null)
+          .gte('scheduled_date', today),
         
         // Memory data
         supabase
