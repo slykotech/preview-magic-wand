@@ -493,7 +493,7 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
           {/* Quick Emoji Reactions (for partner's stories) */}
           {!isOwnStory && (
             <div className="absolute bottom-24 left-4 right-4 z-20">
-              <div className="flex gap-2 mb-3 justify-center bg-black/30 backdrop-blur-sm rounded-full p-2">
+              <div className="flex gap-4 mb-3 justify-center bg-black/30 backdrop-blur-sm rounded-full px-4 py-3">
                 {quickEmojis.map((emoji, index) => (
                   <button
                     key={index}
