@@ -126,19 +126,19 @@ export const Games = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-100 via-purple-50 to-rose-100 dark:from-gray-900 dark:via-purple-950/20 dark:to-pink-950/20">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-pink-200 dark:border-pink-800">
+      <div className="sticky top-0 z-10 bg-gradient-primary backdrop-blur-sm">
         <div className="flex items-center justify-between p-4">
           <Button 
             variant="ghost" 
             size="icon"
             onClick={() => navigate('/dashboard')}
-            className="hover:bg-pink-100 dark:hover:bg-pink-900/30"
+            className="text-white hover:bg-white/20"
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-xl font-bold text-pink-900 dark:text-pink-100">Games</h1>
+          <h1 className="text-xl font-bold text-white">Games</h1>
           <div className="w-10" /> {/* Spacer for center alignment */}
         </div>
       </div>
@@ -147,12 +147,12 @@ export const Games = () => {
       <div className="p-6">
         {/* Title Section */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent mb-2">
+          <h1 className="text-4xl font-bold text-foreground mb-2">
             Let's Play
           </h1>
-          <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-rose-600 bg-clip-text text-transparent flex items-center justify-center gap-2">
+          <h2 className="text-3xl font-bold text-foreground flex items-center justify-center gap-2">
             Something Sweet
-            <Heart className="h-8 w-8 text-rose-500 fill-rose-500" />
+            <Heart className="h-8 w-8 text-foreground fill-current" />
           </h2>
         </div>
 
