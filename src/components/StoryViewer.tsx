@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Heart, Send, Camera, Upload, Smile, MessageCircle, Eye, Trash2, Plus } from 'lucide-react';
+import { X, Heart, Send, Camera, Upload, Smile, MessageCircle, Eye, Trash2, Plus, Image } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -722,6 +722,18 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
                 <Button
                   variant="outline"
                   onClick={(e) => {
+                    console.log('[StoryViewer] Gallery button clicked');
+                    e.preventDefault();
+                    fileInputRef.current?.click();
+                  }}
+                  className="bg-gradient-to-br from-background to-muted/20 hover:from-muted/20 hover:to-muted/40 border-border/50 hover:border-primary/50 transition-all duration-300 hover:scale-105"
+                >
+                  <Image className="h-4 w-4 mr-2" />
+                  Choose Photo
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={(e) => {
                     console.log('[StoryViewer] Take Photo button clicked');
                     e.preventDefault();
                     startCamera();
@@ -730,18 +742,6 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
                 >
                   <Camera className="h-4 w-4 mr-2" />
                   Take Photo
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={(e) => {
-                    console.log('[StoryViewer] Gallery button clicked');
-                    e.preventDefault();
-                    fileInputRef.current?.click();
-                  }}
-                  className="bg-gradient-to-br from-background to-muted/20 hover:from-muted/20 hover:to-muted/40 border-border/50 hover:border-primary/50 transition-all duration-300 hover:scale-105"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Gallery
                 </Button>
               </div>
             </div>
