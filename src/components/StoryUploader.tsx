@@ -394,6 +394,9 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
     return null;
   }
 
+  // Force show camera options if we're just starting
+  console.log('🎥 [StoryUploader] Current showCameraOptions state:', showCameraOptions);
+
   console.log('🎥 [StoryUploader] Rendering component with states:', {
     showCamera,
     showCameraOptions,
@@ -425,8 +428,8 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
             </Button>
           </div>
 
-          {/* Camera Options Modal */}
-          {showCameraOptions && (
+          {/* Camera Options Modal - Always show initially */}
+          {(showCameraOptions || (!selectedFile && !showCamera)) && (
             <div className="space-y-6 animate-fade-in">
               <div className="text-center">
                 <h3 className="text-lg font-medium mb-4">Choose Camera Option</h3>
