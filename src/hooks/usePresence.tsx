@@ -15,6 +15,7 @@ export const usePresence = (coupleId?: string) => {
   const notifiedOnlineRef = useRef(false);
   const deviceIdRef = useRef<string>();
   const channelRef = useRef<any>(null);
+  const heartbeatRef = useRef<NodeJS.Timeout>();
 
   // Generate a unique device ID for this session
   if (!deviceIdRef.current) {
@@ -25,6 +26,8 @@ export const usePresence = (coupleId?: string) => {
     console.log('usePresence effect triggered:', { user: user?.id, coupleId });
     if (!user) {
       console.log('No user, clearing presence states');
+      setIsUserOnline(false);
+      setIsPartnerOnline(false);
       return;
     }
 
@@ -38,70 +41,78 @@ export const usePresence = (coupleId?: string) => {
 
     console.log('Setting up presence tracking for couple:', coupleId);
 
-    // Cleanup any existing channel for this couple
+    // Cleanup any existing channel and heartbeat
     if (channelRef.current) {
+      console.log('Cleaning up existing channel');
       supabase.removeChannel(channelRef.current);
       channelRef.current = null;
     }
+    if (heartbeatRef.current) {
+      clearInterval(heartbeatRef.current);
+      heartbeatRef.current = undefined;
+    }
 
-    const channel = supabase.channel(`couple_presence_${coupleId}`);
+    const channel = supabase.channel(`couple_presence_${coupleId}`, {
+      config: {
+        presence: {
+          key: deviceIdRef.current
+        }
+      }
+    });
     channelRef.current = channel;
 
     // Track user's presence with unique device ID
     const userStatus: PresenceState = {
       user_id: user.id,
-      device_id: deviceIdRef.current,
+      device_id: deviceIdRef.current!,
       online_at: new Date().toISOString(),
     };
 
-    // Set up presence tracking
+    // Helper function to update presence states
+    const updatePresenceStates = (presenceState: any) => {
+      // Check if current user is online (from any device)
+      const userPresent = Object.values(presenceState).some((presences: any) =>
+        presences.some((presence: any) => presence.user_id === user.id)
+      );
+      
+      // Check if partner is online (any other user in the couple channel, from any device)
+      const partnerPresent = Object.values(presenceState).some((presences: any) =>
+        presences.some((presence: any) => presence.user_id !== user.id)
+      );
+      
+      console.log('Updating presence states - User:', userPresent, 'Partner:', partnerPresent);
+      setIsUserOnline(userPresent);
+      setIsPartnerOnline(partnerPresent);
+    };
+
+    // Set up presence tracking with improved event handling
     channel
       .on('presence', { event: 'sync' }, () => {
         const newState = channel.presenceState();
-        console.log('Presence sync:', newState);
-        
-        // Check if current user is online (from any device)
-        const userPresent = Object.values(newState).some((presences: any) =>
-          presences.some((presence: any) => presence.user_id === user.id)
-        );
-        setIsUserOnline(userPresent);
-
-        // Check if partner is online (any other user in the couple channel, from any device)
-        const partnerPresent = Object.values(newState).some((presences: any) =>
-          presences.some((presence: any) => presence.user_id !== user.id)
-        );
-        setIsPartnerOnline(partnerPresent);
-        console.log('User online:', userPresent, 'Partner online:', partnerPresent);
+        console.log('Presence sync event:', newState);
+        updatePresenceStates(newState);
       })
-      .on('presence', { event: 'join' }, ({ newPresences }) => {
-        console.log('User joined:', newPresences);
-        // Check if any of the new presences is a partner (not current user)
-        const hasPartnerJoined = newPresences.some((presence: any) => presence.user_id !== user.id);
-        if (hasPartnerJoined) {
-          setIsPartnerOnline(true);
-        }
+      .on('presence', { event: 'join' }, ({ key, newPresences }) => {
+        console.log('Presence join event:', { key, newPresences });
+        // Immediately update states when someone joins
+        const currentState = channel.presenceState();
+        updatePresenceStates(currentState);
       })
-      .on('presence', { event: 'leave' }, ({ leftPresences }) => {
-        console.log('User left:', leftPresences);
-        // Only set partner offline if no other partner devices are present
-        const leftUserIds = leftPresences.map((p: any) => p.user_id);
-        const hasPartnerLeft = leftUserIds.some((id: string) => id !== user.id);
-        
-        if (hasPartnerLeft) {
-          // Check if partner still has other devices online
-          const currentState = channel.presenceState();
-          const partnerStillPresent = Object.values(currentState).some((presences: any) =>
-            presences.some((presence: any) => presence.user_id !== user.id)
-          );
-          setIsPartnerOnline(partnerStillPresent);
-        }
+      .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
+        console.log('Presence leave event:', { key, leftPresences });
+        // Immediately update states when someone leaves
+        const currentState = channel.presenceState();
+        updatePresenceStates(currentState);
       })
       .subscribe(async (status) => {
         console.log('Channel subscription status:', status);
         if (status === 'SUBSCRIBED') {
           // Track the current user's presence
           console.log('Tracking user presence:', userStatus);
-          await channel.track(userStatus);
+          const trackResult = await channel.track(userStatus);
+          console.log('Track result:', trackResult);
+          
+          // Set user as online immediately after successful tracking
           setIsUserOnline(true);
 
           // Notify partner once when coming online
@@ -130,52 +141,94 @@ export const usePresence = (coupleId?: string) => {
               console.warn('send-push partner-online failed (non-blocking):', e);
             }
           }
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('Channel error - presence may not be working');
+          setIsUserOnline(false);
+          setIsPartnerOnline(false);
         }
       });
 
-    // Update presence periodically (heartbeat)
-    const heartbeat = setInterval(async () => {
-      try {
-        await channel.track({
-          user_id: user.id,
-          device_id: deviceIdRef.current,
-          online_at: new Date().toISOString(),
-        });
-      } catch (error) {
-        console.log('Heartbeat update failed:', error);
-      }
-    }, 30000); // Update every 30 seconds
-
-    // Handle tab visibility changes
-    const handleVisibilityChange = async () => {
-      if (document.visibilityState === 'visible') {
-        await channel.track({
-          user_id: user.id,
-          device_id: deviceIdRef.current,
-          online_at: new Date().toISOString(),
-        });
-        setIsUserOnline(true);
+    // Update presence periodically (heartbeat) with improved error handling
+    heartbeatRef.current = setInterval(async () => {
+      if (channelRef.current && channelRef.current.state === 'joined') {
+        try {
+          const heartbeatStatus = {
+            user_id: user.id,
+            device_id: deviceIdRef.current!,
+            online_at: new Date().toISOString(),
+          };
+          console.log('Sending heartbeat:', heartbeatStatus);
+          await channelRef.current.track(heartbeatStatus);
+        } catch (error) {
+          console.error('Heartbeat update failed:', error);
+        }
       } else {
-        // Keep presence active even when tab is hidden
-        // Users remain online across multiple devices/tabs
+        console.warn('Channel not ready for heartbeat');
+      }
+    }, 15000); // Update every 15 seconds for better responsiveness
+
+    // Handle tab visibility changes with immediate updates
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === 'visible' && channelRef.current) {
+        console.log('Tab became visible - updating presence');
+        try {
+          await channelRef.current.track({
+            user_id: user.id,
+            device_id: deviceIdRef.current!,
+            online_at: new Date().toISOString(),
+          });
+          setIsUserOnline(true);
+        } catch (error) {
+          console.error('Failed to update presence on visibility change:', error);
+        }
+      }
+    };
+
+    // Handle browser/app close to immediately notify offline status
+    const handleBeforeUnload = () => {
+      if (channelRef.current) {
+        // Use navigator.sendBeacon for reliable offline notification
+        try {
+          navigator.sendBeacon('/api/offline', JSON.stringify({ 
+            coupleId, 
+            userId: user.id,
+            deviceId: deviceIdRef.current 
+          }));
+        } catch (e) {
+          console.warn('Failed to send offline beacon:', e);
+        }
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('beforeunload', handleBeforeUnload);
 
     // Cleanup
     return () => {
-      clearInterval(heartbeat);
+      console.log('Cleaning up presence hook');
+      if (heartbeatRef.current) {
+        clearInterval(heartbeatRef.current);
+        heartbeatRef.current = undefined;
+      }
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      
       if (channelRef.current) {
+        // Untrack presence before removing channel
+        try {
+          channelRef.current.untrack();
+        } catch (e) {
+          console.warn('Failed to untrack presence:', e);
+        }
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
       }
+      
       setIsUserOnline(false);
       setIsPartnerOnline(false);
       notifiedOnlineRef.current = false;
     };
-  }, [coupleId, user]);
+  }, [coupleId, user?.id]); // Add user.id to dependencies for better reactivity
 
   return {
     isUserOnline,
