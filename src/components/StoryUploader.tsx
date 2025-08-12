@@ -441,17 +441,28 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
                 <div className="grid grid-cols-2 gap-4">
                   <Button
                     variant="outline"
-                    onClick={() => {
+                    onClick={(e) => {
                       console.log('🖼️ [StoryUploader] Upload button clicked');
+                      console.log('🖼️ [StoryUploader] File input ref exists:', !!fileInputRef.current);
+                      e.preventDefault();
+                      e.stopPropagation();
                       setShowCameraOptions(false);
+                      
                       if (fileInputRef.current) {
                         console.log('🖼️ [StoryUploader] Triggering file input click');
+                        // Force focus and click
+                        fileInputRef.current.focus();
                         fileInputRef.current.click();
+                        
+                        // Add event listener to verify click worked
+                        setTimeout(() => {
+                          console.log('🖼️ [StoryUploader] File input clicked - waiting for file selection');
+                        }, 100);
                       } else {
                         console.error('🖼️ [StoryUploader] File input ref not found!');
                         toast({
                           title: "Error",
-                          description: "Gallery not available",
+                          description: "Upload not available",
                           variant: "destructive"
                         });
                       }
@@ -482,6 +493,16 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
                     </div>
                   </Button>
                 </div>
+                
+                {/* Hidden file input - ALWAYS present */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                  id="story-upload-global"
+                />
               </div>
             </div>
           )}
