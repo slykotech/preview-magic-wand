@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { BottomNavigation } from '@/components/BottomNavigation';
 import { useToast } from '@/hooks/use-toast';
 import { Calendar, MapPin, Clock, DollarSign, Heart, X, Plus, Trash2, Sparkles } from 'lucide-react';
@@ -48,6 +49,7 @@ export const DatePlanner = () => {
   const [plannedDates, setPlannedDates] = useState<DateIdea[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingDate, setEditingDate] = useState<DateIdea | null>(null);
+  const [selectedDateForDetails, setSelectedDateForDetails] = useState<DateIdea | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [suggestionToAdd, setSuggestionToAdd] = useState<any>(null);
   const [suggestionDateTime, setSuggestionDateTime] = useState({ date: '', time: '' });
@@ -783,7 +785,11 @@ export const DatePlanner = () => {
                        {category.charAt(0).toUpperCase() + category.slice(1)} ({dates.length})
                      </h4>
                       {dates.map(date => (
-                        <Card key={date.id} className="group hover:shadow-md transition-shadow">
+                        <Card 
+                          key={date.id} 
+                          className="group hover:shadow-md transition-shadow cursor-pointer"
+                          onClick={() => setSelectedDateForDetails(date)}
+                        >
                           <CardContent className="p-3">
                             <div className="flex flex-col space-y-3">
                               <div className="flex justify-between items-start">
@@ -797,7 +803,10 @@ export const DatePlanner = () => {
                                   <Button 
                                     variant="ghost" 
                                     size="sm" 
-                                    onClick={() => handleEditDate(date)}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleEditDate(date);
+                                    }}
                                     className="h-7 w-7 p-0"
                                   >
                                     ✏️
@@ -805,7 +814,10 @@ export const DatePlanner = () => {
                                   <Button 
                                     variant="ghost" 
                                     size="sm" 
-                                    onClick={() => setDeleteConfirm(date.id)}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setDeleteConfirm(date.id);
+                                    }}
                                     className="h-7 w-7 p-0 text-destructive hover:text-destructive"
                                   >
                                     <Trash2 className="h-3 w-3" />
@@ -813,9 +825,7 @@ export const DatePlanner = () => {
                                 </div>
                               </div>
 
-                            {date.description && (
-                              <p className="text-muted-foreground mb-2 text-sm line-clamp-2">{date.description}</p>
-                            )}
+                            {/* Remove description from main view - show only in details modal */}
 
                             <div className="grid grid-cols-1 gap-2 text-sm">
                               {date.scheduled_date && (
@@ -852,18 +862,17 @@ export const DatePlanner = () => {
                               </div>
                             </div>
 
-                            {date.notes && (
-                              <div className="mt-2 p-2 bg-muted/50 rounded-lg">
-                                <p className="text-xs text-muted-foreground line-clamp-2">{date.notes}</p>
-                              </div>
-                            )}
+                            {/* Remove notes from main view too */}
 
                             {/* Date Action Buttons */}
                             <div className="flex flex-col sm:flex-row gap-2 mt-3">
                               <Button 
                                 size="sm" 
                                 variant="outline"
-                                onClick={() => handleDateFeedback(date.id, true)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDateFeedback(date.id, true);
+                                }}
                                 className="flex-1 text-xs h-8 rounded-lg"
                               >
                                 ✅ We did this!
@@ -871,7 +880,10 @@ export const DatePlanner = () => {
                               <Button 
                                 size="sm" 
                                 variant="outline"
-                                onClick={() => handleDateFeedback(date.id, false)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDateFeedback(date.id, false);
+                                }}
                                 className="flex-1 text-xs h-8 rounded-lg text-red-600 hover:text-red-700"
                               >
                                 ❌ Skip this
@@ -1085,6 +1097,149 @@ export const DatePlanner = () => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Date Details Modal */}
+        <Dialog open={!!selectedDateForDetails} onOpenChange={() => setSelectedDateForDetails(null)}>
+          <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto rounded-t-3xl rounded-b-2xl border-0 shadow-2xl bg-gradient-to-br from-background via-background/95 to-primary/5">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Heart className="h-5 w-5 text-primary" />
+                Date Details
+              </DialogTitle>
+            </DialogHeader>
+            
+            {selectedDateForDetails && (
+              <div className="space-y-4">
+                <div className="text-center p-4 bg-gradient-to-r from-primary/10 via-secondary/10 to-primary/10 rounded-2xl border border-primary/20 shadow-sm">
+                  <h3 className="text-lg font-bold text-primary mb-1">{selectedDateForDetails.title}</h3>
+                  <Badge variant="outline" className="text-xs">
+                    {selectedDateForDetails.category?.charAt(0).toUpperCase() + selectedDateForDetails.category?.slice(1)}
+                  </Badge>
+                </div>
+
+                {/* Full Description */}
+                {selectedDateForDetails.description && (
+                  <div className="p-4 bg-gradient-to-r from-card/80 to-card rounded-2xl border border-border/50 shadow-sm">
+                    <h4 className="font-medium text-sm mb-2 text-foreground/90">Description</h4>
+                    <p className="text-sm text-foreground">{selectedDateForDetails.description}</p>
+                  </div>
+                )}
+
+                {/* Date & Time */}
+                {(selectedDateForDetails.scheduled_date || selectedDateForDetails.scheduled_time) && (
+                  <div className="p-4 bg-gradient-to-r from-card/80 to-card rounded-2xl border border-border/50 shadow-sm">
+                    <h4 className="font-medium text-sm mb-2 text-foreground/90 flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-primary" />
+                      When
+                    </h4>
+                    <div className="space-y-1">
+                      {selectedDateForDetails.scheduled_date && (
+                        <p className="text-sm text-foreground">
+                          Date: {new Date(selectedDateForDetails.scheduled_date).toLocaleDateString()}
+                        </p>
+                      )}
+                      {selectedDateForDetails.scheduled_time && (
+                        <p className="text-sm text-foreground">
+                          Time: {selectedDateForDetails.scheduled_time}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Location */}
+                {selectedDateForDetails.location && (
+                  <div className="p-4 bg-gradient-to-r from-card/80 to-card rounded-2xl border border-border/50 shadow-sm">
+                    <h4 className="font-medium text-sm mb-2 text-foreground/90 flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-primary" />
+                      Location
+                    </h4>
+                    <p className="text-sm text-foreground">{selectedDateForDetails.location}</p>
+                  </div>
+                )}
+
+                {/* Cost & Duration */}
+                {(selectedDateForDetails.estimated_cost || selectedDateForDetails.estimated_duration) && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {selectedDateForDetails.estimated_cost && (
+                      <div className="p-3 bg-gradient-to-r from-card/80 to-card rounded-2xl border border-border/50 shadow-sm">
+                        <h4 className="font-medium text-sm mb-1 text-foreground/90 flex items-center gap-2">
+                          <DollarSign className="h-4 w-4 text-primary" />
+                          Cost
+                        </h4>
+                        <p className="text-sm text-foreground">{selectedDateForDetails.estimated_cost}</p>
+                      </div>
+                    )}
+                    {selectedDateForDetails.estimated_duration && (
+                      <div className="p-3 bg-gradient-to-r from-card/80 to-card rounded-2xl border border-border/50 shadow-sm">
+                        <h4 className="font-medium text-sm mb-1 text-foreground/90 flex items-center gap-2">
+                          <Clock className="h-4 w-4 text-primary" />
+                          Duration
+                        </h4>
+                        <p className="text-sm text-foreground">{selectedDateForDetails.estimated_duration}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Notes */}
+                {selectedDateForDetails.notes && (
+                  <div className="p-4 bg-gradient-to-r from-card/80 to-card rounded-2xl border border-border/50 shadow-sm">
+                    <h4 className="font-medium text-sm mb-2 text-foreground/90">Notes</h4>
+                    <p className="text-sm text-foreground">{selectedDateForDetails.notes}</p>
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="flex flex-col gap-3 pt-4 border-t">
+                  <div className="flex gap-2">
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => {
+                        handleDateFeedback(selectedDateForDetails.id, true);
+                        setSelectedDateForDetails(null);
+                      }}
+                      className="flex-1 rounded-2xl"
+                    >
+                      ✅ We did this!
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => {
+                        handleDateFeedback(selectedDateForDetails.id, false);
+                        setSelectedDateForDetails(null);
+                      }}
+                      className="flex-1 rounded-2xl text-red-600 hover:text-red-700"
+                    >
+                      ❌ Skip this
+                    </Button>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => {
+                        handleEditDate(selectedDateForDetails);
+                        setSelectedDateForDetails(null);
+                      }}
+                      className="flex-1 rounded-2xl"
+                    >
+                      ✏️ Edit Date
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setSelectedDateForDetails(null)}
+                      className="flex-1 rounded-2xl"
+                    >
+                      Close
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
 
        <BottomNavigation />
      </div>
