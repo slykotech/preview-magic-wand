@@ -58,8 +58,8 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
 
       {/* App Name and Tagline - Bottom */}
       <div className={`pb-12 transition-all duration-1000 delay-300 text-center ${showContent ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
-        <h1 className="text-4xl font-bold text-white mb-2 drop-shadow-lg">Love Sync</h1>
-        <p className="text-lg text-white/80 font-semibold">A relationship co-pilot</p>
+        <h1 className="text-2xl font-bold text-white mb-2 drop-shadow-lg">Love Sync</h1>
+        <p className="text-sm text-white/80 font-semibold">A relationship co-pilot</p>
       </div>
     </div>
   );
