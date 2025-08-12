@@ -55,7 +55,10 @@ verify_jwt = true
 [functions.get-revenuecat-config]
 verify_jwt = true
 
-[functions.scrape-targeted-cities]
+[functions.search-nearby-places]
+verify_jwt = true
+
+[functions.test-google-places]
 verify_jwt = true
 
 # Public endpoints necessary before user has a session

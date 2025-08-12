@@ -98,47 +98,8 @@ export const EventDiscovery: React.FC<EventDiscoveryProps> = ({
       
       console.log(`Found ${realEvents.length} real events (filtered out ${(dbEvents?.length || 0) - realEvents.length} AI events)`);
 
-      // Step 3: If we don't have enough real events, try scraping fresh data
-      if (realEvents.length < 3) {
-        console.log('Not enough real events, attempting to scrape fresh data...');
-        try {
-          const { data: scrapeData, error: scrapeError } = await supabase.functions.invoke('firecrawl-scraper', {
-            body: {
-              city: cityQuery || location.city,
-              country: location.country || 'india'
-            }
-          });
-
-          if (scrapeData?.success && scrapeData.events?.length > 0) {
-            console.log(`Scraped ${scrapeData.events.length} fresh events`);
-            
-            // Re-query database to get the newly stored events
-            const { data: freshDbEvents } = await supabase.rpc('search_events_by_location', {
-              p_lat: location.latitude,
-              p_lng: location.longitude,
-              p_radius_km: location.searchRadius || 50,
-              p_city_name: cityQuery || location.city,
-              p_limit: 20
-            });
-            
-            const freshRealEvents = freshDbEvents?.filter(e => !e.ai_generated) || [];
-            if (freshRealEvents.length > realEvents.length) {
-              setEvents(freshRealEvents.map(event => ({
-                ...event,
-                distance_km: event.distance_km
-              })));
-              setLastFetchSource('database');
-              toast({
-                title: `Found ${freshRealEvents.length} events`,
-                description: `Scraped ${scrapeData.events.length} fresh events from real sources`,
-              });
-              return;
-            }
-          }
-        } catch (scrapeError) {
-          console.error('Scraping error:', scrapeError);
-        }
-      }
+      // Step 3: Show available real events or sample events
+      console.log(`Using ${realEvents.length} real events from database`);
 
       // Step 4: Use real events if we have any, or show sample events
       if (realEvents && realEvents.length > 0) {

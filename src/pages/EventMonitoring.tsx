@@ -49,35 +49,42 @@ export default function EventMonitoring() {
     }
   };
 
-  const testFirecrawlScraper = async () => {
+  const testGooglePlaces = async () => {
     setIsLoading(true);
-    setScrapingStatus('Testing firecrawl scraper...');
+    setScrapingStatus('Testing Google Places API...');
     
     try {
-      const { data, error } = await supabase.functions.invoke('firecrawl-scraper', {
-        body: {
-          city: 'Mumbai',
-          country: 'India'
-        }
-      });
-
-      if (error) throw error;
-      
-      setScrapingStatus(`Scraping completed: ${data.count} events found`);
-      toast({
-        title: "Scraping Test Complete",
-        description: `Found ${data.count} events from ${data.events?.length || 0} sources`,
+      const { data, error } = await supabase.functions.invoke('test-google-places', {
+        body: {}
       });
       
-      // Refresh events after scraping
-      await fetchEvents();
+      if (error) {
+        setScrapingStatus(`Google Places test failed: ${error.message}`);
+        toast({
+          title: "Test Failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else if (data?.success) {
+        setScrapingStatus(`Google Places test successful! API is working`);
+        toast({
+          title: "Test Successful",
+          description: "Google Places API is configured correctly",
+        });
+      } else {
+        setScrapingStatus('Google Places test completed with issues');
+        toast({
+          title: "Test Issues",
+          description: "Google Places API may have configuration issues",
+        });
+      }
     } catch (error) {
-      console.error('Error testing scraper:', error);
-      setScrapingStatus('Scraping failed - check console for details');
+      console.error('Google Places test error:', error);
+      setScrapingStatus(`Google Places test error: ${error}`);
       toast({
-        title: "Scraping failed",
-        description: "Check the console for detailed error information.",
-        variant: "destructive"
+        title: "Test Error",
+        description: "Failed to test Google Places API",
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -169,11 +176,11 @@ export default function EventMonitoring() {
           </Button>
           
           <Button
-            onClick={testFirecrawlScraper}
+            onClick={testGooglePlaces}
             disabled={isLoading}
           >
             <Globe className="h-4 w-4 mr-2" />
-            Test Firecrawl Scraper
+            Test Google Places API
           </Button>
         </div>
 

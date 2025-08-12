@@ -33,36 +33,53 @@ export const EventScraper = () => {
     setScrapedEvents([]);
 
     try {
-      const { data, error } = await supabase.functions.invoke('firecrawl-scraper', {
+      // Use Google Places to search for venues instead of web scraping
+      const { data, error } = await supabase.functions.invoke('search-nearby-places', {
         body: { 
-          city: city.toLowerCase(),
-          country: country.toLowerCase()
+          latitude: 0, // Default coordinates - you may want to get user's location
+          longitude: 0,
+          category: 'event_venues',
+          cityName: city.toLowerCase()
         }
       });
 
       if (error) {
-        throw error;
-      }
-      
-      if (data?.success && data?.events) {
-        setScrapedEvents(data.events);
-        
+        console.error('Places search error:', error);
         toast({
-          title: "Success",
-          description: `Scraped ${data.events.length} events from major event sites`,
+          title: "Search failed",
+          description: error.message || "Failed to search for venues",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (data?.places?.length > 0) {
+        // Convert places to event-like format
+        const eventLikeResults = data.places.map((place: any, index: number) => ({
+          id: `place-${index}`,
+          title: place.name,
+          location: place.vicinity || place.formatted_address,
+          description: `Venue: ${place.name}`,
+          category: 'venue',
+          source: 'Google Places'
+        }));
+        
+        setScrapedEvents(eventLikeResults);
+        toast({
+          title: "Venues found!",
+          description: `Found ${data.places.length} potential event venues`,
         });
       } else {
         toast({
-          title: "Error",
-          description: data?.error || "Failed to scrape event sites",
-          variant: "destructive",
+          title: "No venues found",
+          description: "No venues were found for the specified location.",
         });
       }
     } catch (error) {
-      console.error('Error scraping event sites:', error);
+      console.error('Error during venue search:', error);
       toast({
-        title: "Error",
-        description: "Failed to scrape event sites",
+        title: "Search failed",
+        description: "An unexpected error occurred",
         variant: "destructive",
       });
     } finally {
@@ -72,58 +89,11 @@ export const EventScraper = () => {
   };
 
   const handleScrapeCustomUrls = async () => {
-    if (!customUrl.trim()) {
-      toast({
-        title: "Error",
-        description: "Please enter URLs to scrape",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsLoading(true);
-    setProgress(0);
-
-    try {
-      const urls = customUrl.split('\n').map(url => url.trim()).filter(Boolean);
-      
-      const { data, error } = await supabase.functions.invoke('firecrawl-scraper', {
-        body: { 
-          urls,
-          city: city.toLowerCase(),
-          country: country.toLowerCase()
-        }
-      });
-
-      if (error) {
-        throw error;
-      }
-      
-      if (data?.success && data?.events) {
-        setScrapedEvents(data.events);
-        
-        toast({
-          title: "Success",
-          description: `Scraped ${data.events.length} events from custom URLs`,
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: data?.error || "Failed to scrape custom URLs",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error('Error scraping custom URLs:', error);
-      toast({
-        title: "Error",
-        description: "Failed to scrape custom URLs",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-      setProgress(100);
-    }
+    toast({
+      title: "Feature removed",
+      description: "Custom URL scraping is no longer available. Use Google Places venue search instead.",
+      variant: "destructive",
+    });
   };
 
   return (
@@ -164,7 +134,7 @@ export const EventScraper = () => {
             ) : (
               <>
                 <Globe className="w-4 h-4 mr-2" />
-                Scrape Events from Major Sites
+                Search Event Venues (Google Places)
               </>
             )}
           </Button>
@@ -260,8 +230,8 @@ https://local-venue.com/upcoming-shows`}
         <Card>
           <CardContent className="py-8 text-center text-muted-foreground">
             <Globe className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>No events scraped yet. Select a city and click "Scrape Events" to get started.</p>
-            <p className="text-xs mt-2">Supports: Eventbrite, BookMyShow, Paytm Insider, Meetup, and custom URLs</p>
+            <p>No venues found yet. Select a city and click "Search Event Venues" to get started.</p>
+            <p className="text-xs mt-2">Powered by Google Places API to find event venues and locations</p>
           </CardContent>
         </Card>
       )}
