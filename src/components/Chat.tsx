@@ -654,20 +654,20 @@ export const Chat: React.FC<ChatProps> = ({
       {/* Debug info */}
       <div className="hidden">Chat component mounted - input should be visible</div>
       {/* Header */}
-      <div className="bg-primary text-primary-foreground p-3 flex items-center gap-3 shadow-lg flex-shrink-0">
+      <div className="bg-primary text-primary-foreground p-2 sm:p-3 flex items-center gap-2 sm:gap-3 shadow-lg flex-shrink-0 safe-top">
         <Button variant="ghost" size="sm" onClick={onClose} className="text-primary-foreground hover:bg-primary-foreground/20 h-8 w-8 p-0 rounded-full">
           <ArrowLeft className="h-4 w-4" />
         </Button>
         
-        <Avatar className="h-10 w-10">
+        <Avatar className="h-8 w-8 sm:h-10 sm:w-10">
           <AvatarImage src={partnerProfile?.avatar_url || undefined} />
-          <AvatarFallback className="bg-primary-foreground text-primary">
+          <AvatarFallback className="bg-primary-foreground text-primary text-sm">
             {getPartnerDisplayName().charAt(0).toUpperCase()}
           </AvatarFallback>
         </Avatar>
         
-        <div className="flex-1">
-          <h3 className="font-semibold text-lg">{getPartnerDisplayName()}</h3>
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold text-base sm:text-lg truncate">{getPartnerDisplayName()}</h3>
           
         </div>
         
@@ -691,9 +691,9 @@ export const Chat: React.FC<ChatProps> = ({
         </DropdownMenu>
       </div>
 
-      {/* Messages Container - Reduced size */}
-      <div className="flex-1 overflow-hidden flex flex-col min-h-0 pb-20">
-        <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-gradient-to-b from-background to-muted/20">
+      {/* Messages Container - Mobile optimized */}
+      <div className="flex-1 overflow-hidden flex flex-col min-h-0 pb-16 sm:pb-20">
+        <div className="flex-1 p-3 sm:p-4 overflow-y-auto space-y-3 sm:space-y-4 bg-gradient-to-b from-background to-muted/20">
           {loading ? <div className="flex items-center justify-center h-full">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div> : messages.length === 0 ? <div className="flex items-center justify-center h-full text-center">
@@ -705,8 +705,8 @@ export const Chat: React.FC<ChatProps> = ({
             </div> : messages.map(message => {
           const isOwn = message.sender_id === user?.id;
           const senderName = isOwn ? getUserDisplayName() : getPartnerDisplayName();
-          return <div key={message.id} className={`flex ${isOwn ? 'justify-end' : 'justify-start'} animate-fade-in mb-4 relative`}>
-                  <div className={`max-w-[80%] rounded-2xl p-4 shadow-soft relative ${message.message_type === 'emoji' || message.message_type === 'sticker' ? 'text-3xl bg-transparent' : isOwn ? 'bg-gradient-to-br from-primary to-primary/80 text-primary-foreground' : 'bg-card'}`} onTouchStart={() => handleLongPressStart(message.id)} onTouchEnd={handleLongPressEnd} onMouseDown={() => handleLongPressStart(message.id)} onMouseUp={handleLongPressEnd} onMouseLeave={handleLongPressEnd}>
+          return <div key={message.id} className={`flex ${isOwn ? 'justify-end' : 'justify-start'} animate-fade-in mb-2 sm:mb-4 relative`}>
+                  <div className={`max-w-[85%] sm:max-w-[80%] rounded-2xl p-3 sm:p-4 shadow-soft relative ${message.message_type === 'emoji' || message.message_type === 'sticker' ? 'text-2xl sm:text-3xl bg-transparent' : isOwn ? 'bg-gradient-to-br from-primary to-primary/80 text-primary-foreground' : 'bg-card'}`} onTouchStart={() => handleLongPressStart(message.id)} onTouchEnd={handleLongPressEnd} onMouseDown={() => handleLongPressStart(message.id)} onMouseUp={handleLongPressEnd} onMouseLeave={handleLongPressEnd}>
                       {message.message_type === 'image' ? <img src={message.message_text} alt="Shared image" className="max-w-full h-auto rounded-lg cursor-pointer" onClick={() => window.open(message.message_text, '_blank')} /> : message.message_type === 'video' ? <video src={message.message_text} controls className="max-w-full h-auto rounded-lg" style={{
                 maxHeight: '300px'
               }} /> : <div className="text-sm leading-relaxed">
@@ -788,27 +788,27 @@ export const Chat: React.FC<ChatProps> = ({
           </div>
         </div>}
 
-      {/* Message Input - Fixed at bottom with keyboard awareness */}
+      {/* Message Input - Mobile optimized fixed bottom */}
       <div 
-        className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-lg border-t border-border z-50 transition-all duration-300 ease-in-out"
+        className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-lg border-t border-border z-50 transition-all duration-300 ease-in-out safe-bottom"
         style={{
-          paddingBottom: 'max(env(safe-area-inset-bottom, 0px), env(keyboard-inset-height, 0px))'
+          paddingBottom: 'max(env(safe-area-inset-bottom, 8px), env(keyboard-inset-height, 8px))'
         }}
       >
-        <div className="max-w-md mx-auto px-3 py-2">
-          <div className="flex gap-1 items-center">
+        <div className="w-full px-2 sm:px-3 py-2 sm:py-3">
+          <div className="flex gap-1 sm:gap-2 items-center max-w-full">
             {/* Gallery Button */}
             <Button variant="ghost" size="sm" onClick={() => {
             if (fileInputRef.current) {
               fileInputRef.current.accept = 'image/*,video/*';
               fileInputRef.current.click();
             }
-          }} className="rounded-full h-8 w-8 p-0">
+          }} className="rounded-full h-8 w-8 p-0 flex-shrink-0">
               <Image className="h-4 w-4" />
             </Button>
             
-            <div className="flex-1 relative">
-              <Input ref={inputRef} placeholder="Type a message..." value={newMessage} onChange={e => setNewMessage(e.target.value)} onKeyPress={handleKeyPress} className="h-8 rounded-full border focus:border-primary text-sm pl-10" disabled={loading} />
+            <div className="flex-1 relative min-w-0">
+              <Input ref={inputRef} placeholder="Type a message..." value={newMessage} onChange={e => setNewMessage(e.target.value)} onKeyPress={handleKeyPress} className="h-8 sm:h-9 rounded-full border focus:border-primary text-sm pl-9 sm:pl-10 pr-3" disabled={loading} />
               <Button variant="ghost" size="sm" onClick={startCamera} className="absolute left-1 top-1/2 -translate-y-1/2 rounded-full h-6 w-6 p-0">
                 <Camera className="h-3 w-3" />
               </Button>
@@ -821,7 +821,7 @@ export const Chat: React.FC<ChatProps> = ({
             
             
             {/* Send Button */}
-            <Button onClick={() => sendMessage(newMessage)} disabled={loading || !newMessage.trim()} size="sm" className="rounded-full h-8 w-8 p-0">
+            <Button onClick={() => sendMessage(newMessage)} disabled={loading || !newMessage.trim()} size="sm" className="rounded-full h-8 w-8 p-0 flex-shrink-0">
               <Send className="h-4 w-4" />
             </Button>
           </div>
