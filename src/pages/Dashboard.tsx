@@ -808,11 +808,11 @@ export const Dashboard = () => {
         }}>
           {isLoaded ? <>
               {/* Last Check-in Card - Minimal & Elegant */}
-              <div className="group relative bg-gradient-to-br from-card to-card/95 border border-border/50 rounded-xl p-3 shadow-soft cursor-pointer hover:shadow-md transition-all hover:scale-[1.01] duration-200" onClick={() => setShowCheckinInsights(true)}>
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/3 to-secondary/3 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+              <div className="group relative bg-gradient-to-br from-card to-card/95 border border-border/50 rounded-2xl p-3 shadow-soft cursor-pointer hover:shadow-md transition-all hover:scale-[1.01] duration-200" onClick={() => setShowCheckinInsights(true)}>
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/3 to-secondary/3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-2xl" />
                 
                 <div className="relative flex items-center gap-2.5">
-                  <div className="w-8 h-8 bg-gradient-romance rounded-lg flex items-center justify-center flex-shrink-0">
+                  <div className="w-8 h-8 bg-gradient-romance rounded-xl flex items-center justify-center flex-shrink-0">
                     <Heart className="text-white" size={14} />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -830,12 +830,12 @@ export const Dashboard = () => {
               </div>
 
               {/* Relationship Health Card - Minimal & Elegant */}
-              <div className="group relative bg-gradient-to-br from-card to-card/95 border border-border/50 rounded-xl p-3 shadow-soft cursor-pointer hover:shadow-md transition-all hover:scale-[1.01] duration-200" onClick={() => setShowHealthTips(true)}>
-                <div className="absolute inset-0 bg-gradient-to-br from-accent/3 to-primary/3 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+              <div className="group relative bg-gradient-to-br from-card to-card/95 border border-border/50 rounded-2xl p-3 shadow-soft cursor-pointer hover:shadow-md transition-all hover:scale-[1.01] duration-200" onClick={() => setShowHealthTips(true)}>
+                <div className="absolute inset-0 bg-gradient-to-br from-accent/3 to-primary/3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-2xl" />
                 
                 <div className="relative">
                   <div className="flex items-center gap-2.5 mb-2">
-                    <div className="w-8 h-8 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center flex-shrink-0">
+                    <div className="w-8 h-8 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center flex-shrink-0">
                       <Activity className="text-white" size={14} />
                     </div>
                     <div className="flex-1">
