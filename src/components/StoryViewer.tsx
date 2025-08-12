@@ -523,12 +523,12 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
             </div>
           )}
 
-          {/* Story Reactions Display - positioned above everything else at bottom */}
+          {/* Story Reactions Display - positioned as rounded bubbles in bottom right */}
           {responses.length > 0 && (
-            <div className={`absolute left-4 right-4 text-white z-15 ${
-              !isOwnStory ? 'bottom-16' : 'bottom-8'
+            <div className={`absolute right-4 text-white z-15 ${
+              !isOwnStory ? 'bottom-20' : 'bottom-16'
             }`}>
-              <div className="bg-black/60 backdrop-blur-sm rounded-lg p-2 max-h-20 overflow-y-auto space-y-1">
+              <div className="flex flex-col gap-2 items-end max-w-[200px]">
                 {(() => {
                   // Filter to show only the latest reaction from each user
                   const latestResponsesMap = new Map();
@@ -540,13 +540,11 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
                   });
                   
                   return Array.from(latestResponsesMap.values()).map((response) => (
-                    <div key={response.id} className="flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-2">
-                        <span className="text-base">{response.response_text}</span>
-                        <span className="text-xs text-white/70">
-                          {formatDistanceToNow(new Date(response.created_at), { addSuffix: true })}
-                        </span>
-                      </div>
+                    <div 
+                      key={response.id} 
+                      className="bg-black/70 backdrop-blur-sm rounded-full px-3 py-2 text-sm animate-fade-in"
+                    >
+                      <span className="text-base">{response.response_text}</span>
                     </div>
                   ));
                 })()}
