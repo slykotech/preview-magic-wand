@@ -32,7 +32,7 @@ interface StoryViewerProps {
   targetUserId: string;
   coupleId: string;
   isOwnStory: boolean;
-  showUploadInterface?: boolean; // New prop to control upload interface
+  showUploadInterface?: boolean;
 }
 
 export const StoryViewer: React.FC<StoryViewerProps> = ({
@@ -51,11 +51,6 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
   const [responseText, setResponseText] = useState('');
   const [loading, setLoading] = useState(false);
   const [showCreateStory, setShowCreateStory] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [caption, setCaption] = useState('');
-  const [uploading, setUploading] = useState(false);
-  const [showCamera, setShowCamera] = useState(false);
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [progressTimer, setProgressTimer] = useState<NodeJS.Timeout | null>(null);
   const [isPaused, setIsPaused] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -82,21 +77,6 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
       }
     }
   }, [isOpen, targetUserId, showUploadInterface, isOwnStory]);
-
-  // Auto-open camera file input on native platforms when upload interface is requested
-  useEffect(() => {
-    if (isOpen && showUploadInterface && isOwnStory) {
-      console.log('[StoryViewer] Upload mode open', { native: typeof Capacitor !== 'undefined' ? Capacitor.isNativePlatform() : false });
-      try {
-        if (typeof Capacitor !== 'undefined' && Capacitor.isNativePlatform()) {
-          setShowCreateStory(true);
-          setTimeout(() => cameraFileInputRef.current?.click(), 200);
-        }
-      } catch (e) {
-        console.log('Error auto-opening camera input:', e);
-      }
-    }
-  }, [isOpen, showUploadInterface, isOwnStory]);
 
   // Get current stories array based on context
   const currentStories = isOwnStory ? userStories : partnerStories;
@@ -227,7 +207,6 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
       if (error) throw error;
       
       setResponseText('');
-      setShowEmojiPicker(false);
       fetchStoryResponses();
       toast.success('Response sent!');
     } catch (error) {
@@ -240,314 +219,6 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
 
   const handleEmojiResponse = (emoji: string) => {
     handleSendResponse(emoji);
-  };
-
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    console.log('[StoryViewer] File input triggered');
-    const file = event.target.files?.[0];
-    if (file) {
-      console.log('[StoryViewer] File selected:', file.name, file.type, file.size);
-      setSelectedFile(file);
-      setShowCamera(false);
-      toast.success('Photo selected! Add a caption and share your story.');
-    } else {
-      console.log('[StoryViewer] No file selected');
-    }
-  };
-
-  const checkCameraSupport = () => {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      toast.error('Camera is not supported in this browser. Please use a modern browser like Chrome, Firefox, or Safari.');
-      return false;
-    }
-    
-    // Check if we're on HTTPS or localhost (required for camera access)
-    if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
-      toast.error('Camera access requires a secure connection (HTTPS). Please check your connection.');
-      return false;
-    }
-    
-    return true;
-  };
-
-  const checkPermissions = async () => {
-    try {
-      // Try to check permissions if the API is available
-      if ('permissions' in navigator) {
-        const permission = await navigator.permissions.query({ name: 'camera' as PermissionName });
-        console.log('Camera permission status:', permission.state);
-        
-        if (permission.state === 'denied') {
-          toast.error(
-            'Camera access is permanently denied. Please enable camera permissions in your browser settings:\n' +
-            '1. Click the camera icon in your address bar\n' +
-            '2. Select "Allow" for camera access\n' +
-            '3. Refresh the page and try again'
-          );
-          return false;
-        }
-      }
-      return true;
-    } catch (error) {
-      console.log('Permissions API not available, will try direct access');
-      return true;
-    }
-  };
-
-  const startCamera = async () => {
-    console.log('[StoryViewer] Camera button clicked - startCamera function called');
-    
-    // On native mobile (Capacitor), prefer the camera via file input capture for reliability
-    try {
-      if (typeof Capacitor !== 'undefined' && Capacitor.isNativePlatform()) {
-        console.log('[StoryViewer] Native platform detected, using file input capture');
-        cameraFileInputRef.current?.click();
-        return;
-      }
-    } catch (error) {
-      console.error('[StoryViewer] Capacitor check failed:', error);
-    }
-    
-    // Check if we're on mobile web
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    if (isMobile) {
-      console.log('[StoryViewer] Mobile web detected, using file input capture');
-      cameraFileInputRef.current?.click();
-      return;
-    }
-    try {
-      console.log('=== CAMERA ACCESS ATTEMPT ===');
-      console.log('Navigator.mediaDevices available:', !!navigator.mediaDevices);
-      console.log('getUserMedia available:', !!navigator.mediaDevices?.getUserMedia);
-      console.log('Current URL:', window.location.href);
-      console.log('User agent:', navigator.userAgent);
-      console.log('Video ref available:', !!videoRef.current);
-      console.log('showCamera state before:', showCamera);
-      
-      // Step 1: Check basic camera support
-      if (!checkCameraSupport()) {
-        console.log('Camera support check failed');
-        return;
-      }
-      console.log('Camera support check passed');
-
-      // Step 2: Add loading toast
-      toast.loading('Requesting camera access...', { id: 'camera-loading' });
-
-      // Step 3: Request camera access FIRST - this will trigger the permission prompt
-      console.log('Requesting camera stream...');
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { 
-          facingMode: 'user',
-          width: { ideal: 1280, min: 640, max: 1920 },
-          height: { ideal: 720, min: 480, max: 1080 }
-        }, 
-        audio: false 
-      });
-      
-      console.log('Camera stream obtained successfully');
-      
-      // Step 4: Only show camera UI AFTER we have the stream
-      setShowCamera(true);
-      
-      // Step 5: Wait for video element to be rendered
-      await new Promise(resolve => setTimeout(resolve, 150));
-      
-      // Step 6: Set up video element
-      console.log('Setting up video element, videoRef available:', !!videoRef.current);
-      if (videoRef.current) {
-        console.log('Video element found, setting stream...');
-        videoRef.current.srcObject = stream;
-        videoRef.current.muted = true;
-        try { videoRef.current.setAttribute('muted', 'true'); } catch {}
-        
-        // Wait for video to be ready
-        await new Promise<void>((resolve, reject) => {
-          if (videoRef.current) {
-            videoRef.current.onloadedmetadata = () => {
-              console.log('Video metadata loaded');
-              resolve();
-            };
-            videoRef.current.onerror = (error) => {
-              console.error('Video error:', error);
-              reject(new Error('Failed to load video'));
-            };
-          }
-        });
-        
-        // Play the video
-        await videoRef.current.play();
-        console.log('Camera video started playing');
-        
-        toast.dismiss('camera-loading');
-        toast.dismiss(); // Dismiss all toasts to ensure loading message is gone
-        toast.success('Camera is ready! Position yourself and click "Capture" to take a photo.');
-      } else {
-        console.error('Video element not found! videoRef.current is null');
-        setShowCamera(false); // Hide camera UI if setup failed
-        toast.error('Camera setup failed - video element not available');
-      }
-    } catch (error: any) {
-      console.error('Camera access error:', error);
-      setShowCamera(false); // Ensure camera UI is hidden on any error
-      toast.dismiss('camera-loading');
-      
-      // Enhanced error handling with specific solutions
-      if (error.name === 'NotAllowedError') {
-        toast.error(
-          '🚫 Camera access is BLOCKED for this site. To fix this:\n\n' +
-          '📍 CHROME/EDGE:\n' +
-          '1. Click the 🔒 lock icon (or 🎥 camera icon) in your address bar\n' +
-          '2. Change Camera from "Block" to "Allow"\n' +
-          '3. Refresh the page\n\n' +
-          '📍 FIREFOX:\n' +
-          '1. Click the 🛡️ shield icon in your address bar\n' +
-          '2. Click "Allow Camera"\n' +
-          '3. Refresh the page\n\n' +
-          '📍 SAFARI:\n' +
-          '1. Go to Safari > Settings > Websites > Camera\n' +
-          '2. Find this site and change to "Allow"\n' +
-          '3. Refresh the page',
-          { duration: 15000 }
-        );
-      } else if (error.name === 'NotFoundError') {
-        toast.error(
-          'No camera found. Please:\n' +
-          '1. Check that your camera is connected\n' +
-          '2. Make sure no other apps are using the camera\n' +
-          '3. Try refreshing the page'
-        );
-      } else if (error.name === 'NotSupportedError') {
-        toast.error('Camera is not supported on this device or browser. Please use a modern browser.');
-      } else if (error.name === 'NotReadableError') {
-        toast.error(
-          'Camera is busy. Please:\n' +
-          '1. Close other apps using the camera\n' +
-          '2. Restart your browser\n' +
-          '3. Try again'
-        );
-      } else if (error.name === 'OverconstrainedError') {
-        toast.error('Camera settings not supported. Trying with basic settings...');
-        // Retry with basic settings
-        setTimeout(() => startCameraBasic(), 1000);
-      } else {
-        toast.error(
-          'Camera access failed. Try:\n' +
-          '1. Refreshing the page\n' +
-          '2. Checking browser permissions\n' +
-          '3. Using a different browser'
-        );
-      }
-    }
-  };
-
-  // Fallback camera access with minimal constraints
-  const startCameraBasic = async () => {
-    try {
-      console.log('Attempting basic camera access...');
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: true, 
-        audio: false 
-      });
-      
-      // Only show camera UI after getting the stream
-      setShowCamera(true);
-      
-      // Wait for video element to be rendered
-      await new Promise(resolve => setTimeout(resolve, 150));
-      
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.muted = true;
-        try { videoRef.current.setAttribute('muted', 'true'); } catch {}
-        await videoRef.current.play();
-        toast.success('Camera is ready with basic settings!');
-      } else {
-        // Clean up stream if video element not available
-        stream.getTracks().forEach(track => track.stop());
-        setShowCamera(false);
-        toast.error('Camera setup failed - video element not available');
-      }
-    } catch (error) {
-      console.error('Basic camera access also failed:', error);
-      setShowCamera(false);
-      toast.error('Unable to access camera even with basic settings. Please check your device and browser.');
-    }
-  };
-
-  const capturePhoto = () => {
-    if (videoRef.current && canvasRef.current) {
-      const video = videoRef.current;
-      const canvas = canvasRef.current;
-      const context = canvas.getContext('2d');
-      
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      
-      if (context) {
-        context.drawImage(video, 0, 0);
-        canvas.toBlob((blob) => {
-          if (blob) {
-            const file = new File([blob], 'camera-capture.jpg', { type: 'image/jpeg' });
-            setSelectedFile(file);
-            stopCamera();
-          }
-        }, 'image/jpeg', 0.9);
-      }
-    }
-  };
-
-  const stopCamera = () => {
-    if (videoRef.current?.srcObject) {
-      const stream = videoRef.current.srcObject as MediaStream;
-      stream.getTracks().forEach(track => track.stop());
-    }
-    setShowCamera(false);
-  };
-
-  const handleCreateStory = async () => {
-    if (!selectedFile || !user) return;
-
-    setUploading(true);
-    try {
-      // Upload image to storage
-      const fileExt = selectedFile.name.split('.').pop();
-      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-      
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('story-images')
-        .upload(fileName, selectedFile);
-
-      if (uploadError) throw uploadError;
-
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('story-images')
-        .getPublicUrl(fileName);
-
-      // Create story record
-      const { error: storyError } = await supabase
-        .from('stories')
-        .insert({
-          couple_id: coupleId,
-          user_id: user.id,
-          image_url: publicUrl,
-          caption: caption.trim() || null
-        });
-
-      if (storyError) throw storyError;
-
-      toast.success('Story created successfully!');
-      setSelectedFile(null);
-      setCaption('');
-      setShowCreateStory(false);
-      fetchStories();
-    } catch (error) {
-      console.error('Error creating story:', error);
-      toast.error('Failed to create story');
-    } finally {
-      setUploading(false);
-    }
   };
 
   const nextStory = () => {
@@ -575,7 +246,7 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
         
         // Delete from storage (non-blocking)
         supabase.storage
-          .from('story-images')
+          .from('stories')
           .remove([filePath])
           .then(({ error: storageError }) => {
             if (storageError) console.log('Storage deletion warning:', storageError);
@@ -809,7 +480,7 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
           {responses.length > 0 && (
             <div className="absolute bottom-2 left-4 right-4 text-white">
               <div className="bg-black/50 backdrop-blur-sm rounded-lg p-3 max-h-32 overflow-y-auto space-y-2">
-                {responses.map((response, index) => (
+                {responses.map((response) => (
                   <div key={response.id} className="flex items-center justify-between text-sm">
                     <div className="flex items-center gap-2">
                       <span className="text-lg">{response.response_text}</span>
@@ -838,9 +509,8 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
                 className="flex-1 bg-white/10 border-white/20 text-white placeholder-white/60 rounded-full"
               />
               <Button
-                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                size="icon"
                 variant="ghost"
+                size="icon"
                 className="text-white hover:bg-white/20 rounded-full"
               >
                 <Smile className="h-4 w-4" />
