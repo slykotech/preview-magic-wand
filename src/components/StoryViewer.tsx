@@ -300,7 +300,7 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
   };
 
   const startCamera = async () => {
-    console.log('[StoryViewer] Camera button clicked');
+    console.log('[StoryViewer] Camera button clicked - startCamera function called');
     
     // On native mobile (Capacitor), prefer the camera via file input capture for reliability
     try {
@@ -326,6 +326,8 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
       console.log('getUserMedia available:', !!navigator.mediaDevices?.getUserMedia);
       console.log('Current URL:', window.location.href);
       console.log('User agent:', navigator.userAgent);
+      console.log('Video ref available:', !!videoRef.current);
+      console.log('showCamera state before:', showCamera);
       
       // Step 1: Check basic camera support
       if (!checkCameraSupport()) {
@@ -333,6 +335,9 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
         return;
       }
       console.log('Camera support check passed');
+
+      // Step 2: Add loading toast
+      toast.loading('Requesting camera access...', { id: 'camera-loading' });
 
       // Step 3: Request camera access FIRST - this will trigger the permission prompt
       console.log('Requesting camera stream...');
@@ -389,6 +394,7 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
       }
     } catch (error: any) {
       console.error('Camera access error:', error);
+      setShowCamera(false); // Ensure camera UI is hidden on any error
       toast.dismiss('camera-loading');
       
       // Enhanced error handling with specific solutions
@@ -734,8 +740,9 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
                 <Button
                   variant="outline"
                   onClick={(e) => {
-                    console.log('[StoryViewer] Take Photo button clicked');
+                    console.log('[StoryViewer] Take Photo button clicked - initiating camera');
                     e.preventDefault();
+                    e.stopPropagation();
                     startCamera();
                   }}
                   className="bg-gradient-to-br from-background to-muted/20 hover:from-muted/20 hover:to-muted/40 border-border/50 hover:border-primary/50 transition-all duration-300 hover:scale-105"
