@@ -14,6 +14,7 @@ import { RecentTasks } from "@/components/RecentTasks";
 import { useEnhancedSyncScore } from "@/hooks/useEnhancedSyncScore";
 import { usePresence } from "@/hooks/usePresence";
 import { useCardGames } from "@/hooks/useCardGames";
+import { useCoupleData } from "@/hooks/useCoupleData";
 import { SyncScoreSkeleton, DashboardCardSkeleton, CompactCardSkeleton, MoodDisplaySkeleton } from "@/components/ui/skeleton";
 import { Calendar, Heart, MessageCircle, Sparkles, Clock, Lightbulb, X, Activity, Gamepad2, Play, Trophy, CheckCircle, MapPin, Camera, Star } from "lucide-react";
 import { GradientHeader } from "@/components/GradientHeader";
@@ -106,22 +107,41 @@ export const Dashboard = () => {
     loading
   } = useAuth();
 
+  // Use couple data hook for more reliable couple info
+  const { coupleData, userProfile: hookUserProfile, partnerProfile: hookPartnerProfile } = useCoupleData();
+
   // Use enhanced sync score hook
   const {
     syncScoreData,
     loading: syncScoreLoading,
     logActivity,
     refreshSyncScore
-  } = useEnhancedSyncScore(coupleId);
+  } = useEnhancedSyncScore(coupleData?.id || coupleId);
 
   // Ensure we have a safe score value
   const currentSyncScore = syncScoreData?.score ?? 0;
 
-  // Use presence tracking hook - now also tracked globally in App.tsx
+  // Use presence tracking hook - prioritize couple data from hook over local state
+  const effectiveCoupleId = coupleData?.id || coupleId;
   const {
     isUserOnline,
     isPartnerOnline
-  } = usePresence(coupleId);
+  } = usePresence(effectiveCoupleId);
+
+  // Debug presence state
+  useEffect(() => {
+    console.log('🎯 Dashboard presence debug:', {
+      coupleId,
+      coupleDataId: coupleData?.id,
+      effectiveCoupleId,
+      isUserOnline,
+      isPartnerOnline,
+      user: user?.id,
+      partnerId,
+      hasUserAuth: !!user,
+      hasCoupleData: !!coupleData
+    });
+  }, [coupleId, coupleData?.id, effectiveCoupleId, isUserOnline, isPartnerOnline, user?.id, partnerId]);
 
   // Use card games hook
   const {

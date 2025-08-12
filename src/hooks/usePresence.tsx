@@ -23,9 +23,15 @@ export const usePresence = (coupleId?: string) => {
   }
 
   useEffect(() => {
-    console.log('usePresence effect triggered:', { user: user?.id, coupleId });
+    console.log('🔄 usePresence effect triggered:', { 
+      userId: user?.id, 
+      coupleId,
+      hasUser: !!user,
+      hasCoupleId: !!coupleId 
+    });
+    
     if (!user) {
-      console.log('No user, clearing presence states');
+      console.log('❌ No user, clearing presence states');
       setIsUserOnline(false);
       setIsPartnerOnline(false);
       return;
@@ -33,17 +39,22 @@ export const usePresence = (coupleId?: string) => {
 
     // Only track presence when we have a couple ID
     if (!coupleId) {
-      console.log('No coupleId, setting presence states to false');
+      console.log('❌ No coupleId, setting presence states to false');
       setIsUserOnline(false);
       setIsPartnerOnline(false);
       return;
     }
 
-    console.log('Setting up presence tracking for couple:', coupleId);
+    console.log('✅ Setting up presence tracking for couple:', coupleId);
 
     // Cleanup any existing channel and heartbeat
     if (channelRef.current) {
-      console.log('Cleaning up existing channel');
+      console.log('🧹 Cleaning up existing channel');
+      try {
+        channelRef.current.untrack();
+      } catch (e) {
+        console.warn('Failed to untrack existing channel:', e);
+      }
       supabase.removeChannel(channelRef.current);
       channelRef.current = null;
     }
