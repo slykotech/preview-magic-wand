@@ -317,7 +317,7 @@ export const DailyCheckinFlow: React.FC<DailyCheckinFlowProps> = ({
     }
   };
   return <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-2 z-[100] overflow-hidden">
-      <div className="w-full max-w-sm max-h-[90vh] h-fit flex flex-col">
+      <div className="w-full max-w-sm h-[85vh] flex flex-col">
         <Card className="flex-1 flex flex-col overflow-hidden">
           <CardContent className="p-0 flex flex-col h-full">
             {/* Header with streak display - Fixed */}
