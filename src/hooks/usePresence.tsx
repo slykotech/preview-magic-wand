@@ -4,6 +4,7 @@ import { useAuth } from './useAuth';
 
 interface PresenceState {
   user_id: string;
+  device_id: string;
   online_at: string;
 }
 
@@ -12,6 +13,12 @@ export const usePresence = (coupleId?: string) => {
   const [isPartnerOnline, setIsPartnerOnline] = useState(false);
   const { user } = useAuth();
   const notifiedOnlineRef = useRef(false);
+  const deviceIdRef = useRef<string>();
+
+  // Generate a unique device ID for this session
+  if (!deviceIdRef.current) {
+    deviceIdRef.current = `${user?.id || 'anonymous'}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  }
 
   useEffect(() => {
     if (!user) {
@@ -27,9 +34,10 @@ export const usePresence = (coupleId?: string) => {
 
     const channel = supabase.channel(`couple_presence_${coupleId}`);
 
-    // Track user's presence
+    // Track user's presence with unique device ID
     const userStatus: PresenceState = {
       user_id: user.id,
+      device_id: deviceIdRef.current,
       online_at: new Date().toISOString(),
     };
 
@@ -37,29 +45,42 @@ export const usePresence = (coupleId?: string) => {
     channel
       .on('presence', { event: 'sync' }, () => {
         const newState = channel.presenceState();
+        console.log('Presence sync:', newState);
         
-        // Check if current user is online
+        // Check if current user is online (from any device)
         const userPresent = Object.values(newState).some((presences: any) =>
           presences.some((presence: any) => presence.user_id === user.id)
         );
         setIsUserOnline(userPresent);
 
-        // Check if partner is online (any other user in the couple channel)
+        // Check if partner is online (any other user in the couple channel, from any device)
         const partnerPresent = Object.values(newState).some((presences: any) =>
           presences.some((presence: any) => presence.user_id !== user.id)
         );
         setIsPartnerOnline(partnerPresent);
+        console.log('User online:', userPresent, 'Partner online:', partnerPresent);
       })
       .on('presence', { event: 'join' }, ({ newPresences }) => {
-        const joinedUser = newPresences[0];
-        if (joinedUser.user_id !== user.id) {
+        console.log('User joined:', newPresences);
+        // Check if any of the new presences is a partner (not current user)
+        const hasPartnerJoined = newPresences.some((presence: any) => presence.user_id !== user.id);
+        if (hasPartnerJoined) {
           setIsPartnerOnline(true);
         }
       })
       .on('presence', { event: 'leave' }, ({ leftPresences }) => {
-        const leftUser = leftPresences[0];
-        if (leftUser.user_id !== user.id) {
-          setIsPartnerOnline(false);
+        console.log('User left:', leftPresences);
+        // Only set partner offline if no other partner devices are present
+        const leftUserIds = leftPresences.map((p: any) => p.user_id);
+        const hasPartnerLeft = leftUserIds.some((id: string) => id !== user.id);
+        
+        if (hasPartnerLeft) {
+          // Check if partner still has other devices online
+          const currentState = channel.presenceState();
+          const partnerStillPresent = Object.values(currentState).some((presences: any) =>
+            presences.some((presence: any) => presence.user_id !== user.id)
+          );
+          setIsPartnerOnline(partnerStillPresent);
         }
       })
       .subscribe(async (status) => {
@@ -101,7 +122,8 @@ export const usePresence = (coupleId?: string) => {
     const heartbeat = setInterval(async () => {
       try {
         await channel.track({
-          ...userStatus,
+          user_id: user.id,
+          device_id: deviceIdRef.current,
           online_at: new Date().toISOString(),
         });
       } catch (error) {
@@ -113,13 +135,14 @@ export const usePresence = (coupleId?: string) => {
     const handleVisibilityChange = async () => {
       if (document.visibilityState === 'visible') {
         await channel.track({
-          ...userStatus,
+          user_id: user.id,
+          device_id: deviceIdRef.current,
           online_at: new Date().toISOString(),
         });
         setIsUserOnline(true);
       } else {
-        // Optionally reduce presence when tab becomes hidden
-        // We'll keep them as online but could implement "away" status
+        // Keep presence active even when tab is hidden
+        // Users remain online across multiple devices/tabs
       }
     };
 
