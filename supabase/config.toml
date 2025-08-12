@@ -52,16 +52,7 @@ verify_jwt = true
 [functions.admin-delete-user]
 verify_jwt = true
 
-[functions.test-email]
-verify_jwt = true
-
-[functions.scheduled-event-fetcher]
-verify_jwt = true
-
 [functions.get-revenuecat-config]
-verify_jwt = true
-
-[functions.scrape-ticketmaster]
 verify_jwt = true
 
 [functions.scrape-targeted-cities]
