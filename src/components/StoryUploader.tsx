@@ -87,12 +87,12 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
 
       console.log('About to request camera stream...');
       
-      // Step 2: Request camera access with facing mode constraint
+      // Step 2: Request camera access with simplified constraints
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: facingMode,
-          width: { ideal: 1280, min: 640, max: 1920 },
-          height: { ideal: 720, min: 480, max: 1080 }
+          width: { ideal: 640 },
+          height: { ideal: 480 }
         },
         audio: false 
       });
@@ -104,30 +104,55 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
       // Update current camera state
       setCurrentCamera(facingMode);
       
-      // Step 3: Show camera UI after we have the stream
+      // Step 3: Show camera UI first
       console.log('Setting showCamera to true...');
       setShowCamera(true);
-      setShowCameraOptions(false); // Hide options modal
+      setShowCameraOptions(false);
       
-      // Step 4: Wait for video element to be rendered
-      console.log('Waiting for video element...');
-      await new Promise(resolve => setTimeout(resolve, 300));
+      // Step 4: Wait for video element to be rendered and attach stream
+      await new Promise(resolve => setTimeout(resolve, 100));
       
       console.log('Video ref current:', !!videoRef.current);
       if (videoRef.current) {
         console.log('📹 Connecting stream to video element...');
-        videoRef.current.srcObject = stream;
-        videoRef.current.muted = true;
-        videoRef.current.setAttribute('muted', 'true');
+        const video = videoRef.current;
+        video.srcObject = stream;
+        video.muted = true;
+        video.playsInline = true;
+        video.autoplay = true;
         
-        console.log('Starting video playback...');
-        await videoRef.current.play();
-        console.log('✅ Video playing successfully!');
-        
-        toast({
-          title: "Camera ready! 📸",
-          description: "Camera is working!"
+        // Add event listeners for debugging
+        video.addEventListener('loadedmetadata', () => {
+          console.log('📹 Video metadata loaded');
         });
+        
+        video.addEventListener('canplay', () => {
+          console.log('📹 Video can play');
+        });
+        
+        video.addEventListener('play', () => {
+          console.log('📹 Video started playing');
+        });
+        
+        video.addEventListener('error', (e) => {
+          console.error('📹 Video error:', e);
+        });
+        
+        try {
+          await video.play();
+          console.log('✅ Video playing successfully!');
+          
+          toast({
+            title: "Camera ready! 📸",
+            description: "Camera is working!"
+          });
+        } catch (playError) {
+          console.error('Video play error:', playError);
+          // Try manual play trigger
+          setTimeout(() => {
+            video.play().catch(e => console.error('Delayed play failed:', e));
+          }, 500);
+        }
       } else {
         console.error('❌ Video element not found after waiting!');
         // Clean up the stream if video element failed
