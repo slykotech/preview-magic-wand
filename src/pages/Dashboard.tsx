@@ -790,8 +790,8 @@ export const Dashboard = () => {
               {/* Last Check-in Card - Compact */}
               <div className="bg-card border rounded-lg p-3 shadow-sm cursor-pointer hover:shadow-md transition-all hover:scale-105 duration-200" onClick={() => setShowCheckinInsights(true)}>
                 <div className="flex items-center gap-2 mb-2">
-                  <div className="w-8 h-8 bg-secondary rounded-full flex items-center justify-center">
-                    <Heart className="text-white" size={16} />
+                  <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                    <Heart className="text-primary-foreground" size={16} />
                   </div>
                   <div className="flex-1 space-y-1">
                     <p className="text-xs text-muted-foreground">Last Check-in</p>
@@ -815,13 +815,13 @@ export const Dashboard = () => {
               {/* Relationship Health Card - Dynamic */}
               <div className="bg-card border rounded-lg p-3 shadow-sm cursor-pointer hover:shadow-md transition-all hover:scale-105 duration-200" onClick={() => setShowHealthTips(true)}>
                 <div className="flex items-center gap-2 mb-2">
-                  <div className="w-8 h-8 bg-secondary rounded-full flex items-center justify-center">
-                     <Activity className="text-white" size={16} />
+                  <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                     <Activity className="text-primary-foreground" size={16} />
                   </div>
                   <div className="flex-1">
                     <p className="text-xs text-muted-foreground">Relationship Health</p>
                     <div className="flex items-center gap-1">
-                      <p className="text-lg font-bold text-secondary">{currentSyncScore}%</p>
+                      <p className="text-lg font-bold text-primary">{currentSyncScore}%</p>
                       <span className={`text-xs ${syncScoreData?.trend === 'up' ? 'text-accent' : syncScoreData?.trend === 'down' ? 'text-destructive' : 'text-muted-foreground'}`}>
                         {syncScoreData?.trend === 'up' ? '↗' : syncScoreData?.trend === 'down' ? '↘' : '→'}
                       </span>
@@ -852,8 +852,8 @@ export const Dashboard = () => {
           {isLoaded ? <>
               {/* Daily Check-in */}
               <div className="bg-card border rounded-xl p-4 text-center cursor-pointer hover:shadow-sm transition-all shadow-sm hover:scale-105 duration-200" onClick={handleCheckinClick}>
-                <div className="w-12 h-12 bg-secondary rounded-full flex items-center justify-center mx-auto mb-3">
-                   <CheckCircle className="text-white" size={24} />
+                <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center mx-auto mb-3">
+                   <CheckCircle className="text-primary-foreground" size={24} />
                 </div>
                 <h3 className="font-semibold text-foreground mb-1">Daily Check-in</h3>
                 <p className="text-xs text-muted-foreground">Keep the streak!</p>
@@ -861,8 +861,8 @@ export const Dashboard = () => {
 
               {/* Weekly Planning */}
               <div className="bg-card border rounded-xl p-4 text-center cursor-pointer hover:shadow-sm transition-all shadow-sm hover:scale-105 duration-200" onClick={() => navigate('/dates')}>
-                <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center mx-auto mb-3">
-                   <Calendar className="text-accent-foreground" size={24} />
+                <div className="w-12 h-12 bg-secondary rounded-full flex items-center justify-center mx-auto mb-3">
+                   <Calendar className="text-secondary-foreground" size={24} />
                 </div>
                 <h3 className="font-semibold text-foreground mb-1">Dates Planned</h3>
                 <p className="text-xs text-muted-foreground">
@@ -873,7 +873,7 @@ export const Dashboard = () => {
               {/* Plan Date */}
               <div className="bg-card border rounded-xl p-4 text-center cursor-pointer hover:shadow-sm transition-all shadow-sm hover:scale-105 duration-200" onClick={() => navigate('/dates?tab=suggestions')}>
                 <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center mx-auto mb-3">
-                  <MapPin className="text-white" size={24} />
+                  <MapPin className="text-primary-foreground" size={24} />
                 </div>
                 <h3 className="font-semibold text-foreground mb-1">Plan Date</h3>
                 <p className="text-xs text-muted-foreground">Create memories</p>
@@ -881,8 +881,8 @@ export const Dashboard = () => {
 
               {/* Add Memory */}
               <div className="bg-card border rounded-xl p-4 text-center cursor-pointer hover:shadow-sm transition-all shadow-sm hover:scale-105 duration-200" onClick={() => navigate('/vault')}>
-                <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center mx-auto mb-3">
-                  <Camera className="text-accent-foreground" size={24} />
+                <div className="w-12 h-12 bg-secondary rounded-full flex items-center justify-center mx-auto mb-3">
+                  <Camera className="text-secondary-foreground" size={24} />
                 </div>
                 <h3 className="font-semibold text-foreground mb-1">Add Memory</h3>
                 <p className="text-xs text-muted-foreground">Capture the moment</p>
@@ -899,7 +899,7 @@ export const Dashboard = () => {
         <div className={`${isLoaded ? 'animate-fade-in' : 'opacity-0'}`} style={{
           animationDelay: '700ms'
         }}>
-          {isLoaded ? <Button size="lg" className="w-full rounded-xl bg-yellow-400 hover:bg-yellow-500 text-black font-medium transition-all hover:scale-[1.02] duration-200" onClick={() => navigate('/therapy')}>
+          {isLoaded ? <Button size="lg" className="w-full rounded-xl bg-gradient-secondary hover:bg-gradient-primary text-primary-foreground font-medium transition-all hover:scale-[1.02] duration-200" onClick={() => navigate('/therapy')}>
               <Sparkles className="mr-2" size={18} />
               Get Relationship Insights
             </Button> : <div className="w-full h-12 bg-muted animate-pulse rounded-xl"></div>}
@@ -909,7 +909,7 @@ export const Dashboard = () => {
         <div className={`${isLoaded ? 'animate-fade-in' : 'opacity-0'}`} style={{
           animationDelay: '750ms'
         }}>
-          {isLoaded ? <Button size="lg" className="w-full rounded-xl bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 text-white font-medium transition-all hover:scale-[1.02] duration-200" onClick={() => navigate('/games')}>
+          {isLoaded ? <Button size="lg" className="w-full rounded-xl bg-gradient-primary hover:bg-gradient-secondary text-primary-foreground font-medium transition-all hover:scale-[1.02] duration-200" onClick={() => navigate('/games')}>
               <Play className="mr-2" size={18} />
               Relationship Games
             </Button> : <div className="w-full h-12 bg-muted animate-pulse rounded-xl"></div>}
@@ -1071,7 +1071,7 @@ export const Dashboard = () => {
             </div>
             
             <div className="pt-4 border-t">
-              <Button className="w-full rounded-2xl bg-gradient-to-r from-secondary to-secondary/90 hover:from-secondary/90 hover:to-secondary/80 shadow-lg" onClick={() => setShowHealthTips(false)}>
+              <Button className="w-full rounded-2xl bg-gradient-primary hover:bg-gradient-secondary shadow-lg" onClick={() => setShowHealthTips(false)}>
                 Start Improving Today!
               </Button>
             </div>
@@ -1130,7 +1130,7 @@ export const Dashboard = () => {
               </div>}
             
             <div className="pt-4 border-t space-y-2 flex flex-col items-center">
-              <Button className="w-full rounded-2xl bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 shadow-lg" onClick={() => {
+              <Button className="w-full rounded-2xl bg-gradient-primary hover:bg-gradient-secondary shadow-lg" onClick={() => {
               setShowCheckinInsights(false);
               handleCheckinClick();
             }}>
