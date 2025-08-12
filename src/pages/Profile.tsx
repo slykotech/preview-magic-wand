@@ -334,6 +334,48 @@ export const Profile = () => {
           </div>
         </div>
 
+        {/* Rate Us Section */}
+        <div className="bg-gradient-glow rounded-2xl p-6 text-center">
+          <Star className="mx-auto text-primary mb-3" size={32} />
+          <h3 className="font-poppins font-extrabold text-foreground mb-2">
+            Rate LoveSync ⭐
+          </h3>
+          <p className="text-muted-foreground font-inter text-sm font-semibold mb-4">
+            Love the app? Help others find their perfect match!
+          </p>
+          <div className="flex justify-center gap-2 mb-4">
+            {[1, 2, 3, 4, 5].map((rating) => (
+              <Button
+                key={rating}
+                variant="ghost"
+                size="sm"
+                className="p-2 hover:bg-primary/20"
+                onClick={() => {
+                  toast({
+                    title: `Thanks for the ${rating}-star rating! 🌟`,
+                    description: "Your feedback helps us improve LoveSync for everyone",
+                  });
+                }}
+              >
+                <Star 
+                  className="w-6 h-6 fill-primary text-primary hover:scale-110 transition-transform" 
+                />
+              </Button>
+            ))}
+          </div>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => {
+              setFeedbackType('feedback');
+              setShowFeedbackModal(true);
+            }}
+            className="text-xs"
+          >
+            Leave detailed feedback
+          </Button>
+        </div>
+
         {/* Relationship Milestones */}
         <div className="bg-gradient-glow rounded-2xl p-6 text-center">
           <Heart className="mx-auto text-gold-accent mb-3 animate-heart-pulse" size={32} />
