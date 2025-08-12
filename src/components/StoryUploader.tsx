@@ -357,9 +357,9 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
 
     setUploading(true);
     try {
-      // Upload image to storage
+      // Upload image to storage with user folder structure
       const fileExt = selectedFile.name.split('.').pop();
-      const fileName = `story-${user.id}-${Date.now()}.${fileExt}`;
+      const fileName = `${user.id}/story-${Date.now()}.${fileExt}`;
       
       console.log('📤 [StoryUploader] Uploading to storage with filename:', fileName);
       
