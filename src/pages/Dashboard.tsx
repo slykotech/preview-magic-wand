@@ -807,52 +807,85 @@ export const Dashboard = () => {
           animationDelay: '400ms'
         }}>
           {isLoaded ? <>
-              {/* Last Check-in Card - Compact */}
-              <div className="bg-card border rounded-xl p-4 shadow-sm cursor-pointer hover:shadow-md transition-all hover:scale-105 duration-200" onClick={() => setShowCheckinInsights(true)}>
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                    <Heart className="text-primary-foreground" size={18} />
+              {/* Last Check-in Card - Elegant */}
+              <div className="group relative bg-gradient-to-br from-card via-card to-card/95 border border-border/50 rounded-2xl p-5 shadow-soft cursor-pointer hover:shadow-romantic transition-all hover:scale-[1.02] duration-300 overflow-hidden" onClick={() => setShowCheckinInsights(true)}>
+                {/* Subtle gradient overlay */}
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                
+                <div className="relative flex items-start gap-4">
+                  <div className="w-12 h-12 bg-gradient-romance rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm group-hover:shadow-lg transition-shadow duration-300">
+                    <Heart className="text-white" size={20} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs text-muted-foreground font-medium mb-1">Last Check-in</p>
-                    <p className="text-sm font-semibold text-foreground mb-2">
+                    <p className="text-xs text-muted-foreground font-semibold tracking-wide uppercase mb-2">Last Check-in</p>
+                    <p className="text-base font-bold text-foreground mb-3 tracking-tight">
                       {lastCheckin ? format(new Date(lastCheckin.checkin_date), 'd MMMM') : '28 July'}
                     </p>
                     {lastCheckin && lastCheckin.relationship_feeling && (
-                      <div className="space-y-1">
-                        <p className="text-xs text-muted-foreground">
-                          Feeling: <span className="text-foreground font-medium capitalize">{lastCheckin.relationship_feeling.replace(/_/g, ' ')}</span>
-                        </p>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-primary/60" />
+                          <p className="text-xs text-muted-foreground">
+                            <span className="text-foreground font-semibold capitalize">{lastCheckin.relationship_feeling.replace(/_/g, ' ')}</span>
+                          </p>
+                        </div>
                       </div>
                     )}
                     {lastCheckin && lastCheckin.energy_level && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Energy: <span className="text-foreground font-medium">{lastCheckin.energy_level}/10</span>
-                      </p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <div className="w-2 h-2 rounded-full bg-accent/60" />
+                        <p className="text-xs text-muted-foreground">
+                          Energy <span className="text-foreground font-semibold">{lastCheckin.energy_level}/10</span>
+                        </p>
+                      </div>
                     )}
                   </div>
                 </div>
               </div>
 
-              {/* Relationship Health Card - Dynamic */}
-              <div className="bg-card border rounded-lg p-3 shadow-sm cursor-pointer hover:shadow-md transition-all hover:scale-105 duration-200" onClick={() => setShowHealthTips(true)}>
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                     <Activity className="text-primary-foreground" size={16} />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-xs text-muted-foreground">Relationship Health</p>
-                    <div className="flex items-center gap-1">
-                      <p className="text-lg font-bold text-primary">{currentSyncScore}%</p>
-                      <span className={`text-xs ${syncScoreData?.trend === 'up' ? 'text-accent' : syncScoreData?.trend === 'down' ? 'text-destructive' : 'text-muted-foreground'}`}>
-                        {syncScoreData?.trend === 'up' ? '↗' : syncScoreData?.trend === 'down' ? '↘' : '→'}
-                      </span>
+              {/* Relationship Health Card - Elegant */}
+              <div className="group relative bg-gradient-to-br from-card via-card to-card/95 border border-border/50 rounded-2xl p-5 shadow-soft cursor-pointer hover:shadow-romantic transition-all hover:scale-[1.02] duration-300 overflow-hidden" onClick={() => setShowHealthTips(true)}>
+                {/* Subtle gradient overlay */}
+                <div className="absolute inset-0 bg-gradient-to-br from-accent/5 via-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                
+                <div className="relative">
+                  <div className="flex items-start gap-4 mb-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-primary to-accent rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm group-hover:shadow-lg transition-shadow duration-300">
+                      <Activity className="text-white" size={20} />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs text-muted-foreground font-semibold tracking-wide uppercase mb-2">Relationship Health</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-2xl font-black text-primary tracking-tight">{currentSyncScore}%</p>
+                        <div className={`flex items-center justify-center w-6 h-6 rounded-full ${
+                          syncScoreData?.trend === 'up' 
+                            ? 'bg-accent/20 text-accent' 
+                            : syncScoreData?.trend === 'down' 
+                            ? 'bg-destructive/20 text-destructive' 
+                            : 'bg-muted text-muted-foreground'
+                        }`}>
+                          <span className="text-sm font-bold">
+                            {syncScoreData?.trend === 'up' ? '↗' : syncScoreData?.trend === 'down' ? '↘' : '→'}
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </div>
+                  
+                  <div className="relative">
+                    {/* Progress bar background */}
+                    <div className="w-full h-2 bg-muted/50 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-gradient-to-r from-primary to-accent rounded-full transition-all duration-700 ease-out"
+                        style={{ width: `${currentSyncScore}%` }}
+                      />
+                    </div>
+                    
+                    <p className="text-xs font-medium text-muted-foreground mt-3 leading-relaxed">
+                      {currentSyncScore >= 80 ? 'Thriving together ✨' : currentSyncScore >= 60 ? 'Growing stronger 💪' : currentSyncScore >= 40 ? 'Building connection 🌱' : 'Starting your journey 🌟'}
+                    </p>
+                  </div>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  {currentSyncScore >= 80 ? 'Thriving together' : currentSyncScore >= 60 ? 'Growing stronger' : currentSyncScore >= 40 ? 'Building connection' : 'Starting your journey'}
-                </p>
               </div>
             </> : <>
               <CompactCardSkeleton />
