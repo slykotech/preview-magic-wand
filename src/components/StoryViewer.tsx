@@ -248,10 +248,15 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
   };
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('[StoryViewer] File input triggered');
     const file = event.target.files?.[0];
     if (file) {
+      console.log('[StoryViewer] File selected:', file.name, file.type, file.size);
       setSelectedFile(file);
       setShowCamera(false);
+      toast.success('Photo selected! Add a caption and share your story.');
+    } else {
+      console.log('[StoryViewer] No file selected');
     }
   };
 
@@ -295,13 +300,26 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
   };
 
   const startCamera = async () => {
+    console.log('[StoryViewer] Camera button clicked');
+    
     // On native mobile (Capacitor), prefer the camera via file input capture for reliability
     try {
       if (typeof Capacitor !== 'undefined' && Capacitor.isNativePlatform()) {
+        console.log('[StoryViewer] Native platform detected, using file input capture');
         cameraFileInputRef.current?.click();
         return;
       }
-    } catch {}
+    } catch (error) {
+      console.error('[StoryViewer] Capacitor check failed:', error);
+    }
+    
+    // Check if we're on mobile web
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    if (isMobile) {
+      console.log('[StoryViewer] Mobile web detected, using file input capture');
+      cameraFileInputRef.current?.click();
+      return;
+    }
     try {
       console.log('=== CAMERA ACCESS ATTEMPT ===');
       console.log('Navigator.mediaDevices available:', !!navigator.mediaDevices);
@@ -681,13 +699,22 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
                   capture="environment"
                   onChange={handleFileSelect}
                   className="hidden"
+                  onClick={(e) => {
+                    console.log('[StoryViewer] Camera file input clicked');
+                    // Reset the input value to allow selecting the same file again
+                    e.currentTarget.value = '';
+                  }}
                 />
               </label>
               
               <div className="grid grid-cols-2 gap-3 animate-fade-in" style={{ animationDelay: '500ms' }}>
                 <Button
                   variant="outline"
-                  onClick={startCamera}
+                  onClick={(e) => {
+                    console.log('[StoryViewer] Take Photo button clicked');
+                    e.preventDefault();
+                    startCamera();
+                  }}
                   className="bg-gradient-to-br from-background to-muted/20 hover:from-muted/20 hover:to-muted/40 border-border/50 hover:border-primary/50 transition-all duration-300 hover:scale-105"
                 >
                   <Camera className="h-4 w-4 mr-2" />
@@ -695,7 +722,11 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={() => fileInputRef.current?.click()}
+                  onClick={(e) => {
+                    console.log('[StoryViewer] Gallery button clicked');
+                    e.preventDefault();
+                    fileInputRef.current?.click();
+                  }}
                   className="bg-gradient-to-br from-background to-muted/20 hover:from-muted/20 hover:to-muted/40 border-border/50 hover:border-primary/50 transition-all duration-300 hover:scale-105"
                 >
                   <Plus className="h-4 w-4 mr-2" />
