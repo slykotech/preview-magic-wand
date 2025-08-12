@@ -650,7 +650,7 @@ export const Chat: React.FC<ChatProps> = ({
       return () => document.removeEventListener('click', handleClickOutside);
     }
   }, [showReactions]);
-  return <div className="fixed inset-0 bg-background z-50 flex flex-col h-screen">
+  return <div className="fixed inset-0 bg-background z-50 flex flex-col" style={{ height: '100dvh' }}>
       {/* Debug info */}
       <div className="hidden">Chat component mounted - input should be visible</div>
       {/* Header */}
@@ -788,11 +788,12 @@ export const Chat: React.FC<ChatProps> = ({
           </div>
         </div>}
 
-      {/* Message Input - Mobile optimized fixed bottom */}
+      {/* Message Input - Mobile keyboard responsive */}
       <div 
-        className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-lg border-t border-border z-50 transition-all duration-300 ease-in-out safe-bottom"
+        className="sticky bottom-0 left-0 right-0 bg-card/95 backdrop-blur-lg border-t border-border z-50 transition-all duration-300 ease-in-out"
         style={{
-          paddingBottom: 'max(env(safe-area-inset-bottom, 8px), env(keyboard-inset-height, 8px))'
+          marginBottom: 'env(keyboard-inset-height, 0px)',
+          paddingBottom: 'env(safe-area-inset-bottom, 8px)'
         }}
       >
         <div className="w-full px-2 sm:px-3 py-2 sm:py-3">
