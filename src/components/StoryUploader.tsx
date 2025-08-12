@@ -431,40 +431,80 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
             </Button>
           </div>
 
-          {/* Camera Options Modal - Always show initially */}
+          {/* Camera Options Modal - Tab-based Interface */}
           {(showCameraOptions || (!selectedFile && !showCamera)) && (
             <div className="space-y-6 animate-fade-in">
               <div className="text-center">
-                <h3 className="text-lg font-medium mb-4">Choose Camera Option</h3>
-                <div className="grid grid-cols-1 gap-4">
+                <h3 className="text-lg font-medium mb-6">Choose Camera Option</h3>
+                
+                {/* Tab Layout */}
+                <div className="bg-muted/20 rounded-lg p-2 space-y-3">
                   <Button
                     variant="outline"
                     onClick={() => {
+                      console.log('🖼️ [StoryUploader] Gallery button clicked');
                       setShowCameraOptions(false);
-                      fileInputRef.current?.click();
+                      if (fileInputRef.current) {
+                        console.log('🖼️ [StoryUploader] Triggering file input click');
+                        fileInputRef.current.click();
+                      } else {
+                        console.error('🖼️ [StoryUploader] File input ref not found!');
+                        toast({
+                          title: "Error",
+                          description: "Gallery not available",
+                          variant: "destructive"
+                        });
+                      }
                     }}
-                    className="bg-gradient-to-br from-background to-muted/20 hover:from-muted/20 hover:to-muted/40 border-border/50 hover:border-primary/50 transition-all duration-300 hover:scale-105 py-6"
+                    className="w-full h-16 bg-gradient-to-br from-background to-muted/20 hover:from-muted/20 hover:to-muted/40 border-border/50 hover:border-primary/50 transition-all duration-300 hover:scale-[1.02] shadow-sm hover:shadow-md"
                   >
-                    <Image className="h-6 w-6 mr-3" />
-                    Choose from Gallery
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-primary/10 rounded-lg">
+                        <Image className="h-6 w-6 text-primary" />
+                      </div>
+                      <div className="text-left">
+                        <div className="font-medium">Choose from Gallery</div>
+                        <div className="text-xs text-muted-foreground">Select an existing photo</div>
+                      </div>
+                    </div>
                   </Button>
                   
                   <Button
                     variant="outline"
-                    onClick={() => startCamera('user')}
-                    className="bg-gradient-to-br from-background to-muted/20 hover:from-muted/20 hover:to-muted/40 border-border/50 hover:border-primary/50 transition-all duration-300 hover:scale-105 py-6"
+                    onClick={() => {
+                      console.log('📷 [StoryUploader] Front camera button clicked');
+                      startCamera('user');
+                    }}
+                    className="w-full h-16 bg-gradient-to-br from-background to-muted/20 hover:from-muted/20 hover:to-muted/40 border-border/50 hover:border-primary/50 transition-all duration-300 hover:scale-[1.02] shadow-sm hover:shadow-md"
                   >
-                    <Camera className="h-6 w-6 mr-3" />
-                    Take Photo (Front Camera)
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-primary/10 rounded-lg">
+                        <Camera className="h-6 w-6 text-primary" />
+                      </div>
+                      <div className="text-left">
+                        <div className="font-medium">Take Photo (Front Camera)</div>
+                        <div className="text-xs text-muted-foreground">Perfect for selfies</div>
+                      </div>
+                    </div>
                   </Button>
                   
                   <Button
                     variant="outline"
-                    onClick={() => startCamera('environment')}
-                    className="bg-gradient-to-br from-background to-muted/20 hover:from-muted/20 hover:to-muted/40 border-border/50 hover:border-primary/50 transition-all duration-300 hover:scale-105 py-6"
+                    onClick={() => {
+                      console.log('📷 [StoryUploader] Rear camera button clicked');
+                      startCamera('environment');
+                    }}
+                    className="w-full h-16 bg-gradient-to-br from-background to-muted/20 hover:from-muted/20 hover:to-muted/40 border-border/50 hover:border-primary/50 transition-all duration-300 hover:scale-[1.02] shadow-sm hover:shadow-md"
                   >
-                    <Camera className="h-6 w-6 mr-3" />
-                    Take Photo (Rear Camera)
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-primary/10 rounded-lg">
+                        <Camera className="h-6 w-6 text-primary" />
+                      </div>
+                      <div className="text-left">
+                        <div className="font-medium">Take Photo (Rear Camera)</div>
+                        <div className="text-xs text-muted-foreground">Capture the moment</div>
+                      </div>
+                    </div>
                   </Button>
                 </div>
               </div>
