@@ -406,7 +406,7 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-95 flex items-center justify-center z-50 animate-fade-in">
+    <div className="fixed inset-0 bg-black bg-opacity-95 flex items-center justify-center z-[110] animate-fade-in">
       <div className="relative w-full max-w-md h-full max-h-[80vh] bg-black rounded-lg overflow-hidden shadow-2xl animate-scale-in">
         {/* Story Progress Bars */}
         <div className="absolute top-2 left-2 right-2 flex gap-1 z-10">

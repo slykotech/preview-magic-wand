@@ -958,8 +958,8 @@ export const Dashboard = () => {
       {/* Story Viewer Modal */}
       {showStoryViewer && storyTargetUserId && coupleId && <StoryViewer isOpen={showStoryViewer} onClose={handleStoryViewerClose} targetUserId={storyTargetUserId} coupleId={coupleId} isOwnStory={isOwnStory} showUploadInterface={showUploadInterface} />}
 
-      {/* Floating Messages Button */}
-      {!showSplash && coupleId && <div className="fixed bottom-20 right-4 z-40">
+      {/* Floating Messages Button - hidden during splash and story viewer */}
+      {!showSplash && !showStoryViewer && coupleId && <div className="fixed bottom-20 right-4 z-40">
           <Button onClick={() => navigate('/messages')} size="icon" className="h-14 w-14 rounded-full bg-primary hover:bg-primary/90 shadow-lg relative">
             <MessageCircle className="h-6 w-6" />
             {unreadCount > 0 && <div className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold animate-pulse">
@@ -1147,7 +1147,7 @@ export const Dashboard = () => {
       </Dialog>
 
 
-      {/* Bottom Navigation - hidden during splash */}
-      {!showSplash && <BottomNavigation />}
+      {/* Bottom Navigation - hidden during splash and story viewer */}
+      {!showSplash && !showStoryViewer && <BottomNavigation />}
     </div>;
 };
