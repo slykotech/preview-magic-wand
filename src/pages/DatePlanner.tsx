@@ -552,7 +552,7 @@ export const DatePlanner = () => {
                   className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 text-white shadow-lg rounded-full px-4 py-2"
                 >
                   <Heart className="h-4 w-4 mr-2" />
-                  Plan New Date ✨
+                  New Date✨
                 </Button>
               </div>
 
