@@ -342,7 +342,18 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
   };
 
   const handleUpload = async () => {
-    if (!selectedFile || !user) return;
+    if (!selectedFile || !user) {
+      console.error('❌ [StoryUploader] Missing requirements:', { selectedFile: !!selectedFile, user: !!user });
+      return;
+    }
+
+    console.log('📤 [StoryUploader] Starting upload process...');
+    console.log('📤 [StoryUploader] Selected file:', { 
+      name: selectedFile.name, 
+      type: selectedFile.type, 
+      size: selectedFile.size 
+    });
+    console.log('📤 [StoryUploader] User:', { id: user.id, email: user.email });
 
     setUploading(true);
     try {
@@ -350,40 +361,70 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
       const fileExt = selectedFile.name.split('.').pop();
       const fileName = `story-${user.id}-${Date.now()}.${fileExt}`;
       
-      const { error: uploadError } = await supabase.storage
+      console.log('📤 [StoryUploader] Uploading to storage with filename:', fileName);
+      
+      const { error: uploadError, data: uploadData } = await supabase.storage
         .from('stories')
         .upload(fileName, selectedFile);
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('❌ [StoryUploader] Storage upload error:', uploadError);
+        throw uploadError;
+      }
+      
+      console.log('✅ [StoryUploader] Storage upload successful:', uploadData);
 
       // Get public URL
+      console.log('📤 [StoryUploader] Getting public URL...');
       const { data: { publicUrl } } = supabase.storage
         .from('stories')
         .getPublicUrl(fileName);
+      
+      console.log('✅ [StoryUploader] Public URL retrieved:', publicUrl);
 
       // Get the user's couple_id from couples table
+      console.log('📤 [StoryUploader] Fetching couple data...');
       const { data: coupleData, error: coupleError } = await supabase
         .from('couples')
         .select('id')
         .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
         .single();
 
-      if (coupleError || !coupleData?.id) {
+      console.log('📤 [StoryUploader] Couple query result:', { coupleData, coupleError });
+
+      if (coupleError) {
+        console.error('❌ [StoryUploader] Couple query error:', coupleError);
+        throw coupleError;
+      }
+      
+      if (!coupleData?.id) {
+        console.error('❌ [StoryUploader] No couple found for user');
         throw new Error('User must be in a couple to share stories');
       }
 
-      // Save story to database
-      const { error: dbError } = await supabase
-        .from('stories')
-        .insert({
-          user_id: user.id,
-          couple_id: coupleData.id,
-          image_url: publicUrl,
-          caption: caption.trim() || null,
-          expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours
-        });
+      console.log('✅ [StoryUploader] Couple found:', coupleData.id);
 
-      if (dbError) throw dbError;
+      // Save story to database
+      console.log('📤 [StoryUploader] Saving story to database...');
+      const storyData = {
+        user_id: user.id,
+        couple_id: coupleData.id,
+        image_url: publicUrl,
+        caption: caption.trim() || null,
+        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours
+      };
+      console.log('📤 [StoryUploader] Story data to insert:', storyData);
+      
+      const { error: dbError, data: dbData } = await supabase
+        .from('stories')
+        .insert(storyData);
+
+      if (dbError) {
+        console.error('❌ [StoryUploader] Database insert error:', dbError);
+        throw dbError;
+      }
+      
+      console.log('✅ [StoryUploader] Story saved to database:', dbData);
 
       toast({
         title: "Story shared! ✨",
@@ -395,13 +436,30 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
       setCaption('');
       setShowCamera(false);
       
+      console.log('📤 [StoryUploader] Upload completed successfully, calling onSuccess...');
       onSuccess();
       onClose();
     } catch (error) {
-      console.error('Upload error:', error);
+      console.error('❌ [StoryUploader] Upload error details:', {
+        message: error.message,
+        stack: error.stack,
+        error
+      });
+      
+      let errorMessage = "Failed to share story. Please try again.";
+      
+      // Provide more specific error messages
+      if (error.message?.includes('couple')) {
+        errorMessage = "Please complete your couple setup first.";
+      } else if (error.message?.includes('storage')) {
+        errorMessage = "Failed to upload image. Please check your connection.";
+      } else if (error.message?.includes('database')) {
+        errorMessage = "Failed to save story. Please try again.";
+      }
+      
       toast({
         title: "Upload failed",
-        description: "Failed to share story. Please try again.",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
