@@ -492,8 +492,8 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
 
           {/* Quick Emoji Reactions (for partner's stories) */}
           {!isOwnStory && (
-            <div className="absolute bottom-32 left-4 right-4">
-              <div className="flex gap-2 mb-3 justify-center">
+            <div className="absolute bottom-20 left-4 right-4 z-20">
+              <div className="flex gap-2 mb-3 justify-center bg-black/30 backdrop-blur-sm rounded-full p-2">
                 {quickEmojis.map((emoji, index) => (
                   <button
                     key={index}
@@ -517,12 +517,12 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
 
           {/* Story Reactions Display */}
           {responses.length > 0 && (
-            <div className="absolute bottom-2 left-4 right-4 text-white">
-              <div className="bg-black/50 backdrop-blur-sm rounded-lg p-3 max-h-32 overflow-y-auto space-y-2">
+            <div className="absolute bottom-24 left-4 right-4 text-white z-10">
+              <div className="bg-black/60 backdrop-blur-sm rounded-lg p-2 max-h-24 overflow-y-auto space-y-1">
                 {responses.map((response) => (
-                  <div key={response.id} className="flex items-center justify-between text-sm">
+                  <div key={response.id} className="flex items-center justify-between text-xs">
                     <div className="flex items-center gap-2">
-                      <span className="text-lg">{response.response_text}</span>
+                      <span className="text-base">{response.response_text}</span>
                       <span className="text-xs text-white/70">
                         {formatDistanceToNow(new Date(response.created_at), { addSuffix: true })}
                       </span>
@@ -536,7 +536,7 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
 
         {/* Response Section (only for partner's stories) */}
         {!isOwnStory && (
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent p-4">
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/95 via-black/80 to-transparent p-4 z-30">
             
             {/* Text Input */}
             <div className="flex gap-2">
