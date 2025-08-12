@@ -1100,46 +1100,47 @@ export const DatePlanner = () => {
 
         {/* Date Details Modal */}
         <Dialog open={!!selectedDateForDetails} onOpenChange={() => setSelectedDateForDetails(null)}>
-          <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto rounded-t-3xl rounded-b-2xl border-0 shadow-2xl bg-gradient-to-br from-background via-background/95 to-primary/5">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
+          <DialogContent className="max-w-md w-[95vw] max-h-[90vh] overflow-y-auto rounded-2xl p-0 gap-0">
+            <div className="p-4 border-b">
+              <DialogTitle className="flex items-center gap-2 text-lg">
                 <Heart className="h-5 w-5 text-primary" />
                 Date Details
               </DialogTitle>
-            </DialogHeader>
+            </div>
             
             {selectedDateForDetails && (
-              <div className="space-y-4">
-                <div className="text-center p-4 bg-gradient-to-r from-primary/10 via-secondary/10 to-primary/10 rounded-2xl border border-primary/20 shadow-sm">
-                  <h3 className="text-lg font-bold text-primary mb-1">{selectedDateForDetails.title}</h3>
+              <div className="p-4 space-y-4">
+                {/* Title Section */}
+                <div className="text-center p-3 bg-primary/10 rounded-xl">
+                  <h3 className="text-base font-bold text-primary mb-1">{selectedDateForDetails.title}</h3>
                   <Badge variant="outline" className="text-xs">
                     {selectedDateForDetails.category?.charAt(0).toUpperCase() + selectedDateForDetails.category?.slice(1)}
                   </Badge>
                 </div>
 
-                {/* Full Description */}
+                {/* Description */}
                 {selectedDateForDetails.description && (
-                  <div className="p-4 bg-gradient-to-r from-card/80 to-card rounded-2xl border border-border/50 shadow-sm">
-                    <h4 className="font-medium text-sm mb-2 text-foreground/90">Description</h4>
-                    <p className="text-sm text-foreground">{selectedDateForDetails.description}</p>
+                  <div className="p-3 bg-card rounded-xl border">
+                    <h4 className="font-medium text-sm mb-2 text-foreground">Description</h4>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{selectedDateForDetails.description}</p>
                   </div>
                 )}
 
                 {/* Date & Time */}
                 {(selectedDateForDetails.scheduled_date || selectedDateForDetails.scheduled_time) && (
-                  <div className="p-4 bg-gradient-to-r from-card/80 to-card rounded-2xl border border-border/50 shadow-sm">
-                    <h4 className="font-medium text-sm mb-2 text-foreground/90 flex items-center gap-2">
+                  <div className="p-3 bg-card rounded-xl border">
+                    <h4 className="font-medium text-sm mb-2 text-foreground flex items-center gap-2">
                       <Calendar className="h-4 w-4 text-primary" />
                       When
                     </h4>
                     <div className="space-y-1">
                       {selectedDateForDetails.scheduled_date && (
-                        <p className="text-sm text-foreground">
+                        <p className="text-sm text-muted-foreground">
                           Date: {new Date(selectedDateForDetails.scheduled_date).toLocaleDateString()}
                         </p>
                       )}
                       {selectedDateForDetails.scheduled_time && (
-                        <p className="text-sm text-foreground">
+                        <p className="text-sm text-muted-foreground">
                           Time: {selectedDateForDetails.scheduled_time}
                         </p>
                       )}
@@ -1149,34 +1150,34 @@ export const DatePlanner = () => {
 
                 {/* Location */}
                 {selectedDateForDetails.location && (
-                  <div className="p-4 bg-gradient-to-r from-card/80 to-card rounded-2xl border border-border/50 shadow-sm">
-                    <h4 className="font-medium text-sm mb-2 text-foreground/90 flex items-center gap-2">
+                  <div className="p-3 bg-card rounded-xl border">
+                    <h4 className="font-medium text-sm mb-2 text-foreground flex items-center gap-2">
                       <MapPin className="h-4 w-4 text-primary" />
                       Location
                     </h4>
-                    <p className="text-sm text-foreground">{selectedDateForDetails.location}</p>
+                    <p className="text-sm text-muted-foreground break-words">{selectedDateForDetails.location}</p>
                   </div>
                 )}
 
                 {/* Cost & Duration */}
                 {(selectedDateForDetails.estimated_cost || selectedDateForDetails.estimated_duration) && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 gap-3">
                     {selectedDateForDetails.estimated_cost && (
-                      <div className="p-3 bg-gradient-to-r from-card/80 to-card rounded-2xl border border-border/50 shadow-sm">
-                        <h4 className="font-medium text-sm mb-1 text-foreground/90 flex items-center gap-2">
+                      <div className="p-3 bg-card rounded-xl border">
+                        <h4 className="font-medium text-sm mb-1 text-foreground flex items-center gap-2">
                           <DollarSign className="h-4 w-4 text-primary" />
                           Cost
                         </h4>
-                        <p className="text-sm text-foreground">{selectedDateForDetails.estimated_cost}</p>
+                        <p className="text-sm text-muted-foreground">{selectedDateForDetails.estimated_cost}</p>
                       </div>
                     )}
                     {selectedDateForDetails.estimated_duration && (
-                      <div className="p-3 bg-gradient-to-r from-card/80 to-card rounded-2xl border border-border/50 shadow-sm">
-                        <h4 className="font-medium text-sm mb-1 text-foreground/90 flex items-center gap-2">
+                      <div className="p-3 bg-card rounded-xl border">
+                        <h4 className="font-medium text-sm mb-1 text-foreground flex items-center gap-2">
                           <Clock className="h-4 w-4 text-primary" />
                           Duration
                         </h4>
-                        <p className="text-sm text-foreground">{selectedDateForDetails.estimated_duration}</p>
+                        <p className="text-sm text-muted-foreground">{selectedDateForDetails.estimated_duration}</p>
                       </div>
                     )}
                   </div>
@@ -1184,14 +1185,14 @@ export const DatePlanner = () => {
 
                 {/* Notes */}
                 {selectedDateForDetails.notes && (
-                  <div className="p-4 bg-gradient-to-r from-card/80 to-card rounded-2xl border border-border/50 shadow-sm">
-                    <h4 className="font-medium text-sm mb-2 text-foreground/90">Notes</h4>
-                    <p className="text-sm text-foreground">{selectedDateForDetails.notes}</p>
+                  <div className="p-3 bg-card rounded-xl border">
+                    <h4 className="font-medium text-sm mb-2 text-foreground">Notes</h4>
+                    <p className="text-sm text-muted-foreground leading-relaxed break-words">{selectedDateForDetails.notes}</p>
                   </div>
                 )}
 
                 {/* Action Buttons */}
-                <div className="flex flex-col gap-3 pt-4 border-t">
+                <div className="flex flex-col gap-2 pt-3 border-t">
                   <div className="flex gap-2">
                     <Button 
                       size="sm" 
@@ -1200,7 +1201,7 @@ export const DatePlanner = () => {
                         handleDateFeedback(selectedDateForDetails.id, true);
                         setSelectedDateForDetails(null);
                       }}
-                      className="flex-1 rounded-2xl"
+                      className="flex-1 h-8 text-xs"
                     >
                       ✅ We did this!
                     </Button>
@@ -1211,7 +1212,7 @@ export const DatePlanner = () => {
                         handleDateFeedback(selectedDateForDetails.id, false);
                         setSelectedDateForDetails(null);
                       }}
-                      className="flex-1 rounded-2xl text-red-600 hover:text-red-700"
+                      className="flex-1 h-8 text-xs text-red-600 hover:text-red-700"
                     >
                       ❌ Skip this
                     </Button>
@@ -1219,18 +1220,20 @@ export const DatePlanner = () => {
                   <div className="flex gap-2">
                     <Button 
                       variant="outline" 
+                      size="sm"
                       onClick={() => {
                         handleEditDate(selectedDateForDetails);
                         setSelectedDateForDetails(null);
                       }}
-                      className="flex-1 rounded-2xl"
+                      className="flex-1 h-8 text-xs"
                     >
                       ✏️ Edit Date
                     </Button>
                     <Button 
                       variant="outline" 
+                      size="sm"
                       onClick={() => setSelectedDateForDetails(null)}
-                      className="flex-1 rounded-2xl"
+                      className="flex-1 h-8 text-xs"
                     >
                       Close
                     </Button>
