@@ -27,13 +27,13 @@ export const DashboardCard = ({
   return (
     <div className={`relative ${className}`}>
       <div 
-        className={`bg-card rounded-2xl p-6 shadow-soft hover:shadow-romantic transition-all duration-200 cursor-pointer transform hover:scale-102 ${
+        className={`bg-card rounded-2xl p-3 sm:p-6 shadow-soft hover:shadow-romantic transition-all duration-200 cursor-pointer transform hover:scale-102 ${
           isExpanded ? 'ring-2 ring-secondary/20' : ''
         }`}
         onClick={handleToggle}
       >
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between mb-2 sm:mb-4">
+          <div className="flex items-center gap-2 sm:gap-3">
             <div className="p-2 bg-gradient-romance rounded-full text-white">
               {icon}
             </div>
@@ -52,7 +52,7 @@ export const DashboardCard = ({
         
         {/* Expanded content */}
         {isExpanded && expandedContent && (
-          <div className="mt-4 pt-4 border-t border-border animate-fade-in">
+          <div className="mt-3 pt-3 sm:mt-4 sm:pt-4 border-t border-border animate-fade-in">
             {expandedContent}
           </div>
         )}

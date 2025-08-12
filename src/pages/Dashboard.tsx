@@ -683,7 +683,7 @@ export const Dashboard = () => {
           showBackButton={false}
         />
          
-        <div className="container mx-auto px-6 space-y-6 pb-20">
+        <div className="container mx-auto px-3 sm:px-6 space-y-3 sm:space-y-6 pb-20">
           
 
           {/* Sync Score Section */}
@@ -846,7 +846,7 @@ export const Dashboard = () => {
         </div>
 
         {/* Action Cards Grid */}
-        <div className={`grid grid-cols-2 gap-4 ${isLoaded ? 'animate-fade-in' : 'opacity-0'}`} style={{
+        <div className={`grid grid-cols-2 gap-2 sm:gap-4 ${isLoaded ? 'animate-fade-in' : 'opacity-0'}`} style={{
           animationDelay: '600ms'
         }}>
           {isLoaded ? <>
