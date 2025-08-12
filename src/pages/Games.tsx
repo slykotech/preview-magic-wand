@@ -6,6 +6,7 @@ import { ArrowLeft, Heart, MessageCircle, Lightbulb, HelpCircle, Brain, Ticket, 
 import { useCardGames } from "@/hooks/useCardGames";
 import { useCoupleData } from "@/hooks/useCoupleData";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const gameTypes = [
   {
@@ -82,7 +83,7 @@ export const Games = () => {
         return;
       }
 
-      // For tic_toe_heart - check for existing session, but only join if it's actually in progress
+      // For tic_toe_heart - check for existing session and show waiting message for single player
       const { data: existingSession } = await supabase
         .from("game_sessions")
         .select(`
@@ -117,6 +118,8 @@ export const Games = () => {
         const session = await createGameSession(gameType);
         if (session) {
           console.log('Created new game session:', session.id);
+          // Show waiting message if partner is not online yet
+          toast.success('Game created! Waiting for your partner to join...');
           navigate(`/games/${session.id}`);
         }
       }

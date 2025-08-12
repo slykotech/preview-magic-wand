@@ -165,6 +165,40 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
     }
   }, [sessionId, user?.id, partnerId]);
 
+  // Polling fallback for when real-time fails
+  useEffect(() => {
+    if (!sessionId || !user?.id || connectionStatus === 'connected') return;
+    
+    const pollInterval = setInterval(async () => {
+      try {
+        const { data, error } = await supabase
+          .from('tic_toe_heart_games')
+          .select('*')
+          .eq('session_id', sessionId)
+          .single();
+
+        if (error) throw error;
+        if (data) {
+          const parsedBoard = Array.isArray(data.board) ? data.board : JSON.parse(String(data.board));
+          const newState: TicToeGameState = { 
+            ...data, 
+            board: parsedBoard,
+            game_status: data.game_status as GameStatus
+          };
+          
+          if (JSON.stringify(newState) !== JSON.stringify(gameState)) {
+            setGameState(newState);
+            console.log('🔄 Updated via polling fallback');
+          }
+        }
+      } catch (error) {
+        console.warn('Polling fallback failed:', error);
+      }
+    }, 2000);
+
+    return () => clearInterval(pollInterval);
+  }, [sessionId, user?.id, connectionStatus, gameState]);
+
   // Real-time subscription for game updates with enhanced sync
   useEffect(() => {
     if (!sessionId || !user?.id) {
@@ -188,7 +222,7 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
         (payload) => {
           console.group('🎮 Real-time Game Update Received');
           console.log('Event Type:', payload.eventType);
-          console.log('Session ID Filter:', sessionId);
+          console.log('Session ID Filter:', String(sessionId));
           console.log('Payload:', payload);
           console.log('New Data:', payload.new);
           console.log('Timestamp:', new Date().toISOString());
@@ -221,10 +255,14 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
               return;
             }
 
-            const newGameState = {
-              ...updatedState,
+            const newGameState: TicToeGameState = {
+              id: updatedState.id,
+              session_id: updatedState.session_id,
               board: parsedBoard,
+              current_player_id: updatedState.current_player_id,
               game_status: updatedState.game_status as GameStatus,
+              winner_id: updatedState.winner_id,
+              moves_count: updatedState.moves_count,
               last_move_at: updatedState.last_move_at || new Date().toISOString()
             };
             
@@ -233,7 +271,7 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
             console.log('🎮 Is user turn?:', newGameState.current_player_id === user?.id);
             
             // Force update game state immediately
-            setGameState(newGameState);
+            setGameState(newGameState as TicToeGameState);
             setConnectionStatus('connected');
             
             // Update playful message based on new turn
@@ -287,36 +325,34 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
       .on(
         'postgres_changes',
         {
-          event: 'INSERT',
+          event: '*',
           schema: 'public',
           table: 'love_grants',
           filter: `couple_id=eq.${coupleData.id}`
         },
         (payload) => {
-          console.log('💌 New love grant received:', payload);
-          const newGrant = payload.new as any;
+          console.log('💌 Love grant update received:', payload);
+          const updatedGrant = payload.new as any;
           
-          // Add to local state immediately for real-time updates
-          setLoveGrants(prev => [{
-            ...newGrant,
-            winner_symbol: newGrant.winner_symbol as CellValue,
-            status: newGrant.status as 'pending' | 'acknowledged' | 'fulfilled'
-          }, ...prev]);
-          
-          // If this is for the current user and they are NOT the winner, show response modal
-          if (newGrant.winner_user_id !== user?.id && newGrant.status === 'pending') {
-            setPendingGrant({
-              ...newGrant,
-              winner_symbol: newGrant.winner_symbol as CellValue,
-              status: newGrant.status as 'pending' | 'acknowledged' | 'fulfilled'
-            });
+          // Check if this grant is for the current user (not the winner)
+          if (updatedGrant.winner_user_id !== user?.id) {
+            console.log('💌 Showing love grant to partner:', updatedGrant);
+            setPendingGrant(updatedGrant);
             setShowGrantResponse(true);
-            toast.success(`💌 ${newGrant.winner_name} sent you a Love Grant!`);
-          } else if (newGrant.winner_user_id === user?.id) {
-            toast.success('💌 Love Grant sent successfully!');
           }
-        }
-      )
+          
+          // Update local state for all grant changes
+          setLoveGrants(prev => {
+            const existingIndex = prev.findIndex(g => g.id === updatedGrant.id);
+            if (existingIndex >= 0) {
+              const updated = [...prev];
+              updated[existingIndex] = updatedGrant;
+              return updated;
+            } else {
+              return [updatedGrant, ...prev];
+            }
+          });
+        })
       .on(
         'postgres_changes',
         {
