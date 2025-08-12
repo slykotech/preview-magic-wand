@@ -512,18 +512,22 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
             </div>
           )}
 
-          {/* Caption - positioned at bottom */}
+          {/* Caption - positioned above quick reactions and response section */}
           {currentStory.caption && (
-            <div className="absolute left-4 right-4 bottom-4 text-white z-15">
+            <div className={`absolute left-4 right-4 text-white z-15 ${
+              !isOwnStory ? 'bottom-44' : 'bottom-8'
+            }`}>
               <p className="text-sm bg-black/60 backdrop-blur-sm p-3 rounded-lg leading-relaxed">
                 {currentStory.caption}
               </p>
             </div>
           )}
 
-          {/* Story Reactions Display - positioned at bottom */}
+          {/* Story Reactions Display - positioned above everything else at bottom */}
           {responses.length > 0 && (
-            <div className="absolute left-4 right-4 bottom-4 text-white z-15">
+            <div className={`absolute left-4 right-4 text-white z-15 ${
+              !isOwnStory ? 'bottom-32' : 'bottom-16'
+            }`}>
               <div className="bg-black/60 backdrop-blur-sm rounded-lg p-2 max-h-20 overflow-y-auto space-y-1">
                 {(() => {
                   // Filter to show only the latest reaction from each user
