@@ -1058,7 +1058,7 @@ export const Dashboard = () => {
 
       {/* Check-in Insights Modal */}
       <Dialog open={showCheckinInsights} onOpenChange={setShowCheckinInsights}>
-        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto pb-24">
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto pb-24 rounded-t-3xl rounded-b-2xl border-0 shadow-2xl bg-gradient-to-br from-background via-background/95 to-primary/5">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Heart className="h-5 w-5 text-red-500" />
@@ -1066,7 +1066,7 @@ export const Dashboard = () => {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="text-center p-4 bg-gradient-to-r from-secondary/10 to-primary/10 rounded-lg">
+            <div className="text-center p-4 bg-gradient-to-r from-primary/10 via-secondary/10 to-primary/10 rounded-2xl border border-primary/20 shadow-sm">
               <div className="text-lg font-bold text-secondary mb-1">
                 {lastCheckin ? format(new Date(lastCheckin.checkin_date), 'd MMMM') : 'No recent check-in'}
               </div>
@@ -1081,24 +1081,24 @@ export const Dashboard = () => {
             {lastCheckin ? <div className="space-y-3">
                 
 
-                {lastCheckin.energy_level && <div className="p-3 bg-card rounded-lg border">
-                    <h4 className="font-medium text-sm mb-2">What's your energy level?</h4>
-                    <p className="text-sm text-foreground">{lastCheckin.energy_level}/10</p>
+                {lastCheckin.energy_level && <div className="p-4 bg-gradient-to-r from-card/80 to-card rounded-2xl border border-border/50 shadow-sm">
+                    <h4 className="font-medium text-sm mb-2 text-foreground/90">What's your energy level?</h4>
+                    <p className="text-sm text-foreground font-medium">{lastCheckin.energy_level}/10</p>
                   </div>}
 
-                {lastCheckin.relationship_feeling && <div className="p-3 bg-card rounded-lg border">
-                    <h4 className="font-medium text-sm mb-2">How are you feeling about your relationship?</h4>
-                    <p className="text-sm text-foreground">{lastCheckin.relationship_feeling}</p>
+                {lastCheckin.relationship_feeling && <div className="p-4 bg-gradient-to-r from-card/80 to-card rounded-2xl border border-border/50 shadow-sm">
+                    <h4 className="font-medium text-sm mb-2 text-foreground/90">How are you feeling about your relationship?</h4>
+                    <p className="text-sm text-foreground font-medium">{lastCheckin.relationship_feeling}</p>
                   </div>}
 
-                {lastCheckin.gratitude && <div className="p-3 bg-card rounded-lg border">
-                    <h4 className="font-medium text-sm mb-2">What are you grateful for today?</h4>
-                    <p className="text-sm text-foreground">{lastCheckin.gratitude}</p>
+                {lastCheckin.gratitude && <div className="p-4 bg-gradient-to-r from-card/80 to-card rounded-2xl border border-border/50 shadow-sm">
+                    <h4 className="font-medium text-sm mb-2 text-foreground/90">What are you grateful for today?</h4>
+                    <p className="text-sm text-foreground font-medium">{lastCheckin.gratitude}</p>
                   </div>}
 
-                {lastCheckin.notes && <div className="p-3 bg-card rounded-lg border">
-                    <h4 className="font-medium text-sm mb-2">Additional notes</h4>
-                    <p className="text-sm text-foreground">{lastCheckin.notes}</p>
+                {lastCheckin.notes && <div className="p-4 bg-gradient-to-r from-card/80 to-card rounded-2xl border border-border/50 shadow-sm">
+                    <h4 className="font-medium text-sm mb-2 text-foreground/90">Additional notes</h4>
+                    <p className="text-sm text-foreground font-medium">{lastCheckin.notes}</p>
                   </div>}
 
                 
@@ -1107,13 +1107,13 @@ export const Dashboard = () => {
               </div>}
             
             <div className="pt-4 border-t space-y-2 flex flex-col items-center">
-              <Button className="w-full" onClick={() => {
+              <Button className="w-full rounded-2xl bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 shadow-lg" onClick={() => {
               setShowCheckinInsights(false);
               handleCheckinClick();
             }}>
                 Start Today's Check-in
               </Button>
-              <Button variant="outline" className="w-full" onClick={() => setShowCheckinInsights(false)}>
+              <Button variant="outline" className="w-full rounded-2xl border-border/50 hover:bg-muted/50" onClick={() => setShowCheckinInsights(false)}>
                 Close
               </Button>
             </div>
