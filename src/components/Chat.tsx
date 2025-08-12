@@ -790,10 +790,10 @@ export const Chat: React.FC<ChatProps> = ({
 
       {/* Message Input - Mobile keyboard responsive */}
       <div 
-        className="sticky bottom-0 left-0 right-0 bg-card/95 backdrop-blur-lg border-t border-border z-50 transition-all duration-300 ease-in-out"
+        className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-lg border-t border-border z-50 transition-all duration-300 ease-in-out"
         style={{
-          marginBottom: 'env(keyboard-inset-height, 0px)',
-          paddingBottom: 'env(safe-area-inset-bottom, 8px)'
+          paddingBottom: 'env(safe-area-inset-bottom, 8px)',
+          transform: 'translateY(calc(-1 * env(keyboard-inset-height, 0px)))'
         }}
       >
         <div className="w-full px-2 sm:px-3 py-2 sm:py-3">

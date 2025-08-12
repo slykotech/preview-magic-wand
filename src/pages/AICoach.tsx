@@ -442,10 +442,12 @@ export const AICoach = () => {
       {/* Input - Mobile keyboard responsive */}
       <div 
         ref={composerRef} 
-        className="sticky bottom-0 left-0 right-0 z-50 p-3 sm:p-4 bg-card/95 backdrop-blur-lg border-t border-border transition-all duration-300 ease-in-out" 
+        className="fixed bottom-0 left-0 right-0 z-50 p-3 sm:p-4 bg-card/95 backdrop-blur-lg border-t border-border transition-all duration-300 ease-in-out" 
         style={{ 
-          marginBottom: keyboardOpen ? 'env(keyboard-inset-height, 0px)' : `calc(64px + env(safe-area-inset-bottom, 0px))`,
-          paddingBottom: 'env(safe-area-inset-bottom, 8px)'
+          paddingBottom: 'env(safe-area-inset-bottom, 8px)',
+          transform: keyboardOpen 
+            ? 'translateY(calc(-1 * env(keyboard-inset-height, 0px)))' 
+            : `translateY(calc(-64px - env(safe-area-inset-bottom, 0px)))`
         }}
       >
         <div className="max-w-md mx-auto flex gap-3">
