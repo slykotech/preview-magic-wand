@@ -114,7 +114,7 @@ export const DateHistory = ({ onClose }: DateHistoryProps) => {
             {completedDates.map((date, index) => (
               <div
                 key={date.id}
-                className="bg-card border border-border rounded-xl p-4 shadow-soft hover:shadow-romantic transition-all duration-200 animate-fade-in"
+                className="bg-white border border-border rounded-xl p-4 shadow-soft hover:shadow-romantic transition-all duration-200 animate-fade-in"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
                 <div className="flex items-start justify-between mb-3">
