@@ -26,6 +26,9 @@ export const MobilePermissionManager = () => {
     setIsLoading(true);
     
     try {
+      const platform = Capacitor.getPlatform();
+      console.log(`Checking permissions on ${platform}`);
+      
       const newPermissions: PermissionStatus = {
         notifications: 'unknown',
         location: 'unknown',
@@ -71,6 +74,8 @@ export const MobilePermissionManager = () => {
   };
 
   const requestNotificationPermission = async () => {
+    const platform = Capacitor.getPlatform();
+    
     if (!Capacitor.isNativePlatform()) {
       toast({
         title: "Desktop App",
@@ -86,13 +91,14 @@ export const MobilePermissionManager = () => {
         setPermissions(prev => ({ ...prev, notifications: 'granted' }));
         toast({
           title: "Notifications Enabled ✅",
-          description: "You'll receive real-time updates from your partner.",
+          description: `You'll receive real-time updates on your ${platform === 'ios' ? 'iPhone' : 'Android'} device.`,
         });
       } else {
         setPermissions(prev => ({ ...prev, notifications: 'denied' }));
+        const settingsPath = platform === 'ios' ? 'Settings > Notifications > LoveSync' : 'Settings > Apps > LoveSync > Notifications';
         toast({
           title: "Notifications Disabled",
-          description: "You can enable them later in your device settings.",
+          description: `Enable them in ${settingsPath} to stay connected.`,
           variant: "destructive"
         });
       }
@@ -182,10 +188,10 @@ export const MobilePermissionManager = () => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Bell className="w-5 h-5" />
-          App Permissions
+          App Permissions - {Capacitor.getPlatform() === 'ios' ? 'iOS' : 'Android'}
         </CardTitle>
         <CardDescription>
-          Manage permissions to enhance your LoveSync experience
+          Manage permissions to enhance your LoveSync experience on {Capacitor.getPlatform() === 'ios' ? 'iPhone' : 'Android'}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

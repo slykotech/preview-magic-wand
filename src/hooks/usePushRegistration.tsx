@@ -5,6 +5,7 @@ import { FirebaseMessaging } from '@capacitor-firebase/messaging';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useToast } from './use-toast';
+import { NotificationService } from '@/services/notificationService';
 
 const getPlatform = () => (Capacitor.isNativePlatform() ? Capacitor.getPlatform() : 'web');
 
@@ -44,35 +45,38 @@ export function usePushRegistration() {
           return;
         }
 
-        console.log('Starting push notification registration...');
+        const platform = Capacitor.getPlatform();
+        console.log(`Starting push notification registration on ${platform}...`);
 
-        // Check permissions first
-        const perm = await FirebaseMessaging.checkPermissions();
-        console.log('Current permissions:', perm);
-        setPermissionStatus(perm.receive === 'granted' ? 'granted' : 'denied');
-
-        if (perm.receive !== 'granted') {
-          console.log('Requesting push permissions...');
-          const req = await FirebaseMessaging.requestPermissions();
-          console.log('Permission request result:', req);
-          
-          setPermissionStatus(req.receive === 'granted' ? 'granted' : 'denied');
-          
-          if (req.receive !== 'granted') {
-            console.warn('Push permissions denied by user');
-            toast({
-              title: "Notifications Disabled",
-              description: "You won't receive push notifications. Enable them in app settings to stay connected.",
-              variant: "destructive"
-            });
-            return;
-          }
+        // Check if notification support is available
+        const isSupported = await NotificationService.checkNotificationSupport();
+        if (!isSupported) {
+          console.error('Notification support not available');
+          toast({
+            title: "Notifications Not Available",
+            description: "Your device doesn't support push notifications.",
+            variant: "destructive"
+          });
+          return;
         }
 
-        // Get FCM token
+        // Request permissions using enhanced service
+        const permissionGranted = await NotificationService.requestPermissions();
+        setPermissionStatus(permissionGranted ? 'granted' : 'denied');
+
+        if (!permissionGranted) {
+          console.warn('Push permissions denied by user');
+          toast({
+            title: "Notifications Disabled",
+            description: `Enable notifications in ${platform === 'ios' ? 'Settings > Notifications' : 'app settings'} to stay connected.`,
+            variant: "destructive"
+          });
+          return;
+        }
+
+        // Get FCM token using enhanced service
         console.log('Getting FCM token...');
-        const { token } = await FirebaseMessaging.getToken();
-        console.log('FCM Token received:', token ? 'Yes' : 'No');
+        const token = await NotificationService.getFCMToken();
         
         if (!token) {
           throw new Error('Failed to get FCM token');
@@ -81,7 +85,6 @@ export function usePushRegistration() {
         tokenRef.current = token;
 
         const device_id = await getStableDeviceId();
-        const platform = getPlatform();
 
         console.log('Registering device with backend...', { device_id, platform });
 
@@ -94,6 +97,9 @@ export function usePushRegistration() {
         if (error) {
           throw error;
         }
+
+        // Setup notification listeners using enhanced service
+        const cleanupListeners = NotificationService.setupNotificationListeners();
 
         // Listen for token refreshes
         const tokenListener = await FirebaseMessaging.addListener('tokenReceived', async (event: any) => {
@@ -110,28 +116,17 @@ export function usePushRegistration() {
           }
         });
 
-        // Listen for notification received events
-        notificationListener = await FirebaseMessaging.addListener('notificationReceived', (event: any) => {
-          console.log('Notification received:', event);
-        });
-
-        // Listen for notification action performed
-        const actionListener = await FirebaseMessaging.addListener('notificationActionPerformed', (event: any) => {
-          console.log('Notification action performed:', event);
-        });
-
         unsub = () => {
           tokenListener.remove();
-          notificationListener.remove();
-          actionListener.remove();
+          cleanupListeners();
         };
         
         setRegistered(true);
-        console.log('Push notification registration completed successfully');
+        console.log(`Push notification registration completed successfully on ${platform}`);
         
         toast({
           title: "Notifications Enabled ✅",
-          description: "You'll receive real-time updates from your partner.",
+          description: `You'll receive real-time updates on your ${platform === 'ios' ? 'iPhone' : 'Android'} device.`,
         });
 
       } catch (e) {
@@ -139,9 +134,10 @@ export function usePushRegistration() {
         setRegistered(false);
         setPermissionStatus('denied');
         
+        const platform = Capacitor.getPlatform();
         toast({
           title: "Notification Setup Failed",
-          description: "There was an issue setting up push notifications. Some features may not work properly.",
+          description: `There was an issue setting up notifications on ${platform}. Check your ${platform === 'ios' ? 'iOS' : 'Android'} settings.`,
           variant: "destructive"
         });
       }

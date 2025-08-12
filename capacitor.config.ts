@@ -27,6 +27,12 @@ const config: CapacitorConfig = {
       presentationOptions: ["badge", "sound", "alert"]
     }
   },
+  ios: {
+    scheme: "LoveSync"
+  },
+  android: {
+    allowMixedContent: true
+  }
 };
 
 export default config;
