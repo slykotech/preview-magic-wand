@@ -782,98 +782,102 @@ export const DatePlanner = () => {
                      <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
                        {category.charAt(0).toUpperCase() + category.slice(1)} ({dates.length})
                      </h4>
-                     {dates.map(date => (
-                       <Card key={date.id} className="group hover:shadow-md transition-shadow">
-                         <CardContent className="p-4">
-                           <div className="flex justify-between items-start mb-3">
-                             <div>
-                               <h3 className="font-semibold text-lg mb-1">{date.title}</h3>
-                               <Badge variant="outline" className="text-xs">
-                                 {date.category?.charAt(0).toUpperCase() + date.category?.slice(1)}
-                               </Badge>
-                             </div>
-                             <div className="flex gap-1">
-                               <Button 
-                                 variant="ghost" 
-                                 size="sm" 
-                                 onClick={() => handleEditDate(date)}
-                                 className="h-8 w-8 p-0"
-                               >
-                                 ✏️
-                               </Button>
-                               <Button 
-                                 variant="ghost" 
-                                 size="sm" 
-                                 onClick={() => setDeleteConfirm(date.id)}
-                                 className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                               >
-                                 <Trash2 className="h-4 w-4" />
-                               </Button>
-                             </div>
-                           </div>
+                      {dates.map(date => (
+                        <Card key={date.id} className="group hover:shadow-md transition-shadow">
+                          <CardContent className="p-3">
+                            <div className="flex flex-col space-y-3">
+                              <div className="flex justify-between items-start">
+                                <div className="flex-1 min-w-0">
+                                  <h3 className="font-semibold text-base mb-1 truncate">{date.title}</h3>
+                                  <Badge variant="outline" className="text-xs">
+                                    {date.category?.charAt(0).toUpperCase() + date.category?.slice(1)}
+                                  </Badge>
+                                </div>
+                                <div className="flex gap-1 ml-2">
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    onClick={() => handleEditDate(date)}
+                                    className="h-7 w-7 p-0"
+                                  >
+                                    ✏️
+                                  </Button>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    onClick={() => setDeleteConfirm(date.id)}
+                                    className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </div>
 
-                           {date.description && (
-                             <p className="text-muted-foreground mb-3 text-sm">{date.description}</p>
-                           )}
+                            {date.description && (
+                              <p className="text-muted-foreground mb-2 text-sm line-clamp-2">{date.description}</p>
+                            )}
 
-                           <div className="grid grid-cols-2 gap-3 text-sm">
-                             {date.scheduled_date && (
-                               <div className="flex items-center gap-2">
-                                 <Calendar className="h-4 w-4 text-muted-foreground" />
-                                 <span>{new Date(date.scheduled_date).toLocaleDateString()}</span>
-                                 {date.scheduled_time && (
-                                   <span className="text-muted-foreground">at {date.scheduled_time}</span>
-                                 )}
-                               </div>
-                             )}
-                             
-                             {date.location && (
-                               <div className="flex items-center gap-2">
-                                 <MapPin className="h-4 w-4 text-muted-foreground" />
-                                 <span className="truncate">{date.location}</span>
-                               </div>
-                             )}
-                             
-                             {date.estimated_cost && (
-                               <div className="flex items-center gap-2">
-                                 <DollarSign className="h-4 w-4 text-muted-foreground" />
-                                 <span>{date.estimated_cost}</span>
-                               </div>
-                             )}
-                             
-                             {date.estimated_duration && (
-                               <div className="flex items-center gap-2">
-                                 <Clock className="h-4 w-4 text-muted-foreground" />
-                                 <span>{date.estimated_duration}</span>
-                               </div>
-                             )}
-                           </div>
+                            <div className="grid grid-cols-1 gap-2 text-sm">
+                              {date.scheduled_date && (
+                                <div className="flex items-center gap-2">
+                                  <Calendar className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                                  <span className="truncate">{new Date(date.scheduled_date).toLocaleDateString()}</span>
+                                  {date.scheduled_time && (
+                                    <span className="text-muted-foreground text-xs">at {date.scheduled_time}</span>
+                                  )}
+                                </div>
+                              )}
+                              
+                              {date.location && (
+                                <div className="flex items-center gap-2">
+                                  <MapPin className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                                  <span className="truncate">{date.location}</span>
+                                </div>
+                              )}
+                              
+                              <div className="flex items-center gap-4">
+                                {date.estimated_cost && (
+                                  <div className="flex items-center gap-1">
+                                    <DollarSign className="h-3 w-3 text-muted-foreground" />
+                                    <span className="text-xs">{date.estimated_cost}</span>
+                                  </div>
+                                )}
+                                
+                                {date.estimated_duration && (
+                                  <div className="flex items-center gap-1">
+                                    <Clock className="h-3 w-3 text-muted-foreground" />
+                                    <span className="text-xs">{date.estimated_duration}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
 
-                           {date.notes && (
-                             <div className="mt-3 p-2 bg-muted/50 rounded-lg">
-                               <p className="text-sm text-muted-foreground">{date.notes}</p>
-                             </div>
-                           )}
+                            {date.notes && (
+                              <div className="mt-2 p-2 bg-muted/50 rounded-lg">
+                                <p className="text-xs text-muted-foreground line-clamp-2">{date.notes}</p>
+                              </div>
+                            )}
 
-                           {/* Date Action Buttons */}
-                           <div className="flex gap-2 mt-4">
-                             <Button 
-                               size="sm" 
-                               variant="outline"
-                               onClick={() => handleDateFeedback(date.id, true)}
-                               className="flex-1"
-                             >
-                               ✅ We did this!
-                             </Button>
-                             <Button 
-                               size="sm" 
-                               variant="outline"
-                               onClick={() => handleDateFeedback(date.id, false)}
-                               className="flex-1"
-                             >
-                               ❌ Skip this
-                             </Button>
-                           </div>
+                            {/* Date Action Buttons */}
+                            <div className="flex flex-col sm:flex-row gap-2 mt-3">
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => handleDateFeedback(date.id, true)}
+                                className="flex-1 text-xs h-8 rounded-lg"
+                              >
+                                ✅ We did this!
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => handleDateFeedback(date.id, false)}
+                                className="flex-1 text-xs h-8 rounded-lg text-red-600 hover:text-red-700"
+                              >
+                                ❌ Skip this
+                              </Button>
+                            </div>
+                            </div>
                          </CardContent>
                        </Card>
                      ))}
