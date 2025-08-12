@@ -310,16 +310,6 @@ export const Profile = () => {
               onClick={() => setShowSyncBreakdown(true)}
             />
             <ProfileMenuItem
-              icon={<MessageSquare size={20} />}
-              title="Send Feedback 📝"
-              subtitle="Help us improve your experience"
-              onClick={() => {
-                console.log('Send Feedback clicked');
-                setFeedbackType('feedback');
-                setShowFeedbackModal(true);
-              }}
-            />
-            <ProfileMenuItem
               icon={<Settings size={20} />}
               title="App Settings"
               subtitle="Notifications, privacy & more"
