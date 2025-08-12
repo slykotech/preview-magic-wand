@@ -82,28 +82,6 @@ export const usePartnerConnectionV2 = () => {
 
       setCoupleData(couple);
 
-      // Determine connection status
-      if (couple) {
-        // Check if it's demo mode (user paired with themselves)
-        if (couple.user1_id === couple.user2_id) {
-          setConnectionStatus('unpaired');
-        } else {
-          setConnectionStatus('paired');
-          
-          // Get partner profile
-          const partnerId = couple.user1_id === user.id ? couple.user2_id : couple.user1_id;
-          const { data: partner } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('user_id', partnerId)
-            .single();
-          
-          setPartnerProfile(partner);
-        }
-      } else {
-        setConnectionStatus('unpaired');
-      }
-
       // Get incoming requests
       const { data: incoming } = await supabase
         .from('partner_requests')
@@ -124,13 +102,29 @@ export const usePartnerConnectionV2 = () => {
 
       setOutgoingRequests(outgoing || []);
 
-      // Update connection status based on requests
-      if ((incoming && incoming.length > 0) || (outgoing && outgoing.length > 0)) {
+      // Determine connection status properly
+      if (couple && couple.user1_id !== couple.user2_id) {
+        // User is already paired with someone (not demo mode)
+        setConnectionStatus('paired');
+        
+        // Get partner profile
+        const partnerId = couple.user1_id === user.id ? couple.user2_id : couple.user1_id;
+        const { data: partner } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', partnerId)
+          .single();
+        
+        setPartnerProfile(partner);
+      } else if ((incoming && incoming.length > 0) || (outgoing && outgoing.length > 0)) {
+        // User has pending requests but is not paired
         setConnectionStatus('pending');
-      } else if (!couple || couple.user1_id === couple.user2_id) {
-        // No pending requests and not paired (or in demo mode) - set to unpaired
+      } else {
+        // No partner and no pending requests (or in demo mode)
         setConnectionStatus('unpaired');
       }
+
+      setCoupleData(couple);
 
     } catch (error) {
       console.error('Error loading connection data:', error);
