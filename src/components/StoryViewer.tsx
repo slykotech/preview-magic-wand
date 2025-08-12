@@ -319,7 +319,9 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
         }}
         onSuccess={() => {
           console.log('📖 [StoryViewer] StoryUploader onSuccess called');
-          fetchStories();
+          setShowCreateStory(false); // Close the create story interface
+          fetchStories(); // Fetch the new stories
+          setIsInitialLoad(false); // Ensure we're not in loading state
         }}
         user={user}
       />
