@@ -321,27 +321,27 @@ export const DailyCheckinFlow: React.FC<DailyCheckinFlowProps> = ({
         <Card className="flex-1 flex flex-col overflow-hidden">
           <CardContent className="p-0 flex flex-col h-full">
             {/* Header with streak display - Fixed */}
-            <div className="bg-gradient-romance p-3 text-white flex-shrink-0">
-              <div className="flex items-center justify-between mb-2">
+            <div className="bg-gradient-romance p-2 text-white flex-shrink-0">
+              <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center space-x-2">
-                  <Flame className="text-white" size={18} />
+                  <Flame className="text-white" size={16} />
                   <h2 className="text-sm font-bold">Daily Check-in</h2>
                 </div>
-                <Button variant="ghost" size="sm" onClick={onClose} className="text-white hover:bg-white/20 h-8 w-8 p-0">
-                  <X size={16} />
+                <Button variant="ghost" size="sm" onClick={onClose} className="text-white hover:bg-white/20 h-7 w-7 p-0">
+                  <X size={14} />
                 </Button>
               </div>
               
               {/* Streak Display */}
-              <div className="bg-white/20 rounded-lg p-2">
+              <div className="bg-white/20 rounded-lg p-1.5">
                 <div className="flex items-center justify-center space-x-2">
-                  <Flame className="text-white" size={20} />
+                  <Flame className="text-white" size={16} />
                   <div className="text-center">
-                    <div className="text-lg font-bold">{currentStreak}</div>
+                    <div className="text-base font-bold">{currentStreak}</div>
                     <div className="text-xs opacity-90">Day Streak</div>
                   </div>
                 </div>
-                {currentStreak > 0 && <div className="text-center mt-1">
+                {currentStreak > 0 && <div className="text-center mt-0.5">
                     <p className="text-xs opacity-80">
                       {currentStreak >= 7 ? "You're on fire! 🔥" : "Keep the momentum going! 💪"}
                     </p>
