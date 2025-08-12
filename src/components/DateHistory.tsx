@@ -77,7 +77,7 @@ export const DateHistory = ({ onClose }: DateHistoryProps) => {
   };
 
   return (
-    <Card className="w-full max-w-2xl mx-auto bg-white">
+    <Card className="w-full max-w-2xl mx-auto bg-background border-border shadow-romantic">
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="text-2xl font-bold flex items-center gap-2">
@@ -114,7 +114,7 @@ export const DateHistory = ({ onClose }: DateHistoryProps) => {
             {completedDates.map((date, index) => (
               <div
                 key={date.id}
-                className="bg-gradient-subtle rounded-xl p-4 border shadow-sm hover:shadow-md transition-all duration-200"
+                className="bg-card border border-border rounded-xl p-4 shadow-soft hover:shadow-romantic transition-all duration-200 animate-fade-in"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
                 <div className="flex items-start justify-between mb-3">
@@ -144,7 +144,7 @@ export const DateHistory = ({ onClose }: DateHistoryProps) => {
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="flex">{getRatingStars(date.rating)}</div>
-                      <Badge variant="outline" className="bg-green-50 text-green-600 border-green-200">
+                      <Badge variant="outline" className="bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800">
                         Completed
                       </Badge>
                     </div>
