@@ -396,6 +396,8 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
 
   // Force show camera options if we're just starting
   console.log('🎥 [StoryUploader] Current showCameraOptions state:', showCameraOptions);
+  console.log('🎥 [StoryUploader] *** RENDERING STORYUPLOADER ***');
+  console.log('🎥 [StoryUploader] Modal should be visible now with z-index 9999');
 
   console.log('🎥 [StoryUploader] Rendering component with states:', {
     showCamera,
@@ -405,8 +407,9 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
   });
 
   return (
-    <div className="fixed inset-0 bg-black/95 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
-      <div className="bg-background rounded-2xl shadow-2xl w-full max-w-md mx-4 max-h-[90vh] overflow-hidden animate-scale-in">
+    <div className="fixed inset-0 bg-black/95 backdrop-blur-sm flex items-center justify-center z-[60] animate-fade-in"
+         style={{ zIndex: 9999 }}>
+      <div className="bg-background rounded-2xl shadow-2xl w-full max-w-md mx-4 max-h-[90vh] overflow-hidden animate-scale-in border border-primary/20">
         <div className="p-6 space-y-6">
           {/* Header */}
           <div className="flex items-center justify-between">

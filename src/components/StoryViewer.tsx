@@ -308,14 +308,17 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
   if (!isOpen) return null;
 
   if (showCreateStory) {
+    console.log('📖 [StoryViewer] *** RENDERING STORYUPLOADER FROM STORYVIEWER ***');
     return (
       <StoryUploader
         isOpen={true}
         onClose={() => {
+          console.log('📖 [StoryViewer] StoryUploader onClose called');
           setShowCreateStory(false);
           if (currentStories.length === 0) onClose();
         }}
         onSuccess={() => {
+          console.log('📖 [StoryViewer] StoryUploader onSuccess called');
           fetchStories();
         }}
         user={user}
