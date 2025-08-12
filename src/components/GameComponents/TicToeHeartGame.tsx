@@ -1118,8 +1118,8 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
                     {getPartnerDisplayName()?.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${
-                  isPartnerOnline ? 'bg-green-500' : 'bg-gray-400'
+                <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-background ${
+                  isPartnerOnline ? 'bg-success' : 'bg-muted'
                 }`}></div>
               </div>
             </div>

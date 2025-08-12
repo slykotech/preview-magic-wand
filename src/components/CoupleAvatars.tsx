@@ -91,8 +91,8 @@ export const CoupleAvatars = ({
             </div>
           )}
           {/* Online Status Indicator */}
-          <div className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-2 border-white ${
-            isUserOnline ? 'bg-green-500' : 'bg-red-500'
+          <div className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-2 border-background ${
+            isUserOnline ? 'bg-success' : 'bg-destructive'
           }`}></div>
         </div>
 
@@ -127,8 +127,8 @@ export const CoupleAvatars = ({
             </div>
           )}
           {/* Online Status Indicator */}
-          <div className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-2 border-white ${
-            isPartnerOnline ? 'bg-green-500' : 'bg-red-500'
+          <div className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-2 border-background ${
+            isPartnerOnline ? 'bg-success' : 'bg-destructive'
           }`}></div>
         </div>
       </div>
