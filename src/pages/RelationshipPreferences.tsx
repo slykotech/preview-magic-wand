@@ -16,6 +16,7 @@ export const RelationshipPreferences = () => {
         subtitle="Manage your relationship details"
         icon={<Heart size={24} />}
         backRoute="/profile"
+        className="rounded-none"
       />
 
       <div className="p-6 space-y-6">
