@@ -1,5 +1,6 @@
 import { Home, Brain, Calendar, Heart, User } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 
 const navItems = [
   { id: 'home', icon: Home, label: 'Home', path: '/dashboard' },
@@ -14,9 +15,54 @@ const NAV_BAR_HEIGHT = 64;
 export const BottomNavigation = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
 
-  // Hide navigation when in chat/messages view
-  if (location.pathname === '/messages') {
+  // Detect virtual keyboard on mobile
+  useEffect(() => {
+    const handleResize = () => {
+      const viewportHeight = window.visualViewport?.height || window.innerHeight;
+      const windowHeight = window.screen.height;
+      const heightDifference = windowHeight - viewportHeight;
+      
+      // Consider keyboard open if viewport height is significantly reduced
+      const keyboardOpen = heightDifference > 150; // threshold for keyboard detection
+      setIsKeyboardOpen(keyboardOpen);
+    };
+
+    const handleFocusIn = () => {
+      // Small delay to allow viewport to adjust
+      setTimeout(handleResize, 100);
+    };
+
+    const handleFocusOut = () => {
+      // Small delay to allow viewport to adjust
+      setTimeout(handleResize, 100);
+    };
+
+    // Listen to visual viewport changes (more reliable for keyboard detection)
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleResize);
+    } else {
+      window.addEventListener('resize', handleResize);
+    }
+
+    // Also listen to focus events on input elements
+    document.addEventListener('focusin', handleFocusIn);
+    document.addEventListener('focusout', handleFocusOut);
+
+    return () => {
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', handleResize);
+      } else {
+        window.removeEventListener('resize', handleResize);
+      }
+      document.removeEventListener('focusin', handleFocusIn);
+      document.removeEventListener('focusout', handleFocusOut);
+    };
+  }, []);
+
+  // Hide navigation when in chat/messages view or when keyboard is open
+  if (location.pathname === '/messages' || isKeyboardOpen) {
     return null;
   }
 
