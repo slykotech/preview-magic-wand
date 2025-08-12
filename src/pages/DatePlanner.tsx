@@ -495,7 +495,7 @@ export const DatePlanner = () => {
             <p className="text-muted-foreground max-w-md">
               To start planning dates together, you'll need to connect with your partner first.
             </p>
-            <Button onClick={() => navigate('/profile')} className="mt-4">
+            <Button onClick={() => navigate('/profile')} variant="romantic" className="mt-4">
               Set Up Partnership
             </Button>
           </div>
@@ -549,7 +549,7 @@ export const DatePlanner = () => {
                 </h3>
                 <Button 
                   onClick={() => setShowAddForm(true)}
-                  className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 text-white shadow-lg rounded-full px-4 py-2"
+                  variant="romantic"
                 >
                   <Heart className="h-4 w-4 mr-2" />
                   New Date✨
@@ -651,15 +651,15 @@ export const DatePlanner = () => {
                        className="min-h-[60px]"
                      />
                    </div>
-                   <div className="flex gap-2">
-                     <Button onClick={() => handleAddEvent()} className="flex-1">
-                       <Plus className="h-4 w-4 mr-2" />
-                       Add Date
-                     </Button>
-                     <Button variant="outline" onClick={() => setShowAddForm(false)}>
-                       Cancel
-                     </Button>
-                   </div>
+                    <div className="flex gap-2">
+                      <Button onClick={() => handleAddEvent()} variant="romantic" className="flex-1">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Date
+                      </Button>
+                      <Button variant="outline" onClick={() => setShowAddForm(false)}>
+                        Cancel
+                      </Button>
+                    </div>
                  </CardContent>
                </Card>
              )}
@@ -759,14 +759,14 @@ export const DatePlanner = () => {
                        className="min-h-[60px]"
                      />
                    </div>
-                   <div className="flex gap-2">
-                     <Button onClick={handleUpdateEvent} className="flex-1">
-                       Update Date
-                     </Button>
-                     <Button variant="outline" onClick={() => setEditingDate(null)}>
-                       Cancel
-                     </Button>
-                   </div>
+                    <div className="flex gap-2">
+                      <Button onClick={handleUpdateEvent} variant="romantic" className="flex-1">
+                        Update Date
+                      </Button>
+                      <Button variant="outline" onClick={() => setEditingDate(null)}>
+                        Cancel
+                      </Button>
+                    </div>
                  </CardContent>
                </Card>
              )}
