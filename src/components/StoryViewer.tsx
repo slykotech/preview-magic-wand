@@ -492,7 +492,7 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
 
           {/* Quick Emoji Reactions (for partner's stories) */}
           {!isOwnStory && (
-            <div className="absolute bottom-20 left-4 right-4 z-20">
+            <div className="absolute bottom-24 left-4 right-4 z-20">
               <div className="flex gap-2 mb-3 justify-center bg-black/30 backdrop-blur-sm rounded-full p-2">
                 {quickEmojis.map((emoji, index) => (
                   <button
@@ -508,17 +508,23 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
             </div>
           )}
 
-          {/* Caption */}
+          {/* Caption - positioned above quick reactions and response section */}
           {currentStory.caption && (
-            <div className="absolute bottom-4 left-4 right-4 text-white">
-              <p className="text-sm bg-black/50 p-2 rounded">{currentStory.caption}</p>
+            <div className={`absolute left-4 right-4 text-white z-15 ${
+              !isOwnStory ? 'bottom-44' : 'bottom-8'
+            }`}>
+              <p className="text-sm bg-black/60 backdrop-blur-sm p-3 rounded-lg leading-relaxed">
+                {currentStory.caption}
+              </p>
             </div>
           )}
 
-          {/* Story Reactions Display */}
+          {/* Story Reactions Display - positioned above everything else at bottom */}
           {responses.length > 0 && (
-            <div className="absolute bottom-24 left-4 right-4 text-white z-10">
-              <div className="bg-black/60 backdrop-blur-sm rounded-lg p-2 max-h-24 overflow-y-auto space-y-1">
+            <div className={`absolute left-4 right-4 text-white z-15 ${
+              !isOwnStory ? 'bottom-32' : 'bottom-16'
+            }`}>
+              <div className="bg-black/60 backdrop-blur-sm rounded-lg p-2 max-h-20 overflow-y-auto space-y-1">
                 {responses.map((response) => (
                   <div key={response.id} className="flex items-center justify-between text-xs">
                     <div className="flex items-center gap-2">
