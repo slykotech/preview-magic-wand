@@ -73,6 +73,7 @@ export default {
 				'love': 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
 			},
 			fontFamily: {
+				'sans': ['DM Sans', 'sans-serif'],
 				'poppins': ['Poppins', 'sans-serif'],
 				'inter': ['Inter', 'sans-serif']
 			},
