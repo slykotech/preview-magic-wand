@@ -88,6 +88,21 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
     }
   }, [isOpen, targetUserId, showUploadInterface, isOwnStory]);
 
+  // Auto-open camera file input on native platforms when upload interface is requested
+  useEffect(() => {
+    if (isOpen && showUploadInterface && isOwnStory) {
+      console.log('[StoryViewer] Upload mode open', { native: typeof Capacitor !== 'undefined' ? Capacitor.isNativePlatform() : false });
+      try {
+        if (typeof Capacitor !== 'undefined' && Capacitor.isNativePlatform()) {
+          setShowCreateStory(true);
+          setTimeout(() => cameraFileInputRef.current?.click(), 200);
+        }
+      } catch (e) {
+        console.log('Error auto-opening camera input:', e);
+      }
+    }
+  }, [isOpen, showUploadInterface, isOwnStory]);
+
   // Get current stories array based on context
   const currentStories = isOwnStory ? userStories : partnerStories;
 
@@ -579,6 +594,7 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
   if (!isOpen) return null;
 
   if (showCreateStory) {
+    console.log('[StoryViewer] Rendering Create Story UI', { isOwnStory, showUploadInterface });
     return (
       <div className="fixed inset-0 bg-black/95 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
         <div className="bg-gradient-to-br from-background via-background to-background/95 border border-border/20 rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl animate-scale-in">

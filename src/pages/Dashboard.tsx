@@ -565,11 +565,21 @@ export const Dashboard = () => {
   // Separate camera handler for uploading new stories
   const [showUploadInterface, setShowUploadInterface] = useState(false);
   const handleCameraClick = () => {
+    console.log('[Dashboard] Camera button clicked', { userId: user?.id, coupleId });
     if (user?.id && coupleId) {
       setStoryTargetUserId(user.id);
       setIsOwnStory(true);
       setShowUploadInterface(true); // Set flag to show upload interface
       setShowStoryViewer(true);
+      try {
+        toast({ title: 'Opening story creator…', description: 'If nothing appears, please share Logcat output.' });
+      } catch {}
+    } else {
+      toast({
+        title: 'Setup Required',
+        description: 'Please complete your couple setup first',
+        variant: 'destructive'
+      });
     }
   };
   const handleStoryViewerClose = () => {
