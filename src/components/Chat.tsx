@@ -110,7 +110,12 @@ export const Chat: React.FC<ChatProps> = ({
         
         // Only add message if it's after clear time or no clear time exists
         if (!clearTime || messageTime > clearTime) {
-          setMessages(prev => [...prev, newMessage]);
+          // Check if message already exists (to avoid duplicates from optimistic updates)
+          setMessages(prev => {
+            const exists = prev.some(msg => msg.id === newMessage.id);
+            if (exists) return prev;
+            return [...prev, newMessage];
+          });
 
           // Mark message as read if it's from partner
           if (newMessage.sender_id !== user?.id) {
@@ -323,15 +328,39 @@ export const Chat: React.FC<ChatProps> = ({
   };
   const sendMessage = async (text: string, type: 'text' | 'emoji' | 'sticker' | 'image' | 'video' = 'text') => {
     if (!text.trim() || !conversation?.id || !user?.id) return;
+    
+    // Create optimistic message for immediate UI update
+    const optimisticMessage: Message = {
+      id: `temp-${Date.now()}-${Math.random()}`,
+      conversation_id: conversation.id,
+      sender_id: user.id,
+      message_text: text.trim(),
+      message_type: type,
+      is_read: false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    
+    // Add optimistic message immediately
+    setMessages(prev => [...prev, optimisticMessage]);
+    
     try {
-      const { error } = await supabase.from('messages').insert({
+      const { data, error } = await supabase.from('messages').insert({
         conversation_id: conversation.id,
         sender_id: user.id,
         message_text: text.trim(),
         message_type: type,
         is_read: false
-      });
+      }).select().single();
+      
       if (error) throw error;
+      
+      // Replace optimistic message with real message
+      if (data) {
+        setMessages(prev => prev.map(msg => 
+          msg.id === optimisticMessage.id ? data as Message : msg
+        ));
+      }
 
       // Create a realtime notification for your partner
       if (partnerProfile?.user_id && partnerProfile.user_id !== user.id) {
@@ -369,6 +398,9 @@ export const Chat: React.FC<ChatProps> = ({
     } catch (error) {
       console.error('Error sending message:', error);
       toast.error('Failed to send message');
+      
+      // Remove optimistic message on error
+      setMessages(prev => prev.filter(msg => msg.id !== optimisticMessage.id));
     }
   };
   const handleFileUpload = async (file: File) => {
