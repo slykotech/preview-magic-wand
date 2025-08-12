@@ -67,10 +67,10 @@ input, textarea, [contenteditable] {
 @layer base {
   :root {
     /* Purple-Pink Theme Colors */
-    --purple-deep: 270 50% 40%;
-    --purple-medium: 280 60% 60%;
-    --pink-vibrant: 320 70% 65%;
-    --pink-soft: 330 60% 80%;
+    --purple-deep: 316 100% 21%;
+    --purple-medium: 316 100% 35%;
+    --pink-vibrant: 302 100% 80%;
+    --pink-soft: 302 100% 90%;
     
     /* Design System Colors */
     --background: 240 3% 96%;
@@ -107,13 +107,13 @@ input, textarea, [contenteditable] {
     --gradient-primary: linear-gradient(135deg, hsl(var(--purple-deep)), hsl(var(--pink-vibrant)));
     --gradient-secondary: linear-gradient(135deg, hsl(var(--purple-medium)), hsl(var(--pink-soft)));
     --gradient-romance: linear-gradient(135deg, hsl(var(--purple-deep)), hsl(var(--pink-vibrant)));
-    --gradient-glow: linear-gradient(180deg, hsl(var(--purple-medium) / 0.1), transparent);
+    --gradient-glow: linear-gradient(180deg, hsl(var(--pink-soft) / 0.2), transparent);
     
     /* Purple-Pink Shadows */
-    --shadow-primary: 0 10px 30px -10px hsl(var(--purple-medium) / 0.3);
+    --shadow-primary: 0 10px 30px -10px hsl(var(--purple-deep) / 0.3);
     --shadow-romantic: 0 20px 60px -12px hsl(var(--pink-vibrant) / 0.25);
     --shadow-soft: 0 8px 30px -8px hsl(var(--purple-deep) / 0.15);
-    --shadow-glow: 0 0 40px hsl(var(--purple-medium) / 0.4);
+    --shadow-glow: 0 0 40px hsl(var(--pink-vibrant) / 0.4);
     
     /* Animations */
     --transition-love: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
