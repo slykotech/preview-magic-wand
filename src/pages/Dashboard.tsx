@@ -807,64 +807,49 @@ export const Dashboard = () => {
           animationDelay: '400ms'
         }}>
           {isLoaded ? <>
-              {/* Last Check-in Card - Elegant */}
-              <div className="group relative bg-gradient-to-br from-card via-card to-card/95 border border-border/50 rounded-2xl p-5 shadow-soft cursor-pointer hover:shadow-romantic transition-all hover:scale-[1.02] duration-300 overflow-hidden" onClick={() => setShowCheckinInsights(true)}>
-                {/* Subtle gradient overlay */}
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              {/* Last Check-in Card - Minimal & Elegant */}
+              <div className="group relative bg-gradient-to-br from-card to-card/95 border border-border/50 rounded-xl p-3 shadow-soft cursor-pointer hover:shadow-md transition-all hover:scale-[1.01] duration-200" onClick={() => setShowCheckinInsights(true)}>
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/3 to-secondary/3 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
                 
-                <div className="relative flex items-start gap-4">
-                  <div className="w-12 h-12 bg-gradient-romance rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm group-hover:shadow-lg transition-shadow duration-300">
-                    <Heart className="text-white" size={20} />
+                <div className="relative flex items-center gap-2.5">
+                  <div className="w-8 h-8 bg-gradient-romance rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Heart className="text-white" size={14} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs text-muted-foreground font-semibold tracking-wide uppercase mb-2">Last Check-in</p>
-                    <p className="text-base font-bold text-foreground mb-3 tracking-tight">
-                      {lastCheckin ? format(new Date(lastCheckin.checkin_date), 'd MMMM') : '28 July'}
+                    <p className="text-[10px] text-muted-foreground font-medium tracking-wide uppercase mb-0.5">Check-in</p>
+                    <p className="text-sm font-bold text-foreground leading-tight">
+                      {lastCheckin ? format(new Date(lastCheckin.checkin_date), 'd MMM') : '28 Jul'}
                     </p>
                     {lastCheckin && lastCheckin.relationship_feeling && (
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full bg-primary/60" />
-                          <p className="text-xs text-muted-foreground">
-                            <span className="text-foreground font-semibold capitalize">{lastCheckin.relationship_feeling.replace(/_/g, ' ')}</span>
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                    {lastCheckin && lastCheckin.energy_level && (
-                      <div className="flex items-center gap-2 mt-2">
-                        <div className="w-2 h-2 rounded-full bg-accent/60" />
-                        <p className="text-xs text-muted-foreground">
-                          Energy <span className="text-foreground font-semibold">{lastCheckin.energy_level}/10</span>
-                        </p>
-                      </div>
+                      <p className="text-[10px] text-muted-foreground mt-1">
+                        <span className="text-foreground font-medium capitalize">{lastCheckin.relationship_feeling.replace(/_/g, ' ')}</span>
+                      </p>
                     )}
                   </div>
                 </div>
               </div>
 
-              {/* Relationship Health Card - Elegant */}
-              <div className="group relative bg-gradient-to-br from-card via-card to-card/95 border border-border/50 rounded-2xl p-5 shadow-soft cursor-pointer hover:shadow-romantic transition-all hover:scale-[1.02] duration-300 overflow-hidden" onClick={() => setShowHealthTips(true)}>
-                {/* Subtle gradient overlay */}
-                <div className="absolute inset-0 bg-gradient-to-br from-accent/5 via-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              {/* Relationship Health Card - Minimal & Elegant */}
+              <div className="group relative bg-gradient-to-br from-card to-card/95 border border-border/50 rounded-xl p-3 shadow-soft cursor-pointer hover:shadow-md transition-all hover:scale-[1.01] duration-200" onClick={() => setShowHealthTips(true)}>
+                <div className="absolute inset-0 bg-gradient-to-br from-accent/3 to-primary/3 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
                 
                 <div className="relative">
-                  <div className="flex items-start gap-4 mb-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-primary to-accent rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm group-hover:shadow-lg transition-shadow duration-300">
-                      <Activity className="text-white" size={20} />
+                  <div className="flex items-center gap-2.5 mb-2">
+                    <div className="w-8 h-8 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center flex-shrink-0">
+                      <Activity className="text-white" size={14} />
                     </div>
                     <div className="flex-1">
-                      <p className="text-xs text-muted-foreground font-semibold tracking-wide uppercase mb-2">Relationship Health</p>
-                      <div className="flex items-center gap-2">
-                        <p className="text-2xl font-black text-primary tracking-tight">{currentSyncScore}%</p>
-                        <div className={`flex items-center justify-center w-6 h-6 rounded-full ${
+                      <p className="text-[10px] text-muted-foreground font-medium tracking-wide uppercase mb-0.5">Health</p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-lg font-black text-primary leading-none">{currentSyncScore}%</p>
+                        <div className={`w-4 h-4 rounded-full flex items-center justify-center ${
                           syncScoreData?.trend === 'up' 
                             ? 'bg-accent/20 text-accent' 
                             : syncScoreData?.trend === 'down' 
                             ? 'bg-destructive/20 text-destructive' 
                             : 'bg-muted text-muted-foreground'
                         }`}>
-                          <span className="text-sm font-bold">
+                          <span className="text-[10px] font-bold">
                             {syncScoreData?.trend === 'up' ? '↗' : syncScoreData?.trend === 'down' ? '↘' : '→'}
                           </span>
                         </div>
@@ -872,18 +857,12 @@ export const Dashboard = () => {
                     </div>
                   </div>
                   
-                  <div className="relative">
-                    {/* Progress bar background */}
-                    <div className="w-full h-2 bg-muted/50 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-gradient-to-r from-primary to-accent rounded-full transition-all duration-700 ease-out"
-                        style={{ width: `${currentSyncScore}%` }}
-                      />
-                    </div>
-                    
-                    <p className="text-xs font-medium text-muted-foreground mt-3 leading-relaxed">
-                      {currentSyncScore >= 80 ? 'Thriving together ✨' : currentSyncScore >= 60 ? 'Growing stronger 💪' : currentSyncScore >= 40 ? 'Building connection 🌱' : 'Starting your journey 🌟'}
-                    </p>
+                  {/* Minimal progress bar */}
+                  <div className="w-full h-1 bg-muted/50 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-primary to-accent rounded-full transition-all duration-500"
+                      style={{ width: `${currentSyncScore}%` }}
+                    />
                   </div>
                 </div>
               </div>
