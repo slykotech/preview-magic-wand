@@ -6,6 +6,8 @@ import { ThemeProvider } from "next-themes";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./hooks/useAuth";
+import { usePresence } from "./hooks/usePresence";
+import { useCoupleData } from "./hooks/useCoupleData";
 import SplashScreen from "./components/SplashScreen";
 import { SignupPermissionsFlow } from "./components/SignupPermissionsFlow";
 import { usePermissions } from "./hooks/usePermissions";
@@ -51,6 +53,16 @@ import EventMonitoring from "./pages/EventMonitoring";
 
 const queryClient = new QueryClient();
 
+// Global presence tracker component
+const GlobalPresenceTracker = () => {
+  const { coupleData } = useCoupleData();
+  const { isUserOnline, isPartnerOnline } = usePresence(coupleData?.id);
+  
+  // This component just tracks presence globally, doesn't render anything
+  console.log('Global presence:', { user: isUserOnline, partner: isPartnerOnline, coupleId: coupleData?.id });
+  return null;
+};
+
 const App = () => {
   const [showSplash, setShowSplash] = useState(true);
   const { showPermissionsFlow, setShowPermissionsFlow } = usePermissions();
@@ -72,6 +84,7 @@ const App = () => {
             <Toaster />
             <Sonner />
             <PushRegistrar />
+            <GlobalPresenceTracker />
             <SignupPermissionsFlow 
               isOpen={showPermissionsFlow}
               onComplete={() => setShowPermissionsFlow(false)}

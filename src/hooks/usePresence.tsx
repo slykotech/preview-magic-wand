@@ -14,6 +14,7 @@ export const usePresence = (coupleId?: string) => {
   const { user } = useAuth();
   const notifiedOnlineRef = useRef(false);
   const deviceIdRef = useRef<string>();
+  const channelRef = useRef<any>(null);
 
   // Generate a unique device ID for this session
   if (!deviceIdRef.current) {
@@ -21,18 +22,30 @@ export const usePresence = (coupleId?: string) => {
   }
 
   useEffect(() => {
+    console.log('usePresence effect triggered:', { user: user?.id, coupleId });
     if (!user) {
+      console.log('No user, clearing presence states');
       return;
     }
 
     // Only track presence when we have a couple ID
     if (!coupleId) {
+      console.log('No coupleId, setting presence states to false');
       setIsUserOnline(false);
       setIsPartnerOnline(false);
       return;
     }
 
+    console.log('Setting up presence tracking for couple:', coupleId);
+
+    // Cleanup any existing channel for this couple
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
+
     const channel = supabase.channel(`couple_presence_${coupleId}`);
+    channelRef.current = channel;
 
     // Track user's presence with unique device ID
     const userStatus: PresenceState = {
@@ -84,8 +97,10 @@ export const usePresence = (coupleId?: string) => {
         }
       })
       .subscribe(async (status) => {
+        console.log('Channel subscription status:', status);
         if (status === 'SUBSCRIBED') {
           // Track the current user's presence
+          console.log('Tracking user presence:', userStatus);
           await channel.track(userStatus);
           setIsUserOnline(true);
 
@@ -152,7 +167,10 @@ export const usePresence = (coupleId?: string) => {
     return () => {
       clearInterval(heartbeat);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      supabase.removeChannel(channel);
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
       setIsUserOnline(false);
       setIsPartnerOnline(false);
       notifiedOnlineRef.current = false;

@@ -117,7 +117,7 @@ export const Dashboard = () => {
   // Ensure we have a safe score value
   const currentSyncScore = syncScoreData?.score ?? 0;
 
-  // Use presence tracking hook
+  // Use presence tracking hook - now also tracked globally in App.tsx
   const {
     isUserOnline,
     isPartnerOnline
