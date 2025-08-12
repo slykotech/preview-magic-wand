@@ -529,16 +529,27 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
               !isOwnStory ? 'bottom-32' : 'bottom-16'
             }`}>
               <div className="bg-black/60 backdrop-blur-sm rounded-lg p-2 max-h-20 overflow-y-auto space-y-1">
-                {responses.map((response) => (
-                  <div key={response.id} className="flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-2">
-                      <span className="text-base">{response.response_text}</span>
-                      <span className="text-xs text-white/70">
-                        {formatDistanceToNow(new Date(response.created_at), { addSuffix: true })}
-                      </span>
+                {(() => {
+                  // Filter to show only the latest reaction from each user
+                  const latestResponsesMap = new Map();
+                  responses.forEach((response) => {
+                    if (!latestResponsesMap.has(response.user_id) || 
+                        new Date(response.created_at) > new Date(latestResponsesMap.get(response.user_id).created_at)) {
+                      latestResponsesMap.set(response.user_id, response);
+                    }
+                  });
+                  
+                  return Array.from(latestResponsesMap.values()).map((response) => (
+                    <div key={response.id} className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="text-base">{response.response_text}</span>
+                        <span className="text-xs text-white/70">
+                          {formatDistanceToNow(new Date(response.created_at), { addSuffix: true })}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ));
+                })()}
               </div>
             </div>
           )}
