@@ -334,15 +334,9 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
       }
       console.log('Camera support check passed');
 
-      // Step 3: Show camera UI first so video element is rendered
-      setShowCamera(true);
-      
-      // Step 4: Wait a moment for the video element to be rendered
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      // Step 5: Request camera access - this will trigger the permission prompt
+      // Step 3: Request camera access FIRST - this will trigger the permission prompt
       console.log('Requesting camera stream...');
-      const stream = await navigator.mediaDevices.getUserMedia({ 
+      const stream = await navigator.mediaDevices.getUserMedia({
         video: { 
           facingMode: 'user',
           width: { ideal: 1280, min: 640, max: 1920 },
@@ -352,6 +346,12 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
       });
       
       console.log('Camera stream obtained successfully');
+      
+      // Step 4: Only show camera UI AFTER we have the stream
+      setShowCamera(true);
+      
+      // Step 5: Wait for video element to be rendered
+      await new Promise(resolve => setTimeout(resolve, 150));
       
       // Step 6: Set up video element
       console.log('Setting up video element, videoRef available:', !!videoRef.current);
@@ -449,16 +449,27 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
         audio: false 
       });
       
+      // Only show camera UI after getting the stream
+      setShowCamera(true);
+      
+      // Wait for video element to be rendered
+      await new Promise(resolve => setTimeout(resolve, 150));
+      
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         videoRef.current.muted = true;
         try { videoRef.current.setAttribute('muted', 'true'); } catch {}
         await videoRef.current.play();
-        setShowCamera(true);
         toast.success('Camera is ready with basic settings!');
+      } else {
+        // Clean up stream if video element not available
+        stream.getTracks().forEach(track => track.stop());
+        setShowCamera(false);
+        toast.error('Camera setup failed - video element not available');
       }
     } catch (error) {
       console.error('Basic camera access also failed:', error);
+      setShowCamera(false);
       toast.error('Unable to access camera even with basic settings. Please check your device and browser.');
     }
   };
