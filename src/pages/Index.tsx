@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { LoveSyncLogo } from "@/components/LoveSyncLogo";
-import { Heart, Sparkles, Calendar, Camera, Gamepad2 } from "lucide-react";
+import { Heart, Sparkles, Calendar, Camera, Gamepad2, Clock, Zap, MessageCircle, Archive } from "lucide-react";
 const Index = () => {
   const {
     user,
@@ -53,21 +53,20 @@ const Index = () => {
 
         {/* Features */}
         <div className="space-y-3 text-left">
-          <div className="flex items-center gap-4 p-4 bg-white/20 rounded-2xl backdrop-blur-sm relative">
-            <div className="relative z-10 w-16 h-16 -mt-2 -mb-2">
-              <img src="/lovable-uploads/e96cb636-6076-4256-8622-93e09fe2fd42.png" alt="Quality Time" className="w-full h-full object-contain drop-shadow-lg" />
+          <div className="flex items-center gap-4 p-4 bg-white/20 rounded-2xl backdrop-blur-sm">
+            <div className="w-10 h-10 bg-white/30 rounded-xl flex items-center justify-center">
+              <Clock className="text-white" size={20} />
             </div>
             <div className="flex-1">
               <h3 className="font-semibold text-white">Quality Time</h3>
             </div>
           </div>
           <div className="flex items-center gap-4 p-4 bg-white/20 rounded-2xl backdrop-blur-sm">
-            
+            <div className="w-10 h-10 bg-white/30 rounded-xl flex items-center justify-center">
+              <Zap className="text-white" size={20} />
+            </div>
             <div className="flex-1">
               <h3 className="font-semibold text-white">Soul Syncing</h3>
-            </div>
-            <div className="w-16 h-16">
-              <img src="/lovable-uploads/ea943bb4-0f80-4b60-8dab-9824039f4bc1.png" alt="Soul Syncing Avatar" className="w-full h-full object-contain" />
             </div>
           </div>
           <div className="flex items-center gap-4 p-4 bg-white/20 rounded-2xl backdrop-blur-sm">
@@ -79,13 +78,12 @@ const Index = () => {
             </div>
           </div>
           <div className="flex items-center gap-4 p-4 bg-white/20 rounded-2xl backdrop-blur-sm">
-            <div className="w-16 h-16">
-              <img src="/lovable-uploads/d445b99d-8fa2-4613-9412-94521632578d.png" alt="Connection Check-In Avatar" className="w-full h-full object-contain" />
+            <div className="w-10 h-10 bg-white/30 rounded-xl flex items-center justify-center">
+              <MessageCircle className="text-white" size={20} />
             </div>
             <div className="flex-1">
               <h3 className="font-semibold text-white">Connection Check-In</h3>
             </div>
-            
           </div>
           <div className="flex items-center gap-4 p-4 bg-white/20 rounded-2xl backdrop-blur-sm">
             <div className="w-10 h-10 bg-white/30 rounded-xl flex items-center justify-center">
@@ -96,12 +94,11 @@ const Index = () => {
             </div>
           </div>
           <div className="flex items-center gap-4 p-4 bg-white/20 rounded-2xl backdrop-blur-sm">
-            
+            <div className="w-10 h-10 bg-white/30 rounded-xl flex items-center justify-center">
+              <Archive className="text-white" size={20} />
+            </div>
             <div className="flex-1">
               <h3 className="font-semibold text-white">Memory Vault</h3>
-            </div>
-            <div className="w-16 h-16">
-              <img src="/lovable-uploads/5a655e7e-3004-45ee-bc2a-35b5292a98e2.png" alt="Memory Vault Couple" className="w-full h-full object-contain" />
             </div>
           </div>
         </div>
