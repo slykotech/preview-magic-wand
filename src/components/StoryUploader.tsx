@@ -409,11 +409,11 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
   return (
     <div className="fixed inset-0 bg-black/95 backdrop-blur-sm flex items-center justify-center z-[60] animate-fade-in"
          style={{ zIndex: 9999 }}>
-      <div className="bg-background rounded-2xl shadow-2xl w-full max-w-md mx-4 max-h-[90vh] overflow-hidden animate-scale-in border border-primary/20">
-        <div className="p-6 space-y-6">
+      <div className="bg-background rounded-xl shadow-2xl w-full max-w-sm mx-4 max-h-[70vh] overflow-hidden animate-scale-in border border-primary/20">
+        <div className="p-4 space-y-4">
           {/* Header */}
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+            <h2 className="text-lg font-semibold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
               Share Your Story
             </h2>
             <Button
@@ -433,12 +433,12 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
 
           {/* Simple Upload and Camera Options */}
           {(showCameraOptions || (!selectedFile && !showCamera)) && (
-            <div className="space-y-6 animate-fade-in">
+            <div className="space-y-4 animate-fade-in">
               <div className="text-center">
-                <h3 className="text-lg font-medium mb-6">Share Your Story</h3>
+                <h3 className="text-base font-medium mb-3">Share Your Story</h3>
                 
-                {/* Simple Two-Button Layout */}
-                <div className="grid grid-cols-2 gap-4">
+                {/* Compact Two-Button Layout */}
+                <div className="grid grid-cols-2 gap-3">
                   <Button
                     variant="outline"
                     onClick={(e) => {
@@ -467,13 +467,13 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
                         });
                       }
                     }}
-                    className="h-24 bg-gradient-to-br from-background to-muted/20 hover:from-muted/20 hover:to-muted/40 border-border/50 hover:border-primary/50 transition-all duration-300 hover:scale-[1.02] shadow-sm hover:shadow-md"
+                    className="h-20 bg-gradient-to-br from-background to-muted/20 hover:from-muted/20 hover:to-muted/40 border-border/50 hover:border-primary/50 transition-all duration-300 hover:scale-[1.02] shadow-sm hover:shadow-md"
                   >
-                    <div className="flex flex-col items-center gap-2">
-                      <div className="p-3 bg-primary/10 rounded-xl">
-                        <Upload className="h-8 w-8 text-primary" />
+                    <div className="flex flex-col items-center gap-1">
+                      <div className="p-2 bg-primary/10 rounded-lg">
+                        <Upload className="h-6 w-6 text-primary" />
                       </div>
-                      <div className="text-sm font-medium">Upload Photo</div>
+                      <div className="text-xs font-medium">Upload Photo</div>
                     </div>
                   </Button>
                   
@@ -483,13 +483,13 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
                       console.log('📷 [StoryUploader] Camera button clicked');
                       startCamera('user'); // Start with front camera by default
                     }}
-                    className="h-24 bg-gradient-to-br from-background to-muted/20 hover:from-muted/20 hover:to-muted/40 border-border/50 hover:border-primary/50 transition-all duration-300 hover:scale-[1.02] shadow-sm hover:shadow-md"
+                    className="h-20 bg-gradient-to-br from-background to-muted/20 hover:from-muted/20 hover:to-muted/40 border-border/50 hover:border-primary/50 transition-all duration-300 hover:scale-[1.02] shadow-sm hover:shadow-md"
                   >
-                    <div className="flex flex-col items-center gap-2">
-                      <div className="p-3 bg-primary/10 rounded-xl">
-                        <Camera className="h-8 w-8 text-primary" />
+                    <div className="flex flex-col items-center gap-1">
+                      <div className="p-2 bg-primary/10 rounded-lg">
+                        <Camera className="h-6 w-6 text-primary" />
                       </div>
-                      <div className="text-sm font-medium">Take Photo</div>
+                      <div className="text-xs font-medium">Take Photo</div>
                     </div>
                   </Button>
                 </div>
