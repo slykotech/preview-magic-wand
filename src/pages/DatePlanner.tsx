@@ -544,10 +544,15 @@ export const DatePlanner = () => {
 
             <TabsContent value="planned" className="space-y-6">
               <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold">Your Planned Dates</h3>
-                <Button onClick={() => setShowAddForm(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add New Date
+                <h3 className="text-lg font-semibold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                  💕 Our Love Adventures
+                </h3>
+                <Button 
+                  onClick={() => setShowAddForm(true)}
+                  className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 text-white shadow-lg rounded-full px-4 py-2"
+                >
+                  <Heart className="h-4 w-4 mr-2" />
+                  Plan New Date ✨
                 </Button>
               </div>
 
@@ -556,7 +561,7 @@ export const DatePlanner = () => {
               <Card>
                 <CardHeader>
                   <div className="flex justify-between items-center">
-                    <CardTitle>Add New Date</CardTitle>
+                    <CardTitle className="text-primary">✨ Plan Your Next Adventure</CardTitle>
                     <Button variant="ghost" size="sm" onClick={() => setShowAddForm(false)}>
                       <X className="h-4 w-4" />
                     </Button>
