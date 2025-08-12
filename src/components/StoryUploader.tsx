@@ -409,10 +409,10 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
   return (
     <div className="fixed inset-0 bg-black/95 backdrop-blur-sm flex items-center justify-center z-[60] animate-fade-in"
          style={{ zIndex: 9999 }}>
-      <div className="bg-background rounded-lg shadow-2xl w-full max-w-xs mx-4 max-h-[50vh] overflow-hidden animate-scale-in border border-primary/20">
-        <div className="p-3 space-y-3">
-          {/* Header */}
-          <div className="flex items-center justify-between">
+      <div className="bg-background rounded-lg shadow-2xl w-full max-w-xs mx-4 max-h-[60vh] min-h-[200px] overflow-y-auto animate-scale-in border border-primary/20">
+        <div className="p-3 space-y-3 flex flex-col">
+          {/* Fixed Header */}
+          <div className="flex items-center justify-between flex-shrink-0">
             <h2 className="text-base font-medium bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
               Share Story
             </h2>
@@ -425,19 +425,22 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
                 setCaption('');
                 onClose();
               }}
-              className="rounded-full hover:bg-muted/50 transition-all duration-300 hover:scale-110 h-6 w-6"
+              className="rounded-full hover:bg-muted/50 transition-all duration-300 hover:scale-110 h-6 w-6 flex-shrink-0"
             >
               <X className="h-4 w-4" />
             </Button>
           </div>
 
-          {/* Compact Upload and Camera Options */}
-          {(showCameraOptions || (!selectedFile && !showCamera)) && (
-            <div className="space-y-2 animate-fade-in">
-              <div className="text-center">
-                {/* Remove subtitle to save space */}
-                
-                {/* Ultra Compact Two-Button Layout */}
+          {/* Scrollable Content Area */}
+          <div className="flex-1 overflow-y-auto">
+
+            {/* Compact Upload and Camera Options */}
+            {(showCameraOptions || (!selectedFile && !showCamera)) && (
+              <div className="space-y-2 animate-fade-in">
+                <div className="text-center">
+                  {/* Remove subtitle to save space */}
+                  
+                  {/* Ultra Compact Two-Button Layout */}
                 <div className="grid grid-cols-2 gap-2">
                   <Button
                     variant="outline"
@@ -698,6 +701,7 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
               </div>
             </div>
           )}
+          </div>
         </div>
       </div>
     </div>
