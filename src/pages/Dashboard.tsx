@@ -694,16 +694,16 @@ export const Dashboard = () => {
         </div>}
       
       {/* Main Content - with loading states */}
-      <div className={showSplash ? 'opacity-0' : 'opacity-100 transition-opacity duration-300 dashboard-content'}>
+      <div className={showSplash ? 'opacity-0' : 'opacity-100 transition-opacity duration-300 safe-area-top'}>
         {/* Gradient Header */}
         <GradientHeader 
-          title={getTimeBasedMessage()} 
+          title={getTimeBasedMessage()}
           subtitle="Your love journey continues" 
           icon={<Sparkles size={24} />} 
           showBackButton={false}
         />
          
-        <div className="container mx-auto px-3 sm:px-6 space-y-3 sm:space-y-6 pb-20">
+        <div className="px-4 space-y-4 pb-20 safe-area-bottom">
           
 
           {/* Sync Score Section */}
