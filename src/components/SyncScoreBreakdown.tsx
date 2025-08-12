@@ -119,7 +119,7 @@ export const SyncScoreBreakdown: React.FC<SyncScoreBreakdownProps> = ({
       <CardContent className="space-y-6">
         {/* Overall Score */}
         <div className="text-center p-4 bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl">
-          <div className={`text-3xl font-bold ${getScoreColor(score)} mb-1`}>
+          <div className={`text-2xl font-bold ${getScoreColor(score)} mb-1`}>
             {score}%
           </div>
           <p className="text-sm text-muted-foreground">

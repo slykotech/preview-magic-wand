@@ -110,7 +110,7 @@ export const GameTimer: React.FC<GameTimerProps> = ({
 
   return (
     <div className="text-center p-3 rounded-lg bg-muted">
-      <p className={`text-2xl font-bold ${getTimerColor()}`}>
+      <p className={`text-xl font-bold ${getTimerColor()}`}>
         ⏱️ {formatTime(timeLeft)}
       </p>
       {timeLeft <= 10 && (

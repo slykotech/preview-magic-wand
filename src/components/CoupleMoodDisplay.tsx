@@ -161,7 +161,7 @@ export const CoupleMoodDisplay: React.FC<CoupleMoodDisplayProps> = ({
       <Card className={`${className} ${splashMode ? 'bg-white/10 border-white/20 backdrop-blur-sm' : 'bg-gradient-to-br from-soft-cloud to-background border border-border/50'} shadow-sm`}>
         <CardContent className="p-6">
           <div className="text-center mb-4">
-            <h3 className={`text-lg font-bold ${splashMode ? 'text-white' : 'text-foreground'}`}>Today's Mood</h3>
+            <h3 className={`text-base font-bold ${splashMode ? 'text-white' : 'text-foreground'}`}>Today's Mood</h3>
             <p className={`text-sm ${splashMode ? 'text-white/80' : 'text-muted-foreground'}`}>How you're both feeling</p>
           </div>
           

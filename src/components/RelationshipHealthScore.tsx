@@ -70,7 +70,7 @@ export const RelationshipHealthScore: React.FC<RelationshipHealthScoreProps> = (
       <CardContent className="space-y-4">
         {/* Main Score Display */}
         <div className="text-center">
-          <div className={`text-4xl font-bold ${colorClass} mb-1`}>
+          <div className={`text-3xl font-bold ${colorClass} mb-1`}>
             {healthScore}%
           </div>
           <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">

@@ -125,7 +125,7 @@ export const CardTimer: React.FC<CardTimerProps> = ({
     <div className="text-center">
       <div className="flex items-center justify-center gap-2">
         <span className="text-2xl">{getCategoryIcon()}</span>
-        <span className={`text-3xl font-bold ${getTimerColor()}`}>
+        <span className={`text-2xl font-bold ${getTimerColor()}`}>
           {formatTime(timeLeft)}
         </span>
       </div>

@@ -120,7 +120,7 @@ export const TaskHistory: React.FC<TaskHistoryProps> = ({ sessionId, isOpen, onC
       <Card className="w-full max-w-4xl max-h-[80vh] bg-background">
         <CardHeader className="border-b">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-xl font-bold">Task History</CardTitle>
+            <CardTitle className="text-lg font-bold">Task History</CardTitle>
             <Button variant="ghost" size="sm" onClick={onClose}>
               ✕
             </Button>
