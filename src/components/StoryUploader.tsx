@@ -67,25 +67,14 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
 
   const startCamera = async () => {
     console.log('[StoryUploader] Camera button clicked - startCamera function called');
+    alert('Camera button clicked - debugging'); // Debug alert
     
-    // On native mobile (Capacitor), prefer the camera via file input capture for reliability
-    try {
-      if (typeof Capacitor !== 'undefined' && Capacitor.isNativePlatform()) {
-        console.log('[StoryUploader] Native platform detected, using file input capture');
-        cameraFileInputRef.current?.click();
-        return;
-      }
-    } catch (error) {
-      console.error('[StoryUploader] Capacitor check failed:', error);
-    }
+    // Skip mobile detection for now to test desktop camera
+    const userAgent = navigator.userAgent;
+    console.log('User agent:', userAgent);
     
-    // Check if we're on mobile web
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    if (isMobile) {
-      console.log('[StoryUploader] Mobile web detected, using file input capture');
-      cameraFileInputRef.current?.click();
-      return;
-    }
+    // For debugging, let's force desktop camera flow
+    console.log('Forcing desktop camera flow for debugging');
 
     try {
       console.log('=== CAMERA ACCESS ATTEMPT ===');
