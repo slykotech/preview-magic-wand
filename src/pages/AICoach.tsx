@@ -328,7 +328,7 @@ export const AICoach = () => {
     }
   };
 
-  return <div className="min-h-[100dvh] bg-background flex flex-col">
+  return <div className="flex flex-col" style={{ height: '100dvh' }}>
       {/* Gradient Header */}
       <GradientHeader 
         title="Soul syncing Therapy" 
@@ -439,18 +439,16 @@ export const AICoach = () => {
           </div>
         </div>}
 
-      {/* Input (fixed above keyboard and safe area) */}
+      {/* Input - Mobile keyboard responsive */}
       <div 
         ref={composerRef} 
-        className="fixed left-0 right-0 z-50 p-3 sm:p-4 bg-card/95 backdrop-blur-lg border-t border-border transition-all duration-300 ease-in-out pointer-events-none" 
+        className="sticky bottom-0 left-0 right-0 z-50 p-3 sm:p-4 bg-card/95 backdrop-blur-lg border-t border-border transition-all duration-300 ease-in-out" 
         style={{ 
-          bottom: keyboardOpen 
-            ? `max(env(safe-area-inset-bottom, 0px), env(keyboard-inset-height, 0px))` 
-            : `calc(64px + env(safe-area-inset-bottom, 0px))`,
-          transform: keyboardOpen ? 'translateY(0)' : 'translateY(0)'
+          marginBottom: keyboardOpen ? 'env(keyboard-inset-height, 0px)' : `calc(64px + env(safe-area-inset-bottom, 0px))`,
+          paddingBottom: 'env(safe-area-inset-bottom, 8px)'
         }}
       >
-        <div className="max-w-md mx-auto flex gap-3 pointer-events-auto">
+        <div className="max-w-md mx-auto flex gap-3">
           <Input
             value={newMessage}
             onChange={e => setNewMessage(e.target.value)}
