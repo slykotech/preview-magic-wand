@@ -310,16 +310,6 @@ export const Profile = () => {
               onClick={() => setShowSyncBreakdown(true)}
             />
             <ProfileMenuItem
-              icon={<Star size={20} />}
-              title="Rate Us ⭐"
-              subtitle="Love LoveSync? Share your experience"
-              onClick={() => {
-                console.log('Rate Us clicked');
-                setFeedbackType('rating');
-                setShowFeedbackModal(true);
-              }}
-            />
-            <ProfileMenuItem
               icon={<MessageSquare size={20} />}
               title="Send Feedback 📝"
               subtitle="Help us improve your experience"
