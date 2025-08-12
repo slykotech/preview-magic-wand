@@ -9,7 +9,7 @@ interface PresenceState {
 }
 
 export const usePresence = (coupleId?: string) => {
-  const [isUserOnline, setIsUserOnline] = useState(false);
+  const [isUserOnline, setIsUserOnline] = useState(true); // User is always online when app is active
   const [isPartnerOnline, setIsPartnerOnline] = useState(false);
   const { user } = useAuth();
   const notifiedOnlineRef = useRef(false);
@@ -32,15 +32,17 @@ export const usePresence = (coupleId?: string) => {
     
     if (!user) {
       console.log('❌ No user, clearing presence states');
-      setIsUserOnline(false);
+      setIsUserOnline(false); // Only false when no user
       setIsPartnerOnline(false);
       return;
     }
 
+    // User is always online when authenticated and app is active
+    setIsUserOnline(true);
+
     // Only track presence when we have a couple ID
     if (!coupleId) {
-      console.log('❌ No coupleId, setting presence states to false');
-      setIsUserOnline(false);
+      console.log('❌ No coupleId, but keeping user online');
       setIsPartnerOnline(false);
       return;
     }
@@ -81,18 +83,14 @@ export const usePresence = (coupleId?: string) => {
 
     // Helper function to update presence states
     const updatePresenceStates = (presenceState: any) => {
-      // Check if current user is online (from any device)
-      const userPresent = Object.values(presenceState).some((presences: any) =>
-        presences.some((presence: any) => presence.user_id === user.id)
-      );
-      
-      // Check if partner is online (any other user in the couple channel, from any device)
+      // User is always online when app is active - don't update from presence
+      // Only check if partner is online (any other user in the couple channel, from any device)
       const partnerPresent = Object.values(presenceState).some((presences: any) =>
         presences.some((presence: any) => presence.user_id !== user.id)
       );
       
-      console.log('Updating presence states - User:', userPresent, 'Partner:', partnerPresent);
-      setIsUserOnline(userPresent);
+      console.log('🔄 Updating partner presence only - Partner:', partnerPresent);
+      // Don't update user presence - keep it as true when app is active
       setIsPartnerOnline(partnerPresent);
     };
 
@@ -153,9 +151,10 @@ export const usePresence = (coupleId?: string) => {
             }
           }
         } else if (status === 'CHANNEL_ERROR') {
-          console.error('Channel error - presence may not be working');
-          setIsUserOnline(false);
-          setIsPartnerOnline(false);
+          console.error('Channel error - partner presence may not be working, but user stays online');
+          // Keep user online since they're actively using the app
+          setIsUserOnline(true);
+          setIsPartnerOnline(false); // Partner status unknown due to error
         }
       });
 
@@ -235,7 +234,10 @@ export const usePresence = (coupleId?: string) => {
         channelRef.current = null;
       }
       
-      setIsUserOnline(false);
+      // Only set user offline if there's no user (logout), otherwise keep online
+      if (!user) {
+        setIsUserOnline(false);
+      }
       setIsPartnerOnline(false);
       notifiedOnlineRef.current = false;
     };
