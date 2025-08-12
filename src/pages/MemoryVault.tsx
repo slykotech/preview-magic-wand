@@ -1294,7 +1294,7 @@ const MobileMemoryCard: React.FC<{
 
   return (
     <div
-      className="w-full overflow-hidden bg-white rounded-xl shadow-sm border-0 cursor-pointer"
+      className="w-full overflow-hidden bg-card rounded-xl shadow-soft border hover:shadow-romantic transition-all duration-200 cursor-pointer transform hover:scale-102"
       onClick={(e) => {
         console.log('Memory card clicked', memory.title);
         console.log('Memory data:', memory);
@@ -1314,7 +1314,7 @@ const MobileMemoryCard: React.FC<{
           
           {/* Title and description - Bottom only */}
           <div className="absolute bottom-0 left-0 right-0 p-3">
-            <h3 className="text-white font-bold text-sm leading-tight drop-shadow-lg line-clamp-1">
+            <h3 className="text-white font-semibold text-sm leading-tight drop-shadow-lg line-clamp-1">
               {memory.title}
             </h3>
             {memory.description && memory.description.trim() && (
@@ -1354,9 +1354,9 @@ const MobileMemoryCard: React.FC<{
                 e.stopPropagation();
                 onEdit();
               }}
-              className="h-8 w-8 p-0 bg-white/90 hover:bg-white"
+              className="h-8 w-8 p-0 bg-secondary/90 hover:bg-secondary text-secondary-foreground"
             >
-              <Edit2 className="h-4 w-4 text-gray-600" />
+              <Edit2 className="h-4 w-4" />
             </Button>
             <Button
               size="sm"
@@ -1365,9 +1365,9 @@ const MobileMemoryCard: React.FC<{
                 e.stopPropagation();
                 onToggleFavorite(memory.id, memory.is_favorite);
               }}
-              className="h-8 w-8 p-0 bg-white/90 hover:bg-white"
+              className="h-8 w-8 p-0 bg-secondary/90 hover:bg-secondary text-secondary-foreground"
             >
-              <Star className={`h-4 w-4 ${memory.is_favorite ? 'fill-yellow-400 text-yellow-400' : 'text-gray-600'}`} />
+              <Star className={`h-4 w-4 ${memory.is_favorite ? 'fill-primary text-primary' : ''}`} />
             </Button>
           </div>
         </div>
@@ -1377,12 +1377,12 @@ const MobileMemoryCard: React.FC<{
         <div className="p-3">
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <h3 className="font-bold text-lg text-gray-900 mb-1">
+              <h3 className="font-semibold text-lg text-foreground mb-1">
                 {memory.title}
               </h3>
               {memory.description && memory.description.trim() && (
                 <div className="mb-2">
-                  <p className="text-gray-600 text-sm break-words">
+                  <p className="text-muted-foreground text-sm break-words">
                     {displayDescription?.replace(/[^\x00-\x7F]/g, "").trim() || displayDescription}
                   </p>
                    {shouldTruncateDescription && (
@@ -1398,7 +1398,7 @@ const MobileMemoryCard: React.FC<{
                    )}
                 </div>
               )}
-              <div className="flex items-center text-xs text-gray-500">
+              <div className="flex items-center text-xs text-muted-foreground">
                 <Calendar className="h-3 w-3 mr-1" />
                 {memory.memory_date ? format(new Date(memory.memory_date), 'MMM d, yyyy') : format(new Date(memory.created_at), 'MMM d, yyyy')}
               </div>
@@ -1413,7 +1413,7 @@ const MobileMemoryCard: React.FC<{
                 }}
                 className="h-8 w-8 p-0"
               >
-                <Star className={`h-4 w-4 ${memory.is_favorite ? 'fill-yellow-400 text-yellow-400' : 'text-gray-400'}`} />
+                <Star className={`h-4 w-4 ${memory.is_favorite ? 'fill-primary text-primary' : 'text-muted-foreground'}`} />
               </Button>
               <Button
                 size="sm"
@@ -1424,7 +1424,7 @@ const MobileMemoryCard: React.FC<{
                 }}
                 className="h-8 w-8 p-0"
               >
-                <Edit2 className="h-4 w-4 text-gray-400" />
+                <Edit2 className="h-4 w-4 text-muted-foreground" />
               </Button>
               <Button
                 size="sm"
@@ -1435,7 +1435,7 @@ const MobileMemoryCard: React.FC<{
                 }}
                 className="h-8 w-8 p-0"
               >
-                <Trash2 className="h-4 w-4 text-gray-400" />
+                <Trash2 className="h-4 w-4 text-muted-foreground" />
               </Button>
             </div>
           </div>
@@ -1457,7 +1457,7 @@ const MobileNoteCard: React.FC<{
 
   return (
     <Card 
-      className="w-full bg-white rounded-xl shadow-sm border-0 overflow-hidden cursor-pointer"
+      className="w-full bg-card rounded-xl shadow-soft border hover:shadow-romantic transition-all duration-200 overflow-hidden cursor-pointer transform hover:scale-102"
       onClick={(e) => {
         console.log('Note card clicked', note.title);
         onView();
@@ -1466,10 +1466,10 @@ const MobileNoteCard: React.FC<{
       <div className="p-3">
         <div className="flex items-start justify-between mb-2">
           <div className="flex items-center">
-            <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center mr-2">
-              <FileText className="h-3 w-3 text-purple-600" />
+            <div className="w-6 h-6 bg-secondary rounded-full flex items-center justify-center mr-2">
+              <FileText className="h-3 w-3 text-secondary-foreground" />
             </div>
-            <h3 className="font-bold text-lg text-gray-900">
+            <h3 className="font-semibold text-lg text-foreground">
               {note.title}
             </h3>
           </div>
@@ -1483,7 +1483,7 @@ const MobileNoteCard: React.FC<{
               }}
               className="h-8 w-8 p-0"
             >
-              <Star className={`h-4 w-4 ${note.is_favorite ? 'fill-yellow-400 text-yellow-400' : 'text-gray-400'}`} />
+              <Star className={`h-4 w-4 ${note.is_favorite ? 'fill-primary text-primary' : 'text-muted-foreground'}`} />
             </Button>
             <Button
               size="sm"
@@ -1494,7 +1494,7 @@ const MobileNoteCard: React.FC<{
               }}
               className="h-8 w-8 p-0"
             >
-              <Edit2 className="h-4 w-4 text-gray-400" />
+              <Edit2 className="h-4 w-4 text-muted-foreground" />
             </Button>
             <Button
               size="sm"
@@ -1505,14 +1505,14 @@ const MobileNoteCard: React.FC<{
               }}
               className="h-8 w-8 p-0"
             >
-              <Trash2 className="h-4 w-4 text-gray-400" />
+              <Trash2 className="h-4 w-4 text-muted-foreground" />
             </Button>
           </div>
         </div>
         
         {note.content && (
           <div className="mb-2">
-            <p className="text-gray-600 text-sm leading-relaxed line-clamp-3">
+            <p className="text-muted-foreground text-sm leading-relaxed line-clamp-3">
               {note.content}
             </p>
             {shouldTruncate && (
@@ -1521,7 +1521,7 @@ const MobileNoteCard: React.FC<{
                   e.stopPropagation();
                   onView();
                 }}
-                className="text-purple-600 text-sm font-medium mt-1 hover:underline"
+                className="text-primary text-sm font-medium mt-1 hover:text-primary/80 transition-colors"
               >
                 Read more
               </button>
@@ -1529,7 +1529,7 @@ const MobileNoteCard: React.FC<{
           </div>
         )}
         
-        <div className="flex items-center text-xs text-gray-500">
+        <div className="flex items-center text-xs text-muted-foreground">
           <Calendar className="h-3 w-3 mr-1" />
           {format(new Date(note.created_at), 'MMM d, yyyy')}
         </div>
