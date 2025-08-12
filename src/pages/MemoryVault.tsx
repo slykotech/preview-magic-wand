@@ -1062,23 +1062,25 @@ const MemoryVault: React.FC = () => {
                 </div>
                 
                 {/* Fixed footer with buttons */}
-                <div className="border-t p-6">
+                <div className="border-t p-4">
                   <div className="flex gap-2">
                     <Button 
+                      size="sm"
                       variant="destructive" 
                       onClick={() => {
                         setShowViewDialog(false);
                         setShowDeleteDialog(true);
                       }}
-                      className="flex-1"
+                      className="flex-1 h-8"
                     >
-                      <Trash2 className="h-4 w-4 mr-2" />
+                      <Trash2 className="h-3 w-3 mr-1" />
                       Delete
                     </Button>
                     <Button 
+                      size="sm"
                       variant="outline" 
                       onClick={() => setShowViewDialog(false)}
-                      className="flex-1"
+                      className="flex-1 h-8"
                     >
                       Close
                     </Button>
