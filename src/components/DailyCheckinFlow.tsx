@@ -381,15 +381,15 @@ export const DailyCheckinFlow: React.FC<DailyCheckinFlowProps> = ({
 
             {/* Footer - Fixed at bottom */}
             {!hasAlreadyCheckedIn && !isLoading && <div className="flex-shrink-0 border-t bg-background">
-                <div className="p-3">
+                <div className="p-2">
                   <div className="flex space-x-2">
-                    {step > 1 && <Button variant="outline" onClick={handlePrevious} className="flex-1 h-9 text-sm">
+                    {step > 1 && <Button variant="outline" onClick={handlePrevious} className="flex-1 h-8 text-sm">
                         Previous
                       </Button>}
                     
-                    {step < totalSteps ? <Button onClick={handleNext} disabled={!canProceed()} className="flex-1 bg-secondary hover:bg-secondary/90 h-9 text-sm">
+                    {step < totalSteps ? <Button onClick={handleNext} disabled={!canProceed()} className="flex-1 bg-secondary hover:bg-secondary/90 h-8 text-sm">
                         Next Step
-                      </Button> : <Button onClick={handleComplete} disabled={!canProceed() || isSubmitting} className="flex-1 bg-secondary hover:bg-secondary/90 h-9 text-sm">
+                      </Button> : <Button onClick={handleComplete} disabled={!canProceed() || isSubmitting} className="flex-1 bg-secondary hover:bg-secondary/90 h-8 text-sm">
                         {isSubmitting ? 'Saving...' : 'Complete Check-in'}
                       </Button>}
                   </div>
