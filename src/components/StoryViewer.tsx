@@ -1,13 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { X, Heart, Send, Camera, Upload, Smile, MessageCircle, Eye, Trash2, Plus, Image } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Heart, Send, Camera, MessageCircle, Eye, Trash2, Smile } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
-import { Capacitor } from '@capacitor/core';
+import { StoryUploader } from './StoryUploader';
 
 interface Story {
   id: string;
@@ -45,10 +44,6 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
   showUploadInterface = false
 }) => {
   const { user } = useAuth();
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const cameraFileInputRef = useRef<HTMLInputElement>(null);
   const [userStories, setUserStories] = useState<Story[]>([]);
   const [partnerStories, setPartnerStories] = useState<Story[]>([]);
   const [currentStoryIndex, setCurrentStoryIndex] = useState(0);
@@ -629,176 +624,18 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
   if (!isOpen) return null;
 
   if (showCreateStory) {
-    console.log('[StoryViewer] Rendering Create Story UI', { isOwnStory, showUploadInterface });
     return (
-      <div className="fixed inset-0 bg-black/95 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
-        <div className="bg-gradient-to-br from-background via-background to-background/95 border border-border/20 rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl animate-scale-in">
-          <div className="flex items-center justify-between mb-6">
-            <div className="animate-fade-in" style={{ animationDelay: '100ms' }}>
-              <h3 className="text-xl font-bold bg-gradient-to-r from-primary via-primary to-primary/80 bg-clip-text text-transparent">
-                Create Story
-              </h3>
-              <p className="text-sm text-muted-foreground mt-1">Share a moment with your partner</p>
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => {
-                setShowCreateStory(false);
-                if (currentStories.length === 0) onClose();
-              }}
-              className="rounded-full hover:bg-muted/50 transition-all duration-300 hover:scale-110"
-            >
-              <X className="h-5 w-5" />
-            </Button>
-          </div>
-
-          {showCamera ? (
-            <div className="space-y-6 animate-fade-in">
-              <div className="relative overflow-hidden rounded-xl border border-border/20 animate-scale-in" style={{ animationDelay: '200ms' }}>
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  muted
-                  playsInline
-                  className="w-full h-72 object-cover bg-gradient-to-br from-muted to-muted/50 transition-all duration-500"
-                />
-                <canvas ref={canvasRef} className="hidden" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
-                
-                {/* Camera overlay with smooth pulse animation */}
-                <div className="absolute inset-0 pointer-events-none">
-                  <div className="absolute top-4 left-4 w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-                  <div className="absolute top-4 left-4 w-3 h-3 bg-red-500/50 rounded-full animate-ping"></div>
-                </div>
-              </div>
-              
-              <div className="flex gap-3 animate-fade-in" style={{ animationDelay: '400ms' }}>
-                <Button
-                  variant="outline"
-                  onClick={stopCamera}
-                  className="flex-1 hover:bg-muted/50 border-border/50 transition-all duration-300 hover:scale-105"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={capturePhoto}
-                  className="flex-1 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl"
-                >
-                  <Camera className="h-4 w-4 mr-2" />
-                  Capture
-                </Button>
-              </div>
-            </div>
-          ) : !selectedFile ? (
-            <div className="space-y-6 animate-fade-in" style={{ animationDelay: '200ms' }}>
-              <label htmlFor="story-upload" className="cursor-pointer group">
-                <div className="border-2 border-dashed border-border/40 rounded-xl p-10 text-center hover:border-primary/50 transition-all duration-300 bg-gradient-to-br from-muted/20 to-background group-hover:from-primary/5 group-hover:to-primary/10 animate-scale-in" style={{ animationDelay: '300ms' }}>
-                  <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-full w-20 h-20 mx-auto mb-6 flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
-                    <Upload className="h-10 w-10 text-primary" />
-                  </div>
-                  <p className="text-foreground font-medium mb-2">Click to upload image</p>
-                  <p className="text-sm text-muted-foreground">PNG, JPG up to 10MB</p>
-                </div>
-                <input
-                  id="story-upload"
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileSelect}
-                  className="hidden"
-                />
-                <input
-                  id="story-camera"
-                  ref={cameraFileInputRef}
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  onChange={handleFileSelect}
-                  className="hidden"
-                  onClick={(e) => {
-                    console.log('[StoryViewer] Camera file input clicked');
-                    // Reset the input value to allow selecting the same file again
-                    e.currentTarget.value = '';
-                  }}
-                />
-              </label>
-              
-              <div className="grid grid-cols-2 gap-3 animate-fade-in" style={{ animationDelay: '500ms' }}>
-                <Button
-                  variant="outline"
-                  onClick={(e) => {
-                    console.log('[StoryViewer] Gallery button clicked');
-                    e.preventDefault();
-                    fileInputRef.current?.click();
-                  }}
-                  className="bg-gradient-to-br from-background to-muted/20 hover:from-muted/20 hover:to-muted/40 border-border/50 hover:border-primary/50 transition-all duration-300 hover:scale-105"
-                >
-                  <Image className="h-4 w-4 mr-2" />
-                  Choose Photo
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={(e) => {
-                    console.log('[StoryViewer] Take Photo button clicked - initiating camera');
-                    e.preventDefault();
-                    e.stopPropagation();
-                    startCamera();
-                  }}
-                  className="bg-gradient-to-br from-background to-muted/20 hover:from-muted/20 hover:to-muted/40 border-border/50 hover:border-primary/50 transition-all duration-300 hover:scale-105"
-                >
-                  <Camera className="h-4 w-4 mr-2" />
-                  Take Photo
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-6 animate-fade-in">
-              <div className="relative overflow-hidden rounded-xl border border-border/20 animate-scale-in" style={{ animationDelay: '200ms' }}>
-                <img
-                  src={URL.createObjectURL(selectedFile)}
-                  alt="Story preview"
-                  className="w-full h-72 object-cover transition-all duration-500"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
-              </div>
-              
-              <Textarea
-                placeholder="Add a caption to your story..."
-                value={caption}
-                onChange={(e) => setCaption(e.target.value)}
-                rows={3}
-                className="bg-gradient-to-br from-background to-muted/20 border-border/50 focus:border-primary/50 resize-none transition-all duration-300 animate-fade-in"
-                style={{ animationDelay: '400ms' }}
-              />
-              
-              <div className="flex gap-3 animate-fade-in" style={{ animationDelay: '600ms' }}>
-                <Button
-                  variant="outline"
-                  onClick={() => setSelectedFile(null)}
-                  className="hover:bg-muted/50 border-border/50 transition-all duration-300 hover:scale-105"
-                >
-                  Change Photo
-                </Button>
-                <Button
-                  onClick={handleCreateStory}
-                  disabled={uploading}
-                  className="flex-1 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 shadow-lg disabled:opacity-50 transition-all duration-300 hover:scale-105 hover:shadow-xl"
-                >
-                  {uploading ? (
-                    <span className="flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Creating...
-                    </span>
-                  ) : (
-                    'Share Story'
-                  )}
-                </Button>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
+      <StoryUploader
+        isOpen={true}
+        onClose={() => {
+          setShowCreateStory(false);
+          if (currentStories.length === 0) onClose();
+        }}
+        onSuccess={() => {
+          fetchStories();
+        }}
+        user={user}
+      />
     );
   }
 
