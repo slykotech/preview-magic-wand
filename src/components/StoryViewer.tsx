@@ -382,6 +382,27 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
 
   const currentStory = currentStories[currentStoryIndex];
 
+  // Safety check: if no current story, don't render story interface
+  if (!currentStory) {
+    console.log('📖 [StoryViewer] No current story available - showing empty state');
+    return (
+      <div className="fixed inset-0 bg-black/95 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
+        <div className="text-center text-white space-y-6 p-8">
+          <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-full w-24 h-24 mx-auto flex items-center justify-center">
+            <Camera className="h-12 w-12 text-primary" />
+          </div>
+          <div>
+            <h3 className="text-xl font-semibold mb-2">No Stories Available</h3>
+            <p className="text-muted-foreground">Please create a story first</p>
+          </div>
+          <Button variant="outline" onClick={onClose} className="border-white/20 text-white hover:bg-white/10">
+            Close
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-95 flex items-center justify-center z-50 animate-fade-in">
       <div className="relative w-full max-w-md h-full max-h-[80vh] bg-black rounded-lg overflow-hidden shadow-2xl animate-scale-in">
