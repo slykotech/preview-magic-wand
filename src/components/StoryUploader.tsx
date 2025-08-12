@@ -603,33 +603,7 @@ export const StoryUploader: React.FC<StoryUploaderProps> = ({
                 />
               </label>
               
-              <div className="grid grid-cols-2 gap-3 animate-fade-in" style={{ animationDelay: '500ms' }}>
-                <Button
-                  variant="outline"
-                  onClick={(e) => {
-                    console.log('[StoryUploader] Choose Photo button clicked');
-                    e.preventDefault();
-                    fileInputRef.current?.click();
-                  }}
-                  className="bg-gradient-to-br from-background to-muted/20 hover:from-muted/20 hover:to-muted/40 border-border/50 hover:border-primary/50 transition-all duration-300 hover:scale-105"
-                >
-                  <Image className="h-4 w-4 mr-2" />
-                  Choose Photo
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={(e) => {
-                    console.log('[StoryUploader] Camera button clicked - showing options');
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setShowCameraOptions(true);
-                  }}
-                  className="bg-gradient-to-br from-background to-muted/20 hover:from-muted/20 hover:to-muted/40 border-border/50 hover:border-primary/50 transition-all duration-300 hover:scale-105"
-                >
-                  <Camera className="h-4 w-4 mr-2" />
-                  Camera
-                </Button>
-              </div>
+              {/* Removed duplicate buttons - using only the compact ones above */}
             </div>
           ) : (
             <div className="space-y-6 animate-fade-in">
