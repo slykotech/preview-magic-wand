@@ -56,6 +56,7 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [storyToDelete, setStoryToDelete] = useState<string | null>(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [showQuickReactions, setShowQuickReactions] = useState(false);
 
   const quickEmojis = ['❤️', '😂', '😍', '🔥', '👏', '😢', '😮', '👍'];
 
@@ -491,13 +492,16 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
           />
 
           {/* Quick Emoji Reactions (for partner's stories) */}
-          {!isOwnStory && (
+          {!isOwnStory && showQuickReactions && (
             <div className="absolute bottom-24 left-4 right-4 z-20">
               <div className="flex gap-4 mb-3 justify-center bg-black/30 backdrop-blur-sm rounded-full px-4 py-3">
                 {quickEmojis.map((emoji, index) => (
                   <button
                     key={index}
-                    onClick={() => handleEmojiResponse(emoji)}
+                    onClick={() => {
+                      handleEmojiResponse(emoji);
+                      setShowQuickReactions(false);
+                    }}
                     className="text-lg p-1.5 rounded-full bg-white/20 hover:bg-white/30 transition-all duration-200 hover:scale-110 active:scale-95"
                     disabled={loading}
                   >
@@ -556,6 +560,7 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
               <Button
                 variant="ghost"
                 size="icon"
+                onClick={() => setShowQuickReactions(!showQuickReactions)}
                 className="text-white hover:bg-white/20 rounded-full"
               >
                 <Smile className="h-4 w-4" />
