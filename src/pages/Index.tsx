@@ -108,7 +108,7 @@ const Index = () => {
           <Button onClick={() => navigate('/motto')} variant="secondary" size="lg" className="w-full text-lg font-bold">
             Get Started
           </Button>
-          <Button onClick={() => navigate('/auth')} variant="ghost" size="lg" className="w-full text-white/80 hover:text-white">
+          <Button onClick={() => navigate('/auth')} variant="outline" size="lg" className="w-full text-white border-white/30 hover:bg-white/10 hover:text-white hover:border-white/50">
             Already have an account? Sign In
           </Button>
         </div>
