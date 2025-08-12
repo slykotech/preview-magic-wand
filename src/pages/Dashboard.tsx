@@ -946,7 +946,7 @@ export const Dashboard = () => {
 
       {/* Relationship Health Tips Modal */}
       <Dialog open={showHealthTips} onOpenChange={setShowHealthTips}>
-        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto pb-24">
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto pb-24 rounded-t-3xl rounded-b-2xl border-0 shadow-2xl bg-gradient-to-br from-background via-background/95 to-secondary/5">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Lightbulb className="h-5 w-5 text-yellow-500" />
@@ -954,7 +954,7 @@ export const Dashboard = () => {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="text-center p-4 bg-gradient-to-r from-primary/10 to-secondary/10 rounded-lg">
+            <div className="text-center p-4 bg-gradient-to-r from-secondary/10 via-primary/10 to-secondary/10 rounded-2xl border border-secondary/20 shadow-sm">
               <div className="text-2xl font-bold text-primary mb-1">{currentSyncScore}%</div>
               <div className="text-sm text-muted-foreground">
                 {currentSyncScore >= 80 ? 'Your relationship is thriving! 🌟' : currentSyncScore >= 60 ? 'You\'re growing stronger together! 💪' : currentSyncScore >= 40 ? 'Building a solid foundation! 🏗️' : 'Every journey starts with a single step! 🌱'}
@@ -963,7 +963,7 @@ export const Dashboard = () => {
             
             <div className="space-y-3">
               {currentSyncScore < 40 && <>
-                  <div className="p-3 bg-card border rounded-lg">
+                  <div className="p-4 bg-gradient-to-r from-card/80 to-card rounded-2xl border border-border/50 shadow-sm">
                     <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
                       <Heart className="h-4 w-4 text-red-500" />
                       Daily Connection
@@ -972,7 +972,7 @@ export const Dashboard = () => {
                       Start with daily check-ins. Share how you're feeling and ask about your partner's day. Small daily connections build strong foundations.
                     </p>
                   </div>
-                  <div className="p-3 bg-card border rounded-lg">
+                  <div className="p-4 bg-gradient-to-r from-card/80 to-card rounded-2xl border border-border/50 shadow-sm">
                     <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
                       <MessageCircle className="h-4 w-4 text-blue-500" />
                       Open Communication
@@ -984,7 +984,7 @@ export const Dashboard = () => {
                 </>}
               
               {currentSyncScore >= 40 && currentSyncScore < 60 && <>
-                  <div className="p-3 bg-card border rounded-lg">
+                  <div className="p-4 bg-gradient-to-r from-card/80 to-card rounded-2xl border border-border/50 shadow-sm">
                     <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
                       <Calendar className="h-4 w-4 text-green-500" />
                       Quality Time
@@ -993,7 +993,7 @@ export const Dashboard = () => {
                       Schedule regular date nights. Try new activities together to create shared memories and strengthen your bond.
                     </p>
                   </div>
-                  <div className="p-3 bg-card border rounded-lg">
+                  <div className="p-4 bg-gradient-to-r from-card/80 to-card rounded-2xl border border-border/50 shadow-sm">
                     <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
                       <Sparkles className="h-4 w-4 text-purple-500" />
                       Appreciation
@@ -1005,7 +1005,7 @@ export const Dashboard = () => {
                 </>}
               
               {currentSyncScore >= 60 && currentSyncScore < 80 && <>
-                  <div className="p-3 bg-card border rounded-lg">
+                  <div className="p-4 bg-gradient-to-r from-card/80 to-card rounded-2xl border border-border/50 shadow-sm">
                     <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
                       <Heart className="h-4 w-4 text-pink-500" />
                       Deeper Intimacy
@@ -1014,7 +1014,7 @@ export const Dashboard = () => {
                       Share your dreams, fears, and aspirations. Create space for vulnerable conversations that deepen emotional intimacy.
                     </p>
                   </div>
-                  <div className="p-3 bg-card border rounded-lg">
+                  <div className="p-4 bg-gradient-to-r from-card/80 to-card rounded-2xl border border-border/50 shadow-sm">
                     <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
                       <Lightbulb className="h-4 w-4 text-yellow-500" />
                       Growth Together
@@ -1026,7 +1026,7 @@ export const Dashboard = () => {
                 </>}
               
               {currentSyncScore >= 80 && <>
-                  <div className="p-3 bg-card border rounded-lg">
+                  <div className="p-4 bg-gradient-to-r from-card/80 to-card rounded-2xl border border-border/50 shadow-sm">
                     <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
                       <Sparkles className="h-4 w-4 text-gold-500" />
                       Maintain Excellence
@@ -1035,7 +1035,7 @@ export const Dashboard = () => {
                       Keep nurturing what works! Continue your daily rituals and don't take your strong connection for granted.
                     </p>
                   </div>
-                  <div className="p-3 bg-card border rounded-lg">
+                  <div className="p-4 bg-gradient-to-r from-card/80 to-card rounded-2xl border border-border/50 shadow-sm">
                     <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
                       <Heart className="h-4 w-4 text-red-500" />
                       Inspire Others
@@ -1048,7 +1048,7 @@ export const Dashboard = () => {
             </div>
             
             <div className="pt-4 border-t">
-              <Button className="w-full" onClick={() => setShowHealthTips(false)}>
+              <Button className="w-full rounded-2xl bg-gradient-to-r from-secondary to-secondary/90 hover:from-secondary/90 hover:to-secondary/80 shadow-lg" onClick={() => setShowHealthTips(false)}>
                 Start Improving Today!
               </Button>
             </div>
