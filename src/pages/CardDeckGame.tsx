@@ -126,14 +126,14 @@ export const CardDeckGame: React.FC = () => {
 
   // Show waiting screen ONLY if:
   // 1. Game exists but has NO players connected (missing user2_id)
-  // 2. OR game has 0 total cards played AND partner info is null (never connected)
+  // 2. OR partner is not connected yet (based on actual activity, not just presence)
   // Don't show during active gameplay or temporary connection issues
   const isWaitingForInitialPartner = gameState && (
     !gameState.user2_id || 
-    (gameState.total_cards_played === 0 && !partnerInfo)
+    (gameState.total_cards_played === 0 && !isPartnerConnected)
   );
   
-  if (!loading && isWaitingForInitialPartner && connectionStatus !== 'connected') {
+  if (!loading && isWaitingForInitialPartner) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 p-4">
         <div className="max-w-4xl mx-auto">
