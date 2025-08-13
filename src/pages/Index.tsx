@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { LoveStoryLogo } from "@/components/LoveStoryLogo";
+import { LoveStoryLogo } from "@/components/LoveSyncLogo";
 import { Heart, Sparkles, Calendar, Camera, Gamepad2, Clock, Zap, MessageCircle, Archive } from "lucide-react";
 const Index = () => {
   const {
