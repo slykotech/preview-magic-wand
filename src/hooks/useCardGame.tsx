@@ -118,19 +118,33 @@ export function useCardGame(sessionId: string | null) {
           .eq('user_id', partnerId)
           .limit(1);
 
-        // Also check if partner has made any moves in the session
-        const { data: partnerMoves } = await supabase
-          .from('card_deck_game_sessions')
-          .select('last_activity_at, started_at')
-          .eq('id', sessionId)
-          .single();
-
-        // Consider partner connected if they have activity or if game has progressed beyond initial state
-        const hasPartnerActivity = partnerActivity && partnerActivity.length > 0;
+        // Check if the session has any actual moves (cards drawn/played by partner)
         const playedCardsArray = Array.isArray(gameData.played_cards) ? gameData.played_cards : [];
-        const gameHasProgressed = gameData.total_cards_played > 0 || playedCardsArray.length > 0;
         
-        setIsPartnerConnected(hasPartnerActivity || gameHasProgressed);
+        // More strict detection: partner is connected only if they have made actual responses or moves
+        const hasPartnerActivity = partnerActivity && partnerActivity.length > 0;
+        const hasActualGameProgress = playedCardsArray.length > 0 && gameData.total_cards_played > 0;
+        
+        // Also check if current turn belongs to partner and there's been recent activity
+        const partnerHasTurn = gameData.current_turn === partnerId;
+        const hasRecentActivity = gameData.last_activity_at && 
+          new Date(gameData.last_activity_at) > new Date(gameData.started_at);
+        
+        // Partner is connected if they have responses OR if it's their turn with recent activity
+        const partnerConnected = hasPartnerActivity || (hasActualGameProgress && hasRecentActivity);
+        
+        console.log('Partner connection check:', {
+          partnerId,
+          hasPartnerActivity,
+          hasActualGameProgress,
+          partnerHasTurn,
+          hasRecentActivity,
+          partnerConnected,
+          playedCardsCount: playedCardsArray.length,
+          totalCardsPlayed: gameData.total_cards_played
+        });
+        
+        setIsPartnerConnected(partnerConnected);
 
         // Fetch current card if exists
         if (gameData.current_card_id) {
@@ -188,10 +202,21 @@ export function useCardGame(sessionId: string | null) {
           const turnChanged = newState.current_turn !== oldState?.current_turn;
           const cardChanged = newState.current_card_id !== oldState?.current_card_id;
           
-          // Check if partner has now joined (game has progressed)
+          // Check if partner has now joined (game has progressed with actual activity)
           const newPlayedCardsArray = Array.isArray(newState.played_cards) ? newState.played_cards : [];
-          if (newState.total_cards_played > 0 || newPlayedCardsArray.length > 0) {
-            setIsPartnerConnected(true);
+          const hasRealProgress = newPlayedCardsArray.length > 0 && newState.total_cards_played > 0;
+          
+          // Also check for partner responses
+          if (hasRealProgress) {
+            const { data: responses } = await supabase
+              .from('card_responses')
+              .select('id')
+              .eq('session_id', sessionId)
+              .limit(1);
+            
+            if (responses && responses.length > 0) {
+              setIsPartnerConnected(true);
+            }
           }
           
           // Process state update
