@@ -123,7 +123,7 @@ export const VerifyEmail = () => {
             <Heart size={32} className="text-white sm:w-10 sm:h-10" />
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold font-poppins text-white mb-2">
-            Love Sync
+            Love Story
           </h1>
           <p className="text-sm sm:text-base text-white/80 font-inter font-bold px-2">
             Email verification
@@ -170,7 +170,7 @@ export const VerifyEmail = () => {
             {status === 'success' && (
               <div className="space-y-3">
                 <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
-                  <h4 className="font-semibold text-green-800 mb-2">🎉 Welcome to Love Sync!</h4>
+                  <h4 className="font-semibold text-green-800 mb-2">🎉 Welcome to Love Story!</h4>
                   <p className="text-sm text-green-700">
                     Your account is ready to use. You can now sign in with your credentials and start your relationship journey.
                   </p>

@@ -66,7 +66,7 @@ serve(async (req) => {
       const payload = {
         registration_ids: tks,
         notification: {
-          title: 'We miss you at LoveSync',
+          title: 'We miss you at LoveStory',
           body: 'Open the app to check in, plan a date, or leave a sweet note 💕',
         },
         data: { route: '/dashboard' },

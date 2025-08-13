@@ -4,12 +4,14 @@ interface TurnIndicatorProps {
   isMyTurn: boolean;
   partnerName: string;
   connectionStatus: string;
+  isPartnerOnline?: boolean;
 }
 
 export const TurnIndicator: React.FC<TurnIndicatorProps> = ({ 
   isMyTurn, 
   partnerName, 
-  connectionStatus 
+  connectionStatus,
+  isPartnerOnline = false
 }) => {
   return (
     <div className={`p-4 rounded-lg transition-all duration-300 -mt-2 ${
@@ -26,18 +28,28 @@ export const TurnIndicator: React.FC<TurnIndicatorProps> = ({
             {isMyTurn ? "Tap the card to reveal your prompt" : "Wait for your partner to play"}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          {/* Connection Status */}
           {connectionStatus === 'connected' ? (
-            <span className="text-success flex items-center gap-1">
+            <span className="text-success flex items-center gap-1 text-sm">
               <div className="w-2 h-2 bg-success rounded-full"></div>
-              Online
+              Connected
             </span>
           ) : (
-            <span className="text-warning flex items-center gap-1">
+            <span className="text-warning flex items-center gap-1 text-sm">
               <div className="w-2 h-2 bg-warning rounded-full animate-pulse"></div>
               Connecting...
             </span>
           )}
+          
+          {/* Partner Online Status */}
+          {!isMyTurn && (
+            <span className={`flex items-center gap-1 text-sm ${isPartnerOnline ? 'text-green-300' : 'text-gray-400'}`}>
+              <div className={`w-2 h-2 rounded-full ${isPartnerOnline ? 'bg-green-400' : 'bg-gray-400'}`}></div>
+              {isPartnerOnline ? 'Partner Online' : 'Partner Offline'}
+            </span>
+          )}
+          
           {isMyTurn && (
             <div className="animate-pulse">
               <span className="text-2xl">👆</span>

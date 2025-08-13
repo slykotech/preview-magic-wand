@@ -1,7 +1,7 @@
-# LoveSync Sandbox Configuration Guide
+# LoveStory Sandbox Configuration Guide
 
 ## Overview
-This guide walks through setting up sandbox environments for testing LoveSync's payment systems, subscription flows, and partner invitation features.
+This guide walks through setting up sandbox environments for testing LoveStory's payment systems, subscription flows, and partner invitation features.
 
 ## RevenueCat Sandbox Setup
 
@@ -41,7 +41,7 @@ export const revenueCatConfig = {
 1. Go to App Store Connect → Users and Access → Sandbox Testers
 2. Create new sandbox tester:
    ```
-   Email: test-user-1@lovesync-sandbox.com
+   Email: test-user-1@lovestory-sandbox.com
    Password: TestPass123!
    First Name: Test
    Last Name: User
@@ -59,9 +59,9 @@ export const revenueCatConfig = {
 #### Subscription Products (iOS)
 ```
 Product IDs:
-- lovesync.premium.monthly.sandbox
-- lovesync.premium.yearly.sandbox
-- lovesync.premium.lifetime.sandbox
+- lovestory.premium.monthly.sandbox
+- lovestory.premium.yearly.sandbox
+- lovestory.premium.lifetime.sandbox
 
 Pricing:
 - Monthly: $9.99 USD
@@ -77,9 +77,9 @@ Pricing:
 3. Configure test subscriptions:
    ```
    Product IDs:
-   - lovesync_premium_monthly_sandbox
-   - lovesync_premium_yearly_sandbox
-   - lovesync_premium_lifetime_sandbox
+   - lovestory_premium_monthly_sandbox
+   - lovestory_premium_yearly_sandbox
+   - lovestory_premium_lifetime_sandbox
    ```
 
 #### Test Account Configuration
@@ -101,7 +101,7 @@ Pricing:
 ### 1. Create Staging Project
 ```bash
 # Create new Supabase project for staging
-PROJECT_NAME="lovesync-staging"
+PROJECT_NAME="lovestory-staging"
 REGION="us-east-1"
 
 # Copy production schema to staging
@@ -252,10 +252,10 @@ const testWebhookDelivery = async (appUserId: string) => {
 // Automated test user creation
 const createTestUsers = async () => {
   const testUsers = [
-    { email: 'alice@sandbox.lovesync.com', name: 'Alice Test' },
-    { email: 'bob@sandbox.lovesync.com', name: 'Bob Test' },
-    { email: 'carol@sandbox.lovesync.com', name: 'Carol Test' },
-    { email: 'dave@sandbox.lovesync.com', name: 'Dave Test' }
+    { email: 'alice@sandbox.lovestory.com', name: 'Alice Test' },
+    { email: 'bob@sandbox.lovestory.com', name: 'Bob Test' },
+    { email: 'carol@sandbox.lovestory.com', name: 'Carol Test' },
+    { email: 'dave@sandbox.lovestory.com', name: 'Dave Test' }
   ];
   
   for (const user of testUsers) {
@@ -284,9 +284,9 @@ const createTestUsers = async () => {
 // Quick login for testing
 const quickLogin = async (userType: 'premium' | 'free' | 'trial') => {
   const credentials = {
-    premium: { email: 'alice@sandbox.lovesync.com', password: 'SandboxTest123!' },
-    free: { email: 'carol@sandbox.lovesync.com', password: 'SandboxTest123!' },
-    trial: { email: 'eve@sandbox.lovesync.com', password: 'SandboxTest123!' }
+    premium: { email: 'alice@sandbox.lovestory.com', password: 'SandboxTest123!' },
+    free: { email: 'carol@sandbox.lovestory.com', password: 'SandboxTest123!' },
+    trial: { email: 'eve@sandbox.lovestory.com', password: 'SandboxTest123!' }
   };
   
   const { data, error } = await supabase.auth.signInWithPassword(
@@ -557,5 +557,5 @@ describe('Sandbox Environment', () => {
 
 ---
 
-*This guide should be updated as new features are added to LoveSync.*
+*This guide should be updated as new features are added to LoveStory.*
 *Last updated: December 2024*

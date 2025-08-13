@@ -2,12 +2,10 @@ import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'app.lovable.f135fec07ff24c8ca0e24c5badf6f0b1',
-  appName: 'LoveSync',
+  appName: 'LoveStory',
   webDir: 'dist',
   server: {
     androidScheme: 'https',
-    // Remove URL to prevent mobile apps from sharing web session storage
-    // url: 'https://f135fec0-7ff2-4c8c-a0e2-4c5badf6f0b1.lovableproject.com?forceHideBadge=true',
     cleartext: true
   },
   plugins: {
@@ -28,7 +26,7 @@ const config: CapacitorConfig = {
     }
   },
   ios: {
-    scheme: "LoveSync"
+    scheme: "LoveStory"
   },
   android: {
     allowMixedContent: true

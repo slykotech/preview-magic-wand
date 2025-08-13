@@ -236,7 +236,7 @@ export const PartnerConnectionSection = () => {
           isValid: true,
           exists: false,
           available: false,
-          message: "This email is not registered with Love Sync.",
+          message: "This email is not registered with Love Story.",
           isChecking: false,
           showInviteToJoin: true
         });
@@ -464,7 +464,7 @@ export const PartnerConnectionSection = () => {
                         className="text-xs text-blue-600 hover:text-blue-800 underline mt-1 flex items-center"
                       >
                         <UserPlus className="w-3 h-3 mr-1" />
-                        Invite your partner to join Love Sync
+                        Invite your partner to join Love Story
                       </button>
                     )}
                   </div>

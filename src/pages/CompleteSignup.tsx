@@ -20,12 +20,12 @@ const CompleteSignup = () => {
 
     // Set success message for standalone signup
     setStatus('success');
-    setMessage('🎉 Welcome to Love Sync! Your account has been created successfully. You can now sign in and start exploring the app.');
+    setMessage('🎉 Welcome to Love Story! Your account has been created successfully. You can now sign in and start exploring the app.');
 
     // Show success toast
     toast({
       title: "Account Created! 🎉",
-      description: "Welcome to Love Sync! You can now sign in and start your journey.",
+      description: "Welcome to Love Story! You can now sign in and start your journey.",
     });
 
     // Auto-redirect to sign in after 5 seconds
@@ -58,7 +58,7 @@ const CompleteSignup = () => {
             )}
           </div>
           <CardTitle className="text-2xl">
-            {status === 'success' ? 'Welcome to Love Sync!' : 'Signup Error'}
+            {status === 'success' ? 'Welcome to Love Story!' : 'Signup Error'}
           </CardTitle>
           <CardDescription>
             {status === 'success' ? 'Your account has been created successfully' : 'There was an issue with your signup'}
@@ -82,7 +82,7 @@ const CompleteSignup = () => {
                   <p>• Sign in with your new credentials</p>
                   <p>• Set up your profile</p>
                   <p>• Connect with your partner</p>
-                  <p>• Start your Love Sync journey together!</p>
+                  <p>• Start your Love Story journey together!</p>
                 </div>
               </div>
               

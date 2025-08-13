@@ -215,8 +215,8 @@ const AcceptInvitation = () => {
           <CardTitle className="text-2xl">
             {status === 'success' ? 'Connection Successful!' : 
              status === 'error' ? 'Connection Failed' :
-             showSignup ? 'Join Love Sync!' :
-             'Love Sync Invitation'}
+             showSignup ? 'Join Love Story!' :
+             'Love Story Invitation'}
           </CardTitle>
           <CardDescription>
             {showSignup && 'Create your account to connect with your partner'}
@@ -242,7 +242,7 @@ const AcceptInvitation = () => {
             <div className="space-y-4">
               <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 p-4 rounded-lg">
                 <p className="text-sm text-purple-800 text-center">
-                  You've been invited to join Love Sync! Fill out the details below to create your account and automatically connect with your partner.
+                  You've been invited to join Love story! Fill out the details below to create your account and automatically connect with your partner.
                 </p>
               </div>
               

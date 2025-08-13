@@ -101,7 +101,7 @@ const NewUserInvite = () => {
           setMessage('Account created successfully, but failed to connect with your partner. Please try connecting manually from your dashboard.');
         } else if (connectionData.success) {
           setStatus('success');
-          setMessage(`Account created and connected successfully! Welcome to Love Sync. You're now connected with ${connectionData.partnerName}! 💕`);
+          setMessage(`Account created and connected successfully! Welcome to Love Story. You're now connected with ${connectionData.partnerName}! 💕`);
           
           // Redirect to dashboard after success
           setTimeout(() => {
@@ -144,9 +144,9 @@ const NewUserInvite = () => {
             )}
           </div>
           <CardTitle className="text-2xl">
-            {status === 'success' ? 'Welcome to Love Sync!' : 
+            {status === 'success' ? 'Welcome to Love Story!' : 
              status === 'error' ? 'Signup Failed' :
-             'Join Love Sync!'}
+             'Join Love Story!'}
           </CardTitle>
           <CardDescription>
             {status === 'pending' && 'Create your account to connect with your partner'}
@@ -170,7 +170,7 @@ const NewUserInvite = () => {
             <div className="space-y-4">
               <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 p-4 rounded-lg">
                 <p className="text-sm text-purple-800 text-center">
-                  You've been invited to join Love Sync! Fill out the details below to create your account and automatically connect with your partner.
+                  You've been invited to join Love Story! Fill out the details below to create your account and automatically connect with your partner.
                 </p>
               </div>
               
@@ -271,9 +271,9 @@ const NewUserInvite = () => {
           {status === 'success' && (
             <div className="text-center space-y-3">
               <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
-                <h4 className="font-semibold text-green-800 mb-2">🎉 Welcome to Love Sync!</h4>
+                <h4 className="font-semibold text-green-800 mb-2">🎉 Welcome to Love Story!</h4>
                 <p className="text-sm text-green-700 mb-3">
-                  Your account has been created and you're automatically connected with your partner. You can now start your Love Sync journey together!
+                  Your account has been created and you're automatically connected with your partner. You can now start your Love Story journey together!
                 </p>
                 <div className="text-xs text-green-600 space-y-1">
                   <p>• Account created successfully</p>

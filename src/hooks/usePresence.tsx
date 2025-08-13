@@ -83,15 +83,27 @@ export const usePresence = (coupleId?: string) => {
 
     // Helper function to update presence states
     const updatePresenceStates = (presenceState: any) => {
+      console.log('🔄 Current presence state:', presenceState);
+      
       // User is always online when app is active - don't update from presence
       // Only check if partner is online (any other user in the couple channel, from any device)
-      const partnerPresent = Object.values(presenceState).some((presences: any) =>
-        presences.some((presence: any) => presence.user_id !== user.id)
+      const allPresences = Object.values(presenceState).flat() as PresenceState[];
+      const partnerPresent = allPresences.some((presence: PresenceState) => 
+        presence.user_id !== user.id
       );
       
-      console.log('🔄 Updating partner presence only - Partner:', partnerPresent);
+      console.log('🔄 All presences:', allPresences);
+      console.log('🔄 Partner present:', partnerPresent);
+      console.log('🔄 Current user ID:', user.id);
+      
       // Don't update user presence - keep it as true when app is active
       setIsPartnerOnline(partnerPresent);
+      
+      if (partnerPresent) {
+        console.log('✅ Partner is ONLINE');
+      } else {
+        console.log('❌ Partner is OFFLINE');
+      }
     };
 
     // Set up presence tracking with improved event handling
@@ -114,15 +126,20 @@ export const usePresence = (coupleId?: string) => {
         updatePresenceStates(currentState);
       })
       .subscribe(async (status) => {
-        console.log('Channel subscription status:', status);
+        console.log('📡 Channel subscription status:', status);
         if (status === 'SUBSCRIBED') {
           // Track the current user's presence
-          console.log('Tracking user presence:', userStatus);
+          console.log('📡 Tracking user presence:', userStatus);
           const trackResult = await channel.track(userStatus);
-          console.log('Track result:', trackResult);
+          console.log('📡 Track result:', trackResult);
           
           // Set user as online immediately after successful tracking
           setIsUserOnline(true);
+          
+          // Initial check for existing presences
+          const initialState = channel.presenceState();
+          console.log('📡 Initial presence state after subscription:', initialState);
+          updatePresenceStates(initialState);
 
           // Notify partner once when coming online
           if (!notifiedOnlineRef.current) {

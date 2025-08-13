@@ -32,7 +32,7 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
         <div className="flex items-center justify-center">
           <img
             src="/lovable-uploads/379d21da-b57c-42de-8fa4-bb2cb2c617d5.png"
-            alt="Love Sync Logo"
+            alt="Love Story Logo"
             className={`w-40 h-40 rounded-xl shadow-lg object-contain bg-white transition-all duration-1000 ${showContent ? 'zoomout' : ''}`}
             style={{ objectFit: 'contain', background: 'white' }}
           />
@@ -58,8 +58,8 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
 
       {/* App Name and Tagline - Bottom */}
       <div className={`pb-12 transition-all duration-1000 delay-300 text-center ${showContent ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
-        <h1 className="text-2xl font-bold text-white mb-2 drop-shadow-lg">Love Sync</h1>
-        <p className="text-sm text-white/80 font-semibold">A relationship co-pilot</p>
+        <h1 className="text-2xl font-bold text-white mb-2 drop-shadow-lg">Love Story</h1>
+        <p className="text-sm text-white/80 font-semibold">Couple's Companion</p>
       </div>
     </div>
   );

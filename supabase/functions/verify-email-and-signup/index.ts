@@ -176,7 +176,7 @@ Deno.serve(async (req) => {
     }
     
     const successMessage = connectionResult 
-      ? `Email verified, account created, and automatically connected with ${connectionResult.partnerName}! You can now sign in and start your Love Sync journey together. 💕`
+      ? `Email verified, account created, and automatically connected with ${connectionResult.partnerName}! You can now sign in and start your Love Story journey together. 💕`
       : 'Email verified and account created successfully! You can now sign in.';
 
     return new Response(

@@ -94,7 +94,7 @@ export const RelationshipHealthScore: React.FC<RelationshipHealthScoreProps> = (
           <h4 className="text-sm font-semibold text-foreground mb-2">Score Breakdown:</h4>
           
           <div className="flex justify-between items-center">
-            <span className="text-sm text-muted-foreground">Love Sync (40%)</span>
+            <span className="text-sm text-muted-foreground">Love Story (40%)</span>
             <span className={`text-sm font-semibold ${getHealthColor(syncScore)}`}>
               {syncScore}%
             </span>

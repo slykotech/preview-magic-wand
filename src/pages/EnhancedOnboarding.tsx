@@ -166,7 +166,7 @@ const EnhancedOnboarding = () => {
 
       if (error) throw error;
 
-      toast.success("Welcome to LoveSync! 🎉");
+      toast.success("Welcome to LoveStory! 🎉");
       navigate('/dashboard');
     } catch (error) {
       console.error("Onboarding completion error:", error);
@@ -185,7 +185,7 @@ const EnhancedOnboarding = () => {
               <div className="w-16 h-16 mx-auto bg-gradient-to-r from-pink-500 to-purple-500 rounded-full flex items-center justify-center">
                 <Heart size={32} className="text-white" />
               </div>
-              <h1 className="text-3xl font-bold">Welcome to LoveSync! 💕</h1>
+              <h1 className="text-3xl font-bold">Welcome to LoveStory! 💕</h1>
               <p className="text-muted-foreground text-lg">
                 Let's set up your perfect relationship companion in just a few steps
               </p>
@@ -404,7 +404,7 @@ const EnhancedOnboarding = () => {
               </div>
               <h1 className="text-3xl font-bold">You're All Set! 🎉</h1>
               <p className="text-muted-foreground text-lg">
-                Welcome to your relationship journey with LoveSync
+                Welcome to your relationship journey with LoveStory
               </p>
             </div>
             
@@ -479,7 +479,7 @@ const EnhancedOnboarding = () => {
       case 4:
         return onboardingData.skipPartnerInvite ? "Continue" : "Send Invitation";
       case 5:
-        return "Enter LoveSync";
+        return "Enter LoveStory";
       default:
         return "Continue";
     }

@@ -216,7 +216,7 @@ export const AppSettings = () => {
           <h1 className="text-xl sm:text-2xl font-bold">App Settings</h1>
         </div>
         <p className="text-white/80 text-sm font-semibold">
-          Customize your LoveSync experience
+          Customize your LoveStory experience
         </p>
       </div>
 
