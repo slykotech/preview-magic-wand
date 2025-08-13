@@ -120,33 +120,26 @@ export function useCardGame(sessionId: string | null) {
         // Check if the session has any actual moves (cards drawn/played by partner)
         const playedCardsArray = Array.isArray(gameData.played_cards) ? gameData.played_cards : [];
         
-        // More lenient detection: partner is connected if they have made any responses
-        // OR if there's been game activity AND it's not a brand new session
+        // Very strict detection: only consider partner connected if they have actually made responses
+        // This ensures we show the waiting screen until the partner actually participates
         const hasPartnerActivity = partnerActivity && partnerActivity.length > 0;
-        const hasGameActivity = playedCardsArray.length > 0 || gameData.total_cards_played > 0;
         
-        // Check if this is a new session (just started, no cards played yet)
+        // For new sessions, partner should NOT be considered connected unless they've responded
         const isNewSession = playedCardsArray.length === 0 && gameData.total_cards_played === 0;
         
-        // Check if partner has the current turn (indicating they've joined)
-        const partnerHasTurn = gameData.current_turn === partnerId;
+        // Only consider partner connected if they have actually responded to cards
+        // Don't rely on turn status or game activity alone
+        const partnerConnected = hasPartnerActivity;
         
-        // Partner is connected if:
-        // 1. They have responses/activity, OR 
-        // 2. Game has activity AND it's not a brand new session, OR
-        // 3. It's their turn (they must have joined to have a turn)
-        const partnerConnected = hasPartnerActivity || (hasGameActivity && !isNewSession) || partnerHasTurn;
-        
-        console.log('Partner connection check:', {
+        console.log('Partner connection check (strict):', {
           partnerId,
           hasPartnerActivity,
-          hasGameActivity,
           isNewSession,
-          partnerHasTurn,
           partnerConnected,
           playedCardsCount: playedCardsArray.length,
           totalCardsPlayed: gameData.total_cards_played,
-          currentTurn: gameData.current_turn
+          currentTurn: gameData.current_turn,
+          partnerResponsesFound: partnerActivity?.length || 0
         });
         
         setIsPartnerConnected(partnerConnected);
