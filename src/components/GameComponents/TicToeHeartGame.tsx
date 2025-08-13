@@ -1533,8 +1533,8 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
       {/* Game Board */}
       <Card className="border-pink-200 bg-gradient-to-br from-pink-50 to-purple-50 dark:from-pink-950/20 dark:to-purple-950/20 animate-fade-in">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
-            TikTok Toe Heart Game 💕
+          <CardTitle className="text-4xl">
+            💕
           </CardTitle>
           
           {gameState.game_status === 'won' && gameState.winner_id === user?.id && (
