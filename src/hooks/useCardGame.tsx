@@ -196,8 +196,18 @@ export function useCardGame(sessionId: string | null) {
 
   // Reveal card function - syncs with database
   const revealCard = useCallback(async (): Promise<void> => {
-    if (!isMyTurn || !gameState || !currentCard || cardRevealed || !sessionId) {
-      console.log('Cannot reveal card:', { isMyTurn, gameState: !!gameState, currentCard: !!currentCard, cardRevealed });
+    if (!sessionId || !user?.id) {
+      console.log('Cannot reveal card: missing session or user');
+      return;
+    }
+    
+    if (cardRevealed) {
+      console.log('Card already revealed');
+      return;
+    }
+    
+    if (!isMyTurn) {
+      console.log('Cannot reveal card: not your turn');
       return;
     }
 
@@ -209,7 +219,10 @@ export function useCardGame(sessionId: string | null) {
         p_user_id: user.id
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('RPC error:', error);
+        throw error;
+      }
       
       console.log('Card revealed in database');
       
@@ -217,7 +230,7 @@ export function useCardGame(sessionId: string | null) {
       console.error('Failed to reveal card:', error);
       toast.error('Failed to reveal card');
     }
-  }, [isMyTurn, gameState, currentCard, cardRevealed, sessionId]);
+  }, [isMyTurn, cardRevealed, sessionId, user?.id]);
 
   // End game function - define before drawCard
   const endGame = useCallback(async (reason?: string) => {

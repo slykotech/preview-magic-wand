@@ -45,7 +45,14 @@ export function useGameSession({
       if (gameType === 'card-deck') {
         const partnerId = gameState.user1_id === user.id ? gameState.user2_id : gameState.user1_id;
         
-        // Check for partner responses
+        // Partner is connected if:
+        // 1. The game session exists with both players (basic connection)
+        // 2. OR there's any game activity (responses, cards played, etc.)
+        // 3. OR it's partner's turn (they're actively engaged)
+        
+        if (!partnerId) return false;
+        
+        // Check for partner responses or any game activity
         const { data: partnerActivity } = await supabase
           .from('card_responses')
           .select('id')
@@ -55,19 +62,30 @@ export function useGameSession({
 
         const playedCardsArray = Array.isArray(gameState.played_cards) ? gameState.played_cards : [];
         
-        return !!(
+        // If there's any activity, partner is definitely connected
+        const hasActivity = !!(
           (partnerActivity && partnerActivity.length > 0) ||
           gameState.total_cards_played > 0 ||
-          playedCardsArray.length > 0 ||
-          gameState.current_turn === partnerId
+          playedCardsArray.length > 0
         );
+        
+        if (hasActivity) return true;
+        
+        // For new games with no activity yet, check if both users are present in the session
+        // and the game is in an active state
+        const isGameActive = gameState.status === 'active' || gameState.status === 'rematch_started';
+        const hasBothPlayers = gameState.user1_id && gameState.user2_id;
+        
+        // Consider partner connected if game is properly set up
+        return isGameActive && hasBothPlayers;
       }
       
       // For tic-toe games
       if (gameType === 'tic-toe-heart') {
         return !!(
           gameState.moves_count > 0 ||
-          gameState.game_status === 'playing'
+          gameState.game_status === 'playing' ||
+          (gameState.user1_id && gameState.user2_id) // Both players present
         );
       }
 
@@ -108,6 +126,33 @@ export function useGameSession({
 
     const tableName = gameType === 'card-deck' ? 'card_deck_game_sessions' : 'tic_toe_heart_games';
     const channelName = `${gameType}-${sessionId}`;
+
+    // Function to check initial game state and update connection status
+    const checkInitialGameState = async () => {
+      try {
+        const filter = gameType === 'card-deck' ? { id: sessionId } : { session_id: sessionId };
+        const { data: gameData, error } = await supabase
+          .from(tableName)
+          .select('*')
+          .match(filter)
+          .single();
+
+        if (!error && gameData) {
+          const isPartnerConnected = await detectPartnerConnection(gameData);
+          const partnerInfo = await getPartnerInfo(gameData);
+          
+          setConnectionStatus(prev => ({
+            ...prev,
+            isPartnerConnected,
+            partnerInfo
+          }));
+
+          console.log(`🎮 Initial ${gameType} connection status:`, { isPartnerConnected, partnerInfo });
+        }
+      } catch (error) {
+        console.warn(`Failed to check initial ${gameType} game state:`, error);
+      }
+    };
 
     const gameChannel = supabase
       .channel(channelName, { config: { broadcast: { ack: true } } })
@@ -152,10 +197,12 @@ export function useGameSession({
         setConnectionStatus(prev => ({ ...prev, status: 'error' }));
         if (onError) onError('Real-time connection failed');
       })
-      .subscribe((status) => {
+      .subscribe(async (status) => {
         console.log(`🎮 ${gameType} subscription status:`, status);
         if (status === 'SUBSCRIBED') {
           setConnectionStatus(prev => ({ ...prev, status: 'connected' }));
+          // Check initial state once subscribed
+          await checkInitialGameState();
         } else if (status === 'CHANNEL_ERROR') {
           setConnectionStatus(prev => ({ ...prev, status: 'error' }));
         }
