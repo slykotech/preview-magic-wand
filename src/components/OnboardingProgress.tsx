@@ -78,7 +78,7 @@ export const OnboardingProgress: React.FC<OnboardingProgressProps> = ({
                 Onboarding Complete! 🎉
               </h3>
               <p className="text-sm text-green-600 dark:text-green-400">
-                You're all set to explore LoveSync together
+                You're all set to explore Love Story together
               </p>
             </div>
           </div>

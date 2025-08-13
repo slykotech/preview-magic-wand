@@ -181,7 +181,7 @@ export class EmailService {
                       </p>
                       <p style="margin: 0; color: #6b7280; font-size: 12px;">
                         Sent with 💜 from Love Story • 
-                        <a href="https://f135fec0-7ff2-4c8c-a0e2-4c5badf6f0b1.lovableproject.com" style="color: #8B5CF6; text-decoration: none;">lovesync.app</a> • 
+                        <a href="https://f135fec0-7ff2-4c8c-a0e2-4c5badf6f0b1.lovableproject.com" style="color: #8B5CF6; text-decoration: none;">lovestory.app</a> • 
                         <a href="mailto:onboarding@resend.dev" style="color: #8B5CF6; text-decoration: none;">Support</a>
                       </p>
                     </div>

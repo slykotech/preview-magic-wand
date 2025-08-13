@@ -239,7 +239,7 @@ export const Profile = () => {
         }
         subtitle={coupleData?.anniversary_date && coupleData.user1_id !== coupleData.user2_id ? 
           `Together since ${new Date(coupleData.anniversary_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })} 💕` :
-          coupleData && coupleData.user1_id !== coupleData.user2_id ? 'Together since joining LoveSync 💕' : 
+          coupleData && coupleData.user1_id !== coupleData.user2_id ? 'Together since joining Love Story 💕' : 
           'Ready to start your journey? 💕'
         }
         icon={<User size={24} />}
@@ -328,7 +328,7 @@ export const Profile = () => {
         <div className="bg-gradient-glow rounded-2xl p-6 text-center">
           <Star className="mx-auto text-primary mb-3" size={32} />
           <h3 className="font-poppins font-extrabold text-foreground mb-2">
-            Rate LoveSync ⭐
+            Rate Love Story ⭐
           </h3>
           <p className="text-muted-foreground font-inter text-sm font-semibold mb-4">
             Love the app? Help others find their perfect match!
@@ -343,7 +343,7 @@ export const Profile = () => {
                 onClick={() => {
                   toast({
                     title: `Thanks for the ${rating}-star rating! 🌟`,
-                    description: "Your feedback helps us improve LoveSync for everyone",
+                    description: "Your feedback helps us improve Love Story for everyone",
                   });
                 }}
               >

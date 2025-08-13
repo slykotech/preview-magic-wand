@@ -168,7 +168,7 @@ export class E2EEncryption {
   // Generate a simple shared secret from couple ID (fallback method)
   static async generateCoupleSharedKey(coupleId: string): Promise<CryptoKey> {
     const encoder = new TextEncoder();
-    const data = encoder.encode(coupleId + 'lovesync-encryption-salt');
+    const data = encoder.encode(coupleId + 'lovestory-encryption-salt');
     
     // Use PBKDF2 to derive a key from the couple ID
     const baseKey = await crypto.subtle.importKey(
@@ -182,7 +182,7 @@ export class E2EEncryption {
     return await crypto.subtle.deriveKey(
       {
         name: 'PBKDF2',
-        salt: encoder.encode('lovesync-salt-2024'),
+        salt: encoder.encode('lovestory-salt-2024'),
         iterations: 100000,
         hash: 'SHA-256',
       },

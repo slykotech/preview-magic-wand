@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { LoveSyncLogo } from "@/components/LoveSyncLogo";
+import { LoveStoryLogo } from "@/components/LoveStoryLogo";
 import { Heart, Sparkles, Calendar, Camera, Gamepad2, Clock, Zap, MessageCircle, Archive } from "lucide-react";
 const Index = () => {
   const {
@@ -37,7 +37,7 @@ const Index = () => {
         {/* Logo */}
         <div className="space-y-6">
           <div className="flex items-center justify-center gap-3">
-            <LoveSyncLogo size="lg" />
+            <LoveStoryLogo size="lg" />
             <div className="text-left">
               <p className="text-lg text-white/90 font-inter font-medium">Introducing</p>
               <h1 className="text-3xl font-bold">Love Story</h1>

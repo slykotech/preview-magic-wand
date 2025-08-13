@@ -38,28 +38,28 @@ export interface TestUser {
 export const testUsers: Record<string, TestUser> = {
   free: {
     id: 'test-free-user',
-    email: 'free@test.lovesync.com',
+    email: 'free@test.lovestory.com',
     password: 'TestPass123!',
     displayName: 'Free Test User',
     userType: 'free'
   },
   premium: {
     id: 'test-premium-user',
-    email: 'premium@test.lovesync.com',
+    email: 'premium@test.lovestory.com',
     password: 'TestPass123!',
     displayName: 'Premium Test User',
     userType: 'premium'
   },
   trial: {
     id: 'test-trial-user',
-    email: 'trial@test.lovesync.com',
+    email: 'trial@test.lovestory.com',
     password: 'TestPass123!',
     displayName: 'Trial Test User',
     userType: 'trial'
   },
   couple1: {
     id: 'test-couple-user-1',
-    email: 'couple1@test.lovesync.com',
+    email: 'couple1@test.lovestory.com',
     password: 'TestPass123!',
     displayName: 'Couple Test User 1',
     userType: 'premium',
@@ -67,7 +67,7 @@ export const testUsers: Record<string, TestUser> = {
   },
   couple2: {
     id: 'test-couple-user-2',
-    email: 'couple2@test.lovesync.com',
+    email: 'couple2@test.lovestory.com',
     password: 'TestPass123!',
     displayName: 'Couple Test User 2',
     userType: 'premium',
@@ -126,7 +126,7 @@ export const createTestCouple = async (coupleKey: string = 'default') => {
 
   // Create user 1
   const { data: user1, error: user1Error } = await supabase.auth.signUp({
-    email: `user1-${coupleKey}-${timestamp}@test.lovesync.com`,
+    email: `user1-${coupleKey}-${timestamp}@test.lovestory.com`,
     password: 'TestPass123!',
     options: {
       data: {
@@ -140,7 +140,7 @@ export const createTestCouple = async (coupleKey: string = 'default') => {
 
   // Create user 2
   const { data: user2, error: user2Error } = await supabase.auth.signUp({
-    email: `user2-${coupleKey}-${timestamp}@test.lovesync.com`,
+    email: `user2-${coupleKey}-${timestamp}@test.lovestory.com`,
     password: 'TestPass123!',
     options: {
       data: {
