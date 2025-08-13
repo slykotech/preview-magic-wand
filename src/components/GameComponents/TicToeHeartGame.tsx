@@ -308,8 +308,24 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
               if (newGameState.winner_id === user?.id) {
                 setTimeout(() => setShowLoveGrant(true), 2000);
               } else if (newGameState.winner_id && newGameState.winner_id !== user?.id) {
-                // For the loser: check for pending love grants after a short delay
-                setTimeout(() => checkForPendingGrants(), 3000);
+                // For the loser: check for pending love grants with multiple attempts
+                console.log('🎮 Game ended, user is loser. Setting up grant detection...');
+                
+                // Check immediately and then retry a few times
+                setTimeout(() => {
+                  console.log('🎮 First attempt - checking for grants');
+                  checkForPendingGrants();
+                }, 1000);
+                
+                setTimeout(() => {
+                  console.log('🎮 Second attempt - checking for grants');
+                  checkForPendingGrants();
+                }, 3000);
+                
+                setTimeout(() => {
+                  console.log('🎮 Third attempt - checking for grants');
+                  checkForPendingGrants();
+                }, 5000);
               }
             }
  
@@ -320,13 +336,16 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
       .on('broadcast', { event: 'love_grant_created' }, (payload) => {
         console.log('💌 Broadcast received on game channel:', payload);
         const newGrant = (payload as any).payload;
-        if (newGrant && newGrant.winner_user_id !== user?.id) {
+        if (newGrant && newGrant.winner_user_id !== user?.id && newGrant.status === 'pending') {
+          console.log('💌 Showing immediate love grant popup via broadcast:', newGrant);
           setPendingGrant({
             ...newGrant,
             winner_symbol: newGrant.winner_symbol as CellValue,
             status: newGrant.status as 'pending' | 'acknowledged' | 'fulfilled'
           });
           setShowGrantResponse(true);
+          
+          // Also add to local state
           setLoveGrants(prev => [{
             ...newGrant,
             winner_symbol: newGrant.winner_symbol as CellValue,
@@ -403,21 +422,32 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
           }, ...prev]);
         })
       .on('broadcast', { event: 'love_grant_created' }, (payload) => {
-        console.log('💌 Broadcast received for love grant:', payload);
+        console.log('💌 Broadcast received on love grants channel:', payload);
         const newGrant = (payload as any).payload;
-        if (newGrant && newGrant.winner_user_id !== user?.id) {
-          setPendingGrant({
-            ...newGrant,
-            winner_symbol: newGrant.winner_symbol as CellValue,
-            status: newGrant.status as 'pending' | 'acknowledged' | 'fulfilled'
+        if (newGrant && newGrant.winner_user_id !== user?.id && newGrant.status === 'pending') {
+          console.log('💌 Showing immediate love grant popup via love grants channel broadcast:', newGrant);
+          
+          // Only show if not already showing to prevent duplicates
+          if (!showGrantResponse) {
+            setPendingGrant({
+              ...newGrant,
+              winner_symbol: newGrant.winner_symbol as CellValue,
+              status: newGrant.status as 'pending' | 'acknowledged' | 'fulfilled'
+            });
+            setShowGrantResponse(true);
+          }
+          
+          // Add to local list for immediate visibility (avoid duplicates)
+          setLoveGrants(prev => {
+            const exists = prev.some(grant => grant.id === newGrant.id);
+            if (exists) return prev;
+            
+            return [{
+              ...newGrant,
+              winner_symbol: newGrant.winner_symbol as CellValue,
+              status: newGrant.status as 'pending' | 'acknowledged' | 'fulfilled'
+            }, ...prev];
           });
-          setShowGrantResponse(true);
-          // Add to local list for immediate visibility
-          setLoveGrants(prev => [{
-            ...newGrant,
-            winner_symbol: newGrant.winner_symbol as CellValue,
-            status: newGrant.status as 'pending' | 'acknowledged' | 'fulfilled'
-          }, ...prev]);
         }
       })
       .on(
