@@ -29,29 +29,11 @@ export const TurnIndicator: React.FC<TurnIndicatorProps> = ({
           </p>
         </div>
         <div className="flex items-center gap-3">
-          {/* Connection Status */}
-          {connectionStatus === 'connected' ? (
-            <span className="text-green-300 flex items-center gap-1 text-sm">
-              <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-              Connected
-            </span>
-          ) : connectionStatus === 'error' ? (
-            <span className="text-red-300 flex items-center gap-1 text-sm">
-              <div className="w-2 h-2 bg-red-400 rounded-full"></div>
-              Connection Error
-            </span>
-          ) : (
-            <span className="text-yellow-300 flex items-center gap-1 text-sm">
-              <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
-              Connecting...
-            </span>
-          )}
-          
-          {/* Partner Online Status */}
+          {/* Partner Online Status - only show when waiting for partner */}
           {!isMyTurn && (
             <span className={`flex items-center gap-1 text-sm ${isPartnerOnline ? 'text-green-300' : 'text-gray-400'}`}>
               <div className={`w-2 h-2 rounded-full ${isPartnerOnline ? 'bg-green-400' : 'bg-gray-400'}`}></div>
-              {isPartnerOnline ? 'Partner Online' : 'Partner Offline'}
+              {isPartnerOnline ? 'Partner Online' : 'Waiting for Partner'}
             </span>
           )}
           
