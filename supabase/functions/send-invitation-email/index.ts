@@ -113,7 +113,7 @@ Deno.serve(async (req) => {
         success: true, 
         message: isConnectType 
           ? `Connection invitation sent to ${email}`
-          : `Invitation to join Love Sync sent to ${email}`,
+          : `Invitation to join Love Story sent to ${email}`,
         type,
         emailId: emailResult.data?.id
       }),

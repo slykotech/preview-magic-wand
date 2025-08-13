@@ -58,9 +58,9 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({
           success: false,
-          error: 'This email is already registered with Love Sync',
+          error: 'This email is already registered with Love Story',
           action: 'use_connect_instead',
-          message: 'This email already has a Love Sync account.'
+          message: 'This email already has a Love Story account.'
         }),
         {
           status: 400,
@@ -97,9 +97,9 @@ Deno.serve(async (req) => {
         return new Response(
           JSON.stringify({
             success: false,
-            error: 'This email is already registered with Love Sync',
+            error: 'This email is already registered with Love Story',
             action: 'use_connect_instead',
-            message: 'This email already has a Love Sync account.'
+            message: 'This email already has a Love Story account.'
           }),
           {
             status: 400,

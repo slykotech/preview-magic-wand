@@ -45,7 +45,7 @@ export const TrialWelcomeCard = () => {
       <CardContent className="space-y-6">
         <div className="text-center">
           <p className="text-muted-foreground mb-4">
-            You now have full access to all premium features! Start exploring what makes Love Sync special.
+            You now have full access to all premium features! Start exploring what makes Love Story special.
           </p>
         </div>
 

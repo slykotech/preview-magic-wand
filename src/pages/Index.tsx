@@ -28,7 +28,7 @@ const Index = () => {
           <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
             <Heart size={40} className="text-white" />
           </div>
-          <p className="text-white font-inter font-bold">Loading Love Sync...</p>
+          <p className="text-white font-inter font-bold">Loading Love Story...</p>
         </div>
       </div>;
   }
@@ -40,7 +40,7 @@ const Index = () => {
             <LoveSyncLogo size="lg" />
             <div className="text-left">
               <p className="text-lg text-white/90 font-inter font-medium">Introducing</p>
-              <h1 className="text-3xl font-bold">Love Sync</h1>
+              <h1 className="text-3xl font-bold">Love Story</h1>
             </div>
           </div>
           <div className="space-y-4">

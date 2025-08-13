@@ -12,7 +12,7 @@ export class EmailService {
     }
     
     this.resend = new Resend(resendApiKey);
-    this.defaultSender = 'Love Sync <noreply@slyko.tech>'; // Using verified domain
+    this.defaultSender = 'Love Story <noreply@slyko.tech>'; // Using verified domain
   }
 
   async sendEmail(options: EmailSendOptions): Promise<ResendEmailResponse> {
@@ -71,16 +71,16 @@ export class EmailService {
     acceptUrl: string
   ): EmailTemplate {
     const actionText = isConnectType 
-      ? `${senderName} wants to connect with you on Love Sync!`
-      : `${senderName} invited you to join Love Sync!`;
+      ? `${senderName} wants to connect with you on Love Story!`
+      : `${senderName} invited you to join Love Story!`;
     
     const buttonText = isConnectType 
       ? 'Connect with Partner' 
       : 'Join Love Sync';
 
     const subject = isConnectType
-      ? `${senderName} wants to connect with you on Love Sync! 💕`
-      : `${senderName} invited you to join Love Sync! 💕`;
+      ? `${senderName} wants to connect with you on Love Story! 💕`
+      : `${senderName} invited you to join Love Story! 💕`;
 
     const html = `
       <!DOCTYPE html>
@@ -100,7 +100,7 @@ export class EmailService {
                 <tr>
                   <td style="padding: 30px 40px; text-align: center; background: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);">
                     <h1 style="margin: 0; color: #ffffff; font-size: 32px; font-weight: 700; letter-spacing: -0.5px;">
-                      💕 Love Sync
+                      💕 Love Story
                     </h1>
                     <p style="margin: 8px 0 0 0; color: rgba(255, 255, 255, 0.9); font-size: 16px;">
                       ${actionText}
@@ -115,12 +115,12 @@ export class EmailService {
                     <!-- Welcome Section -->
                     <div style="text-align: center; margin-bottom: 30px;">
                       <h2 style="margin: 0 0 16px 0; color: #1f2937; font-size: 24px; font-weight: 600;">
-                        ${isConnectType ? 'Connect with Your Partner' : 'Join the Love Sync Community'}
+                        ${isConnectType ? 'Connect with Your Partner' : 'Join the Love Story Community'}
                       </h2>
                       <p style="margin: 0; color: #6b7280; font-size: 16px; line-height: 1.6;">
                         ${isConnectType 
-                          ? `${senderName} is already using Love Sync to strengthen relationships and wants to connect with you.`
-                          : `${senderName} has invited you to join Love Sync, where couples strengthen their relationships together.`
+                          ? `${senderName} is already using Love Story to strengthen relationships and wants to connect with you.`
+                          : `${senderName} has invited you to join Love Story, where couples strengthen their relationships together.`
                         }
                       </p>
                     </div>
@@ -144,7 +144,7 @@ export class EmailService {
                     <!-- Features Section -->
                     <div style="margin: 30px 0; padding: 20px; background-color: #f9fafb; border-radius: 12px;">
                       <h3 style="margin: 0 0 16px 0; color: #1f2937; font-size: 18px; font-weight: 600; text-align: center;">
-                        What you'll get with Love Sync:
+                        What you'll get with Love Story:
                       </h3>
                       <ul style="margin: 0; padding: 0; list-style: none; color: #6b7280; font-size: 14px;">
                         <li style="margin: 8px 0; padding-left: 24px; position: relative;">
@@ -180,7 +180,7 @@ export class EmailService {
                         If you didn't expect this email, you can safely ignore it.
                       </p>
                       <p style="margin: 0; color: #6b7280; font-size: 12px;">
-                        Sent with 💜 from Love Sync • 
+                        Sent with 💜 from Love Story • 
                         <a href="https://f135fec0-7ff2-4c8c-a0e2-4c5badf6f0b1.lovableproject.com" style="color: #8B5CF6; text-decoration: none;">lovesync.app</a> • 
                         <a href="mailto:onboarding@resend.dev" style="color: #8B5CF6; text-decoration: none;">Support</a>
                       </p>
@@ -200,18 +200,18 @@ export class EmailService {
   }
 
   createVerificationTemplate(firstName: string, verificationUrl: string): EmailTemplate {
-    const subject = 'Verify your Love Sync account 📧';
+    const subject = 'Verify your Love Story account 📧';
     
     const html = `
       <!DOCTYPE html>
       <html>
       <head>
         <meta charset="UTF-8">
-        <title>Verify Your Love Sync Account</title>
+        <title>Verify Your Love Story Account</title>
       </head>
       <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="background: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%); padding: 30px; text-align: center; border-radius: 10px; margin-bottom: 30px;">
-          <h1 style="color: white; margin: 0; font-size: 28px;">💕 Love Sync</h1>
+          <h1 style="color: white; margin: 0; font-size: 28px;">💕 Love Story</h1>
           <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 16px;">Verify your email to get started</p>
         </div>
         
@@ -219,7 +219,7 @@ export class EmailService {
           <h2 style="color: #333; margin-bottom: 20px;">Hi ${firstName}! 👋</h2>
           
           <p style="font-size: 16px; margin-bottom: 25px;">
-            Welcome to Love Sync! We're excited to help you and your partner strengthen your relationship. 
+            Welcome to Love Story! We're excited to help you and your partner strengthen your relationship. 
             To complete your account setup, please verify your email address.
           </p>
           
@@ -238,14 +238,14 @@ export class EmailService {
           </div>
           
           <p style="font-size: 14px; color: #666; margin-top: 30px;">
-            This verification link will expire in 24 hours. If you didn't create a Love Sync account, 
+            This verification link will expire in 24 hours. If you didn't create a Love Story account, 
             you can safely ignore this email.
           </p>
           
           <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
           
           <p style="font-size: 12px; color: #999; text-align: center;">
-            Love Sync - Strengthening relationships, one sync at a time
+            Love Story - Strengthening relationships, one sync at a time
           </p>
         </div>
       </body>
@@ -256,18 +256,18 @@ export class EmailService {
   }
 
   createSignupVerificationTemplate(firstName: string, verificationUrl: string): EmailTemplate {
-    const subject = 'Complete Your Love Sync Account Setup! 💕';
+    const subject = 'Complete Your Love Story Account Setup! 💕';
     
     const html = `
       <!DOCTYPE html>
       <html>
       <head>
         <meta charset="UTF-8">
-        <title>Complete Your Love Sync Account Setup</title>
+        <title>Complete Your Love Story Account Setup</title>
       </head>
       <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="background: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%); padding: 30px; text-align: center; border-radius: 10px; margin-bottom: 30px;">
-          <h1 style="color: white; margin: 0; font-size: 28px;">🚀 Love Sync</h1>
+          <h1 style="color: white; margin: 0; font-size: 28px;">🚀 Love Story</h1>
           <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 16px;">Your journey starts here</p>
         </div>
         
@@ -275,7 +275,7 @@ export class EmailService {
           <h2 style="color: #333; margin-bottom: 20px;">Almost there, ${firstName}! 🎉</h2>
           
           <p style="font-size: 16px; margin-bottom: 25px;">
-            You're just one click away from joining Love Sync! Complete your account setup to start exploring 
+            You're just one click away from joining Love Story! Complete your account setup to start exploring 
             all the amazing features we have for strengthening relationships.
           </p>
           
@@ -294,7 +294,7 @@ export class EmailService {
           </div>
           
           <div style="background: #f0f9ff; border-left: 4px solid #0ea5e9; padding: 15px; margin: 20px 0; border-radius: 5px;">
-            <h4 style="color: #333; margin: 0 0 10px; font-size: 16px;">🌟 Start your Love Sync experience:</h4>
+            <h4 style="color: #333; margin: 0 0 10px; font-size: 16px;">🌟 Start your Love Story experience:</h4>
             <ul style="color: #666; margin: 5px 0; padding-left: 20px; font-size: 14px;">
               <li>Explore the app in demo mode</li>
               <li>Set up your personalized profile</li>
@@ -311,7 +311,7 @@ export class EmailService {
           <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
           
           <p style="font-size: 12px; color: #999; text-align: center;">
-            Love Sync - Building stronger relationships together ❤️
+            Love Story - Building stronger relationships together ❤️
           </p>
         </div>
       </body>
