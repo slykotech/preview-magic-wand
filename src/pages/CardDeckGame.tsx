@@ -13,6 +13,8 @@ import { WaitingForPartner } from '@/components/CardGame/WaitingForPartner';
 import { Button } from '@/components/ui/button';
 import { GradientHeader } from '@/components/GradientHeader';
 import { useAuth } from '@/hooks/useAuth';
+import { useCoupleData } from '@/hooks/useCoupleData';
+import { usePresence } from '@/hooks/usePresence';
 import { ArrowLeft } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -20,6 +22,8 @@ export const CardDeckGame: React.FC = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { coupleData } = useCoupleData();
+  const { isPartnerOnline } = usePresence(coupleData?.id);
   const [showHistory, setShowHistory] = useState(false);
   const [showGameEndModal, setShowGameEndModal] = useState(false);
   
@@ -162,6 +166,7 @@ export const CardDeckGame: React.FC = () => {
             isMyTurn={isMyTurn}
             partnerName={partnerInfo?.name || 'Your partner'}
             connectionStatus={connectionStatus}
+            isPartnerOnline={isPartnerOnline}
           />
         </div>
 
