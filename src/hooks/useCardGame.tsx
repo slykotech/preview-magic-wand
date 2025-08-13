@@ -61,6 +61,7 @@ export function useCardGame(sessionId: string | null) {
   const [loading, setLoading] = useState(true);
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'connecting' | 'error'>('connecting');
   const [partnerInfo, setPartnerInfo] = useState<{id: string, name: string} | null>(null);
+  const [isPartnerConnected, setIsPartnerConnected] = useState(false);
   const [cardRevealed, setCardRevealed] = useState(false);
   const [blockAutoAdvance, setBlockAutoAdvance] = useState(false);
   const [lastNotificationTurn, setLastNotificationTurn] = useState<string>('');
@@ -123,6 +124,14 @@ export function useCardGame(sessionId: string | null) {
           }
         }
 
+        // Set initial partner connection state
+        const hasActivePartner = gameData.user1_id && gameData.user2_id && 
+                                 gameData.user1_id !== gameData.user2_id;
+        const hasGameActivity = gameData.total_cards_played > 0 || 
+                               (Array.isArray(processedGameData.played_cards) && processedGameData.played_cards.length > 0);
+        const isGameActive = gameData.status === 'active' || gameData.status === 'rematch_started';
+        
+        setIsPartnerConnected(hasActivePartner && (hasGameActivity || isGameActive));
         setConnectionStatus('connected');
       } catch (error) {
         console.error("Failed to initialize game:", error);
@@ -180,7 +189,7 @@ export function useCardGame(sessionId: string | null) {
             setCardRevealed(newState.current_card_revealed);
           }
           
-          // Handle card updates
+          // Handle card updates and turn changes separately
           if (newState.current_card_id && cardChanged) {
             const { data: cardData, error: cardError } = await supabase
               .from("deck_cards")
@@ -191,25 +200,28 @@ export function useCardGame(sessionId: string | null) {
             if (!cardError) {
               setCurrentCard(cardData as CardData);
             }
-            
-            // Show notification ONLY for meaningful turn changes to prevent spam
-            const shouldNotify = turnChanged && 
-                               newState.current_turn === user.id && 
-                               lastNotificationTurn !== newState.current_turn;
-            
-            if (shouldNotify) {
-              setLastNotificationTurn(newState.current_turn);
-              toast.success("🎯 It's your turn!");
-            }
           } else if (!newState.current_card_id) {
             setCurrentCard(null);
             setCardRevealed(false);
           }
           
-          // Update connection status dynamically based on game state
+          // Handle turn notifications separately from card changes
+          if (turnChanged && newState.current_turn === user.id && lastNotificationTurn !== newState.current_turn) {
+            setLastNotificationTurn(newState.current_turn);
+            toast.success("🎯 It's your turn!");
+          }
+          
+          // Update connection status and partner detection
           const hasActivePartner = newState.user1_id && newState.user2_id && 
                                    newState.user1_id !== newState.user2_id;
           setConnectionStatus(hasActivePartner ? 'connected' : 'connecting');
+          
+          // Enhanced partner connection detection
+          const hasGameActivity = newState.total_cards_played > 0 || 
+                                  (Array.isArray(newState.played_cards) && newState.played_cards.length > 0);
+          const isGameActive = newState.status === 'active' || newState.status === 'rematch_started';
+          
+          setIsPartnerConnected(hasActivePartner && (hasGameActivity || isGameActive));
         }
       )
       .subscribe((status) => {
@@ -674,7 +686,7 @@ export function useCardGame(sessionId: string | null) {
     loading,
     connectionStatus,
     partnerInfo,
-    isPartnerConnected: connectionStatus === 'connected' && partnerInfo !== null,
+    isPartnerConnected,
     stats: {
       cardsPlayed: gameState?.total_cards_played || 0,
       skipsRemaining: gameState && user ? 
