@@ -9,6 +9,7 @@ import { GameEndModal } from '@/components/CardGame/GameEndModal';
 import { DebugInfo } from '@/components/CardGame/DebugInfo';
 import { TaskHistory } from '@/components/CardGame/TaskHistory';
 import CardDistribution from '@/components/CardGame/CardDistribution';
+import { WaitingForPartner } from '@/components/CardGame/WaitingForPartner';
 import { Button } from '@/components/ui/button';
 import { GradientHeader } from '@/components/GradientHeader';
 import { useAuth } from '@/hooks/useAuth';
@@ -29,6 +30,7 @@ export const CardDeckGame: React.FC = () => {
     loading,
     connectionStatus,
     partnerInfo,
+    isPartnerConnected,
     stats,
     actions,
     cardRevealed,
@@ -103,6 +105,26 @@ export const CardDeckGame: React.FC = () => {
           <Button onClick={() => navigate('/games')}>
             Back to Games
           </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Show waiting screen if partner hasn't joined yet
+  if (!loading && !isPartnerConnected && partnerInfo) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 p-4">
+        <div className="max-w-4xl mx-auto">
+          <GradientHeader 
+            title="Card Deck Game 💕" 
+            subtitle="Waiting for your partner..."
+            icon="💕"
+            backRoute="/games"
+          />
+          <WaitingForPartner 
+            partnerName={partnerInfo.name}
+            onBackToGames={() => navigate('/games')}
+          />
         </div>
       </div>
     );

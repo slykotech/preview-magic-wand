@@ -65,6 +65,7 @@ export function useCardGame(sessionId: string | null) {
   const [blockAutoAdvance, setBlockAutoAdvance] = useState(false);
   const [lastNotificationTurn, setLastNotificationTurn] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
+  const [isPartnerConnected, setIsPartnerConnected] = useState(false);
 
   // Initialize game - consolidated initialization
   useEffect(() => {
@@ -108,6 +109,28 @@ export function useCardGame(sessionId: string | null) {
           id: partnerId,
           name: partnerProfile?.display_name || 'Your Partner'
         });
+
+        // Check if partner has ever accessed this session (by checking if they have any activity)
+        const { data: partnerActivity } = await supabase
+          .from('card_responses')
+          .select('id')
+          .eq('session_id', sessionId)
+          .eq('user_id', partnerId)
+          .limit(1);
+
+        // Also check if partner has made any moves in the session
+        const { data: partnerMoves } = await supabase
+          .from('card_deck_game_sessions')
+          .select('last_activity_at, started_at')
+          .eq('id', sessionId)
+          .single();
+
+        // Consider partner connected if they have activity or if game has progressed beyond initial state
+        const hasPartnerActivity = partnerActivity && partnerActivity.length > 0;
+        const playedCardsArray = Array.isArray(gameData.played_cards) ? gameData.played_cards : [];
+        const gameHasProgressed = gameData.total_cards_played > 0 || playedCardsArray.length > 0;
+        
+        setIsPartnerConnected(hasPartnerActivity || gameHasProgressed);
 
         // Fetch current card if exists
         if (gameData.current_card_id) {
@@ -164,6 +187,12 @@ export function useCardGame(sessionId: string | null) {
           // Detect actual changes for regular updates
           const turnChanged = newState.current_turn !== oldState?.current_turn;
           const cardChanged = newState.current_card_id !== oldState?.current_card_id;
+          
+          // Check if partner has now joined (game has progressed)
+          const newPlayedCardsArray = Array.isArray(newState.played_cards) ? newState.played_cards : [];
+          if (newState.total_cards_played > 0 || newPlayedCardsArray.length > 0) {
+            setIsPartnerConnected(true);
+          }
           
           // Process state update
           const processedState = {
@@ -630,6 +659,7 @@ export function useCardGame(sessionId: string | null) {
     loading,
     connectionStatus,
     partnerInfo,
+    isPartnerConnected,
     stats: {
       cardsPlayed: gameState?.total_cards_played || 0,
       skipsRemaining: gameState && user ? 
