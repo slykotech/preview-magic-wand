@@ -95,7 +95,7 @@ export const MobilePermissionManager = () => {
         });
       } else {
         setPermissions(prev => ({ ...prev, notifications: 'denied' }));
-        const settingsPath = platform === 'ios' ? 'Settings > Notifications > Love Story' : 'Settings > Apps > Love Story > Notifications';
+        const settingsPath = platform === 'ios' ? 'Settings > Notifications > LoveStory' : 'Settings > Apps > LoveStory > Notifications';
         toast({
           title: "Notifications Disabled",
           description: `Enable them in ${settingsPath} to stay connected.`,
@@ -191,7 +191,7 @@ export const MobilePermissionManager = () => {
           App Permissions - {Capacitor.getPlatform() === 'ios' ? 'iOS' : 'Android'}
         </CardTitle>
         <CardDescription>
-          Manage permissions to enhance your Love Story experience on {Capacitor.getPlatform() === 'ios' ? 'iPhone' : 'Android'}
+          Manage permissions to enhance your LoveStory experience on {Capacitor.getPlatform() === 'ios' ? 'iPhone' : 'Android'}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

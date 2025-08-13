@@ -2,7 +2,7 @@ import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'app.lovable.f135fec07ff24c8ca0e24c5badf6f0b1',
-  appName: 'Love Story',
+  appName: 'LoveStory',
   webDir: 'dist',
   server: {
     androidScheme: 'https',
@@ -26,7 +26,7 @@ const config: CapacitorConfig = {
     }
   },
   ios: {
-    scheme: "Love Story"
+    scheme: "LoveStory"
   },
   android: {
     allowMixedContent: true

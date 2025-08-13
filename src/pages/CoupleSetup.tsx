@@ -214,7 +214,7 @@ export const CoupleSetup = () => {
           <div>
             <h1 className="text-lg sm:text-xl font-extrabold font-poppins">Manage Couple Profile</h1>
             <p className="text-white/80 text-sm font-inter font-bold">
-              {coupleData ? 'Update your connection' : 'Get started with Love Story'}
+              {coupleData ? 'Update your connection' : 'Get started with LoveStory'}
             </p>
           </div>
         </div>
@@ -290,7 +290,7 @@ export const CoupleSetup = () => {
               <CardContent className="p-4">
                 <h3 className="font-semibold text-blue-800 mb-2">Getting Started</h3>
                 <p className="text-blue-700 text-sm">
-                  Create your profile to start exploring Love Story! You'll begin in demo mode 
+                  Create your profile to start exploring LoveStory! You'll begin in demo mode 
                   where you can try all features. When you're ready, invite your partner to 
                   connect and share your relationship journey together.
                 </p>
