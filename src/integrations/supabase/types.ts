@@ -3367,7 +3367,7 @@ export type Database = {
       }
       create_shuffled_deck: {
         Args: { p_session_id: string; p_deck_size?: number }
-        Returns: number
+        Returns: undefined
       }
       create_signup_invitation: {
         Args: { p_invitee_email: string; p_inviter_name?: string }
