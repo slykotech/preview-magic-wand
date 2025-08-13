@@ -165,7 +165,7 @@ export const CardDeckGame: React.FC = () => {
         <TurnIndicator 
           isMyTurn={isMyTurn}
           partnerName={partnerInfo?.name || 'Your partner'}
-          connectionStatus={typeof connectionStatus === 'string' ? connectionStatus : (connectionStatus?.status ?? 'connecting')}
+          connectionStatus={connectionStatus || 'connecting'}
           isPartnerOnline={isPartnerOnline}
         />
         </div>

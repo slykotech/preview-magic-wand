@@ -450,9 +450,9 @@ export function useCardGame(sessionId: string | null) {
     currentCard,
     isMyTurn,
     loading,
-    connectionStatus,
-    partnerInfo,
-    isPartnerConnected,
+    connectionStatus: connectionStatus.status,
+    partnerInfo: connectionStatus.partnerInfo,
+    isPartnerConnected: connectionStatus.isPartnerConnected,
     stats: {
       cardsPlayed: gameState?.total_cards_played || 0,
       skipsRemaining: gameState && user ? 
