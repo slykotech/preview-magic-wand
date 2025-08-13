@@ -20,20 +20,30 @@ interface GameState {
   id: string;
   board: any; // JSONB from database
   current_player_id: string;
-  game_status: 'playing' | 'won' | 'draw' | 'abandoned';
+  game_status: string; // Will be cast to specific types when needed
   winner_id: string | null;
   moves_count: number;
+  session_id: string;
+  created_at: string;
+  updated_at: string;
+  last_move_at: string | null;
 }
 
 interface LoveGrant {
   id: string;
   request_text: string;
-  status: 'pending' | 'acknowledged' | 'fulfilled';
+  status: string; // Will be cast to specific types when needed
   winner_name: string;
   winner_symbol: string;
   created_at: string;
-  partner_response?: string;
-  rejection_reason?: string;
+  partner_response?: string | null;
+  rejection_reason?: string | null;
+  couple_id: string;
+  winner_user_id: string;
+  game_session_id?: string | null;
+  responded_at?: string | null;
+  response_text?: string | null;
+  updated_at: string;
 }
 
 export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({ sessionId }) => {
@@ -118,12 +128,12 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({ sessionId }) =
     if (!user || !coupleData) return;
 
     try {
-      // Create game session
+      // Create game session - use the actual schema fields
       const { data: session, error: sessionError } = await supabase
         .from('game_sessions')
         .insert({
           couple_id: coupleData.id,
-          game_type: 'tic_toe_heart',
+          game_id: 'tic_toe_heart', // Using game_id instead of game_type
           status: 'active'
         })
         .select()
@@ -146,7 +156,7 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({ sessionId }) =
 
       if (gameError) throw gameError;
 
-      setGameState(game);
+      setGameState(game as GameState);
       setLoading(false);
     } catch (error) {
       console.error('Error creating game:', error);
@@ -166,7 +176,7 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({ sessionId }) =
         .single();
 
       if (error) throw error;
-      setGameState(game as any);
+      setGameState(game as GameState);
       setLoading(false);
     } catch (error) {
       console.error('Error loading game:', error);
@@ -187,7 +197,7 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({ sessionId }) =
         .limit(5);
 
       if (error) throw error;
-      setLoveGrants(data || []);
+      setLoveGrants((data || []) as LoveGrant[]);
     } catch (error) {
       console.error('Error loading love grants:', error);
     }
@@ -469,7 +479,7 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({ sessionId }) =
             {/* Game Status Message */}
             <div className="text-center p-4 bg-gradient-to-r from-purple-100 to-pink-100 rounded-lg border border-pink-200">
               <p className="text-purple-700 font-medium">
-                {gameState.game_status === 'playing' && isUserTurn && "💫 Your turn! Choose a cell"}
+            {gameState.game_status === 'playing' && isUserTurn && "💫 Your turn! Choose a cell"}
                 {gameState.game_status === 'playing' && !isUserTurn && "⏳ Waiting for your partner..."}
                 {gameState.game_status === 'won' && gameState.winner_id === user?.id && "🎉 You won! Claim your Love Grant below!"}
                 {gameState.game_status === 'won' && gameState.winner_id !== user?.id && "Your partner won this round! 💕"}
