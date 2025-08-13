@@ -13,7 +13,7 @@ import { StoryViewer } from "@/components/StoryViewer";
 import { RecentTasks } from "@/components/RecentTasks";
 import { useEnhancedSyncScore } from "@/hooks/useEnhancedSyncScore";
 import { usePresence } from "@/hooks/usePresence";
-
+import { useCardGames } from "@/hooks/useCardGames";
 import { useCoupleData } from "@/hooks/useCoupleData";
 import { SyncScoreSkeleton, DashboardCardSkeleton, CompactCardSkeleton, MoodDisplaySkeleton } from "@/components/ui/skeleton";
 import { Calendar, Heart, MessageCircle, Sparkles, Clock, Lightbulb, X, Activity, Gamepad2, Play, Trophy, CheckCircle, MapPin, Camera, Star } from "lucide-react";
@@ -143,6 +143,13 @@ export const Dashboard = () => {
     });
   }, [coupleId, coupleData?.id, effectiveCoupleId, isUserOnline, isPartnerOnline, user?.id, partnerId]);
 
+  // Use card games hook
+  const {
+    activeSessions,
+    recentAchievements,
+    loading: gamesLoading,
+    createGameSession
+  } = useCardGames();
   useEffect(() => {
     if (!loading && !user) {
       navigate('/auth');
@@ -629,6 +636,19 @@ export const Dashboard = () => {
     }
   };
 
+  // Game handlers
+  const handleStartGame = async (gameId: string) => {
+    try {
+      const session = await createGameSession(gameId);
+      navigate(`/games/${session.id}`);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to start game. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
   return <div className="min-h-screen bg-background relative overflow-hidden">
       {/* Splash Screen Overlay with Sync Score Animation */}
       {showSplash && isLoaded && <div className="fixed inset-0 bg-gradient-primary z-[100]" style={{
