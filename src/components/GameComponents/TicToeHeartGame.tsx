@@ -1096,6 +1096,7 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
       } else {
         updateData.partner_response = 'rejected';
         updateData.rejection_reason = rejectionReason || 'The request was declined. Please try another approach.';
+        updateData.status = 'acknowledged';
       }
 
       const { error } = await supabase
@@ -1114,6 +1115,9 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
       } else {
         toast.success('💔 Love Grant declined. Your partner can try again.');
       }
+
+      // Automatically start a new game after the grant is handled
+      await handleRematch();
     } catch (error) {
       console.error('❌ Error responding to grant:', error);
       toast.error('Failed to respond to Love Grant');
@@ -1303,6 +1307,12 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
 
   const isUserTurn = gameState.current_player_id === user?.id;
   const isGameOver = gameState.game_status !== 'playing';
+  
+  // Rematch gating: require Love Grant to be handled if there is a winner
+  const sessionGrant = loveGrants.find(g => g.game_session_id === sessionId && g.winner_user_id === gameState.winner_id);
+  const grantResolved = !!sessionGrant && (sessionGrant.status === 'acknowledged' || sessionGrant.status === 'fulfilled');
+  const grantRequired = isGameOver && !!gameState.winner_id; // not required on draw
+  const canRematch = !grantRequired || grantResolved;
 
   return (
     <div className="space-y-6">
@@ -1502,7 +1512,9 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
             <div className="flex gap-3 justify-center mt-6">
               <Button 
                 onClick={handleRematch}
-                className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 animate-fade-in"
+                disabled={!canRematch}
+                className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 animate-fade-in disabled:opacity-60 disabled:cursor-not-allowed"
+                title={!canRematch ? 'Finish the Love Grant first' : undefined}
               >
                 <RotateCcw className="w-4 h-4 mr-2" />
                 Rematch 💞
