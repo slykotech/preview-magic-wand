@@ -337,33 +337,28 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'INSERT',
           schema: 'public',
           table: 'love_grants',
           filter: `couple_id=eq.${coupleData.id}`
         },
         (payload) => {
-          console.log('💌 Love grant update received:', payload);
-          const updatedGrant = payload.new as any;
+          console.log('💌 New love grant created:', payload);
+          const newGrant = payload.new as any;
           
-          // Check if this grant is for the current user (not the winner)
-          if (updatedGrant.winner_user_id !== user?.id) {
-            console.log('💌 Showing love grant to partner:', updatedGrant);
-            setPendingGrant(updatedGrant);
+          // Check if this grant is for the current user to respond to (not the winner)
+          if (newGrant.winner_user_id !== user?.id && newGrant.status === 'pending') {
+            console.log('💌 Showing new love grant popup to recipient:', newGrant);
+            setPendingGrant(newGrant);
             setShowGrantResponse(true);
           }
           
-          // Update local state for all grant changes
-          setLoveGrants(prev => {
-            const existingIndex = prev.findIndex(g => g.id === updatedGrant.id);
-            if (existingIndex >= 0) {
-              const updated = [...prev];
-              updated[existingIndex] = updatedGrant;
-              return updated;
-            } else {
-              return [updatedGrant, ...prev];
-            }
-          });
+          // Add to local state
+          setLoveGrants(prev => [{
+            ...newGrant,
+            winner_symbol: newGrant.winner_symbol as CellValue,
+            status: newGrant.status as 'pending' | 'acknowledged' | 'fulfilled'
+          }, ...prev]);
         })
       .on(
         'postgres_changes',
@@ -735,11 +730,27 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
 
       if (error) throw error;
       console.log('💌 Loaded love grants:', grants);
-      setLoveGrants((grants || []).map(g => ({
+      
+      const formattedGrants = (grants || []).map(g => ({
         ...g,
         winner_symbol: g.winner_symbol as CellValue,
         status: g.status as 'pending' | 'acknowledged' | 'fulfilled'
-      })));
+      }));
+      
+      setLoveGrants(formattedGrants);
+      
+      // Check for pending grants that should show popup to current user
+      const pendingForCurrentUser = formattedGrants.find(grant => 
+        grant.status === 'pending' && 
+        grant.winner_user_id !== user?.id && 
+        !grant.partner_response
+      );
+      
+      if (pendingForCurrentUser) {
+        console.log('💌 Found pending grant for current user on load:', pendingForCurrentUser);
+        setPendingGrant(pendingForCurrentUser);
+        setShowGrantResponse(true);
+      }
     } catch (error) {
       console.error('❌ Error loading love grants:', error);
     }
