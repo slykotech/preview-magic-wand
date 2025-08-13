@@ -3353,7 +3353,7 @@ export type Database = {
           p_response_time_seconds?: number
           p_timed_out?: boolean
         }
-        Returns: undefined
+        Returns: Json
       }
       create_notification: {
         Args: {

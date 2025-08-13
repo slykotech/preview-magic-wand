@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { CardImporter } from '@/utils/cardImporter';
-import { DeckManager } from '@/utils/deckManager';
+// DeckManager functionality moved to RPC
 import { useToast } from '@/hooks/use-toast';
 
 interface GameDebugPanelProps {

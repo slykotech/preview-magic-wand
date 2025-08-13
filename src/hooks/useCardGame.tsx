@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useCoupleData } from "@/hooks/useCoupleData";
+import { useGameSession } from "@/hooks/useGameSession";
 import { toast } from "sonner";
 
 interface GameState {
@@ -58,23 +59,98 @@ export function useCardGame(sessionId: string | null) {
   const [currentCard, setCurrentCard] = useState<CardData | null>(null);
   const [isMyTurn, setIsMyTurn] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [connectionStatus, setConnectionStatus] = useState<'connected' | 'connecting' | 'error'>('connecting');
-  const [partnerInfo, setPartnerInfo] = useState<{id: string, name: string} | null>(null);
   const [cardRevealed, setCardRevealed] = useState(false);
   const [blockAutoAdvance, setBlockAutoAdvance] = useState(false);
   const [lastNotificationTurn, setLastNotificationTurn] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
-  const [isPartnerConnected, setIsPartnerConnected] = useState(false);
 
-  // Initialize game - consolidated initialization
+  // Use unified game session management
+  const { connectionStatus, sendBroadcast } = useGameSession({
+    sessionId,
+    gameType: 'card-deck',
+    onGameStateUpdate: handleGameStateUpdate,
+    onPartnerJoin: () => {
+      console.log('🎮 Partner joined the card game!');
+      toast.success('🎮 Partner joined! Let the games begin!');
+    },
+    onError: (error) => {
+      console.error('🎮 Game session error:', error);
+      setError(error);
+    }
+  });
+
+  // Extract values from connectionStatus
+  const isPartnerConnected = connectionStatus.isPartnerConnected;
+  const partnerInfo = connectionStatus.partnerInfo;
+
+  // Handle game state updates from unified session
+  function handleGameStateUpdate(newGameState: any) {
+    console.log('🎮 Card game state update:', newGameState);
+    
+    // Process state update
+    const processedState = {
+      ...newGameState,
+      played_cards: Array.isArray(newGameState.played_cards) ? newGameState.played_cards : [],
+      skipped_cards: Array.isArray(newGameState.skipped_cards) ? newGameState.skipped_cards : []
+    };
+    
+    setGameState(processedState);
+    setIsMyTurn(newGameState.current_turn === user?.id);
+    
+    // Sync card reveal state
+    if (newGameState.current_card_revealed !== undefined) {
+      setCardRevealed(newGameState.current_card_revealed);
+    }
+    
+    // Handle card updates - fetch new card details
+    if (newGameState.current_card_id) {
+      fetchCurrentCard(newGameState.current_card_id);
+      
+      // Show turn notification
+      if (newGameState.current_turn === user?.id && lastNotificationTurn !== newGameState.current_turn) {
+        setLastNotificationTurn(newGameState.current_turn);
+        toast.success("🎯 It's your turn!");
+      }
+    } else {
+      setCurrentCard(null);
+      setCardRevealed(false);
+    }
+
+    // Handle rematch redirection
+    if (newGameState.status === 'rematch_started' && newGameState.rematch_session_id) {
+      console.log('🎮 Rematch detected, redirecting to new session:', newGameState.rematch_session_id);
+      toast.success("🎮 Rematch started! Redirecting to new game...");
+      window.location.href = `/games/card-deck/${newGameState.rematch_session_id}`;
+    }
+  }
+
+  // Fetch current card details
+  const fetchCurrentCard = useCallback(async (cardId: string) => {
+    try {
+      const { data: cardData, error: cardError } = await supabase
+        .from("deck_cards")
+        .select("*")
+        .eq("id", cardId)
+        .single();
+      
+      if (!cardError && cardData) {
+        setCurrentCard(cardData as CardData);
+      }
+    } catch (error) {
+      console.error('Failed to fetch card:', error);
+    }
+  }, []);
+
+  // Initialize game - simplified since unified session handles most of the work
   useEffect(() => {
     if (!user || !coupleData || !sessionId) return;
 
     const initializeGame = async () => {
       try {
-        console.log('Initializing game:', sessionId);
+        setLoading(true);
+        console.log('Initializing card game:', sessionId);
         
-        // Fetch game session
+        // Fetch initial game session
         const { data: gameData, error: gameError } = await supabase
           .from("card_deck_game_sessions")
           .select("*")
@@ -83,89 +159,16 @@ export function useCardGame(sessionId: string | null) {
 
         if (gameError) {
           console.error("Failed to fetch game:", gameError);
-          setConnectionStatus('error');
+          setError("Failed to load game");
           return;
         }
 
-        const processedGameData = {
-          ...gameData,
-          played_cards: Array.isArray(gameData.played_cards) ? gameData.played_cards : [],
-          skipped_cards: Array.isArray(gameData.skipped_cards) ? gameData.skipped_cards : []
-        };
-        
-        setGameState(processedGameData);
-        setIsMyTurn(gameData.current_turn === user.id);
+        // Process and set initial state
+        handleGameStateUpdate(gameData);
 
-        // Set partner info
-        const partnerId = gameData.user1_id === user.id ? gameData.user2_id : gameData.user1_id;
-        const { data: partnerProfile } = await supabase
-          .from('profiles')
-          .select('display_name')
-          .eq('user_id', partnerId)
-          .single();
-        
-        setPartnerInfo({
-          id: partnerId,
-          name: partnerProfile?.display_name || 'Your Partner'
-        });
-
-        // Check if partner has ever accessed this session (by checking if they have any activity)
-        const { data: partnerActivity } = await supabase
-          .from('card_responses')
-          .select('id')
-          .eq('session_id', sessionId)
-          .eq('user_id', partnerId)
-          .limit(1);
-
-        // Check if the session has any actual moves (cards drawn/played by partner)
-        const playedCardsArray = Array.isArray(gameData.played_cards) ? gameData.played_cards : [];
-        
-        // More lenient detection: consider partner connected if:
-        // 1. They have responded to cards OR
-        // 2. The game has progressed (total cards > 0) OR 
-        // 3. There are any played cards OR
-        // 4. The current turn is theirs (they've accessed the game)
-        const hasPartnerActivity = partnerActivity && partnerActivity.length > 0;
-        const hasGameProgression = gameData.total_cards_played > 0;
-        const hasPlayedCards = playedCardsArray.length > 0;
-        const isPartnerTurn = gameData.current_turn === partnerId;
-        
-        // Consider partner connected if any of these conditions are met
-        const partnerConnected = hasPartnerActivity || hasGameProgression || hasPlayedCards || isPartnerTurn;
-        
-        console.log('Partner connection check (improved):', {
-          partnerId,
-          hasPartnerActivity,
-          hasGameProgression,
-          hasPlayedCards,
-          isPartnerTurn,
-          partnerConnected,
-          playedCardsCount: playedCardsArray.length,
-          totalCardsPlayed: gameData.total_cards_played,
-          currentTurn: gameData.current_turn,
-          partnerResponsesFound: partnerActivity?.length || 0
-        });
-        
-        setIsPartnerConnected(partnerConnected);
-
-        // Fetch current card if exists
-        if (gameData.current_card_id) {
-          const { data: cardData, error: cardError } = await supabase
-            .from("deck_cards")
-            .select("*")
-            .eq("id", gameData.current_card_id)
-            .single();
-          
-          if (!cardError && cardData) {
-            setCurrentCard(cardData as CardData);
-            setCardRevealed(gameData.current_card_revealed || false);
-          }
-        }
-
-        setConnectionStatus('connected');
       } catch (error) {
         console.error("Failed to initialize game:", error);
-        setConnectionStatus('error');
+        setError("Failed to initialize game");
       } finally {
         setLoading(false);
       }
@@ -174,102 +177,7 @@ export function useCardGame(sessionId: string | null) {
     initializeGame();
   }, [user, coupleData, sessionId]);
 
-  // Real-time subscription - handle rematch redirection and game updates
-  useEffect(() => {
-    if (!sessionId || !user) return;
-
-    const channel = supabase
-      .channel(`card-game-${sessionId}`)
-      .on(
-        "postgres_changes",
-        { 
-          event: "UPDATE", 
-          schema: "public", 
-          table: "card_deck_game_sessions",
-          filter: `id=eq.${sessionId}`
-        },
-        async (payload) => {
-          const newState = payload.new as any;
-          const oldState = payload.old as any;
-          
-          // Handle rematch redirection - if status changed to 'rematch_started'
-          if (newState.status === 'rematch_started' && newState.rematch_session_id) {
-            console.log('🎮 Rematch detected, redirecting to new session:', newState.rematch_session_id);
-            toast.success("🎮 Rematch started! Redirecting to new game...");
-            window.location.href = `/games/card-deck/${newState.rematch_session_id}`;
-            return;
-          }
-          
-          // Detect actual changes for regular updates
-          const turnChanged = newState.current_turn !== oldState?.current_turn;
-          const cardChanged = newState.current_card_id !== oldState?.current_card_id;
-          
-          // Check if partner has now joined (game has progressed with actual activity)
-          const newPlayedCardsArray = Array.isArray(newState.played_cards) ? newState.played_cards : [];
-          const hasRealProgress = newPlayedCardsArray.length > 0 || newState.total_cards_played > 0;
-          const isPartnerTurnNow = newState.current_turn !== user?.id;
-          
-          // More lenient partner connection - if game has any progression or it's partner's turn
-          if (hasRealProgress || isPartnerTurnNow) {
-            console.log('Partner connection detected via game state update:', {
-              hasRealProgress,
-              isPartnerTurnNow,
-              totalCards: newState.total_cards_played,
-              playedCards: newPlayedCardsArray.length
-            });
-            setIsPartnerConnected(true);
-          }
-          
-          // Process state update
-          const processedState = {
-            ...newState,
-            played_cards: Array.isArray(newState.played_cards) ? newState.played_cards : [],
-            skipped_cards: Array.isArray(newState.skipped_cards) ? newState.skipped_cards : []
-          };
-          
-          setGameState(processedState);
-          setIsMyTurn(newState.current_turn === user.id);
-          
-          // Sync card reveal state
-          if (newState.current_card_revealed !== undefined) {
-            setCardRevealed(newState.current_card_revealed);
-          }
-          
-          // Handle card updates
-          if (newState.current_card_id && cardChanged) {
-            const { data: cardData, error: cardError } = await supabase
-              .from("deck_cards")
-              .select("*")
-              .eq("id", newState.current_card_id)
-              .single();
-            
-            if (!cardError) {
-              setCurrentCard(cardData as CardData);
-            }
-            
-            // Show notification ONLY for meaningful turn changes to prevent spam
-            const shouldNotify = turnChanged && 
-                               newState.current_turn === user.id && 
-                               lastNotificationTurn !== newState.current_turn;
-            
-            if (shouldNotify) {
-              setLastNotificationTurn(newState.current_turn);
-              toast.success("🎯 It's your turn!");
-            }
-          } else if (!newState.current_card_id) {
-            setCurrentCard(null);
-            setCardRevealed(false);
-          }
-        }
-      )
-      .subscribe((status) => {
-        setConnectionStatus(status === 'SUBSCRIBED' ? 'connected' : 'connecting');
-      });
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user, sessionId, lastNotificationTurn]);
+  // Real-time subscription is now handled by useGameSession hook
 
   // Reveal card function - syncs with database
   const revealCard = useCallback(async (): Promise<void> => {
@@ -296,12 +204,35 @@ export function useCardGame(sessionId: string | null) {
     }
   }, [isMyTurn, gameState, currentCard, cardRevealed, sessionId]);
 
-  // Draw next card using RPC function
+  // End game function - define before drawCard
+  const endGame = useCallback(async (reason?: string) => {
+    if (!sessionId) return;
+
+    try {
+      await supabase
+        .from("card_deck_game_sessions")
+        .update({
+          status: 'completed',
+          completed_at: new Date().toISOString(),
+          win_reason: reason || 'manual_end'
+        })
+        .eq("id", sessionId);
+
+      toast.success("Game completed! Thanks for playing 💕");
+
+    } catch (error) {
+      console.error("Failed to end game:", error);
+      toast.error("Failed to end game");
+    }
+  }, [sessionId]);
+
+  // Draw next card using RPC function - fully RPC-based now
   const drawCard = useCallback(async () => {
     if (!isMyTurn || !gameState || !sessionId || !user) return;
 
     try {
       setLoading(true);
+      console.log('🎲 Drawing card via RPC...');
       
       const { data, error } = await supabase.rpc('draw_card_for_session', {
         p_session_id: sessionId,
@@ -310,7 +241,7 @@ export function useCardGame(sessionId: string | null) {
       
       if (error) {
         console.error("Failed to draw card:", error);
-        if (error.message.includes('No more cards available')) {
+        if (error.message?.includes('No more cards available')) {
           console.log('🏁 No more cards available, ending game');
           await endGame('deck_empty');
           return;
@@ -318,42 +249,29 @@ export function useCardGame(sessionId: string | null) {
         throw error;
       }
 
-      if (!data) {
-        console.log('🏁 No card returned, ending game');
-        await endGame('deck_empty');
+      if (!data || (data as any).error) {
+        const errorMsg = (data as any)?.error || 'No card returned';
+        console.log('🏁', errorMsg);
+        if (errorMsg.includes('No more cards available')) {
+          await endGame('deck_empty');
+        } else {
+          toast.error(errorMsg);
+        }
         return;
       }
 
-      const cardData = {
-        id: (data as any).card_id,
-        prompt: (data as any).prompt,
-        response_type: (data as any).response_type,
-        timer_seconds: (data as any).timer_seconds || 60,
-        category: '',
-        subcategory: '',
-        timer_category: '',
-        difficulty_level: 1,
-        intimacy_level: 1,
-        requires_action: false,
-        requires_physical_presence: false,
-        mood_tags: [],
-        relationship_stage: []
-      };
-
-      setCurrentCard(cardData);
-      
-      // Auto-reveal the card
-      setTimeout(() => {
-        setCardRevealed(true);
-      }, 100);
+      console.log('✅ Card drawn successfully via RPC:', data);
+      // The RPC function handles all database updates
+      // Real-time will sync the new card to the UI
 
     } catch (error) {
       console.error("Failed to draw card:", error);
+      toast.error("Failed to draw card");
       setError("Failed to draw card");
     } finally {
       setLoading(false);
     }
-  }, [gameState, isMyTurn, sessionId, user]);
+  }, [gameState, isMyTurn, sessionId, user, endGame]);
 
   // Complete turn using RPC function
   const completeTurn = useCallback(async (response?: string | File, caption?: string, reactionTime?: number, timedOut: boolean = false) => {
@@ -420,6 +338,8 @@ export function useCardGame(sessionId: string | null) {
     if (!isMyTurn || !gameState || !sessionId || !user) return;
 
     try {
+      console.log('⏭️ Skipping card via RPC...');
+      
       const { data, error } = await supabase.rpc('skip_card_turn', {
         p_session_id: sessionId,
         p_user_id: user.id
@@ -431,7 +351,7 @@ export function useCardGame(sessionId: string | null) {
         return;
       }
 
-      if (data) {
+      if (data && !(data as any).error) {
         const skipsRemaining = (data as any).skips_remaining || 0;
         if (skipsRemaining <= 0) {
           toast.warning("⚠️ No skips remaining!");
@@ -440,6 +360,9 @@ export function useCardGame(sessionId: string | null) {
         } else {
           toast.info(`⏭️ Card skipped. ${skipsRemaining} skips remaining`);
         }
+        console.log('✅ Card skipped successfully via RPC');
+      } else if ((data as any)?.error) {
+        toast.error((data as any).error);
       }
       
     } catch (error) {
@@ -448,27 +371,7 @@ export function useCardGame(sessionId: string | null) {
     }
   }, [gameState, isMyTurn, sessionId, user]);
 
-  // End game
-  const endGame = useCallback(async (reason?: string) => {
-    if (!sessionId) return;
-
-    try {
-      await supabase
-        .from("card_deck_game_sessions")
-        .update({
-          status: 'completed',
-          completed_at: new Date().toISOString(),
-          win_reason: reason || 'manual_end'
-        })
-        .eq("id", sessionId);
-
-      toast.success("Game completed! Thanks for playing 💕");
-
-    } catch (error) {
-      console.error("Failed to end game:", error);
-      toast.error("Failed to end game");
-    }
-  }, [sessionId]);
+  // endGame is now defined above
 
   // Rematch function - Automatically restart game for both users
   const rematchGame = useCallback(async () => {

@@ -162,12 +162,12 @@ export const CardDeckGame: React.FC = () => {
 
         {/* Turn Indicator */}
         <div className="mb-8">
-          <TurnIndicator 
-            isMyTurn={isMyTurn}
-            partnerName={partnerInfo?.name || 'Your partner'}
-            connectionStatus={connectionStatus}
-            isPartnerOnline={isPartnerOnline}
-          />
+        <TurnIndicator 
+          isMyTurn={isMyTurn}
+          partnerName={partnerInfo?.name || 'Your partner'}
+          connectionStatus={connectionStatus || 'connecting'}
+          isPartnerOnline={isPartnerOnline}
+        />
         </div>
 
         {/* Animated Game Card or Loading State */}
