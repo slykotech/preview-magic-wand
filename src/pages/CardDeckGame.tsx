@@ -185,6 +185,7 @@ export const CardDeckGame: React.FC = () => {
           partnerName={partnerInfo?.name || 'Your partner'}
           connectionStatus={connectionStatus || 'connecting'}
           isPartnerOnline={isPartnerOnline}
+          isPartnerInGame={isPartnerConnected && partnerInfo !== null}
         />
         </div>
 
