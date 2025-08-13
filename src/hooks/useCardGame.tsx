@@ -132,13 +132,8 @@ export function useCardGame(sessionId: string | null) {
           }
         }
 
-        // Enhanced partner connection detection
-        const hasActivePartner = gameData.user1_id && gameData.user2_id && 
-                                 gameData.user1_id !== gameData.user2_id;
-        const hasGameActivity = gameData.total_cards_played > 0;
-        const isGameActive = gameData.status === 'active' || gameData.status === 'rematch_started';
-        
-        setIsPartnerConnected(hasActivePartner && (hasGameActivity || isGameActive));
+        // Set partner as connected immediately - no waiting logic
+        setIsPartnerConnected(true);
         setConnectionStatus('connected');
       } catch (error) {
         console.error("Failed to initialize game:", error);
@@ -218,17 +213,11 @@ export function useCardGame(sessionId: string | null) {
             toast.success("🎯 It's your turn!");
           }
           
-          // Update connection status and partner detection
-          const hasActivePartner = newState.user1_id && newState.user2_id && 
-                                   newState.user1_id !== newState.user2_id;
-          setConnectionStatus(hasActivePartner ? 'connected' : 'connecting');
+          // Update connection status - always connected in game
+          setConnectionStatus('connected');
           
-          // Enhanced partner connection detection
-          const hasGameActivity = newState.total_cards_played > 0 || 
-                                  (Array.isArray(newState.played_cards) && newState.played_cards.length > 0);
-          const isGameActive = newState.status === 'active' || newState.status === 'rematch_started';
-          
-          setIsPartnerConnected(hasActivePartner && (hasGameActivity || isGameActive));
+          // Set partner as connected immediately - no waiting logic
+          setIsPartnerConnected(true);
         }
       )
       .subscribe((status) => {

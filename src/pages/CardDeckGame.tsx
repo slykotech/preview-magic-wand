@@ -192,9 +192,6 @@ export const CardDeckGame: React.FC = () => {
                 ) : (
                   <div>
                     <p className="text-lg font-semibold mb-2">Ready to draw your next card?</p>
-                    <p className="text-muted-foreground text-sm mb-4">
-                      Your partner is waiting for you to continue the game.
-                    </p>
                     <Button 
                       onClick={actions.drawCard}
                       className="px-6 py-3 text-lg font-semibold"
@@ -206,9 +203,9 @@ export const CardDeckGame: React.FC = () => {
                 )
               ) : (
                 <div>
-                  <p className="text-lg mb-2">Waiting for your partner...</p>
+                  <p className="text-lg mb-2">Partner's turn...</p>
                   <p className="text-muted-foreground text-sm">
-                    {partnerInfo?.name || 'Your partner'} is getting their next card ready.
+                    {partnerInfo?.name || 'Your partner'} is playing their turn.
                   </p>
                 </div>
               )}

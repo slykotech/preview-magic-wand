@@ -581,7 +581,7 @@ export const AnimatedGameCard: React.FC<AnimatedGameCardProps> = ({
             {!isMyTurn && (
               <div className="text-center p-6 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-200 w-full">
                 <p className="text-purple-700 font-medium text-lg">
-                  ⏳ Waiting for partner...
+                   ⏳ Partner's Turn...
                 </p>
               </div>
             )}

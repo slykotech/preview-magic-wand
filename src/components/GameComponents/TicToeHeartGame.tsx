@@ -177,14 +177,14 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
       }
   }
 
-  // Use unified game session management  
+  // Use unified game session management - no waiting logic
   const { connectionStatus, sendBroadcast } = useGameSession({
     sessionId,
     gameType: 'tic-toe-heart', 
     onGameStateUpdate: handleGameStateUpdate,
     onPartnerJoin: () => {
       console.log('🎮 Partner joined Tic Toe Heart game!');
-      toast.success('💕 Partner joined! Time to play!');
+      // No toast needed as game starts immediately
     },
     onError: (error) => {
       console.error('🎮 Tic Toe game session error:', error);
@@ -192,8 +192,8 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
     }
   });
 
-  // Extract values from connectionStatus
-  const isPartnerConnected = connectionStatus.isPartnerConnected;
+  // Partner is always considered connected - no waiting logic
+  const isPartnerConnected = true;
   
   // Debug current turn state
   const debugTurnState = () => {
@@ -1165,35 +1165,7 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
     );
   }
 
-  // Show waiting screen if partner isn't connected AND we haven't started the game
-  // Only prevent playing if partner truly hasn't joined yet
-  if (!isPartnerConnected && gameState.moves_count === 0) {
-    return (
-      <div className="flex items-center justify-center min-h-screen p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <CardTitle className="flex items-center justify-center gap-2">
-              <Heart className="w-6 h-6 text-pink-500 animate-pulse" />
-              Waiting for Partner
-              <Heart className="w-6 h-6 text-pink-500 animate-pulse" />
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="text-center space-y-4">
-            <div className="text-6xl animate-bounce">💕</div>
-            <p className="text-lg">Waiting for your partner to join...</p>
-            <p className="text-sm text-muted-foreground">
-              Share this session with your partner so you can play together!
-            </p>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={onExit} className="flex-1">
-                Back to Games
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  // Always render the game - no waiting screen needed
 
   const isUserTurn = gameState.current_player_id === user?.id;
   const gameEnded = gameState.game_status !== 'playing';

@@ -28,7 +28,7 @@ export const TurnIndicator: React.FC<TurnIndicatorProps> = ({
               {isMyTurn ? "🎯 Your Turn!" : `⏳ ${partnerName}'s Turn`}
             </h3>
             <p className="text-sm opacity-90">
-              {isMyTurn ? "Tap the card to reveal your prompt" : "Wait for your partner to play"}
+              {isMyTurn ? "Tap the card to reveal your prompt" : "Partner's turn to play"}
             </p>
           </div>
           
