@@ -110,6 +110,7 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
   const [isProcessingMove, setIsProcessingMove] = useState(false);
   const [isPartnerConnected, setIsPartnerConnected] = useState(false);
   const loveGrantsChannelRef = useRef<any>(null);
+  const gameChannelRef = useRef<any>(null);
 
   // Determine partner ID
   const partnerId = coupleData?.user1_id === user?.id ? coupleData?.user2_id : coupleData?.user1_id;
@@ -218,7 +219,7 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
     setConnectionStatus('connecting');
 
     const channel = supabase
-      .channel(`tic-toe-game-${sessionId}`)
+      .channel(`tic-toe-game-${sessionId}`, { config: { broadcast: { ack: true }}})
       .on(
         'postgres_changes',
         {
@@ -305,6 +306,23 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
           }
         }
       )
+      .on('broadcast', { event: 'love_grant_created' }, (payload) => {
+        console.log('💌 Broadcast received on game channel:', payload);
+        const newGrant = (payload as any).payload;
+        if (newGrant && newGrant.winner_user_id !== user?.id) {
+          setPendingGrant({
+            ...newGrant,
+            winner_symbol: newGrant.winner_symbol as CellValue,
+            status: newGrant.status as 'pending' | 'acknowledged' | 'fulfilled'
+          });
+          setShowGrantResponse(true);
+          setLoveGrants(prev => [{
+            ...newGrant,
+            winner_symbol: newGrant.winner_symbol as CellValue,
+            status: newGrant.status as 'pending' | 'acknowledged' | 'fulfilled'
+          }, ...prev]);
+        }
+      })
       .on('system', { event: 'CHANNEL_ERROR' }, (payload) => {
         console.error('🎮 ❌ Channel error - connection failed', payload);
         setConnectionStatus('error');
@@ -312,6 +330,7 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
       .subscribe((status) => {
         console.log('🎮 Enhanced Subscription status:', status);
         if (status === 'SUBSCRIBED') {
+          gameChannelRef.current = channel;
           setConnectionStatus('connected');
           console.log('🎮 ✅ Successfully subscribed to real-time updates');
         } else if (status === 'CHANNEL_ERROR') {
@@ -334,7 +353,7 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
     console.log('💌 Setting up love grants real-time subscription for couple:', coupleData.id);
 
     const loveGrantsChannel = supabase
-      .channel(`love-grants-${coupleData.id}`)
+      .channel(`love-grants-${coupleData.id}`, { config: { broadcast: { ack: true }}})
       .on(
         'postgres_changes',
         {
@@ -790,6 +809,24 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
     }
   };
 
+  const sendLoveGrantBroadcast = async (payload: any) => {
+    const channels = [loveGrantsChannelRef.current, gameChannelRef.current].filter(Boolean);
+    if (channels.length === 0) {
+      console.warn('💌 No realtime channels ready for broadcast yet.');
+      return;
+    }
+    await Promise.all(
+      channels.map(async (ch: any) => {
+        try {
+          const res = await ch.send({ type: 'broadcast', event: 'love_grant_created', payload });
+          console.log('💌 Broadcast send result:', res);
+        } catch (e) {
+          console.warn('💌 Broadcast send error:', e);
+        }
+      })
+    );
+  };
+
   const saveLoveGrant = async (grant: Omit<LoveGrant, 'id' | 'created_at'>) => {
     try {
       if (!coupleData?.id || !user?.id) throw new Error('Missing required data');
@@ -818,15 +855,7 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
       }, ...prev]);
 
       // Broadcast instantly so partner sees the popup without relying on DB realtime lag
-      try {
-        await loveGrantsChannelRef.current?.send({
-          type: 'broadcast',
-          event: 'love_grant_created',
-          payload: data,
-        });
-      } catch (e) {
-        console.warn('💌 Broadcast send failed:', e);
-      }
+      await sendLoveGrantBroadcast(data);
       
       toast.success('💌 Love Grant sent to your partner!');
     } catch (error) {
