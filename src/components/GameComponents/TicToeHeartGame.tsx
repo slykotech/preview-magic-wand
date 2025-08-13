@@ -105,6 +105,7 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
   const [winnerReward, setWinnerReward] = useState('');
   const [loveGrants, setLoveGrants] = useState<LoveGrant[]>([]);
   const [playfulMessage, setPlayfulMessage] = useState('');
+  const [grantResponseMessage, setGrantResponseMessage] = useState('');
   const [rejectionReason, setRejectionReason] = useState('');
   const [moveHistory, setMoveHistory] = useState<GameMove[]>([]);
   const [isProcessingMove, setIsProcessingMove] = useState(false);
@@ -975,14 +976,14 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
       console.log('💌 Responding to love grant:', { 
         grantId: pendingGrant.id, 
         accepted, 
-        playfulMessage: playfulMessage.trim(),
+        grantResponseMessage: grantResponseMessage.trim(),
         rejectionReason: rejectionReason.trim()
       });
 
       const updateData = {
         status: accepted ? 'acknowledged' : 'fulfilled',
         responded_at: new Date().toISOString(),
-        partner_response: accepted ? playfulMessage.trim() || 'Accepted! 💕' : rejectionReason.trim() || 'Not right now 💔'
+        partner_response: accepted ? grantResponseMessage.trim() || 'Accepted! 💕' : rejectionReason.trim() || 'Not right now 💔'
       };
 
       const { error } = await supabase
@@ -1014,7 +1015,7 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
       // Close modal and reset
       setShowGrantResponse(false);
       setPendingGrant(null);
-      setPlayfulMessage('');
+      setGrantResponseMessage('');
       setRejectionReason('');
 
     } catch (error) {
@@ -1483,8 +1484,8 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
                     Your playful response (optional):
                   </label>
                   <input
-                    value={playfulMessage}
-                    onChange={(e) => setPlayfulMessage(e.target.value)}
+                    value={grantResponseMessage}
+                    onChange={(e) => setGrantResponseMessage(e.target.value)}
                     placeholder="Of course! I'd love to... 💕"
                     className="w-full p-2 border rounded-lg"
                     maxLength={100}
