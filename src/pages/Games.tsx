@@ -118,8 +118,8 @@ export const Games = () => {
         const session = await createGameSession(gameType);
         if (session) {
           console.log('Created new game session:', session.id);
-          // Game created and ready to play
-          toast.success('Game created! Starting immediately...');
+          // Show waiting message if partner is not online yet
+          toast.success('Game created! Waiting for your partner to join...');
           navigate(`/games/${session.id}`);
         }
       }

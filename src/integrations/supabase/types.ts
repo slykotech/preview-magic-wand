@@ -3353,7 +3353,7 @@ export type Database = {
           p_response_time_seconds?: number
           p_timed_out?: boolean
         }
-        Returns: Json
+        Returns: undefined
       }
       create_notification: {
         Args: {
@@ -3367,7 +3367,7 @@ export type Database = {
       }
       create_shuffled_deck: {
         Args: { p_session_id: string; p_deck_size?: number }
-        Returns: undefined
+        Returns: number
       }
       create_signup_invitation: {
         Args: { p_invitee_email: string; p_inviter_name?: string }
@@ -4065,10 +4065,6 @@ export type Database = {
         Returns: undefined
       }
       reveal_card: {
-        Args: { p_session_id: string; p_user_id: string }
-        Returns: undefined
-      }
-      reveal_game_card: {
         Args: { p_session_id: string; p_user_id: string }
         Returns: undefined
       }

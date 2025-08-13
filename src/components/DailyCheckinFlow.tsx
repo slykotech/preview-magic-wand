@@ -276,30 +276,15 @@ export const DailyCheckinFlow: React.FC<DailyCheckinFlowProps> = ({
             </div>
             
             <div className="space-y-2">
-              {connectionLevels.map(level => 
-                <Button 
-                  key={level.value} 
-                  variant={connectionLevel === level.value ? "default" : "outline"} 
-                  className={`w-full flex items-center justify-start p-4 h-auto text-left border-2 transition-all duration-300 ${
-                    connectionLevel === level.value 
-                      ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white border-purple-400 shadow-lg transform scale-105' 
-                      : 'hover:bg-gradient-to-r hover:from-pink-50 hover:to-purple-50 hover:border-purple-300 hover:shadow-md hover:scale-102'
-                  }`} 
-                  onClick={() => setConnectionLevel(level.value)}
-                >
-                  <div className="flex items-center space-x-3 w-full">
-                    <span className="text-2xl">{level.emoji}</span>
+              {connectionLevels.map(level => <Button key={level.value} variant={connectionLevel === level.value ? "default" : "outline"} className={`w-full flex items-center justify-start p-2 h-auto text-left ${connectionLevel === level.value ? 'bg-secondary text-white border-secondary' : 'hover:bg-muted'}`} onClick={() => setConnectionLevel(level.value)}>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-lg">{level.emoji}</span>
                     <div className="text-left flex-1">
-                      <div className={`font-semibold text-sm ${connectionLevel === level.value ? 'text-white' : 'text-foreground'}`}>
-                        {level.label}
-                      </div>
-                      <div className={`text-xs ${connectionLevel === level.value ? 'text-white/80' : 'text-muted-foreground'}`}>
-                        {level.description}
-                      </div>
+                      <div className="font-medium text-sm">{level.label}</div>
+                      <div className="text-xs opacity-70">{level.description}</div>
                     </div>
                   </div>
-                </Button>
-              )}
+                </Button>)}
             </div>
           </div>;
       case 2:
@@ -396,27 +381,15 @@ export const DailyCheckinFlow: React.FC<DailyCheckinFlowProps> = ({
 
             {/* Footer - Fixed at bottom */}
             {!hasAlreadyCheckedIn && !isLoading && <div className="flex-shrink-0 border-t bg-background">
-                <div className="p-3">
-                  <div className="flex space-x-3">
-                    {step > 1 && <Button 
-                        variant="outline" 
-                        onClick={handlePrevious} 
-                        className="flex-1 h-12 text-sm font-semibold border-2 border-purple-200 hover:border-purple-300 hover:bg-purple-50 transition-all duration-200"
-                      >
+                <div className="p-2">
+                  <div className="flex space-x-2">
+                    {step > 1 && <Button variant="outline" onClick={handlePrevious} className="flex-1 h-8 text-sm">
                         Previous
                       </Button>}
                     
-                    {step < totalSteps ? <Button 
-                        onClick={handleNext} 
-                        disabled={!canProceed()} 
-                        className="flex-1 h-12 text-sm font-bold bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105"
-                      >
+                    {step < totalSteps ? <Button onClick={handleNext} disabled={!canProceed()} className="flex-1 bg-secondary hover:bg-secondary/90 h-8 text-sm">
                         Next Step
-                      </Button> : <Button 
-                        onClick={handleComplete} 
-                        disabled={!canProceed() || isSubmitting} 
-                        className="flex-1 h-12 text-sm font-bold bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105"
-                      >
+                      </Button> : <Button onClick={handleComplete} disabled={!canProceed() || isSubmitting} className="flex-1 bg-secondary hover:bg-secondary/90 h-8 text-sm">
                         {isSubmitting ? 'Saving...' : 'Complete Check-in'}
                       </Button>}
                   </div>
