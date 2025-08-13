@@ -165,6 +165,14 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
   useEffect(() => {
     if (sessionId && user?.id && partnerId) {
       initializeGame();
+      // Load love grants when component mounts
+      loadLoveGrants();
+      
+      // Check for any existing pending love grants when component mounts
+      setTimeout(() => {
+        console.log('🎮 Component mounted - checking for existing pending grants');
+        checkForPendingGrants();
+      }, 1000);
     }
   }, [sessionId, user?.id, partnerId]);
 
@@ -1189,10 +1197,23 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
   };
 
   const checkForPendingGrants = async () => {
-    if (!coupleData?.id || !user?.id) return;
+    if (!coupleData?.id || !user?.id) {
+      console.log('💌 Cannot check grants - missing data:', { coupleId: !!coupleData?.id, userId: !!user?.id });
+      return;
+    }
 
     try {
       console.log('💌 Checking for pending grants for couple:', coupleData.id, 'user:', user.id);
+      
+      // First check ALL pending grants for this couple for debugging
+      const { data: allGrants, error: allGrantsError } = await supabase
+        .from('love_grants')
+        .select('*')
+        .eq('couple_id', coupleData.id)
+        .order('created_at', { ascending: false });
+        
+      console.log('💌 ALL grants for couple:', allGrants);
+      
       const { data: pendingGrants, error } = await supabase
         .from('love_grants')
         .select('*')
@@ -1207,11 +1228,11 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
         return;
       }
 
-      console.log('💌 Found pending grants:', pendingGrants);
+      console.log('💌 Found pending grants for current user:', pendingGrants);
 
       if (pendingGrants && pendingGrants.length > 0) {
         const latestGrant = pendingGrants[0];
-        console.log('💌 Found pending grant for loser:', latestGrant);
+        console.log('💌 Processing latest pending grant:', latestGrant);
         
         // Check if this grant is from the recent game
         const grantTime = new Date(latestGrant.created_at).getTime();
@@ -1219,10 +1240,12 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
         const timeDiff = now - grantTime;
         
         console.log('💌 Grant time diff (minutes):', timeDiff / (1000 * 60));
+        console.log('💌 Current showGrantResponse state:', showGrantResponse);
+        console.log('💌 Current pendingGrant state:', pendingGrant);
         
-        // Only show grants from the last 10 minutes
-        if (timeDiff < 10 * 60 * 1000) {
-          console.log('💌 Showing grant popup to loser');
+        // Only show grants from the last 10 minutes and if popup isn't already shown
+        if (timeDiff < 10 * 60 * 1000 && !showGrantResponse) {
+          console.log('💌 ✅ Showing grant popup to user');
           setPendingGrant({
             ...latestGrant,
             winner_symbol: latestGrant.winner_symbol as CellValue,
@@ -1230,7 +1253,12 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
           });
           setShowGrantResponse(true);
         } else {
-          console.log('💌 Grant too old, not showing popup');
+          if (timeDiff >= 10 * 60 * 1000) {
+            console.log('💌 ❌ Grant too old, not showing popup');
+          }
+          if (showGrantResponse) {
+            console.log('💌 ❌ Popup already shown, not showing again');
+          }
         }
       } else {
         console.log('💌 No pending grants found for this user');
