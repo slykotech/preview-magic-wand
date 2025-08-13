@@ -299,6 +299,9 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
               setShowCelebration(true);
               if (newGameState.winner_id === user?.id) {
                 setTimeout(() => setShowLoveGrant(true), 2000);
+              } else if (newGameState.winner_id && newGameState.winner_id !== user?.id) {
+                // For the loser: check for pending love grants after a short delay
+                setTimeout(() => checkForPendingGrants(), 3000);
               }
             }
  
@@ -810,16 +813,37 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
   };
 
   const sendLoveGrantBroadcast = async (payload: any) => {
+    console.log('💌 Attempting to broadcast love grant:', payload);
     const channels = [loveGrantsChannelRef.current, gameChannelRef.current].filter(Boolean);
+    
     if (channels.length === 0) {
-      console.warn('💌 No realtime channels ready for broadcast yet.');
+      console.warn('💌 No realtime channels ready for broadcast yet. Waiting for connection...');
+      // Retry after a short delay if channels aren't ready
+      setTimeout(async () => {
+        const retryChannels = [loveGrantsChannelRef.current, gameChannelRef.current].filter(Boolean);
+        if (retryChannels.length > 0) {
+          await Promise.all(
+            retryChannels.map(async (ch: any) => {
+              try {
+                const res = await ch.send({ type: 'broadcast', event: 'love_grant_created', payload });
+                console.log('💌 Delayed broadcast send result:', res);
+              } catch (e) {
+                console.warn('💌 Delayed broadcast send error:', e);
+              }
+            })
+          );
+        } else {
+          console.error('💌 Still no channels available for broadcast after retry');
+        }
+      }, 1000);
       return;
     }
+
     await Promise.all(
       channels.map(async (ch: any) => {
         try {
           const res = await ch.send({ type: 'broadcast', event: 'love_grant_created', payload });
-          console.log('💌 Broadcast send result:', res);
+          console.log('💌 Broadcast send result:', res, 'on channel:', ch.topic);
         } catch (e) {
           console.warn('💌 Broadcast send error:', e);
         }
@@ -847,7 +871,7 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
 
       if (error) throw error;
       
-      // Add to local state
+      // Add to local state immediately
       setLoveGrants(prev => [{
         ...data,
         winner_symbol: data.winner_symbol as CellValue,
@@ -856,6 +880,9 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
 
       // Broadcast instantly so partner sees the popup without relying on DB realtime lag
       await sendLoveGrantBroadcast(data);
+      
+      // Also reload grants to ensure sync
+      await loadLoveGrants();
       
       toast.success('💌 Love Grant sent to your partner!');
     } catch (error) {
@@ -1165,7 +1192,7 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
     if (!coupleData?.id || !user?.id) return;
 
     try {
-      console.log('💌 Checking for pending grants...');
+      console.log('💌 Checking for pending grants for couple:', coupleData.id, 'user:', user.id);
       const { data: pendingGrants, error } = await supabase
         .from('love_grants')
         .select('*')
@@ -1180,6 +1207,8 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
         return;
       }
 
+      console.log('💌 Found pending grants:', pendingGrants);
+
       if (pendingGrants && pendingGrants.length > 0) {
         const latestGrant = pendingGrants[0];
         console.log('💌 Found pending grant for loser:', latestGrant);
@@ -1189,15 +1218,22 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
         const now = new Date().getTime();
         const timeDiff = now - grantTime;
         
-        // Only show grants from the last 5 minutes
-        if (timeDiff < 5 * 60 * 1000) {
+        console.log('💌 Grant time diff (minutes):', timeDiff / (1000 * 60));
+        
+        // Only show grants from the last 10 minutes
+        if (timeDiff < 10 * 60 * 1000) {
+          console.log('💌 Showing grant popup to loser');
           setPendingGrant({
             ...latestGrant,
             winner_symbol: latestGrant.winner_symbol as CellValue,
             status: latestGrant.status as 'pending' | 'acknowledged' | 'fulfilled'
           });
           setShowGrantResponse(true);
+        } else {
+          console.log('💌 Grant too old, not showing popup');
         }
+      } else {
+        console.log('💌 No pending grants found for this user');
       }
     } catch (error) {
       console.error('💌 Error checking for pending grants:', error);
