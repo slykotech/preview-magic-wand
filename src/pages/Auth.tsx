@@ -298,7 +298,8 @@ export const Auth = () => {
               onClick={handleSignIn}
               disabled={loading}
               variant="romantic"
-              className="w-full h-11 text-sm font-bold mt-6"
+              size="lg"
+              className="w-full font-bold mt-6 bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? "Signing in..." : "Sign In"}
             </Button>
