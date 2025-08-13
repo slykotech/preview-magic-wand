@@ -108,6 +108,7 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'error'>('connecting');
   const [moveHistory, setMoveHistory] = useState<GameMove[]>([]);
   const [isProcessingMove, setIsProcessingMove] = useState(false);
+  const [isPartnerConnected, setIsPartnerConnected] = useState(false);
 
   // Determine partner ID
   const partnerId = coupleData?.user1_id === user?.id ? coupleData?.user2_id : coupleData?.user1_id;
@@ -186,10 +187,16 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
             game_status: data.game_status as GameStatus
           };
           
-          if (JSON.stringify(newState) !== JSON.stringify(gameState)) {
-            setGameState(newState);
-            console.log('🔄 Updated via polling fallback');
-          }
+            if (JSON.stringify(newState) !== JSON.stringify(gameState)) {
+              setGameState(newState);
+              
+              // Check if partner has now joined (game has moves)
+              if (newState.moves_count > 0) {
+                setIsPartnerConnected(true);
+              }
+              
+              console.log('🔄 Updated via polling fallback');
+            }
         }
       } catch (error) {
         console.warn('Polling fallback failed:', error);
@@ -273,6 +280,11 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
             // Force update game state immediately
             setGameState(newGameState as TicToeGameState);
             setConnectionStatus('connected');
+            
+            // Check if partner has now joined (game has moves)
+            if (newGameState.moves_count > 0) {
+              setIsPartnerConnected(true);
+            }
             
             // Update playful message based on new turn
             const isUserTurn = newGameState.current_player_id === user?.id;
@@ -557,9 +569,16 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
         setGameState(loadedState);
         console.log('🎮 Game state loaded:', loadedState);
         
+        // Check if partner has joined (game has moves or both players have activity)
+        const gameHasProgressed = loadedState.moves_count > 0;
+        setIsPartnerConnected(gameHasProgressed);
+        
         // Debug turn state after loading
         setTimeout(() => debugTurnState(), 100);
       } else {
+        // For new games, partner hasn't joined yet
+        setIsPartnerConnected(false);
+        
         // Ensure we have both user and partner before creating game
         if (!user?.id || !partnerId || !coupleData) {
           console.error('❌ Cannot create game: missing data', { 
@@ -1123,6 +1142,62 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
               <p className="text-muted-foreground">Failed to load game</p>
               <Button onClick={onExit} variant="outline" className="mt-2">
                 Exit Game
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Show waiting screen if partner hasn't joined yet
+  if (!loading && !isPartnerConnected && getPartnerDisplayName) {
+    return (
+      <div className="space-y-6">
+        <Card className="border-primary/20 bg-gradient-to-br from-pink-50 to-purple-50">
+          <CardContent className="p-8">
+            <div className="text-center space-y-6">
+              {/* Animated Hearts */}
+              <div className="flex justify-center items-center gap-2 mb-4">
+                <Heart className="h-8 w-8 text-pink-500 animate-pulse" />
+                <div className="text-3xl animate-bounce">💕</div>
+                <Heart className="h-8 w-8 text-pink-500 animate-pulse" style={{ animationDelay: '0.5s' }} />
+              </div>
+
+              {/* Main Message */}
+              <div className="space-y-3">
+                <h2 className="text-2xl font-bold text-gray-800">
+                  Waiting for {getPartnerDisplayName()}
+                </h2>
+                <p className="text-gray-600 leading-relaxed">
+                  Your Tic Toe Heart game is ready! We're just waiting for {getPartnerDisplayName()} to join the fun.
+                </p>
+              </div>
+
+              {/* Loading Animation */}
+              <div className="flex justify-center items-center gap-2 py-4">
+                <div className="flex gap-1">
+                  <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce"></div>
+                  <div className="w-2 h-2 bg-pink-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                  <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                </div>
+                <span className="text-sm text-gray-500 ml-2">Connecting...</span>
+              </div>
+
+              {/* Instructions */}
+              <div className="bg-white/50 rounded-lg p-4 border border-pink-200">
+                <p className="text-sm text-gray-600">
+                  💡 <strong>Tip:</strong> Share the game link with {getPartnerDisplayName()} or let them know you've started a new game session!
+                </p>
+              </div>
+
+              {/* Action Button */}
+              <Button 
+                onClick={onExit}
+                variant="outline"
+                className="w-full mt-6 border-purple-200 hover:bg-purple-50"
+              >
+                Back to Games
               </Button>
             </div>
           </CardContent>
