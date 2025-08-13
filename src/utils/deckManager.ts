@@ -52,12 +52,12 @@ export class DeckManager {
         .update({
           usage_count: (selectedCard.usage_count || 0) + 1
         })
-        .eq('id', selectedCard.card_id);
+        .eq('id', selectedCard.id);
 
       console.log('✅ Card drawn successfully from shuffled deck:', selectedCard.prompt.substring(0, 50) + '...');
       
       return {
-        id: selectedCard.card_id,
+        id: selectedCard.id,
         category: selectedCard.category,
         subcategory: selectedCard.subcategory,
         prompt: selectedCard.prompt,
