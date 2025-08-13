@@ -21,8 +21,8 @@ import MemoryVault from "./pages/MemoryVault";
 import { Messages } from "./pages/Messages";
 import { Profile } from "./pages/Profile";
 import { Games } from "./pages/Games";
-import { GameSession } from "./pages/GameSession";
-import { CardDeckGame } from "./pages/CardDeckGame";
+
+
 import { CoupleSetup } from "./pages/CoupleSetup";
 import { RelationshipInsights } from "./pages/RelationshipInsights";
 import { RelationshipPreferences } from "./pages/RelationshipPreferences";
@@ -104,9 +104,6 @@ const App = () => {
                 <Route path="/therapy" element={<SubscriptionGate><AICoach /></SubscriptionGate>} />
               <Route path="/dates" element={<SubscriptionGate><DatePlanner /></SubscriptionGate>} />
                 <Route path="/games" element={<SubscriptionGate><Games /></SubscriptionGate>} />
-                <Route path="/games/:sessionId" element={<SubscriptionGate><GameSession /></SubscriptionGate>} />
-                <Route path="/games/card-deck/:sessionId" element={<SubscriptionGate><CardDeckGame /></SubscriptionGate>} />
-                <Route path="/games/card-deck/new" element={<SubscriptionGate><CardDeckGame /></SubscriptionGate>} />
                 
                 
                 <Route path="/test-google-places" element={<GooglePlacesTestPage />} />
