@@ -124,20 +124,29 @@ export function useCardGame(sessionId: string | null) {
     }
   }
 
-  // Fetch current card details
+  // Fetch current card details with better error handling
   const fetchCurrentCard = useCallback(async (cardId: string) => {
     try {
+      console.log('📋 Fetching card details for:', cardId);
       const { data: cardData, error: cardError } = await supabase
         .from("deck_cards")
         .select("*")
         .eq("id", cardId)
-        .single();
+        .maybeSingle(); // Use maybeSingle to avoid errors if card not found
       
-      if (!cardError && cardData) {
+      if (cardError) {
+        console.error('Failed to fetch card:', cardError);
+        return;
+      }
+      
+      if (cardData) {
+        console.log('✅ Card details fetched:', cardData.prompt.substring(0, 50) + '...');
         setCurrentCard(cardData as CardData);
+      } else {
+        console.warn('⚠️ Card not found:', cardId);
       }
     } catch (error) {
-      console.error('Failed to fetch card:', error);
+      console.error('Error fetching card:', error);
     }
   }, []);
 
@@ -150,16 +159,22 @@ export function useCardGame(sessionId: string | null) {
         setLoading(true);
         console.log('Initializing card game:', sessionId);
         
-        // Fetch initial game session
+        // Fetch initial game session with better error handling
         const { data: gameData, error: gameError } = await supabase
           .from("card_deck_game_sessions")
           .select("*")
           .eq("id", sessionId)
-          .single();
+          .maybeSingle();
 
         if (gameError) {
           console.error("Failed to fetch game:", gameError);
           setError("Failed to load game");
+          return;
+        }
+        
+        if (!gameData) {
+          console.error("Game session not found");
+          setError("Game session not found");
           return;
         }
 
@@ -248,7 +263,7 @@ export function useCardGame(sessionId: string | null) {
         }
         throw error;
       }
-
+      
       if (!data || (data as any).error) {
         const errorMsg = (data as any)?.error || 'No card returned';
         console.log('🏁', errorMsg);
@@ -261,8 +276,17 @@ export function useCardGame(sessionId: string | null) {
       }
 
       console.log('✅ Card drawn successfully via RPC:', data);
-      // The RPC function handles all database updates
-      // Real-time will sync the new card to the UI
+      
+      // If the response includes card data, set it immediately
+      if ((data as any).card) {
+        setCurrentCard((data as any).card);
+        setCardRevealed(false);
+        
+        // Only show toast if session was updated (new card drawn)
+        if ((data as any).session_updated) {
+          toast.success("🎯 New card drawn!");
+        }
+      }
 
     } catch (error) {
       console.error("Failed to draw card:", error);
@@ -351,8 +375,11 @@ export function useCardGame(sessionId: string | null) {
         return;
       }
 
-      if (data && !(data as any).error) {
-        const skipsRemaining = (data as any).skips_remaining || 0;
+      console.log('⏭️ Skip response:', data);
+      
+      if (data && (data as any).success) {
+        const responseData = data as any;
+        const skipsRemaining = responseData.skips_remaining || 0;
         if (skipsRemaining <= 0) {
           toast.warning("⚠️ No skips remaining!");
         } else if (skipsRemaining === 1) {
@@ -361,7 +388,7 @@ export function useCardGame(sessionId: string | null) {
           toast.info(`⏭️ Card skipped. ${skipsRemaining} skips remaining`);
         }
         console.log('✅ Card skipped successfully via RPC');
-      } else if ((data as any)?.error) {
+      } else if (data && (data as any)?.error) {
         toast.error((data as any).error);
       }
       

@@ -41,7 +41,7 @@ export const CardDeckGame: React.FC = () => {
     blockAutoAdvance
   } = useCardGame(sessionId || null);
 
-  // Single consolidated auto-draw effect with proper conditions
+  // Improved auto-draw effect with better conditions
   useEffect(() => {
     console.log('Auto-draw check:', {
       isMyTurn,
@@ -49,27 +49,36 @@ export const CardDeckGame: React.FC = () => {
       gameStatus: gameState?.status,
       sessionId,
       loading,
-      blockAutoAdvance
+      blockAutoAdvance,
+      isPartnerConnected
     });
     
-    // Only auto-draw if all conditions are met and avoid multiple calls
+    // Only auto-draw if:
+    // - It's my turn
+    // - No current card available
+    // - Game is active 
+    // - Not loading
+    // - Auto-advance not blocked
+    // - Partner is connected (or single player mode)
+    // - Session exists
     if (
       isMyTurn && 
       !currentCard && 
       gameState?.status === 'active' && 
       !loading && 
       !blockAutoAdvance && 
-      sessionId
+      sessionId &&
+      (isPartnerConnected || gameState?.game_mode === 'single')
     ) {
-      console.log('Auto-drawing card for user turn');
+      console.log('🎯 Auto-drawing card for user turn');
       const timer = setTimeout(() => {
-        console.log('Executing auto-draw card action');
+        console.log('⚡ Executing auto-draw card action');
         actions.drawCard();
-      }, 500); // Single delay
+      }, 300); // Reduced delay for better UX
       
       return () => clearTimeout(timer);
     }
-  }, [isMyTurn, currentCard, gameState?.status, sessionId, loading, blockAutoAdvance, actions.drawCard]);
+  }, [isMyTurn, currentCard, gameState?.status, sessionId, loading, blockAutoAdvance, isPartnerConnected, gameState?.game_mode, actions.drawCard]);
 
   // Check for game end
   useEffect(() => {
@@ -199,17 +208,26 @@ export const CardDeckGame: React.FC = () => {
                   </div>
                 ) : (
                   <div>
-                    <p className="text-lg font-semibold">No card available</p>
-                    <button 
+                    <p className="text-lg font-semibold mb-2">Ready to draw your next card?</p>
+                    <p className="text-muted-foreground text-sm mb-4">
+                      Your partner is waiting for you to continue the game.
+                    </p>
+                    <Button 
                       onClick={actions.drawCard}
-                      className="mt-4 px-6 py-2 bg-primary text-primary-foreground rounded-lg"
+                      className="px-6 py-3 text-lg font-semibold"
+                      disabled={loading}
                     >
-                      Draw Card
-                    </button>
+                      🎯 Draw Card
+                    </Button>
                   </div>
                 )
               ) : (
-                <p className="text-lg">Waiting for partner to play...</p>
+                <div>
+                  <p className="text-lg mb-2">Waiting for your partner...</p>
+                  <p className="text-muted-foreground text-sm">
+                    {partnerInfo?.name || 'Your partner'} is getting their next card ready.
+                  </p>
+                </div>
               )}
             </div>
           )}
