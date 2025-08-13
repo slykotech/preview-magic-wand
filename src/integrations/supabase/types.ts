@@ -4068,6 +4068,10 @@ export type Database = {
         Args: { p_session_id: string; p_user_id: string }
         Returns: undefined
       }
+      reveal_game_card: {
+        Args: { p_session_id: string; p_user_id: string }
+        Returns: undefined
+      }
       search_events_by_location: {
         Args: {
           p_lat: number
