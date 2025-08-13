@@ -205,10 +205,18 @@ export function useCardGame(sessionId: string | null) {
             setCurrentCard(null);
             setCardRevealed(false);
           }
+          
+          // Update connection status dynamically based on game state
+          const hasActivePartner = newState.user1_id && newState.user2_id && 
+                                   newState.user1_id !== newState.user2_id;
+          setConnectionStatus(hasActivePartner ? 'connected' : 'connecting');
         }
       )
       .subscribe((status) => {
-        setConnectionStatus(status === 'SUBSCRIBED' ? 'connected' : 'connecting');
+        console.log('Real-time channel status:', status);
+        if (status !== 'SUBSCRIBED') {
+          setConnectionStatus('connecting');
+        }
       });
 
     return () => {
