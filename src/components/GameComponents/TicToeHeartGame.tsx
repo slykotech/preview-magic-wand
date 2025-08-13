@@ -200,10 +200,10 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
             if (JSON.stringify(newState) !== JSON.stringify(gameState)) {
               setGameState(newState);
               
-              // Check if partner has now joined (game has moves or is actively being played)
-              if (newState.moves_count > 0 || newState.game_status === 'playing') {
-                setIsPartnerConnected(true);
-              }
+            // Check if partner has now joined (game has moves, is actively being played, or both players exist)
+            if (newState.moves_count > 0 || newState.game_status === 'playing' || (user?.id && partnerId)) {
+              setIsPartnerConnected(true);
+            }
               
               console.log('🔄 Updated via polling fallback');
             }
@@ -291,8 +291,8 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
             setGameState(newGameState as TicToeGameState);
             setConnectionStatus('connected');
             
-            // Check if partner has now joined (game has moves or is actively being played)
-            if (newGameState.moves_count > 0 || newGameState.game_status === 'playing') {
+            // Check if partner has now joined (game has moves, is actively being played, or both players exist)
+            if (newGameState.moves_count > 0 || newGameState.game_status === 'playing' || (user?.id && partnerId)) {
               setIsPartnerConnected(true);
             }
             
@@ -657,11 +657,12 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
         setGameState(loadedState);
         console.log('🎮 Game state loaded:', loadedState);
         
-        // Check if partner has joined - if game exists and both users are present, partner is connected
-        // Also consider partner connected if game has progressed
+        // Improved partner connection detection - if we can load an existing game, both players are connected
+        // Also consider partner connected if game has progressed or both players are in couple data
         const gameHasProgressed = loadedState.moves_count > 0;
         const bothPlayersPresent = user?.id && partnerId && coupleData;
-        setIsPartnerConnected(gameHasProgressed || !!bothPlayersPresent);
+        const gameExists = !!existingGame;
+        setIsPartnerConnected(gameExists || gameHasProgressed || !!bothPlayersPresent);
         
         // Debug turn state after loading
         setTimeout(() => debugTurnState(), 100);
@@ -918,6 +919,26 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
 
       // Broadcast instantly so partner sees the popup without relying on DB realtime lag
       await sendLoveGrantBroadcast(data);
+      
+      // Force immediate notification for partner
+      setTimeout(async () => {
+        console.log('💌 Force triggering immediate grant notification...');
+        
+        // Check if partner should be notified immediately
+        if (partnerId && data.winner_user_id !== partnerId) {
+          // This grant is FOR the partner, show them the popup immediately
+          const partnerChannel = supabase.channel(`love-grant-alert-${partnerId}`);
+          await partnerChannel.send({
+            type: 'broadcast',
+            event: 'immediate_love_grant',
+            payload: data
+          });
+          
+          setTimeout(() => {
+            supabase.removeChannel(partnerChannel);
+          }, 1000);
+        }
+      }, 100);
       
       // Also reload grants to ensure sync
       await loadLoveGrants();

@@ -120,18 +120,21 @@ export function useCardGame(sessionId: string | null) {
         // Check if the session has any actual moves (cards drawn/played by partner)
         const playedCardsArray = Array.isArray(gameData.played_cards) ? gameData.played_cards : [];
         
-        // More lenient detection: consider partner connected if:
-        // 1. They have responded to cards OR
-        // 2. The game has progressed (total cards > 0) OR 
-        // 3. There are any played cards OR
-        // 4. The current turn is theirs (they've accessed the game)
+        // Improved connection detection: consider partner connected if:
+        // 1. Game session exists (both players can see it) OR
+        // 2. They have responded to cards OR
+        // 3. The game has progressed (total cards > 0) OR 
+        // 4. There are any played cards OR
+        // 5. The current turn is theirs (they've accessed the game) OR
+        // 6. Both players are defined in the session
         const hasPartnerActivity = partnerActivity && partnerActivity.length > 0;
         const hasGameProgression = gameData.total_cards_played > 0;
         const hasPlayedCards = playedCardsArray.length > 0;
         const isPartnerTurn = gameData.current_turn === partnerId;
+        const hasBothPlayers = gameData.user1_id && gameData.user2_id;
         
-        // Consider partner connected if any of these conditions are met
-        const partnerConnected = hasPartnerActivity || hasGameProgression || hasPlayedCards || isPartnerTurn;
+        // Be more optimistic about partner connection - if session exists with both players, assume connected
+        const partnerConnected = !!(hasBothPlayers || hasPartnerActivity || hasGameProgression || hasPlayedCards || isPartnerTurn);
         
         console.log('Partner connection check (improved):', {
           partnerId,
@@ -139,6 +142,7 @@ export function useCardGame(sessionId: string | null) {
           hasGameProgression,
           hasPlayedCards,
           isPartnerTurn,
+          hasBothPlayers,
           partnerConnected,
           playedCardsCount: playedCardsArray.length,
           totalCardsPlayed: gameData.total_cards_played,
@@ -208,12 +212,14 @@ export function useCardGame(sessionId: string | null) {
           const newPlayedCardsArray = Array.isArray(newState.played_cards) ? newState.played_cards : [];
           const hasRealProgress = newPlayedCardsArray.length > 0 || newState.total_cards_played > 0;
           const isPartnerTurnNow = newState.current_turn !== user?.id;
+          const hasBothPlayers = newState.user1_id && newState.user2_id;
           
-          // More lenient partner connection - if game has any progression or it's partner's turn
-          if (hasRealProgress || isPartnerTurnNow) {
+          // Be optimistic about partner connection - if session exists with both players or any activity
+          if (hasBothPlayers || hasRealProgress || isPartnerTurnNow) {
             console.log('Partner connection detected via game state update:', {
               hasRealProgress,
               isPartnerTurnNow,
+              hasBothPlayers,
               totalCards: newState.total_cards_played,
               playedCards: newPlayedCardsArray.length
             });
@@ -230,8 +236,9 @@ export function useCardGame(sessionId: string | null) {
           setGameState(processedState);
           setIsMyTurn(newState.current_turn === user.id);
           
-          // Sync card reveal state
+          // Sync card reveal state - both players should see revealed cards
           if (newState.current_card_revealed !== undefined) {
+            console.log('🎯 Syncing card reveal state:', newState.current_card_revealed);
             setCardRevealed(newState.current_card_revealed);
           }
           
@@ -342,9 +349,18 @@ export function useCardGame(sessionId: string | null) {
 
       setCurrentCard(cardData);
       
-      // Auto-reveal the card
-      setTimeout(() => {
+      // Auto-reveal the card for all players
+      setTimeout(async () => {
         setCardRevealed(true);
+        // Also update the database so partner can see the revealed card
+        try {
+          await supabase.rpc('reveal_card', {
+            p_session_id: sessionId,
+            p_user_id: user.id
+          });
+        } catch (error) {
+          console.error('Failed to sync card reveal:', error);
+        }
       }, 100);
 
     } catch (error) {
