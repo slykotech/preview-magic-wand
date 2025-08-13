@@ -1667,7 +1667,6 @@ export type Database = {
           conversation_id: string
           created_at: string
           id: string
-          is_encrypted: boolean | null
           is_read: boolean | null
           message_text: string
           message_type: string | null
@@ -1678,7 +1677,6 @@ export type Database = {
           conversation_id: string
           created_at?: string
           id?: string
-          is_encrypted?: boolean | null
           is_read?: boolean | null
           message_text: string
           message_type?: string | null
@@ -1689,7 +1687,6 @@ export type Database = {
           conversation_id?: string
           created_at?: string
           id?: string
-          is_encrypted?: boolean | null
           is_read?: boolean | null
           message_text?: string
           message_type?: string | null
@@ -3343,18 +3340,6 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
-      complete_card_turn: {
-        Args: {
-          p_session_id: string
-          p_user_id: string
-          p_response_text?: string
-          p_response_photo_url?: string
-          p_response_photo_caption?: string
-          p_response_time_seconds?: number
-          p_timed_out?: boolean
-        }
-        Returns: undefined
-      }
       create_notification: {
         Args: {
           p_target_user_id: string
@@ -3376,10 +3361,6 @@ export type Database = {
       disablelongtransactions: {
         Args: Record<PropertyKey, never>
         Returns: string
-      }
-      draw_card_for_session: {
-        Args: { p_session_id: string; p_user_id: string }
-        Returns: Json
       }
       dropgeometrycolumn: {
         Args:
@@ -4064,10 +4045,6 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
-      reveal_card: {
-        Args: { p_session_id: string; p_user_id: string }
-        Returns: undefined
-      }
       search_events_by_location: {
         Args: {
           p_lat: number
@@ -4111,10 +4088,6 @@ export type Database = {
       show_trgm: {
         Args: { "": string }
         Returns: string[]
-      }
-      skip_card_turn: {
-        Args: { p_session_id: string; p_user_id: string }
-        Returns: Json
       }
       spheroid_in: {
         Args: { "": unknown }
@@ -5184,15 +5157,6 @@ export type Database = {
       st_zmin: {
         Args: { "": unknown }
         Returns: number
-      }
-      start_card_deck_game: {
-        Args: {
-          p_couple_id: string
-          p_user1_id: string
-          p_user2_id: string
-          p_game_mode?: string
-        }
-        Returns: Json
       }
       sync_revenue_cat_customer: {
         Args: {

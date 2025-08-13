@@ -107,7 +107,7 @@ export const ResetPassword = () => {
             <Heart size={32} className="text-white sm:w-10 sm:h-10" />
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold font-poppins text-white mb-2">
-            Love Story
+            Love Sync
           </h1>
           <p className="text-sm sm:text-base text-white/80 font-inter font-bold px-2">
             Create your new password

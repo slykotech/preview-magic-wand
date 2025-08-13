@@ -143,7 +143,7 @@ Deno.serve(async (req) => {
 
     console.log('=== SIGNUP TOKEN VERIFICATION COMPLETED SUCCESSFULLY ===');
 
-    const successMessage = 'Email verified and account created successfully! Welcome to Love Story. You can now sign in and start exploring the app.';
+    const successMessage = 'Email verified and account created successfully! Welcome to Love Sync. You can now sign in and start exploring the app.';
 
     return new Response(
       JSON.stringify({ 

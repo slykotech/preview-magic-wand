@@ -105,7 +105,7 @@ Deno.serve(async (req) => {
         JSON.stringify({ 
           success: true, 
           exists: false,
-          message: 'This email is not registered with Love Story.' 
+          message: 'This email is not registered with Love Sync.' 
         }),
         { 
           status: 200, 

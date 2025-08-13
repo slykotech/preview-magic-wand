@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -109,8 +109,6 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
   const [moveHistory, setMoveHistory] = useState<GameMove[]>([]);
   const [isProcessingMove, setIsProcessingMove] = useState(false);
   const [isPartnerConnected, setIsPartnerConnected] = useState(false);
-  const loveGrantsChannelRef = useRef<any>(null);
-  const gameChannelRef = useRef<any>(null);
 
   // Determine partner ID
   const partnerId = coupleData?.user1_id === user?.id ? coupleData?.user2_id : coupleData?.user1_id;
@@ -165,14 +163,6 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
   useEffect(() => {
     if (sessionId && user?.id && partnerId) {
       initializeGame();
-      // Load love grants when component mounts
-      loadLoveGrants();
-      
-      // Check for any existing pending love grants when component mounts
-      setTimeout(() => {
-        console.log('🎮 Component mounted - checking for existing pending grants');
-        checkForPendingGrants();
-      }, 1000);
     }
   }, [sessionId, user?.id, partnerId]);
 
@@ -200,10 +190,10 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
             if (JSON.stringify(newState) !== JSON.stringify(gameState)) {
               setGameState(newState);
               
-            // Check if partner has now joined (game has moves, is actively being played, or both players exist)
-            if (newState.moves_count > 0 || newState.game_status === 'playing' || (user?.id && partnerId)) {
-              setIsPartnerConnected(true);
-            }
+              // Check if partner has now joined (game has moves)
+              if (newState.moves_count > 0) {
+                setIsPartnerConnected(true);
+              }
               
               console.log('🔄 Updated via polling fallback');
             }
@@ -227,7 +217,7 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
     setConnectionStatus('connecting');
 
     const channel = supabase
-      .channel(`tic-toe-game-${sessionId}`, { config: { broadcast: { ack: true }}})
+      .channel(`tic-toe-game-${sessionId}`)
       .on(
         'postgres_changes',
         {
@@ -291,8 +281,8 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
             setGameState(newGameState as TicToeGameState);
             setConnectionStatus('connected');
             
-            // Check if partner has now joined (game has moves, is actively being played, or both players exist)
-            if (newGameState.moves_count > 0 || newGameState.game_status === 'playing' || (user?.id && partnerId)) {
+            // Check if partner has now joined (game has moves)
+            if (newGameState.moves_count > 0) {
               setIsPartnerConnected(true);
             }
             
@@ -307,52 +297,13 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
               setShowCelebration(true);
               if (newGameState.winner_id === user?.id) {
                 setTimeout(() => setShowLoveGrant(true), 2000);
-              } else if (newGameState.winner_id && newGameState.winner_id !== user?.id) {
-                // For the loser: check for pending love grants with multiple attempts
-                console.log('🎮 Game ended, user is loser. Setting up grant detection...');
-                
-                // Check immediately and then retry a few times
-                setTimeout(() => {
-                  console.log('🎮 First attempt - checking for grants');
-                  checkForPendingGrants();
-                }, 1000);
-                
-                setTimeout(() => {
-                  console.log('🎮 Second attempt - checking for grants');
-                  checkForPendingGrants();
-                }, 3000);
-                
-                setTimeout(() => {
-                  console.log('🎮 Third attempt - checking for grants');
-                  checkForPendingGrants();
-                }, 5000);
               }
             }
- 
+
             console.log('🎮 State updated successfully at:', new Date().toISOString());
           }
         }
       )
-      .on('broadcast', { event: 'love_grant_created' }, (payload) => {
-        console.log('💌 Broadcast received on game channel:', payload);
-        const newGrant = (payload as any).payload;
-        if (newGrant && newGrant.winner_user_id !== user?.id && newGrant.status === 'pending') {
-          console.log('💌 Showing immediate love grant popup via broadcast:', newGrant);
-          setPendingGrant({
-            ...newGrant,
-            winner_symbol: newGrant.winner_symbol as CellValue,
-            status: newGrant.status as 'pending' | 'acknowledged' | 'fulfilled'
-          });
-          setShowGrantResponse(true);
-          
-          // Also add to local state
-          setLoveGrants(prev => [{
-            ...newGrant,
-            winner_symbol: newGrant.winner_symbol as CellValue,
-            status: newGrant.status as 'pending' | 'acknowledged' | 'fulfilled'
-          }, ...prev]);
-        }
-      })
       .on('system', { event: 'CHANNEL_ERROR' }, (payload) => {
         console.error('🎮 ❌ Channel error - connection failed', payload);
         setConnectionStatus('error');
@@ -360,7 +311,6 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
       .subscribe((status) => {
         console.log('🎮 Enhanced Subscription status:', status);
         if (status === 'SUBSCRIBED') {
-          gameChannelRef.current = channel;
           setConnectionStatus('connected');
           console.log('🎮 ✅ Successfully subscribed to real-time updates');
         } else if (status === 'CHANNEL_ERROR') {
@@ -383,7 +333,7 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
     console.log('💌 Setting up love grants real-time subscription for couple:', coupleData.id);
 
     const loveGrantsChannel = supabase
-      .channel(`love-grants-${coupleData.id}`, { config: { broadcast: { ack: true }}})
+      .channel(`love-grants-${coupleData.id}`)
       .on(
         'postgres_changes',
         {
@@ -396,21 +346,10 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
           console.log('💌 New love grant created:', payload);
           const newGrant = payload.new as any;
           
-          console.log('💌 Checking if grant is for current user:', {
-            newGrantWinnerId: newGrant.winner_user_id,
-            currentUserId: user?.id,
-            isForCurrentUser: newGrant.winner_user_id !== user?.id,
-            grantStatus: newGrant.status
-          });
-          
           // Check if this grant is for the current user to respond to (not the winner)
           if (newGrant.winner_user_id !== user?.id && newGrant.status === 'pending') {
             console.log('💌 Showing new love grant popup to recipient:', newGrant);
-            setPendingGrant({
-              ...newGrant,
-              winner_symbol: newGrant.winner_symbol as CellValue,
-              status: newGrant.status as 'pending' | 'acknowledged' | 'fulfilled'
-            });
+            setPendingGrant(newGrant);
             setShowGrantResponse(true);
           }
           
@@ -421,35 +360,6 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
             status: newGrant.status as 'pending' | 'acknowledged' | 'fulfilled'
           }, ...prev]);
         })
-      .on('broadcast', { event: 'love_grant_created' }, (payload) => {
-        console.log('💌 Broadcast received on love grants channel:', payload);
-        const newGrant = (payload as any).payload;
-        if (newGrant && newGrant.winner_user_id !== user?.id && newGrant.status === 'pending') {
-          console.log('💌 Showing immediate love grant popup via love grants channel broadcast:', newGrant);
-          
-          // Only show if not already showing to prevent duplicates
-          if (!showGrantResponse) {
-            setPendingGrant({
-              ...newGrant,
-              winner_symbol: newGrant.winner_symbol as CellValue,
-              status: newGrant.status as 'pending' | 'acknowledged' | 'fulfilled'
-            });
-            setShowGrantResponse(true);
-          }
-          
-          // Add to local list for immediate visibility (avoid duplicates)
-          setLoveGrants(prev => {
-            const exists = prev.some(grant => grant.id === newGrant.id);
-            if (exists) return prev;
-            
-            return [{
-              ...newGrant,
-              winner_symbol: newGrant.winner_symbol as CellValue,
-              status: newGrant.status as 'pending' | 'acknowledged' | 'fulfilled'
-            }, ...prev];
-          });
-        }
-      })
       .on(
         'postgres_changes',
         {
@@ -494,9 +404,6 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
       .subscribe((status) => {
         console.log('💌 Love grants subscription status:', status);
       });
-
-      // keep a reference for broadcasting from winner side
-      loveGrantsChannelRef.current = loveGrantsChannel;
 
     return () => {
       console.log('💌 Cleaning up love grants subscription');
@@ -657,12 +564,9 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
         setGameState(loadedState);
         console.log('🎮 Game state loaded:', loadedState);
         
-        // Improved partner connection detection - if we can load an existing game, both players are connected
-        // Also consider partner connected if game has progressed or both players are in couple data
+        // Check if partner has joined (game has moves or both players have activity)
         const gameHasProgressed = loadedState.moves_count > 0;
-        const bothPlayersPresent = user?.id && partnerId && coupleData;
-        const gameExists = !!existingGame;
-        setIsPartnerConnected(gameExists || gameHasProgressed || !!bothPlayersPresent);
+        setIsPartnerConnected(gameHasProgressed);
         
         // Debug turn state after loading
         setTimeout(() => debugTurnState(), 100);
@@ -757,9 +661,6 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
           };
           setGameState(conflictState);
           console.log('🎮 Using conflict game state:', conflictState);
-          
-          // If conflict game exists, both players have joined
-          setIsPartnerConnected(true);
         } else {
           console.log('🎮 New game created successfully:', newGame);
           const newGameState = {
@@ -770,14 +671,6 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
           };
           setGameState(newGameState);
           console.log('🎮 New game state set:', newGameState);
-          
-          // For new games, if we successfully created it and have couple data, partner will join soon
-          // Set a timer to check for partner connection after a short delay
-          setTimeout(() => {
-            if (user?.id && partnerId && coupleData) {
-              setIsPartnerConnected(true);
-            }
-          }, 1000);
         }
         
         // Debug turn state after creating new game
@@ -846,48 +739,21 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
       
       setLoveGrants(formattedGrants);
       
+      // Check for pending grants that should show popup to current user
+      const pendingForCurrentUser = formattedGrants.find(grant => 
+        grant.status === 'pending' && 
+        grant.winner_user_id !== user?.id && 
+        !grant.partner_response
+      );
+      
+      if (pendingForCurrentUser) {
+        console.log('💌 Found pending grant for current user on load:', pendingForCurrentUser);
+        setPendingGrant(pendingForCurrentUser);
+        setShowGrantResponse(true);
+      }
     } catch (error) {
       console.error('❌ Error loading love grants:', error);
     }
-  };
-
-  const sendLoveGrantBroadcast = async (payload: any) => {
-    console.log('💌 Attempting to broadcast love grant:', payload);
-    const channels = [loveGrantsChannelRef.current, gameChannelRef.current].filter(Boolean);
-    
-    if (channels.length === 0) {
-      console.warn('💌 No realtime channels ready for broadcast yet. Waiting for connection...');
-      // Retry after a short delay if channels aren't ready
-      setTimeout(async () => {
-        const retryChannels = [loveGrantsChannelRef.current, gameChannelRef.current].filter(Boolean);
-        if (retryChannels.length > 0) {
-          await Promise.all(
-            retryChannels.map(async (ch: any) => {
-              try {
-                const res = await ch.send({ type: 'broadcast', event: 'love_grant_created', payload });
-                console.log('💌 Delayed broadcast send result:', res);
-              } catch (e) {
-                console.warn('💌 Delayed broadcast send error:', e);
-              }
-            })
-          );
-        } else {
-          console.error('💌 Still no channels available for broadcast after retry');
-        }
-      }, 1000);
-      return;
-    }
-
-    await Promise.all(
-      channels.map(async (ch: any) => {
-        try {
-          const res = await ch.send({ type: 'broadcast', event: 'love_grant_created', payload });
-          console.log('💌 Broadcast send result:', res, 'on channel:', ch.topic);
-        } catch (e) {
-          console.warn('💌 Broadcast send error:', e);
-        }
-      })
-    );
   };
 
   const saveLoveGrant = async (grant: Omit<LoveGrant, 'id' | 'created_at'>) => {
@@ -910,38 +776,12 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
 
       if (error) throw error;
       
-      // Add to local state immediately
+      // Add to local state
       setLoveGrants(prev => [{
         ...data,
         winner_symbol: data.winner_symbol as CellValue,
         status: data.status as 'pending' | 'acknowledged' | 'fulfilled'
       }, ...prev]);
-
-      // Broadcast instantly so partner sees the popup without relying on DB realtime lag
-      await sendLoveGrantBroadcast(data);
-      
-      // Force immediate notification for partner
-      setTimeout(async () => {
-        console.log('💌 Force triggering immediate grant notification...');
-        
-        // Check if partner should be notified immediately
-        if (partnerId && data.winner_user_id !== partnerId) {
-          // This grant is FOR the partner, show them the popup immediately
-          const partnerChannel = supabase.channel(`love-grant-alert-${partnerId}`);
-          await partnerChannel.send({
-            type: 'broadcast',
-            event: 'immediate_love_grant',
-            payload: data
-          });
-          
-          setTimeout(() => {
-            supabase.removeChannel(partnerChannel);
-          }, 1000);
-        }
-      }, 100);
-      
-      // Also reload grants to ensure sync
-      await loadLoveGrants();
       
       toast.success('💌 Love Grant sent to your partner!');
     } catch (error) {
@@ -1219,7 +1059,6 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
       } else {
         updateData.partner_response = 'rejected';
         updateData.rejection_reason = rejectionReason || 'The request was declined. Please try another approach.';
-        updateData.status = 'acknowledged';
       }
 
       const { error } = await supabase
@@ -1238,84 +1077,9 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
       } else {
         toast.success('💔 Love Grant declined. Your partner can try again.');
       }
-
-      // Automatically start a new game after the grant is handled
-      await handleRematch();
     } catch (error) {
       console.error('❌ Error responding to grant:', error);
       toast.error('Failed to respond to Love Grant');
-    }
-  };
-
-  const checkForPendingGrants = async () => {
-    if (!coupleData?.id || !user?.id) {
-      console.log('💌 Cannot check grants - missing data:', { coupleId: !!coupleData?.id, userId: !!user?.id });
-      return;
-    }
-
-    try {
-      console.log('💌 Checking for pending grants for couple:', coupleData.id, 'user:', user.id);
-      
-      // First check ALL pending grants for this couple for debugging
-      const { data: allGrants, error: allGrantsError } = await supabase
-        .from('love_grants')
-        .select('*')
-        .eq('couple_id', coupleData.id)
-        .order('created_at', { ascending: false });
-        
-      console.log('💌 ALL grants for couple:', allGrants);
-      
-      const { data: pendingGrants, error } = await supabase
-        .from('love_grants')
-        .select('*')
-        .eq('couple_id', coupleData.id)
-        .eq('status', 'pending')
-        .neq('winner_user_id', user.id) // Grants NOT created by current user
-        .order('created_at', { ascending: false })
-        .limit(1);
-
-      if (error) {
-        console.error('💌 Error fetching pending grants:', error);
-        return;
-      }
-
-      console.log('💌 Found pending grants for current user:', pendingGrants);
-
-      if (pendingGrants && pendingGrants.length > 0) {
-        const latestGrant = pendingGrants[0];
-        console.log('💌 Processing latest pending grant:', latestGrant);
-        
-        // Check if this grant is from the recent game
-        const grantTime = new Date(latestGrant.created_at).getTime();
-        const now = new Date().getTime();
-        const timeDiff = now - grantTime;
-        
-        console.log('💌 Grant time diff (minutes):', timeDiff / (1000 * 60));
-        console.log('💌 Current showGrantResponse state:', showGrantResponse);
-        console.log('💌 Current pendingGrant state:', pendingGrant);
-        
-        // Only show grants from the last 10 minutes and if popup isn't already shown
-        if (timeDiff < 10 * 60 * 1000 && !showGrantResponse) {
-          console.log('💌 ✅ Showing grant popup to user');
-          setPendingGrant({
-            ...latestGrant,
-            winner_symbol: latestGrant.winner_symbol as CellValue,
-            status: latestGrant.status as 'pending' | 'acknowledged' | 'fulfilled'
-          });
-          setShowGrantResponse(true);
-        } else {
-          if (timeDiff >= 10 * 60 * 1000) {
-            console.log('💌 ❌ Grant too old, not showing popup');
-          }
-          if (showGrantResponse) {
-            console.log('💌 ❌ Popup already shown, not showing again');
-          }
-        }
-      } else {
-        console.log('💌 No pending grants found for this user');
-      }
-    } catch (error) {
-      console.error('💌 Error checking for pending grants:', error);
     }
   };
 
@@ -1459,12 +1223,6 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
 
   const isUserTurn = gameState.current_player_id === user?.id;
   const isGameOver = gameState.game_status !== 'playing';
-  
-  // Rematch gating: require Love Grant to be handled if there is a winner
-  const sessionGrant = loveGrants.find(g => g.game_session_id === sessionId && g.winner_user_id === gameState.winner_id);
-  const grantResolved = !!sessionGrant && (sessionGrant.status === 'acknowledged' || sessionGrant.status === 'fulfilled');
-  const grantRequired = isGameOver && !!gameState.winner_id; // not required on draw
-  const canRematch = !grantRequired || grantResolved;
 
   return (
     <div className="space-y-6">
@@ -1554,8 +1312,8 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
       {/* Game Board */}
       <Card className="border-pink-200 bg-gradient-to-br from-pink-50 to-purple-50 dark:from-pink-950/20 dark:to-purple-950/20 animate-fade-in">
         <CardHeader className="text-center">
-          <CardTitle className="text-4xl">
-            💕
+          <CardTitle className="text-2xl bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
+            TikTok Toe Heart Game 💕
           </CardTitle>
           
           {gameState.game_status === 'won' && gameState.winner_id === user?.id && (
@@ -1664,9 +1422,7 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
             <div className="flex gap-3 justify-center mt-6">
               <Button 
                 onClick={handleRematch}
-                disabled={!canRematch}
-                className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 animate-fade-in disabled:opacity-60 disabled:cursor-not-allowed"
-                title={!canRematch ? 'Finish the Love Grant first' : undefined}
+                className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 animate-fade-in"
               >
                 <RotateCcw className="w-4 h-4 mr-2" />
                 Rematch 💞

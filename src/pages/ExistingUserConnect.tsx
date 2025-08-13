@@ -132,7 +132,7 @@ const ExistingUserConnect = () => {
           <CardTitle className="text-2xl">
             {status === 'success' ? 'Connection Successful!' : 
              status === 'error' ? 'Connection Failed' :
-             'Love Story Connection Request'}
+             'Love Sync Connection Request'}
           </CardTitle>
             <CardDescription>
             {status === 'pending' && 'Ready to connect with your partner'}
@@ -156,7 +156,7 @@ const ExistingUserConnect = () => {
             <div className="space-y-4">
               <div className="bg-gradient-to-r from-pink-50 to-purple-50 border border-pink-200 p-4 rounded-lg">
                 <p className="text-sm text-pink-800 text-center">
-                  Someone wants to connect with you on Love Story! {!user ? 'You will be signed in automatically when you accept.' : 'Click below to accept the connection and start your journey together.'}
+                  Someone wants to connect with you on Love Sync! {!user ? 'You will be signed in automatically when you accept.' : 'Click below to accept the connection and start your journey together.'}
                 </p>
               </div>
               

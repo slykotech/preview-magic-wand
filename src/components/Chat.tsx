@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Smile, ArrowLeft, MoreVertical, Image, Video, Heart, Camera, Trash2, Settings, Download, RotateCcw, X, Shield, ShieldOff } from 'lucide-react';
+import { Send, Smile, ArrowLeft, MoreVertical, Image, Video, Heart, Camera, Trash2, Settings, Download, RotateCcw, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -9,7 +9,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { useCoupleData } from '@/hooks/useCoupleData';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
-import { useE2EEncryption } from '@/utils/encryption';
 interface Message {
   id: string;
   conversation_id: string;
@@ -19,7 +18,6 @@ interface Message {
   is_read: boolean;
   created_at: string;
   updated_at: string;
-  is_encrypted?: boolean;
 }
 interface MessageReaction {
   id: string;
@@ -65,8 +63,6 @@ export const Chat: React.FC<ChatProps> = ({
   const [showCamera, setShowCamera] = useState(false);
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
-  const [encryptionEnabled, setEncryptionEnabled] = useState(true);
-  const [decryptedMessages, setDecryptedMessages] = useState<Record<string, string>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -76,9 +72,6 @@ export const Chat: React.FC<ChatProps> = ({
   const reactionEmojis = ['❤️', '😍', '🥰', '😘', '💕', '💖'];
   const loveStickers = ['💕', '💖', '💗', '💓', '💘', '💝', '💞', '💟', '❣️', '💋', '🌹', '💐'];
   const actionStickers = ['🫶', '👫', '💏', '👪', '🥳', '🎉', '🎊', '🔥', '⭐', '✨', '💫', '🌟'];
-  
-  // Initialize encryption
-  const { isInitialized: encryptionReady, encryptMessage, decryptMessage } = useE2EEncryption(coupleData?.id);
   useEffect(() => {
     if (isOpen) {
       initializeChat();
@@ -121,25 +114,7 @@ export const Chat: React.FC<ChatProps> = ({
           setMessages(prev => {
             const exists = prev.some(msg => msg.id === newMessage.id);
             if (exists) return prev;
-            const updatedMessages = [...prev, newMessage];
-            
-            // Decrypt the new message if it's encrypted
-            if (newMessage.is_encrypted && newMessage.message_type === 'text' && encryptionReady) {
-              decryptMessage(newMessage.message_text).then(decrypted => {
-                setDecryptedMessages(prevDecrypted => ({
-                  ...prevDecrypted,
-                  [newMessage.id]: decrypted
-                }));
-              }).catch(error => {
-                console.error('Failed to decrypt incoming message:', error);
-                setDecryptedMessages(prevDecrypted => ({
-                  ...prevDecrypted,
-                  [newMessage.id]: '[Unable to decrypt]'
-                }));
-              });
-            }
-            
-            return updatedMessages;
+            return [...prev, newMessage];
           });
 
           // Mark message as read if it's from partner
@@ -295,11 +270,6 @@ export const Chat: React.FC<ChatProps> = ({
       
       const fetchedMessages = (messagesData || []) as Message[];
       setMessages(fetchedMessages);
-      
-      // Decrypt messages if encryption is enabled
-      if (encryptionReady && fetchedMessages.length > 0) {
-        decryptMessagesInBackground(fetchedMessages);
-      }
 
       // Load reactions for visible messages
       if (fetchedMessages.length > 0) {
@@ -356,52 +326,19 @@ export const Chat: React.FC<ChatProps> = ({
       } : msg));
     }
   };
-  const decryptMessagesInBackground = async (messages: Message[]) => {
-    const newDecrypted: Record<string, string> = {};
-    
-    for (const message of messages) {
-      if (message.is_encrypted && message.message_type === 'text') {
-        try {
-          const decrypted = await decryptMessage(message.message_text);
-          newDecrypted[message.id] = decrypted;
-        } catch (error) {
-          console.error('Failed to decrypt message:', message.id, error);
-          newDecrypted[message.id] = '[Unable to decrypt]';
-        }
-      }
-    }
-    
-    setDecryptedMessages(prev => ({ ...prev, ...newDecrypted }));
-  };
-
   const sendMessage = async (text: string, type: 'text' | 'emoji' | 'sticker' | 'image' | 'video' = 'text') => {
     if (!text.trim() || !conversation?.id || !user?.id) return;
     
-    // Encrypt the message if encryption is enabled and it's a text message
-    let messageToSend = text.trim();
-    let isEncrypted = false;
-    
-    if (encryptionEnabled && encryptionReady && type === 'text') {
-      try {
-        messageToSend = await encryptMessage(text.trim());
-        isEncrypted = true;
-      } catch (error) {
-        console.error('Encryption failed, sending plain text:', error);
-        toast.error('Encryption failed, message sent without encryption');
-      }
-    }
-
     // Create optimistic message for immediate UI update
     const optimisticMessage: Message = {
       id: `temp-${Date.now()}-${Math.random()}`,
       conversation_id: conversation.id,
       sender_id: user.id,
-      message_text: isEncrypted ? text.trim() : messageToSend, // Show plain text in UI for own messages
+      message_text: text.trim(),
       message_type: type,
       is_read: false,
       created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      is_encrypted: isEncrypted
+      updated_at: new Date().toISOString()
     };
     
     // Add optimistic message immediately
@@ -411,28 +348,18 @@ export const Chat: React.FC<ChatProps> = ({
       const { data, error } = await supabase.from('messages').insert({
         conversation_id: conversation.id,
         sender_id: user.id,
-        message_text: messageToSend,
+        message_text: text.trim(),
         message_type: type,
-        is_read: false,
-        is_encrypted: isEncrypted
+        is_read: false
       }).select().single();
       
       if (error) throw error;
       
       // Replace optimistic message with real message
       if (data) {
-        const realMessage = data as Message;
         setMessages(prev => prev.map(msg => 
-          msg.id === optimisticMessage.id ? realMessage : msg
+          msg.id === optimisticMessage.id ? data as Message : msg
         ));
-        
-        // Store decrypted version for own encrypted messages
-        if (isEncrypted) {
-          setDecryptedMessages(prev => ({ 
-            ...prev, 
-            [realMessage.id]: text.trim() 
-          }));
-        }
       }
 
       // Create a realtime notification for your partner
@@ -773,19 +700,7 @@ export const Chat: React.FC<ChatProps> = ({
         
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-base sm:text-lg truncate">{getPartnerDisplayName()}</h3>
-          <div className="flex items-center gap-1 text-xs opacity-75">
-            {encryptionEnabled && encryptionReady ? (
-              <>
-                <Shield className="h-3 w-3" />
-                <span>End-to-end encrypted</span>
-              </>
-            ) : (
-              <>
-                <ShieldOff className="h-3 w-3" />
-                <span>Not encrypted</span>
-              </>
-            )}
-          </div>
+          
         </div>
         
         <DropdownMenu>
@@ -795,23 +710,6 @@ export const Chat: React.FC<ChatProps> = ({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem 
-              onClick={() => setEncryptionEnabled(!encryptionEnabled)}
-              className={encryptionEnabled ? "text-green-600" : "text-orange-600"}
-            >
-              {encryptionEnabled ? (
-                <>
-                  <Shield className="h-4 w-4 mr-2" />
-                  Encryption On
-                </>
-              ) : (
-                <>
-                  <ShieldOff className="h-4 w-4 mr-2" />
-                  Encryption Off
-                </>
-              )}
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleExportChat}>
               <Download className="h-4 w-4 mr-2" />
               Export Chat
@@ -844,17 +742,7 @@ export const Chat: React.FC<ChatProps> = ({
                       {message.message_type === 'image' ? <img src={message.message_text} alt="Shared image" className="max-w-full h-auto rounded-lg cursor-pointer" onClick={() => window.open(message.message_text, '_blank')} /> : message.message_type === 'video' ? <video src={message.message_text} controls className="max-w-full h-auto rounded-lg" style={{
                 maxHeight: '300px'
               }} /> : <div className="text-sm leading-relaxed">
-                          <div className="flex items-start gap-2">
-                            <div className="flex-1">
-                              {message.is_encrypted && message.message_type === 'text' ? 
-                                decryptedMessages[message.id] || '🔓 Decrypting...' : 
-                                message.message_text
-                              }
-                            </div>
-                            {message.is_encrypted && (
-                              <Shield className="h-3 w-3 opacity-60 flex-shrink-0 mt-0.5" />
-                            )}
-                          </div>
+                          {message.message_text}
                         </div>}
                       
                       {message.message_type !== 'emoji' && message.message_type !== 'sticker' && <div className="mt-1.5 text-[10px] opacity-60 text-right">

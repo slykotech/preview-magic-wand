@@ -392,7 +392,7 @@ export const PartnerConnectionManagerV2 = () => {
               <h4 className="font-semibold text-amber-800 mb-2">📧 Email Connection Only</h4>
               <p className="text-sm text-amber-700">
                 For security, all partner connections must be verified through email. 
-                Look for an invitation from Love Story in your inbox (check spam folder too!).
+                Look for an invitation from Love Sync in your inbox (check spam folder too!).
               </p>
             </div>
           </CardContent>

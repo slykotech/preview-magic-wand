@@ -129,7 +129,7 @@ export const SubscriptionPartnerInvite: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-rose-50">
       <GradientHeader 
         title="Invite Your Partner"
-        subtitle="Share your Love Story premium access and start connecting"
+        subtitle="Share your Love Sync premium access and start connecting"
         icon="💕"
       />
       
@@ -236,7 +236,7 @@ export const SubscriptionPartnerInvite: React.FC = () => {
                       variant="outline" 
                       className="flex items-center justify-center"
                       onClick={() => {
-                        const message = `Hi! I'd love for you to join me on Love Story - an app that helps couples connect and grow together. Join me with this link: ${inviteLink}`;
+                        const message = `Hi! I'd love for you to join me on Love Sync - an app that helps couples connect and grow together. Join me with this link: ${inviteLink}`;
                         window.open(`sms:?body=${encodeURIComponent(message)}`);
                       }}
                     >
@@ -248,8 +248,8 @@ export const SubscriptionPartnerInvite: React.FC = () => {
                       variant="outline" 
                       className="flex items-center justify-center"
                       onClick={() => {
-                        const subject = 'Join me on Love Story!';
-                        const body = `Hi!\n\nI'd love for you to join me on Love Story - an app that helps couples connect and grow together.\n\nJoin me with this link: ${inviteLink}\n\nLooking forward to connecting with you!\n\n${customMessage}`;
+                        const subject = 'Join me on Love Sync!';
+                        const body = `Hi!\n\nI'd love for you to join me on Love Sync - an app that helps couples connect and grow together.\n\nJoin me with this link: ${inviteLink}\n\nLooking forward to connecting with you!\n\n${customMessage}`;
                         window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
                       }}
                     >
@@ -285,7 +285,7 @@ export const SubscriptionPartnerInvite: React.FC = () => {
                 <h2 className="text-2xl font-bold mb-4">Invitation Sent! 🎉</h2>
                 <p className="text-muted-foreground mb-6">
                   We've sent an invitation to <strong>{partnerEmail}</strong>. 
-                  They'll receive an email with instructions to join you on Love Story.
+                  They'll receive an email with instructions to join you on Love Sync.
                 </p>
                 
                 <div className="bg-blue-50 p-4 rounded-lg mb-6">
@@ -303,7 +303,7 @@ export const SubscriptionPartnerInvite: React.FC = () => {
                   onClick={handleContinueToDashboard}
                   className="px-8"
                 >
-                  Continue to Love Story
+                  Continue to Love Sync
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
                 
@@ -319,7 +319,7 @@ export const SubscriptionPartnerInvite: React.FC = () => {
             <CardContent className="p-6">
               <h3 className="font-semibold flex items-center mb-3">
                 <Heart className="w-5 h-5 mr-2 text-pink-500" />
-                Why Love Story is better together
+                Why Love Sync is better together
               </h3>
               <div className="grid md:grid-cols-2 gap-4 text-sm text-muted-foreground">
                 <ul className="space-y-2">

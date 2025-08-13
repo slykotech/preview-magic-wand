@@ -1,7 +1,7 @@
-# LoveStory Testing Guide
+# LoveSync Testing Guide
 
 ## Overview
-This guide covers testing configurations and procedures for LoveStory across different environments.
+This guide covers testing configurations and procedures for LoveSync across different environments.
 
 ## Testing Environments
 

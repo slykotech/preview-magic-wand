@@ -1,6 +1,6 @@
-# LoveStory Mobile App Setup
+# LoveSync Mobile App Setup
 
-This guide will help you run LoveStory as a native mobile app on iOS and Android devices.
+This guide will help you run LoveSync as a native mobile app on iOS and Android devices.
 
 ## Prerequisites
 

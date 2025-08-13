@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useCoupleData } from "@/hooks/useCoupleData";
 import { toast } from "sonner";
+import { DeckManager } from "@/utils/deckManager";
 
 interface GameState {
   id: string;
@@ -120,34 +121,27 @@ export function useCardGame(sessionId: string | null) {
         // Check if the session has any actual moves (cards drawn/played by partner)
         const playedCardsArray = Array.isArray(gameData.played_cards) ? gameData.played_cards : [];
         
-        // Improved connection detection: consider partner connected if:
-        // 1. Game session exists (both players can see it) OR
-        // 2. They have responded to cards OR
-        // 3. The game has progressed (total cards > 0) OR 
-        // 4. There are any played cards OR
-        // 5. The current turn is theirs (they've accessed the game) OR
-        // 6. Both players are defined in the session
+        // More strict detection: partner is connected only if they have made actual responses or moves
         const hasPartnerActivity = partnerActivity && partnerActivity.length > 0;
-        const hasGameProgression = gameData.total_cards_played > 0;
-        const hasPlayedCards = playedCardsArray.length > 0;
-        const isPartnerTurn = gameData.current_turn === partnerId;
-        const hasBothPlayers = gameData.user1_id && gameData.user2_id;
+        const hasActualGameProgress = playedCardsArray.length > 0 && gameData.total_cards_played > 0;
         
-        // Be more optimistic about partner connection - if session exists with both players, assume connected
-        const partnerConnected = !!(hasBothPlayers || hasPartnerActivity || hasGameProgression || hasPlayedCards || isPartnerTurn);
+        // Also check if current turn belongs to partner and there's been recent activity
+        const partnerHasTurn = gameData.current_turn === partnerId;
+        const hasRecentActivity = gameData.last_activity_at && 
+          new Date(gameData.last_activity_at) > new Date(gameData.started_at);
         
-        console.log('Partner connection check (improved):', {
+        // Partner is connected if they have responses OR if it's their turn with recent activity
+        const partnerConnected = hasPartnerActivity || (hasActualGameProgress && hasRecentActivity);
+        
+        console.log('Partner connection check:', {
           partnerId,
           hasPartnerActivity,
-          hasGameProgression,
-          hasPlayedCards,
-          isPartnerTurn,
-          hasBothPlayers,
+          hasActualGameProgress,
+          partnerHasTurn,
+          hasRecentActivity,
           partnerConnected,
           playedCardsCount: playedCardsArray.length,
-          totalCardsPlayed: gameData.total_cards_played,
-          currentTurn: gameData.current_turn,
-          partnerResponsesFound: partnerActivity?.length || 0
+          totalCardsPlayed: gameData.total_cards_played
         });
         
         setIsPartnerConnected(partnerConnected);
@@ -210,20 +204,19 @@ export function useCardGame(sessionId: string | null) {
           
           // Check if partner has now joined (game has progressed with actual activity)
           const newPlayedCardsArray = Array.isArray(newState.played_cards) ? newState.played_cards : [];
-          const hasRealProgress = newPlayedCardsArray.length > 0 || newState.total_cards_played > 0;
-          const isPartnerTurnNow = newState.current_turn !== user?.id;
-          const hasBothPlayers = newState.user1_id && newState.user2_id;
+          const hasRealProgress = newPlayedCardsArray.length > 0 && newState.total_cards_played > 0;
           
-          // Be optimistic about partner connection - if session exists with both players or any activity
-          if (hasBothPlayers || hasRealProgress || isPartnerTurnNow) {
-            console.log('Partner connection detected via game state update:', {
-              hasRealProgress,
-              isPartnerTurnNow,
-              hasBothPlayers,
-              totalCards: newState.total_cards_played,
-              playedCards: newPlayedCardsArray.length
-            });
-            setIsPartnerConnected(true);
+          // Also check for partner responses
+          if (hasRealProgress) {
+            const { data: responses } = await supabase
+              .from('card_responses')
+              .select('id')
+              .eq('session_id', sessionId)
+              .limit(1);
+            
+            if (responses && responses.length > 0) {
+              setIsPartnerConnected(true);
+            }
           }
           
           // Process state update
@@ -236,9 +229,8 @@ export function useCardGame(sessionId: string | null) {
           setGameState(processedState);
           setIsMyTurn(newState.current_turn === user.id);
           
-          // Sync card reveal state - both players should see revealed cards
+          // Sync card reveal state
           if (newState.current_card_revealed !== undefined) {
-            console.log('🎯 Syncing card reveal state:', newState.current_card_revealed);
             setCardRevealed(newState.current_card_revealed);
           }
           
@@ -280,7 +272,7 @@ export function useCardGame(sessionId: string | null) {
 
   // Reveal card function - syncs with database
   const revealCard = useCallback(async (): Promise<void> => {
-    if (!isMyTurn || !gameState || !currentCard || cardRevealed || !sessionId) {
+    if (!isMyTurn || !gameState || !currentCard || cardRevealed) {
       console.log('Cannot reveal card:', { isMyTurn, gameState: !!gameState, currentCard: !!currentCard, cardRevealed });
       return;
     }
@@ -288,10 +280,14 @@ export function useCardGame(sessionId: string | null) {
     console.log('Revealing card for both players...');
     
     try {
-      const { error } = await supabase.rpc('reveal_card', {
-        p_session_id: sessionId,
-        p_user_id: user.id
-      });
+      const { error } = await supabase
+        .from("card_deck_game_sessions")
+        .update({
+          current_card_revealed: true,
+          current_card_started_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", sessionId);
 
       if (error) throw error;
       
@@ -303,64 +299,27 @@ export function useCardGame(sessionId: string | null) {
     }
   }, [isMyTurn, gameState, currentCard, cardRevealed, sessionId]);
 
-  // Draw next card using RPC function
+  // Draw next card using simple random selection
   const drawCard = useCallback(async () => {
-    if (!isMyTurn || !gameState || !sessionId || !user) return;
+    if (!isMyTurn || !gameState || !sessionId) return;
 
     try {
       setLoading(true);
       
-      const { data, error } = await supabase.rpc('draw_card_for_session', {
-        p_session_id: sessionId,
-        p_user_id: user.id
-      });
+      const deckManager = new DeckManager();
+      const nextCard = await deckManager.drawNextCard(sessionId);
       
-      if (error) {
-        console.error("Failed to draw card:", error);
-        if (error.message.includes('No more cards available')) {
-          console.log('🏁 No more cards available, ending game');
-          await endGame('deck_empty');
-          return;
-        }
-        throw error;
-      }
-
-      if (!data) {
-        console.log('🏁 No card returned, ending game');
+      if (!nextCard) {
+        console.log('🏁 No more cards available, ending game');
         await endGame('deck_empty');
         return;
       }
 
-      const cardData = {
-        id: (data as any).card_id,
-        prompt: (data as any).prompt,
-        response_type: (data as any).response_type,
-        timer_seconds: (data as any).timer_seconds || 60,
-        category: '',
-        subcategory: '',
-        timer_category: '',
-        difficulty_level: 1,
-        intimacy_level: 1,
-        requires_action: false,
-        requires_physical_presence: false,
-        mood_tags: [],
-        relationship_stage: []
-      };
-
-      setCurrentCard(cardData);
+      setCurrentCard(nextCard);
       
-      // Auto-reveal the card for all players
-      setTimeout(async () => {
+      // Auto-reveal the card
+      setTimeout(() => {
         setCardRevealed(true);
-        // Also update the database so partner can see the revealed card
-        try {
-          await supabase.rpc('reveal_card', {
-            p_session_id: sessionId,
-            p_user_id: user.id
-          });
-        } catch (error) {
-          console.error('Failed to sync card reveal:', error);
-        }
       }, 100);
 
     } catch (error) {
@@ -369,9 +328,9 @@ export function useCardGame(sessionId: string | null) {
     } finally {
       setLoading(false);
     }
-  }, [gameState, isMyTurn, sessionId, user]);
+  }, [gameState, isMyTurn, sessionId]);
 
-  // Complete turn using RPC function
+  // Complete turn and switch to partner with enhanced logic
   const completeTurn = useCallback(async (response?: string | File, caption?: string, reactionTime?: number, timedOut: boolean = false) => {
     if (!gameState || !currentCard || !sessionId || !user) return;
 
@@ -383,44 +342,148 @@ export function useCardGame(sessionId: string | null) {
         hasResponse: !!response 
       });
 
-      // Prepare response for RPC call
-      let responseText = '';
-      let photoUrl = '';
-      
-      if (response instanceof File) {
-        // Handle file upload first
-        const fileName = `${sessionId}/${currentCard.id}/${Date.now()}.jpg`;
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('card-responses')
-          .upload(fileName, response);
-        
-        if (!uploadError && uploadData) {
-          photoUrl = fileName;
-        }
-      } else if (typeof response === 'string') {
-        responseText = response;
+      // Handle failed task if timed out or no response for required types
+      let isFailedTask = false;
+      if (timedOut) {
+        isFailedTask = true;
+        console.log('⚠️ Failed task detected: Timer expired');
+      } else if (!response && (currentCard.response_type === 'text' || currentCard.response_type === 'photo')) {
+        isFailedTask = true;
+        console.log('⚠️ Failed task detected: No response provided');
       }
 
-      // Use RPC to complete the turn
-      const { error: turnError } = await supabase.rpc('complete_card_turn', {
-        p_session_id: sessionId,
-        p_user_id: user.id,
-        p_response_text: responseText || null,
-        p_response_photo_url: photoUrl || null,
-        p_response_photo_caption: caption || null,
-        p_response_time_seconds: reactionTime || null,
-        p_timed_out: timedOut
+      // Save response if provided and not failed
+      if (response && !isFailedTask) {
+        let responseText = '';
+        let responseType = currentCard.response_type || 'action';
+        
+        if (response instanceof File) {
+          // Handle file upload
+          const fileName = `${sessionId}/${currentCard.id}/${Date.now()}.jpg`;
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('card-responses')
+            .upload(fileName, response);
+          
+          if (!uploadError && uploadData) {
+            responseText = fileName;
+            responseType = 'photo';
+          }
+        } else if (typeof response === 'string') {
+          responseText = response;
+          responseType = 'text';
+        } else {
+          responseText = 'Task completed';
+          responseType = 'action';
+        }
+
+        // Save response to database
+        await supabase
+          .from("card_responses")
+          .insert({
+            session_id: sessionId,
+            card_id: currentCard.id,
+            user_id: user.id,
+            response_text: responseText,
+            response_type: responseType,
+            time_taken_seconds: reactionTime || null,
+            completed_on_time: !timedOut
+          });
+
+        // Update game session with latest response for partner to see
+        const responseUpdateData: any = {
+          last_response_author_id: user.id,
+          last_response_timestamp: new Date().toISOString(),
+          last_response_seen: false
+        };
+
+        if (responseType === 'photo') {
+          // For photo responses, responseText should already be the public URL from photo upload
+          responseUpdateData.last_response_photo_url = responseText;
+          responseUpdateData.last_response_photo_caption = caption || '';
+          responseUpdateData.last_response_text = null; // Clear text response
+        } else {
+          responseUpdateData.last_response_text = responseText;
+          responseUpdateData.last_response_photo_url = null; // Clear photo response
+          responseUpdateData.last_response_photo_caption = null;
+        }
+
+        // Update the game session with response data
+        await supabase
+          .from("card_deck_game_sessions")
+          .update(responseUpdateData)
+          .eq("id", sessionId);
+      }
+
+      // Calculate new failed task counts
+      const isUser1 = user.id === gameState.user1_id;
+      const newUser1FailedTasks = isUser1 && isFailedTask ? 
+        gameState.user1_failed_tasks + 1 : gameState.user1_failed_tasks;
+      const newUser2FailedTasks = !isUser1 && isFailedTask ? 
+        gameState.user2_failed_tasks + 1 : gameState.user2_failed_tasks;
+
+      console.log('📊 Failed tasks update:', {
+        before: { user1: gameState.user1_failed_tasks, user2: gameState.user2_failed_tasks },
+        after: { user1: newUser1FailedTasks, user2: newUser2FailedTasks },
+        isFailedTask,
+        isUser1
       });
 
-      if (turnError) {
-        console.error('Failed to complete turn:', turnError);
-        throw turnError;
+      // Check for game over due to failed tasks (3 strikes rule)
+      const maxFailedTasks = gameState.max_failed_tasks || 3;
+      if (newUser1FailedTasks >= maxFailedTasks || newUser2FailedTasks >= maxFailedTasks) {
+        const winnerId = newUser1FailedTasks >= maxFailedTasks ? gameState.user2_id : gameState.user1_id;
+        const winReason = timedOut ? 'opponent_timeout_failure' : 'opponent_failed_tasks';
+        
+        await supabase
+          .from("card_deck_game_sessions")
+          .update({
+            status: 'completed',
+            completed_at: new Date().toISOString(),
+            winner_id: winnerId,
+            win_reason: winReason,
+            user1_failed_tasks: newUser1FailedTasks,
+            user2_failed_tasks: newUser2FailedTasks,
+            last_activity_at: new Date().toISOString()
+          })
+          .eq("id", sessionId);
+          
+        const isWinner = winnerId === user.id;
+        const failureReason = timedOut ? 'timed out' : 'failed too many tasks';
+        
+        toast.success(isWinner ? 
+          `🎉 You win! Your partner ${failureReason}!` : 
+          `💔 Game Over! You ${failureReason}. Partner wins!`
+        );
+        return;
       }
+
+      // Draw next card for partner
+      const deckManager = new DeckManager();
+      const nextCard = await deckManager.drawNextCard(sessionId);
       
-      // The RPC function handles all the turn completion logic
-      console.log('Turn completed successfully via RPC');
-      
-      if (timedOut) {
+      // Switch turns
+      const nextTurn = gameState.current_turn === gameState.user1_id 
+        ? gameState.user2_id 
+        : gameState.user1_id;
+
+      // Update game state
+      await supabase
+        .from("card_deck_game_sessions")
+        .update({
+          current_turn: nextCard ? nextTurn : gameState.current_turn,
+          current_card_id: nextCard?.id || null,
+          current_card_revealed: false,
+          user1_failed_tasks: newUser1FailedTasks,
+          user2_failed_tasks: newUser2FailedTasks,
+          total_cards_played: gameState.total_cards_played + 1,
+          last_activity_at: new Date().toISOString(),
+          status: nextCard ? 'active' : 'completed'
+        })
+        .eq("id", sessionId);
+
+      if (!nextCard) {
+        toast.success("🎉 Game completed! No more cards available!");
+      } else if (isFailedTask) {
         toast.error("⏰ Task failed! Turn switched to partner");
       } else {
         toast.success("✅ Turn completed! 💕");
@@ -432,37 +495,93 @@ export function useCardGame(sessionId: string | null) {
     }
   }, [gameState, currentCard, sessionId, user]);
 
+  // Enhanced skip card function with proper game logic
   const skipCard = useCallback(async () => {
-    if (!isMyTurn || !gameState || !sessionId || !user) return;
+    if (!isMyTurn || !gameState || !currentCard || !sessionId || !user) return;
 
     try {
-      const { data, error } = await supabase.rpc('skip_card_turn', {
-        p_session_id: sessionId,
-        p_user_id: user.id
-      });
+      console.log('🔄 Processing skip for user:', user.id);
       
-      if (error) {
-        console.error("Failed to skip card:", error);
-        toast.error("Failed to skip card");
+      // Determine which user's skips to reduce
+      const isUser1 = user.id === gameState.user1_id;
+      const currentUserSkips = isUser1 ? gameState.user1_skips_remaining : gameState.user2_skips_remaining;
+      
+      if (currentUserSkips <= 0) {
+        toast.error("No skips remaining!");
         return;
       }
 
-      if (data) {
-        const skipsRemaining = (data as any).skips_remaining || 0;
-        if (skipsRemaining <= 0) {
-          toast.warning("⚠️ No skips remaining!");
-        } else if (skipsRemaining === 1) {
-          toast.warning("⚠️ Last skip used!");
-        } else {
-          toast.info(`⏭️ Card skipped. ${skipsRemaining} skips remaining`);
-        }
+      // Calculate new skip counts
+      const newUser1Skips = isUser1 ? currentUserSkips - 1 : gameState.user1_skips_remaining;
+      const newUser2Skips = !isUser1 ? currentUserSkips - 1 : gameState.user2_skips_remaining;
+      
+      console.log('📊 Skip counts:', { 
+        before: { user1: gameState.user1_skips_remaining, user2: gameState.user2_skips_remaining },
+        after: { user1: newUser1Skips, user2: newUser2Skips }
+      });
+
+      // Check if user runs out of skips (game over condition)
+      const userRunsOutOfSkips = (isUser1 ? newUser1Skips : newUser2Skips) <= 0;
+      
+      if (userRunsOutOfSkips) {
+        // Opponent wins when current user runs out of skips
+        const winnerId = isUser1 ? gameState.user2_id : gameState.user1_id;
+        
+        await supabase
+          .from("card_deck_game_sessions")
+          .update({
+            status: 'completed',
+            completed_at: new Date().toISOString(),
+            winner_id: winnerId,
+            win_reason: 'opponent_no_skips',
+            user1_skips_remaining: newUser1Skips,
+            user2_skips_remaining: newUser2Skips,
+            last_activity_at: new Date().toISOString()
+          })
+          .eq("id", sessionId);
+          
+        const isWinner = winnerId === user.id;
+        toast.success(isWinner ? 
+          "🎉 You win! Your partner ran out of skips!" : 
+          "💔 Game Over! You ran out of skips. Partner wins!"
+        );
+        return;
+      }
+
+      // Add current card to skipped cards
+      const deckManager = new DeckManager();
+      await deckManager.skipCard(sessionId);
+      
+      // Draw next card for partner
+      const nextCard = await deckManager.drawNextCard(sessionId);
+      
+      // Switch turns and update skip counts
+      const nextTurn = gameState.current_turn === gameState.user1_id 
+        ? gameState.user2_id 
+        : gameState.user1_id;
+
+      await supabase
+        .from("card_deck_game_sessions")
+        .update({
+          current_turn: nextCard ? nextTurn : gameState.current_turn,
+          current_card_id: nextCard?.id || null,
+          current_card_revealed: false,
+          user1_skips_remaining: newUser1Skips,
+          user2_skips_remaining: newUser2Skips,
+          last_activity_at: new Date().toISOString(),
+          status: nextCard ? 'active' : 'completed'
+        })
+        .eq("id", sessionId);
+
+      if (!nextCard) {
+        toast.success("🎉 Game completed! No more cards available!");
       }
       
     } catch (error) {
       console.error("Failed to skip card:", error);
       toast.error("Failed to skip card");
     }
-  }, [gameState, isMyTurn, sessionId, user]);
+  }, [isMyTurn, gameState, currentCard, sessionId, user]);
 
   // End game
   const endGame = useCallback(async (reason?: string) => {

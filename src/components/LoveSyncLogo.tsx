@@ -1,11 +1,11 @@
 import { Heart } from "lucide-react";
 
-interface LoveStoryLogoProps {
+interface LoveSyncLogoProps {
   size?: "sm" | "md" | "lg";
   animated?: boolean;
 }
 
-export const LoveStoryLogo = ({ size = "md", animated = true }: LoveStoryLogoProps) => {
+export const LoveSyncLogo = ({ size = "md", animated = true }: LoveSyncLogoProps) => {
   const sizeClasses = {
     sm: "w-8 h-8",
     md: "w-12 h-12", 

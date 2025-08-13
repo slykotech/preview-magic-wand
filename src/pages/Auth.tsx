@@ -158,7 +158,7 @@ export const Auth = () => {
             <Heart size={32} className="text-white sm:w-10 sm:h-10" />
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
-            Love Story
+            Love Sync
           </h1>
           <p className="text-sm sm:text-base text-white/80 font-semibold px-2">
             Sign in to your account
@@ -320,7 +320,7 @@ export const Auth = () => {
                   <span className="w-full border-t" />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">New to Love Story?</span>
+                  <span className="bg-background px-2 text-muted-foreground">New to Love Sync?</span>
                 </div>
               </div>
               

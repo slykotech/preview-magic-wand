@@ -261,7 +261,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Successfully connected with ${senderProfile.display_name}! Welcome to your Love Story journey together. 💕`,
+        message: `Successfully connected with ${senderProfile.display_name}! Welcome to your Love Sync journey together. 💕`,
         coupleId: newCouple.id,
         partnerName: senderProfile.display_name
       }),

@@ -107,7 +107,7 @@ export const SyncScoreCircle = ({
       {showLabel && (
         <div className="text-center">
           <span className={`${config.subtext} font-inter text-muted-foreground block`}>
-            Love Story Score
+            Love Sync Score
           </span>
           <span className={`${config.subtext} font-inter text-muted-foreground/80`}>
             {getHealthStatus(displayScore)}

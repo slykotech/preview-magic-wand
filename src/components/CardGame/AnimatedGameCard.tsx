@@ -362,7 +362,7 @@ export const AnimatedGameCard: React.FC<AnimatedGameCardProps> = ({
                 WebkitBackfaceVisibility: 'hidden'
               }}
             >
-              {/* Love Story Themed Illustration */}
+              {/* Love Sync Themed Illustration */}
               <svg className="absolute top-0 left-0 w-full h-full" viewBox="0 0 200 280">
                 <defs>
                   <linearGradient id="heartGradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -392,7 +392,7 @@ export const AnimatedGameCard: React.FC<AnimatedGameCardProps> = ({
                   <path d="M70,180 Q100,170 130,180" />
                 </g>
                 
-                {/* Central love story symbol */}
+                {/* Central love sync symbol */}
                 <g transform="translate(100, 140)">
                   {/* Outer circle */}
                   <circle cx="0" cy="0" r="25" fill="none" stroke="hsl(var(--primary))" strokeWidth="3" opacity="0.6" />

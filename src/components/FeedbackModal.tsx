@@ -90,12 +90,12 @@ export const FeedbackModal = ({ isOpen, onClose, initialType = 'feedback' }: Fee
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Heart className="text-primary" size={20} />
-            {initialType === 'rating' ? 'Rate LoveStory' : 'Send Feedback'}
+            {initialType === 'rating' ? 'Rate LoveSync' : 'Send Feedback'}
           </DialogTitle>
           <DialogDescription>
             {initialType === 'rating' 
-              ? 'How would you rate your experience with LoveStory?'
-              : 'Help us improve LoveStory with your feedback'
+              ? 'How would you rate your experience with LoveSync?'
+              : 'Help us improve LoveSync with your feedback'
             }
           </DialogDescription>
         </DialogHeader>
@@ -171,7 +171,7 @@ export const FeedbackModal = ({ isOpen, onClose, initialType = 'feedback' }: Fee
                   {rating === 2 && "We'd love to know how we can do better."}
                   {rating === 3 && "Thanks for the feedback! How can we make it better?"}
                   {rating === 4 && "Great! What would make it a 5-star experience?"}
-                  {rating === 5 && "Wonderful! We're so happy you love LoveStory! ❤️"}
+                  {rating === 5 && "Wonderful! We're so happy you love LoveSync! ❤️"}
                 </p>
               )}
             </div>

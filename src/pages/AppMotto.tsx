@@ -24,7 +24,7 @@ const AppMottoPage = ({ onNext, onBack }: AppMottoProps) => {
       icon: <Heart size={48} className="text-primary" />,
       title: "Love, Amplified",
       subtitle: "Where technology meets the heart",
-      description: "LoveStory uses AI to understand your unique relationship dynamics and help you create deeper, more meaningful connections.",
+      description: "LoveSync uses AI to understand your unique relationship dynamics and help you create deeper, more meaningful connections.",
       feature: "AI-powered relationship insights"
     },
     {

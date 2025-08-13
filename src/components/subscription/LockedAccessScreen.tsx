@@ -12,7 +12,7 @@ interface LockedAccessScreenProps {
 
 export const LockedAccessScreen: React.FC<LockedAccessScreenProps> = ({
   title = "Premium Access Required",
-  description = "Start your free trial to access all premium features and continue your Love Story journey.",
+  description = "Start your free trial to access all premium features and continue your Love Sync journey.",
   showFreeTrial = true
 }) => {
   const navigate = useNavigate();

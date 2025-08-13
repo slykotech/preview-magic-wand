@@ -101,7 +101,7 @@ export const SyncScoreBreakdown: React.FC<SyncScoreBreakdownProps> = ({
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-foreground">
             <TrendingUp className="w-5 h-5 text-primary" />
-            Love Story Score Breakdown
+            Love Sync Score Breakdown
           </CardTitle>
           {onClose && (
             <Button

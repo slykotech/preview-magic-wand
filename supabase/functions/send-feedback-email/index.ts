@@ -98,7 +98,7 @@ const handler = async (req: Request): Promise<Response> => {
     const emailHtml = `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 24px; text-align: center; border-radius: 8px 8px 0 0;">
-          <h1 style="color: white; margin: 0; font-size: 24px;">💕 LoveStory Feedback</h1>
+          <h1 style="color: white; margin: 0; font-size: 24px;">💕 LoveSync Feedback</h1>
         </div>
         
         <div style="background: white; padding: 24px; border-radius: 0 0 8px 8px; border: 1px solid #e2e8f0;">
@@ -131,13 +131,13 @@ const handler = async (req: Request): Promise<Response> => {
       </div>
     `;
 
-    const adminEmail = Deno.env.get('ADMIN_EMAIL') || 'support@lovestory.app';
+    const adminEmail = Deno.env.get('ADMIN_EMAIL') || 'support@lovesync.app';
 
     const emailResponse = await resend.emails.send({
-      from: "LoveStory <noreply@lovestory.app>",
+      from: "LoveSync <noreply@lovesync.app>",
       to: [adminEmail],
       replyTo: userEmail,
-      subject: `[LoveStory] ${subject}`,
+      subject: `[LoveSync] ${subject}`,
       html: emailHtml,
     });
 
