@@ -195,6 +195,14 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
                 setIsPartnerConnected(true);
               }
               
+              // Check for game end and pending grants in polling
+              if (newState.game_status !== 'playing' && 
+                  newState.winner_id && 
+                  newState.winner_id !== user?.id) {
+                // For the loser, check for pending grants
+                setTimeout(() => checkForPendingGrants(), 2000);
+              }
+              
               console.log('🔄 Updated via polling fallback');
             }
         }
@@ -297,6 +305,11 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
               setShowCelebration(true);
               if (newGameState.winner_id === user?.id) {
                 setTimeout(() => setShowLoveGrant(true), 2000);
+              } else if (newGameState.winner_id && newGameState.winner_id !== user?.id) {
+                // For the loser, check for pending grants after a delay
+                setTimeout(async () => {
+                  await checkForPendingGrants();
+                }, 3000);
               }
             }
 
@@ -346,10 +359,21 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
           console.log('💌 New love grant created:', payload);
           const newGrant = payload.new as any;
           
+          console.log('💌 Checking if grant is for current user:', {
+            newGrantWinnerId: newGrant.winner_user_id,
+            currentUserId: user?.id,
+            isForCurrentUser: newGrant.winner_user_id !== user?.id,
+            grantStatus: newGrant.status
+          });
+          
           // Check if this grant is for the current user to respond to (not the winner)
           if (newGrant.winner_user_id !== user?.id && newGrant.status === 'pending') {
             console.log('💌 Showing new love grant popup to recipient:', newGrant);
-            setPendingGrant(newGrant);
+            setPendingGrant({
+              ...newGrant,
+              winner_symbol: newGrant.winner_symbol as CellValue,
+              status: newGrant.status as 'pending' | 'acknowledged' | 'fulfilled'
+            });
             setShowGrantResponse(true);
           }
           
@@ -1093,6 +1117,49 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
     } catch (error) {
       console.error('❌ Error responding to grant:', error);
       toast.error('Failed to respond to Love Grant');
+    }
+  };
+
+  const checkForPendingGrants = async () => {
+    if (!coupleData?.id || !user?.id) return;
+
+    try {
+      console.log('💌 Checking for pending grants...');
+      const { data: pendingGrants, error } = await supabase
+        .from('love_grants')
+        .select('*')
+        .eq('couple_id', coupleData.id)
+        .eq('status', 'pending')
+        .neq('winner_user_id', user.id) // Grants NOT created by current user
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (error) {
+        console.error('💌 Error fetching pending grants:', error);
+        return;
+      }
+
+      if (pendingGrants && pendingGrants.length > 0) {
+        const latestGrant = pendingGrants[0];
+        console.log('💌 Found pending grant for loser:', latestGrant);
+        
+        // Check if this grant is from the recent game
+        const grantTime = new Date(latestGrant.created_at).getTime();
+        const now = new Date().getTime();
+        const timeDiff = now - grantTime;
+        
+        // Only show grants from the last 5 minutes
+        if (timeDiff < 5 * 60 * 1000) {
+          setPendingGrant({
+            ...latestGrant,
+            winner_symbol: latestGrant.winner_symbol as CellValue,
+            status: latestGrant.status as 'pending' | 'acknowledged' | 'fulfilled'
+          });
+          setShowGrantResponse(true);
+        }
+      }
+    } catch (error) {
+      console.error('💌 Error checking for pending grants:', error);
     }
   };
 
