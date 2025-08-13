@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -109,6 +109,7 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
   const [moveHistory, setMoveHistory] = useState<GameMove[]>([]);
   const [isProcessingMove, setIsProcessingMove] = useState(false);
   const [isPartnerConnected, setIsPartnerConnected] = useState(false);
+  const loveGrantsChannelRef = useRef<any>(null);
 
   // Determine partner ID
   const partnerId = coupleData?.user1_id === user?.id ? coupleData?.user2_id : coupleData?.user1_id;
@@ -193,14 +194,6 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
               // Check if partner has now joined (game has moves or is actively being played)
               if (newState.moves_count > 0 || newState.game_status === 'playing') {
                 setIsPartnerConnected(true);
-              }
-              
-              // Check for game end and pending grants in polling
-              if (newState.game_status !== 'playing' && 
-                  newState.winner_id && 
-                  newState.winner_id !== user?.id) {
-                // For the loser, check for pending grants
-                setTimeout(() => checkForPendingGrants(), 2000);
               }
               
               console.log('🔄 Updated via polling fallback');
@@ -305,14 +298,9 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
               setShowCelebration(true);
               if (newGameState.winner_id === user?.id) {
                 setTimeout(() => setShowLoveGrant(true), 2000);
-              } else if (newGameState.winner_id && newGameState.winner_id !== user?.id) {
-                // For the loser, check for pending grants after a delay
-                setTimeout(async () => {
-                  await checkForPendingGrants();
-                }, 3000);
               }
             }
-
+ 
             console.log('🎮 State updated successfully at:', new Date().toISOString());
           }
         }
@@ -384,6 +372,24 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
             status: newGrant.status as 'pending' | 'acknowledged' | 'fulfilled'
           }, ...prev]);
         })
+      .on('broadcast', { event: 'love_grant_created' }, (payload) => {
+        console.log('💌 Broadcast received for love grant:', payload);
+        const newGrant = (payload as any).payload;
+        if (newGrant && newGrant.winner_user_id !== user?.id) {
+          setPendingGrant({
+            ...newGrant,
+            winner_symbol: newGrant.winner_symbol as CellValue,
+            status: newGrant.status as 'pending' | 'acknowledged' | 'fulfilled'
+          });
+          setShowGrantResponse(true);
+          // Add to local list for immediate visibility
+          setLoveGrants(prev => [{
+            ...newGrant,
+            winner_symbol: newGrant.winner_symbol as CellValue,
+            status: newGrant.status as 'pending' | 'acknowledged' | 'fulfilled'
+          }, ...prev]);
+        }
+      })
       .on(
         'postgres_changes',
         {
@@ -428,6 +434,9 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
       .subscribe((status) => {
         console.log('💌 Love grants subscription status:', status);
       });
+
+      // keep a reference for broadcasting from winner side
+      loveGrantsChannelRef.current = loveGrantsChannel;
 
     return () => {
       console.log('💌 Cleaning up love grants subscription');
@@ -776,18 +785,6 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
       
       setLoveGrants(formattedGrants);
       
-      // Check for pending grants that should show popup to current user
-      const pendingForCurrentUser = formattedGrants.find(grant => 
-        grant.status === 'pending' && 
-        grant.winner_user_id !== user?.id && 
-        !grant.partner_response
-      );
-      
-      if (pendingForCurrentUser) {
-        console.log('💌 Found pending grant for current user on load:', pendingForCurrentUser);
-        setPendingGrant(pendingForCurrentUser);
-        setShowGrantResponse(true);
-      }
     } catch (error) {
       console.error('❌ Error loading love grants:', error);
     }
@@ -819,6 +816,17 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
         winner_symbol: data.winner_symbol as CellValue,
         status: data.status as 'pending' | 'acknowledged' | 'fulfilled'
       }, ...prev]);
+
+      // Broadcast instantly so partner sees the popup without relying on DB realtime lag
+      try {
+        await loveGrantsChannelRef.current?.send({
+          type: 'broadcast',
+          event: 'love_grant_created',
+          payload: data,
+        });
+      } catch (e) {
+        console.warn('💌 Broadcast send failed:', e);
+      }
       
       toast.success('💌 Love Grant sent to your partner!');
     } catch (error) {
