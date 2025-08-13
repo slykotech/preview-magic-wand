@@ -3353,7 +3353,7 @@ export type Database = {
           p_response_time_seconds?: number
           p_timed_out?: boolean
         }
-        Returns: Json
+        Returns: undefined
       }
       create_notification: {
         Args: {
@@ -4066,7 +4066,7 @@ export type Database = {
       }
       reveal_card: {
         Args: { p_session_id: string; p_user_id: string }
-        Returns: Json
+        Returns: undefined
       }
       search_events_by_location: {
         Args: {
