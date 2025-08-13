@@ -20,60 +20,31 @@ interface CardData {
 export class DeckManager {
   async drawNextCard(sessionId: string): Promise<CardData | null> {
     try {
-      // Get current game session
-      const { data: session, error: sessionError } = await supabase
-        .from('card_deck_game_sessions')
-        .select('played_cards, skipped_cards')
-        .eq('id', sessionId)
+      // Get next unplayed card from shuffled deck
+      const { data: nextCardData, error: cardsError } = await supabase
+        .from('game_decks')
+        .select(`
+          card_id,
+          deck_cards(*)
+        `)
+        .eq('session_id', sessionId)
+        .eq('is_played', false)
+        .eq('skipped', false)
+        .order('position', { ascending: true })
+        .limit(1)
         .single();
 
-      if (sessionError || !session) {
-        console.error('Failed to fetch session:', sessionError);
-        return null;
-      }
-
-      // Get used card IDs
-      const playedCards = Array.isArray(session.played_cards) ? session.played_cards : [];
-      const skippedCards = Array.isArray(session.skipped_cards) ? session.skipped_cards : [];
-      const usedCardIds = [...playedCards, ...skippedCards];
-
-      // Fetch available cards (excluding used ones)
-      const { data: availableCards, error: cardsError } = await supabase
-        .from('deck_cards')
-        .select('*')
-        .eq('is_active', true)
-        .not('id', 'in', usedCardIds.length > 0 ? `(${usedCardIds.map(id => `"${id}"`).join(',')})` : '("")');
-
       if (cardsError) {
-        console.error('Failed to fetch cards:', cardsError);
+        console.error('Failed to draw card from deck:', cardsError);
         return null;
       }
 
-      if (!availableCards || availableCards.length === 0) {
-        console.log('No more cards available');
+      if (!nextCardData || !nextCardData.deck_cards) {
+        console.log('No more cards available in shuffled deck');
         return null;
       }
 
-      // Select random card
-      const randomIndex = Math.floor(Math.random() * availableCards.length);
-      const selectedCard = availableCards[randomIndex];
-
-      // Update session with new card
-      const updatedPlayedCards = [...playedCards, selectedCard.id];
-      
-      const { error: updateError } = await supabase
-        .from('card_deck_game_sessions')
-        .update({
-          current_card_id: selectedCard.id,
-          played_cards: updatedPlayedCards,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', sessionId);
-
-      if (updateError) {
-        console.error('Failed to update session with new card:', updateError);
-        return null;
-      }
+      const selectedCard = nextCardData.deck_cards;
 
       // Update card usage count
       await supabase
@@ -81,14 +52,55 @@ export class DeckManager {
         .update({
           usage_count: (selectedCard.usage_count || 0) + 1
         })
-        .eq('id', selectedCard.id);
+        .eq('id', selectedCard.card_id);
 
-      console.log('✅ Card drawn successfully:', selectedCard.prompt.substring(0, 50) + '...');
-      return selectedCard as CardData;
+      console.log('✅ Card drawn successfully from shuffled deck:', selectedCard.prompt.substring(0, 50) + '...');
+      
+      return {
+        id: selectedCard.card_id,
+        category: selectedCard.category,
+        subcategory: selectedCard.subcategory,
+        prompt: selectedCard.prompt,
+        timer_seconds: selectedCard.timer_seconds,
+        timer_category: selectedCard.timer_category,
+        difficulty_level: selectedCard.difficulty_level,
+        intimacy_level: selectedCard.intimacy_level,
+        requires_action: selectedCard.requires_action,
+        requires_physical_presence: selectedCard.requires_physical_presence,
+        mood_tags: selectedCard.mood_tags,
+        relationship_stage: selectedCard.relationship_stage,
+        usage_count: selectedCard.usage_count,
+        response_type: selectedCard.response_type
+      } as CardData;
 
     } catch (error) {
       console.error('Error in drawNextCard:', error);
       return null;
+    }
+  }
+
+  async createShuffledDeck(sessionId: string, deckSize: number = 60): Promise<boolean> {
+    try {
+      console.log('🎯 Creating shuffled deck with smart distribution:', { sessionId, deckSize });
+      
+      // Use database function for smart deck creation with 34/33/33 distribution
+      const { error } = await supabase
+        .rpc('create_shuffled_deck', {
+          p_session_id: sessionId,
+          p_deck_size: deckSize
+        });
+
+      if (error) {
+        console.error('Failed to create shuffled deck:', error);
+        return false;
+      }
+
+      console.log('✅ Shuffled deck created successfully with smart distribution');
+      return true;
+
+    } catch (error) {
+      console.error('Error in createShuffledDeck:', error);
+      return false;
     }
   }
 
@@ -97,7 +109,7 @@ export class DeckManager {
       // Get current session
       const { data: session, error: sessionError } = await supabase
         .from('card_deck_game_sessions')
-        .select('current_card_id, skipped_cards')
+        .select('current_card_id')
         .eq('id', sessionId)
         .single();
 
@@ -106,24 +118,22 @@ export class DeckManager {
         return false;
       }
 
-      // Add current card to skipped cards
-      const skippedCards = Array.isArray(session.skipped_cards) ? session.skipped_cards : [];
-      const updatedSkippedCards = [...skippedCards, session.current_card_id];
-
+      // Mark card as skipped in game_decks table
       const { error: updateError } = await supabase
-        .from('card_deck_game_sessions')
+        .from('game_decks')
         .update({
-          skipped_cards: updatedSkippedCards,
-          updated_at: new Date().toISOString()
+          skipped: true,
+          played_at: new Date().toISOString()
         })
-        .eq('id', sessionId);
+        .eq('session_id', sessionId)
+        .eq('card_id', session.current_card_id);
 
       if (updateError) {
-        console.error('Failed to update skipped cards:', updateError);
+        console.error('Failed to mark card as skipped:', updateError);
         return false;
       }
 
-      console.log('✅ Card skipped successfully');
+      console.log('✅ Card skipped successfully in shuffled deck');
       return true;
 
     } catch (error) {
@@ -136,7 +146,7 @@ export class DeckManager {
     try {
       const { data: session, error } = await supabase
         .from('card_deck_game_sessions')
-        .select('played_cards, skipped_cards, total_cards_played')
+        .select('total_cards_played, deck_size')
         .eq('id', sessionId)
         .single();
 
@@ -148,22 +158,29 @@ export class DeckManager {
         };
       }
 
-      const playedCards = Array.isArray(session.played_cards) ? session.played_cards : [];
-      const skippedCards = Array.isArray(session.skipped_cards) ? session.skipped_cards : [];
-      
-      // Get total available cards
-      const { data: totalCards } = await supabase
-        .from('deck_cards')
-        .select('id')
-        .eq('is_active', true);
+      // Get deck statistics from game_decks table
+      const { data: deckStats } = await supabase
+        .from('game_decks')
+        .select('is_played, skipped')
+        .eq('session_id', sessionId);
 
-      const totalAvailable = totalCards?.length || 0;
-      const usedCards = playedCards.length + skippedCards.length;
+      if (!deckStats) {
+        return {
+          totalCardsPlayed: session.total_cards_played || 0,
+          cardsSkipped: 0,
+          cardsRemaining: session.deck_size || 60
+        };
+      }
+
+      const playedCards = deckStats.filter(card => card.is_played).length;
+      const skippedCards = deckStats.filter(card => card.skipped).length;
+      const totalDeckSize = session.deck_size || 60;
+      const usedCards = playedCards + skippedCards;
       
       return {
         totalCardsPlayed: session.total_cards_played || 0,
-        cardsSkipped: skippedCards.length,
-        cardsRemaining: Math.max(0, totalAvailable - usedCards)
+        cardsSkipped: skippedCards,
+        cardsRemaining: Math.max(0, totalDeckSize - usedCards)
       };
 
     } catch (error) {
