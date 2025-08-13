@@ -542,6 +542,15 @@ export const AnimatedGameCard: React.FC<AnimatedGameCardProps> = ({
                   >
                     Submit & End Turn
                   </Button>
+                ) : card.response_type === 'photo' ? (
+                  <Button
+                    onClick={() => handleComplete(false)}
+                    disabled={!hasPhotoSelected}
+                    className="flex-1 h-12 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
+                    size="lg"
+                  >
+                    Submit Photo & End Turn
+                  </Button>
                 ) : card.response_type === 'action' ? (
                   <Button
                     onClick={() => handleComplete(false)}
@@ -556,7 +565,11 @@ export const AnimatedGameCard: React.FC<AnimatedGameCardProps> = ({
                   <Button
                     variant="destructive"
                     className="flex-1 h-12 font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
-                    onClick={onSkip}
+                    onClick={() => {
+                      console.log('🔄 Skip button clicked');
+                      onSkip();
+                    }}
+                    disabled={false}
                   >
                     Skip ({skipsRemaining})
                   </Button>
