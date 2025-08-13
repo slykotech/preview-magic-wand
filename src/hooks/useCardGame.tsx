@@ -234,25 +234,42 @@ export function useCardGame(sessionId: string | null) {
 
   // End game function - define before drawCard
   const endGame = useCallback(async (reason?: string) => {
-    if (!sessionId) return;
+    if (!sessionId) {
+      console.log('❌ EndGame: No session ID');
+      return;
+    }
+
+    if (!user?.id) {
+      console.log('❌ EndGame: No user ID');
+      return;
+    }
 
     try {
-      await supabase
+      console.log('🏁 Ending game...', { sessionId, reason, userId: user.id });
+      
+      const { data, error } = await supabase
         .from("card_deck_game_sessions")
         .update({
           status: 'completed',
           completed_at: new Date().toISOString(),
           win_reason: reason || 'manual_end'
         })
-        .eq("id", sessionId);
+        .eq("id", sessionId)
+        .select(); // Add select to see what was updated
 
+      if (error) {
+        console.error('❌ EndGame database error:', error);
+        throw error;
+      }
+
+      console.log('✅ Game ended successfully:', data);
       toast.success("Game completed! Thanks for playing 💕");
 
     } catch (error) {
-      console.error("Failed to end game:", error);
-      toast.error("Failed to end game");
+      console.error("❌ Failed to end game:", error);
+      toast.error("Failed to end game. Please try again.");
     }
-  }, [sessionId]);
+  }, [sessionId, user?.id]);
 
   // Draw next card using RPC function - fully RPC-based now
   const drawCard = useCallback(async () => {
