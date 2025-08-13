@@ -1139,8 +1139,32 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
     );
   }
 
-  // Show waiting screen if partner hasn't connected
-  if (!isPartnerConnected && connectionStatus.status !== 'connected') {
+  // Show loading while initializing
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <CardTitle className="flex items-center justify-center gap-2">
+              <Heart className="w-6 h-6 text-pink-500 animate-pulse" />
+              Loading Game
+              <Heart className="w-6 h-6 text-pink-500 animate-pulse" />
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="text-center space-y-4">
+            <div className="text-6xl animate-spin">💖</div>
+            <p className="text-lg">Setting up your romantic game...</p>
+            <p className="text-sm text-muted-foreground">
+              Loading game state...
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Show waiting screen only when we're certain partner isn't connected
+  if (connectionStatus.status === 'connected' && !isPartnerConnected) {
     return (
       <div className="flex items-center justify-center min-h-screen p-4">
         <Card className="w-full max-w-md">
