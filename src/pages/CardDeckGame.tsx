@@ -9,7 +9,7 @@ import { GameEndModal } from '@/components/CardGame/GameEndModal';
 import { DebugInfo } from '@/components/CardGame/DebugInfo';
 import { TaskHistory } from '@/components/CardGame/TaskHistory';
 import CardDistribution from '@/components/CardGame/CardDistribution';
-import { WaitingForPartner } from '@/components/CardGame/WaitingForPartner';
+
 import { Button } from '@/components/ui/button';
 import { GradientHeader } from '@/components/GradientHeader';
 import { useAuth } from '@/hooks/useAuth';
@@ -124,33 +124,6 @@ export const CardDeckGame: React.FC = () => {
     );
   }
 
-  // Show waiting screen ONLY if:
-  // 1. Game exists but has NO players connected (missing user2_id)
-  // 2. OR partner is not connected yet (based on actual activity, not just presence)
-  // Don't show during active gameplay or temporary connection issues
-  const isWaitingForInitialPartner = gameState && (
-    !gameState.user2_id || 
-    (gameState.total_cards_played === 0 && !isPartnerConnected)
-  );
-  
-  if (!loading && isWaitingForInitialPartner) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 p-4">
-        <div className="max-w-4xl mx-auto">
-          <GradientHeader 
-            title="Card Deck Game 💕" 
-            subtitle="Waiting for your partner..."
-            icon="💕"
-            backRoute="/games"
-          />
-          <WaitingForPartner 
-            partnerName="your partner"
-            onBackToGames={() => navigate('/games')}
-          />
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 p-4">
