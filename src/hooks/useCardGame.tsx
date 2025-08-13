@@ -666,7 +666,7 @@ export function useCardGame(sessionId: string | null) {
     loading,
     connectionStatus,
     partnerInfo,
-    isPartnerConnected: connectionStatus === 'connected',
+    isPartnerConnected: connectionStatus === 'connected' && partnerInfo !== null,
     stats: {
       cardsPlayed: gameState?.total_cards_played || 0,
       skipsRemaining: gameState && user ? 

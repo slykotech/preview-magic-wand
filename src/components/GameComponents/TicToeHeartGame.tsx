@@ -162,17 +162,17 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
     const currentSymbol = isUserTurn ? userSymbol : partnerSymbol;
     setPlayfulMessage(getPlayfulMessage(isUserTurn, currentPlayerName || 'Player', currentSymbol));
     
-    // Check for game end
-    if (updatedGameState.game_status !== 'playing') {
-      setShowCelebration(true);
-      if (updatedGameState.winner_id === user?.id) {
-        setTimeout(() => setShowLoveGrant(true), 2000);
-      } else if (updatedGameState.winner_id && updatedGameState.winner_id !== user?.id) {
-        // Check for pending love grants
-        setTimeout(() => checkForPendingGrants(), 1000);
-        setTimeout(() => checkForPendingGrants(), 3000);
+      // Check for game end - immediate grant modal
+      if (updatedGameState.game_status !== 'playing') {
+        setShowCelebration(true);
+        if (updatedGameState.winner_id === user?.id) {
+          // Show love grant modal immediately after celebration
+          setTimeout(() => setShowLoveGrant(true), 500);
+        } else if (updatedGameState.winner_id && updatedGameState.winner_id !== user?.id) {
+          // Check for pending love grants immediately
+          setTimeout(() => checkForPendingGrants(), 500);
+        }
       }
-    }
   }
 
   // Use unified game session management  
@@ -1163,8 +1163,9 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
     );
   }
 
-  // Show waiting screen only when we're certain partner isn't connected
-  if (connectionStatus.status === 'connected' && !isPartnerConnected) {
+  // Show waiting screen if partner isn't connected AND we haven't started the game
+  // Only prevent playing if partner truly hasn't joined yet
+  if (!isPartnerConnected && gameState.moves_count === 0) {
     return (
       <div className="flex items-center justify-center min-h-screen p-4">
         <Card className="w-full max-w-md">

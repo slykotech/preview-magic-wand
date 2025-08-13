@@ -31,13 +31,18 @@ export const TurnIndicator: React.FC<TurnIndicatorProps> = ({
         <div className="flex items-center gap-3">
           {/* Connection Status */}
           {connectionStatus === 'connected' ? (
-            <span className="text-success flex items-center gap-1 text-sm">
-              <div className="w-2 h-2 bg-success rounded-full"></div>
+            <span className="text-green-300 flex items-center gap-1 text-sm">
+              <div className="w-2 h-2 bg-green-400 rounded-full"></div>
               Connected
             </span>
+          ) : connectionStatus === 'error' ? (
+            <span className="text-red-300 flex items-center gap-1 text-sm">
+              <div className="w-2 h-2 bg-red-400 rounded-full"></div>
+              Connection Error
+            </span>
           ) : (
-            <span className="text-warning flex items-center gap-1 text-sm">
-              <div className="w-2 h-2 bg-warning rounded-full animate-pulse"></div>
+            <span className="text-yellow-300 flex items-center gap-1 text-sm">
+              <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
               Connecting...
             </span>
           )}

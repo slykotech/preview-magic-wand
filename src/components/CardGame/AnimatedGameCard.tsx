@@ -98,9 +98,16 @@ export const AnimatedGameCard: React.FC<AnimatedGameCardProps> = ({
   const responseAuthorName = 'Partner';
 
   const handleReveal = () => {
-    if (showResponsePopup) return;
+    console.log('🎯 Card reveal clicked:', { isMyTurn, isRevealed, showResponsePopup });
+    if (showResponsePopup) {
+      console.log('❌ Blocked by response popup');
+      return;
+    }
     if (isMyTurn && !isRevealed) {
+      console.log('✅ Revealing card...');
       onReveal();
+    } else {
+      console.log('❌ Cannot reveal:', { isMyTurn, isRevealed });
     }
   };
 
@@ -330,7 +337,9 @@ export const AnimatedGameCard: React.FC<AnimatedGameCardProps> = ({
                   ? 'Waiting for partner...'
                   : showResponsePopup 
                     ? 'Read the response first!'
-                    : 'Tap to Reveal'
+                    : isRevealed
+                      ? 'Card Revealed!'
+                      : 'Tap to Reveal'
                 }
               </div>
               
