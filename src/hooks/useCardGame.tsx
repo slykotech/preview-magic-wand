@@ -529,7 +529,7 @@ export function useCardGame(sessionId: string | null) {
     }
   }, [isMyTurn, gameState, currentCard, sessionId, user]);
 
-  // End game
+  // End game - Optimized for immediate response
   const endGame = useCallback(async (reason?: string) => {
     if (!sessionId) {
       console.log('❌ EndGame: No session ID');
@@ -542,9 +542,22 @@ export function useCardGame(sessionId: string | null) {
     }
 
     try {
-      console.log('🏁 Ending game...', { sessionId, reason, userId: user.id });
+      console.log('🏁 Ending game immediately...', { sessionId, reason, userId: user.id });
       
-      const { data, error } = await supabase
+      // Immediately update local state for instant UI feedback
+      if (gameState) {
+        setGameState({
+          ...gameState,
+          status: 'completed',
+          win_reason: reason || 'manual_end'
+        });
+      }
+      
+      // Show immediate feedback
+      toast.success("Game ended! Thanks for playing 💕");
+      
+      // Update database in the background without blocking UI
+      supabase
         .from("card_deck_game_sessions")
         .update({
           status: 'completed',
@@ -552,21 +565,27 @@ export function useCardGame(sessionId: string | null) {
           win_reason: reason || 'manual_end'
         })
         .eq("id", sessionId)
-        .select(); // Add select to see what was updated
-
-      if (error) {
-        console.error('❌ EndGame database error:', error);
-        throw error;
-      }
-
-      console.log('✅ Game ended successfully:', data);
-      toast.success("Game completed! Thanks for playing 💕");
+        .then(({ error }) => {
+          if (error) {
+            console.error('❌ EndGame database error:', error);
+            // Revert local state if database update failed
+            if (gameState) {
+              setGameState({
+                ...gameState,
+                status: 'active'
+              });
+            }
+            toast.error("Failed to save game state. Please try again.");
+          } else {
+            console.log('✅ Game ended successfully in database');
+          }
+        });
 
     } catch (error) {
       console.error("❌ Failed to end game:", error);
       toast.error("Failed to end game. Please try again.");
     }
-  }, [sessionId, user?.id]);
+  }, [sessionId, user?.id, gameState]);
 
   // Rematch function - Automatically restart game for both users
   const rematchGame = useCallback(async () => {

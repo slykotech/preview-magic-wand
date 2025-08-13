@@ -80,12 +80,13 @@ export const CardDeckGame: React.FC = () => {
     }
   }, [isMyTurn, currentCard, gameState?.status, sessionId, loading, blockAutoAdvance, isPartnerConnected, gameState?.game_mode, actions.drawCard]);
 
-  // Check for game end
+  // Check for game end - trigger modal immediately when status changes
   useEffect(() => {
-    if (gameState?.status === 'completed' && gameState?.winner_id) {
+    if (gameState?.status === 'completed') {
+      console.log('🏁 Game completed detected, showing end modal');
       setShowGameEndModal(true);
     }
-  }, [gameState?.status, gameState?.winner_id]);
+  }, [gameState?.status]);
 
   // Handle timer expiry - call completeTurn with timeout
   const handleTimerExpire = () => {
