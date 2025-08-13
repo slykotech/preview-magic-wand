@@ -190,8 +190,8 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
             if (JSON.stringify(newState) !== JSON.stringify(gameState)) {
               setGameState(newState);
               
-              // Check if partner has now joined (game has moves)
-              if (newState.moves_count > 0) {
+              // Check if partner has now joined (game has moves or is actively being played)
+              if (newState.moves_count > 0 || newState.game_status === 'playing') {
                 setIsPartnerConnected(true);
               }
               
@@ -281,8 +281,8 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
             setGameState(newGameState as TicToeGameState);
             setConnectionStatus('connected');
             
-            // Check if partner has now joined (game has moves)
-            if (newGameState.moves_count > 0) {
+            // Check if partner has now joined (game has moves or is actively being played)
+            if (newGameState.moves_count > 0 || newGameState.game_status === 'playing') {
               setIsPartnerConnected(true);
             }
             
@@ -564,9 +564,11 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
         setGameState(loadedState);
         console.log('🎮 Game state loaded:', loadedState);
         
-        // Check if partner has joined (game has moves or both players have activity)
+        // Check if partner has joined - if game exists and both users are present, partner is connected
+        // Also consider partner connected if game has progressed
         const gameHasProgressed = loadedState.moves_count > 0;
-        setIsPartnerConnected(gameHasProgressed);
+        const bothPlayersPresent = user?.id && partnerId && coupleData;
+        setIsPartnerConnected(gameHasProgressed || !!bothPlayersPresent);
         
         // Debug turn state after loading
         setTimeout(() => debugTurnState(), 100);
@@ -661,6 +663,9 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
           };
           setGameState(conflictState);
           console.log('🎮 Using conflict game state:', conflictState);
+          
+          // If conflict game exists, both players have joined
+          setIsPartnerConnected(true);
         } else {
           console.log('🎮 New game created successfully:', newGame);
           const newGameState = {
@@ -671,6 +676,14 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
           };
           setGameState(newGameState);
           console.log('🎮 New game state set:', newGameState);
+          
+          // For new games, if we successfully created it and have couple data, partner will join soon
+          // Set a timer to check for partner connection after a short delay
+          setTimeout(() => {
+            if (user?.id && partnerId && coupleData) {
+              setIsPartnerConnected(true);
+            }
+          }, 1000);
         }
         
         // Debug turn state after creating new game
