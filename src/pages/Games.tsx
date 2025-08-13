@@ -1,228 +1,219 @@
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Heart, GamepadIcon, SparklesIcon } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
-import { useCoupleData } from '@/hooks/useCoupleData';
-import { GradientHeader } from '@/components/GradientHeader';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { ArrowLeft, Heart, MessageCircle, Lightbulb, HelpCircle, Brain, Ticket, Users, Spade } from "lucide-react";
+import { useCardGames } from "@/hooks/useCardGames";
+import { useCoupleData } from "@/hooks/useCoupleData";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
-export const Games: React.FC = () => {
+const gameTypes = [
+  {
+    id: "card_deck",
+    title: "Card Deck Game",
+    subtitle: "Deep Connection",
+    icon: Spade,
+    secondaryIcon: Heart,
+    gradient: "from-pink-400 to-purple-400",
+    bgGradient: "from-pink-50 to-purple-50",
+    darkBgGradient: "from-pink-950/30 to-purple-950/30",
+    description: "Interactive conversation cards with dynamic timers to deepen intimacy and spark meaningful moments",
+    isNew: true
+  },
+  {
+    id: "tic_toe_heart",
+    title: "Tic Toe Heart",
+    subtitle: "Playful Competition",
+    icon: Heart,
+    secondaryIcon: Users,
+    gradient: "from-purple-400 to-pink-400",
+    bgGradient: "from-purple-50 to-pink-50",
+    darkBgGradient: "from-purple-950/30 to-pink-950/30",
+    description: "Romantic twist on classic Tic-Tac-Toe with winner rewards and heart animations"
+  }
+];
+
+export const Games = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { createGameSession, loading } = useCardGames();
   const { coupleData } = useCoupleData();
 
-  const startTicToeHeartGame = async () => {
-    if (!user || !coupleData) {
-      toast.error('Please connect with your partner first');
-      return;
-    }
-
+  const handleGameSelect = async (gameType: string) => {
     try {
-      // Check for existing active game
-      const { data: existingGame } = await supabase
-        .from('tic_toe_heart_games')
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || !coupleData) return;
+
+      if (gameType === 'card_deck') {
+        // Look for existing active game session
+        const { data: existingGame } = await supabase
+          .from("card_deck_game_sessions")
+          .select("*")
+          .eq("couple_id", coupleData.id)
+          .eq("status", "active")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        
+        if (existingGame) {
+          // Join existing game
+          console.log('Joining existing card deck game:', existingGame.id);
+          navigate(`/games/card-deck/${existingGame.id}`);
+        } else {
+          // Create new game session
+          console.log('Creating new card deck game session');
+          const { data: newSession, error } = await supabase
+            .from("card_deck_game_sessions")
+            .insert({
+              couple_id: coupleData.id,
+              user1_id: coupleData.user1_id,
+              user2_id: coupleData.user2_id,
+              current_turn: Math.random() < 0.5 ? coupleData.user1_id : coupleData.user2_id,
+              game_mode: 'classic',
+              status: 'active'
+            })
+            .select()
+            .single();
+          
+          if (error) throw error;
+          
+          console.log('Created new card deck game session:', newSession.id);
+          navigate(`/games/card-deck/${newSession.id}`);
+        }
+        return;
+      }
+
+      // For tic_toe_heart - check for existing session and show waiting message for single player
+      const { data: existingSession } = await supabase
+        .from("game_sessions")
         .select(`
           *,
-          game_sessions!inner(*)
+          tic_toe_heart_games(*)
         `)
-        .eq('game_sessions.couple_id', coupleData.id)
-        .eq('game_status', 'playing')
-        .order('created_at', { ascending: false })
+        .eq("couple_id", coupleData.id)
+        .eq("status", "active")
+        .order("started_at", { ascending: false })
         .limit(1)
         .maybeSingle();
-
-      if (existingGame) {
-        navigate(`/tic-toe-heart`);
+      
+      // Check if we have an active session with an incomplete game
+      let shouldJoinExisting = false;
+      if (existingSession && existingSession.tic_toe_heart_games) {
+        const gameData = Array.isArray(existingSession.tic_toe_heart_games) 
+          ? existingSession.tic_toe_heart_games[0] 
+          : existingSession.tic_toe_heart_games;
+        // Only join if the game is still in progress (not won/draw)
+        if (gameData) {
+          shouldJoinExisting = gameData.game_status === 'playing';
+        }
+      }
+      
+      if (shouldJoinExisting) {
+        // Join existing incomplete game
+        console.log('Joining existing incomplete game session:', existingSession.id);
+        navigate(`/games/${existingSession.id}`);
       } else {
-        navigate('/tic-toe-heart');
+        // Create new session for completed games or no existing session
+        console.log('Creating new game session for:', gameType);
+        const session = await createGameSession(gameType);
+        if (session) {
+          console.log('Created new game session:', session.id);
+          // Game created and ready to play
+          toast.success('Game created! Starting immediately...');
+          navigate(`/games/${session.id}`);
+        }
       }
     } catch (error) {
-      console.error('Error checking for existing game:', error);
-      navigate('/tic-toe-heart');
+      console.error('Failed to create game session:', error);
     }
   };
-
-  const startCardDeckGame = async () => {
-    if (!user || !coupleData) {
-      toast.error('Please connect with your partner first');
-      return;
-    }
-
-    try {
-      // Check for existing active card game
-      const { data: existingGame } = await supabase
-        .from('card_deck_game_sessions')
-        .select('*')
-        .eq('couple_id', coupleData.id)
-        .eq('status', 'active')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (existingGame) {
-        navigate(`/card-deck/${existingGame.id}`);
-      } else {
-        // Create new game session
-        const { data: newSession, error } = await supabase
-          .from('card_deck_game_sessions')
-          .insert({
-            couple_id: coupleData.id,
-            user1_id: coupleData.user1_id,
-            user2_id: coupleData.user2_id,
-            current_turn: Math.random() < 0.5 ? coupleData.user1_id : coupleData.user2_id,
-            game_mode: 'classic',
-            status: 'active'
-          })
-          .select()
-          .single();
-
-        if (error) throw error;
-        navigate(`/card-deck/${newSession.id}`);
-      }
-    } catch (error) {
-      console.error('Error starting card game:', error);
-      toast.error('Failed to start card game');
-    }
-  };
-
-  if (!user || !coupleData) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50 flex items-center justify-center">
-        <Card className="p-8 text-center">
-          <CardContent>
-            <p className="text-muted-foreground">Please connect with your partner to play games</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50 p-4">
-      <div className="max-w-4xl mx-auto space-y-6">
-        <GradientHeader 
-          title="Relationship Games 💕" 
-          subtitle="Play fun games together to strengthen your bond"
-          icon="🎮"
-          backRoute="/"
-        />
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <div className="sticky top-0 z-10 bg-gradient-primary backdrop-blur-sm">
+        <div className="flex items-center justify-between p-4">
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={() => navigate('/dashboard')}
+            className="text-white hover:bg-white/20"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <h1 className="text-xl font-bold text-white">Games</h1>
+          <div className="w-10" /> {/* Spacer for center alignment */}
+        </div>
+      </div>
 
-        <div className="grid md:grid-cols-2 gap-6">
-          {/* Tic-Tac-Toe Heart Game */}
-          <Card className="border-pink-200 bg-gradient-to-br from-pink-50 to-purple-50 hover:shadow-lg transition-all duration-200">
-            <CardHeader className="text-center">
-              <div className="mx-auto w-16 h-16 bg-gradient-to-br from-pink-500 to-purple-500 rounded-full flex items-center justify-center mb-4">
-                <Heart className="h-8 w-8 text-white" />
-              </div>
-              <CardTitle className="text-xl bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
-                TikTok Toe Heart 💕
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-sm text-muted-foreground text-center">
-                Play tic-tac-toe with heart emojis! Winner gets to make a Love Grant request 💌
-              </p>
-              
-              <div className="flex justify-center gap-2 flex-wrap">
-                <Badge className="bg-pink-100 text-pink-700">Real-time</Badge>
-                <Badge className="bg-purple-100 text-purple-700">Love Grants</Badge>
-                <Badge className="bg-yellow-100 text-yellow-700">Quick Play</Badge>
-              </div>
-
-              <div className="text-center space-y-2">
-                <div className="text-2xl space-x-2">
-                  <span>💖</span>
-                  <span className="text-gray-400">vs</span>
-                  <span>💘</span>
-                </div>
-                <p className="text-xs text-muted-foreground">Classic 3x3 grid with hearts</p>
-              </div>
-
-              <Button 
-                onClick={startTicToeHeartGame}
-                className="w-full bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600"
-              >
-                <Heart className="w-4 h-4 mr-2" />
-                Start TikTok Toe Heart
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Card Deck Game */}
-          <Card className="border-orange-200 bg-gradient-to-br from-orange-50 to-red-50 hover:shadow-lg transition-all duration-200">
-            <CardHeader className="text-center">
-              <div className="mx-auto w-16 h-16 bg-gradient-to-br from-orange-500 to-red-500 rounded-full flex items-center justify-center mb-4">
-                <GamepadIcon className="h-8 w-8 text-white" />
-              </div>
-              <CardTitle className="text-xl bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
-                Relationship Cards 🃏
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-sm text-muted-foreground text-center">
-                Draw cards with fun challenges, deep questions, and romantic prompts to explore together
-              </p>
-              
-              <div className="flex justify-center gap-2 flex-wrap">
-                <Badge className="bg-orange-100 text-orange-700">Timed</Badge>
-                <Badge className="bg-red-100 text-red-700">Deep Connection</Badge>
-                <Badge className="bg-yellow-100 text-yellow-700">Photos</Badge>
-              </div>
-
-              <div className="text-center space-y-2">
-                <div className="text-2xl space-x-2">
-                  <span>💝</span>
-                  <span>💭</span>
-                  <span>📸</span>
-                </div>
-                <p className="text-xs text-muted-foreground">Romantic, Fun & Deep prompts</p>
-              </div>
-
-              <Button 
-                onClick={startCardDeckGame}
-                className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600"
-              >
-                <SparklesIcon className="w-4 h-4 mr-2" />
-                Start Card Game
-              </Button>
-            </CardContent>
-          </Card>
+      {/* Content */}
+      <div className="p-6">
+        {/* Title Section */}
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-foreground mb-2">
+            Let's Play
+          </h1>
+          <h2 className="text-3xl font-bold text-foreground flex items-center justify-center gap-2">
+            Something Sweet
+            <Heart className="h-8 w-8 text-foreground fill-current" />
+          </h2>
         </div>
 
-        {/* Game Rules Section */}
-        <Card className="border-gray-200">
-          <CardHeader>
-            <CardTitle className="text-lg text-gray-800 flex items-center gap-2">
-              📝 How to Play
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <h4 className="font-medium text-pink-700">💕 TikTok Toe Heart</h4>
-                <ul className="text-sm text-muted-foreground space-y-1">
-                  <li>• Take turns placing 💖 or 💘 on the grid</li>
-                  <li>• Get 3 in a row to win</li>
-                  <li>• Winner gets to make a Love Grant request</li>
-                  <li>• Partner can accept or suggest alternative</li>
-                </ul>
-              </div>
-              <div className="space-y-2">
-                <h4 className="font-medium text-orange-700">🃏 Relationship Cards</h4>
-                <ul className="text-sm text-muted-foreground space-y-1">
-                  <li>• Draw cards with challenges and questions</li>
-                  <li>• Complete within the time limit</li>
-                  <li>• Share photos, thoughts, or do actions</li>
-                  <li>• Build deeper connection together</li>
-                </ul>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Games Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+          {gameTypes.map((game) => {
+            const IconComponent = game.icon;
+            const SecondaryIconComponent = game.secondaryIcon;
+            
+            return (
+              <Card
+                key={game.id}
+                className={`relative overflow-hidden bg-gradient-to-br ${game.bgGradient} dark:${game.darkBgGradient} border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] cursor-pointer group`}
+                onClick={() => handleGameSelect(game.id)}
+              >
+                <div className="p-6">
+                  {/* Icons */}
+                  <div className="flex justify-center items-center mb-4 relative">
+                    <div className={`p-4 bg-gradient-to-r ${game.gradient} rounded-2xl shadow-lg mr-2 group-hover:scale-110 transition-transform duration-300`}>
+                      <IconComponent className="h-8 w-8 text-white" />
+                    </div>
+                    <div className={`p-3 bg-gradient-to-r ${game.gradient} rounded-xl shadow-md opacity-80 group-hover:scale-110 transition-transform duration-300 delay-75`}>
+                      <SecondaryIconComponent className="h-6 w-6 text-white" />
+                    </div>
+                  </div>
+
+                  {/* Title */}
+                  <h3 className="text-2xl font-bold text-center text-gray-800 dark:text-gray-100 mb-2 flex items-center justify-center gap-2">
+                    {game.title}
+                    {game.isNew && (
+                      <span className="text-xs bg-gradient-to-r from-emerald-400 to-green-500 text-white px-2 py-1 rounded-full">
+                        NEW
+                      </span>
+                    )}
+                  </h3>
+
+                  {/* Subtitle Badge */}
+                  <div className="flex justify-center mb-4">
+                    <span className={`px-4 py-2 bg-gradient-to-r ${game.gradient} text-white text-sm font-semibold rounded-full shadow-md`}>
+                      {game.subtitle}
+                    </span>
+                  </div>
+
+                  {/* Description */}
+                  <p className="text-center text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
+                    {game.description}
+                  </p>
+                </div>
+
+                {/* Hover Effect Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              </Card>
+            );
+          })}
+        </div>
+
+        {/* Bottom Spacing */}
+        <div className="h-20" />
       </div>
     </div>
   );

@@ -9,7 +9,7 @@ import { GameEndModal } from '@/components/CardGame/GameEndModal';
 import { DebugInfo } from '@/components/CardGame/DebugInfo';
 import { TaskHistory } from '@/components/CardGame/TaskHistory';
 import CardDistribution from '@/components/CardGame/CardDistribution';
-import { WaitingForPartner } from '@/components/CardGame/WaitingForPartner';
+
 import { Button } from '@/components/ui/button';
 import { GradientHeader } from '@/components/GradientHeader';
 import { useAuth } from '@/hooks/useAuth';
@@ -41,7 +41,7 @@ export const CardDeckGame: React.FC = () => {
     blockAutoAdvance
   } = useCardGame(sessionId || null);
 
-  // Single consolidated auto-draw effect with proper conditions
+  // Improved auto-draw effect with better conditions
   useEffect(() => {
     console.log('Auto-draw check:', {
       isMyTurn,
@@ -49,34 +49,44 @@ export const CardDeckGame: React.FC = () => {
       gameStatus: gameState?.status,
       sessionId,
       loading,
-      blockAutoAdvance
+      blockAutoAdvance,
+      isPartnerConnected
     });
     
-    // Only auto-draw if all conditions are met and avoid multiple calls
+    // Only auto-draw if:
+    // - It's my turn
+    // - No current card available
+    // - Game is active 
+    // - Not loading
+    // - Auto-advance not blocked
+    // - Partner is connected (or single player mode)
+    // - Session exists
     if (
       isMyTurn && 
       !currentCard && 
       gameState?.status === 'active' && 
       !loading && 
       !blockAutoAdvance && 
-      sessionId
+      sessionId &&
+      (isPartnerConnected || gameState?.game_mode === 'single')
     ) {
-      console.log('Auto-drawing card for user turn');
+      console.log('🎯 Auto-drawing card for user turn');
       const timer = setTimeout(() => {
-        console.log('Executing auto-draw card action');
+        console.log('⚡ Executing auto-draw card action');
         actions.drawCard();
-      }, 500); // Single delay
+      }, 300); // Reduced delay for better UX
       
       return () => clearTimeout(timer);
     }
-  }, [isMyTurn, currentCard, gameState?.status, sessionId, loading, blockAutoAdvance, actions.drawCard]);
+  }, [isMyTurn, currentCard, gameState?.status, sessionId, loading, blockAutoAdvance, isPartnerConnected, gameState?.game_mode, actions.drawCard]);
 
-  // Check for game end
+  // Check for game end - trigger modal immediately when status changes
   useEffect(() => {
-    if (gameState?.status === 'completed' && gameState?.winner_id) {
+    if (gameState?.status === 'completed') {
+      console.log('🏁 Game completed detected, showing end modal');
       setShowGameEndModal(true);
     }
-  }, [gameState?.status, gameState?.winner_id]);
+  }, [gameState?.status]);
 
   // Handle timer expiry - call completeTurn with timeout
   const handleTimerExpire = () => {
@@ -114,25 +124,6 @@ export const CardDeckGame: React.FC = () => {
     );
   }
 
-  // Show waiting screen if partner hasn't joined yet
-  if (!loading && !isPartnerConnected && partnerInfo) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 p-4">
-        <div className="max-w-4xl mx-auto">
-          <GradientHeader 
-            title="Card Deck Game 💕" 
-            subtitle="Waiting for your partner..."
-            icon="💕"
-            backRoute="/games"
-          />
-          <WaitingForPartner 
-            partnerName={partnerInfo.name}
-            onBackToGames={() => navigate('/games')}
-          />
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 p-4">
@@ -162,12 +153,13 @@ export const CardDeckGame: React.FC = () => {
 
         {/* Turn Indicator */}
         <div className="mb-8">
-          <TurnIndicator 
-            isMyTurn={isMyTurn}
-            partnerName={partnerInfo?.name || 'Your partner'}
-            connectionStatus={connectionStatus}
-            isPartnerOnline={isPartnerOnline}
-          />
+        <TurnIndicator 
+          isMyTurn={isMyTurn}
+          partnerName={partnerInfo?.name || 'Your partner'}
+          connectionStatus={connectionStatus || 'connecting'}
+          isPartnerOnline={isPartnerOnline}
+          isPartnerInGame={isPartnerConnected && partnerInfo !== null}
+        />
         </div>
 
         {/* Animated Game Card or Loading State */}
@@ -199,17 +191,23 @@ export const CardDeckGame: React.FC = () => {
                   </div>
                 ) : (
                   <div>
-                    <p className="text-lg font-semibold">No card available</p>
-                    <button 
+                    <p className="text-lg font-semibold mb-2">Ready to draw your next card?</p>
+                    <Button 
                       onClick={actions.drawCard}
-                      className="mt-4 px-6 py-2 bg-primary text-primary-foreground rounded-lg"
+                      className="px-6 py-3 text-lg font-semibold"
+                      disabled={loading}
                     >
-                      Draw Card
-                    </button>
+                      🎯 Draw Card
+                    </Button>
                   </div>
                 )
               ) : (
-                <p className="text-lg">Waiting for partner to play...</p>
+                <div>
+                  <p className="text-lg mb-2">Partner's turn...</p>
+                  <p className="text-muted-foreground text-sm">
+                    {partnerInfo?.name || 'Your partner'} is playing their turn.
+                  </p>
+                </div>
               )}
             </div>
           )}

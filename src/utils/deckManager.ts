@@ -1,116 +1,195 @@
 import { supabase } from "@/integrations/supabase/client";
 
+interface CardData {
+  id: string;
+  category: string;
+  subcategory: string;
+  prompt: string;
+  timer_seconds: number;
+  timer_category: string;
+  difficulty_level: number;
+  intimacy_level: number;
+  requires_action: boolean;
+  requires_physical_presence: boolean;
+  mood_tags: string[];
+  relationship_stage: string[];
+  usage_count?: number;
+  response_type: 'action' | 'text' | 'photo';
+}
+
 export class DeckManager {
-  // Simple random drawing - no complex deck logic
-  async drawNextCard(sessionId: string): Promise<any> {
+  async drawNextCard(sessionId: string): Promise<CardData | null> {
     try {
-      console.log('🎲 Drawing random card from database...');
-      
-      // Get all available cards from database
-      const { data: allCards, error } = await supabase
-        .from('deck_cards')
-        .select('*')
-        .eq('is_active', true);
-
-      if (error || !allCards || allCards.length === 0) {
-        console.error('❌ No cards available:', error);
-        return null;
-      }
-
-      // Group by type
-      const cardsByType = {
-        action: allCards.filter(c => c.response_type === 'action'),
-        text: allCards.filter(c => c.response_type === 'text'),
-        photo: allCards.filter(c => c.response_type === 'photo')
-      };
-
-      console.log('📊 Available cards:', {
-        action: cardsByType.action.length,
-        text: cardsByType.text.length,
-        photo: cardsByType.photo.length,
-        total: allCards.length
-      });
-
-      // Get played cards for this session
-      const { data: session } = await supabase
-        .from('card_deck_game_sessions')
-        .select('played_cards')
-        .eq('id', sessionId)
+      // Get next unplayed card from shuffled deck
+      const { data: nextCardData, error: cardsError } = await supabase
+        .from('game_decks')
+        .select(`
+          card_id,
+          deck_cards(*)
+        `)
+        .eq('session_id', sessionId)
+        .eq('is_played', false)
+        .eq('skipped', false)
+        .order('position', { ascending: true })
+        .limit(1)
         .single();
 
-      const playedCardIds = Array.isArray(session?.played_cards) ? session.played_cards : [];
-      console.log(`🔍 Already played: ${playedCardIds.length} cards`);
-
-      // Filter out already played cards
-      const availableCards = allCards.filter(card => !playedCardIds.includes(card.id));
-      
-      if (availableCards.length === 0) {
-        console.log('🏁 All cards have been played!');
+      if (cardsError) {
+        console.error('Failed to draw card from deck:', cardsError);
         return null;
       }
 
-      // Randomly select type (equal probability: 33% each)
-      const types = ['action', 'text', 'photo'];
-      const randomType = types[Math.floor(Math.random() * types.length)];
-      
-      // Get available cards of that type
-      const availableOfType = availableCards.filter(c => c.response_type === randomType);
-      
-      // If no cards of that type available, pick from any available
-      const cardsToPickFrom = availableOfType.length > 0 ? availableOfType : availableCards;
-      
-      // Randomly select card
-      const selectedCard = cardsToPickFrom[Math.floor(Math.random() * cardsToPickFrom.length)];
-      
-      console.log(`✅ Selected ${selectedCard.response_type} card: ${selectedCard.prompt.substring(0, 50)}...`);
+      if (!nextCardData || !nextCardData.deck_cards) {
+        console.log('No more cards available in shuffled deck');
+        return null;
+      }
 
-      // Update session with new card
-      const updatedPlayedCards = [...playedCardIds, selectedCard.id];
+      const selectedCard = nextCardData.deck_cards;
+
+      // Update card usage count
       await supabase
-        .from('card_deck_game_sessions')
+        .from('deck_cards')
         .update({
-          current_card_id: selectedCard.id,
-          played_cards: updatedPlayedCards,
-          total_cards_played: updatedPlayedCards.length,
-          last_activity_at: new Date().toISOString()
+          usage_count: (selectedCard.usage_count || 0) + 1
         })
-        .eq('id', sessionId);
+        .eq('id', selectedCard.id);
 
-      return selectedCard;
+      console.log('✅ Card drawn successfully from shuffled deck:', selectedCard.prompt.substring(0, 50) + '...');
+      
+      return {
+        id: selectedCard.id,
+        category: selectedCard.category,
+        subcategory: selectedCard.subcategory,
+        prompt: selectedCard.prompt,
+        timer_seconds: selectedCard.timer_seconds,
+        timer_category: selectedCard.timer_category,
+        difficulty_level: selectedCard.difficulty_level,
+        intimacy_level: selectedCard.intimacy_level,
+        requires_action: selectedCard.requires_action,
+        requires_physical_presence: selectedCard.requires_physical_presence,
+        mood_tags: selectedCard.mood_tags,
+        relationship_stage: selectedCard.relationship_stage,
+        usage_count: selectedCard.usage_count,
+        response_type: selectedCard.response_type
+      } as CardData;
 
     } catch (error) {
-      console.error('❌ Failed to draw card:', error);
-      throw error;
+      console.error('Error in drawNextCard:', error);
+      return null;
+    }
+  }
+
+  async createShuffledDeck(sessionId: string, deckSize: number = 60): Promise<boolean> {
+    try {
+      console.log('🎯 Creating shuffled deck with smart distribution:', { sessionId, deckSize });
+      
+      // Use database function for smart deck creation with 34/33/33 distribution
+      const { error } = await supabase
+        .rpc('create_shuffled_deck', {
+          p_session_id: sessionId,
+          p_deck_size: deckSize
+        });
+
+      if (error) {
+        console.error('Failed to create shuffled deck:', error);
+        return false;
+      }
+
+      console.log('✅ Shuffled deck created successfully with smart distribution');
+      return true;
+
+    } catch (error) {
+      console.error('Error in createShuffledDeck:', error);
+      return false;
     }
   }
 
   async skipCard(sessionId: string): Promise<boolean> {
     try {
-      const { data: session } = await supabase
+      // Get current session
+      const { data: session, error: sessionError } = await supabase
         .from('card_deck_game_sessions')
-        .select('current_card_id, skipped_cards')
+        .select('current_card_id')
         .eq('id', sessionId)
         .single();
 
-      if (!session || !session.current_card_id) return false;
+      if (sessionError || !session || !session.current_card_id) {
+        console.error('Failed to fetch session or no current card:', sessionError);
+        return false;
+      }
 
-      // Add to skipped cards list
-      const skippedCards = [...(Array.isArray(session.skipped_cards) ? session.skipped_cards : []), session.current_card_id];
-      
-      await supabase
-        .from('card_deck_game_sessions')
-        .update({ 
-          skipped_cards: skippedCards,
-          last_activity_at: new Date().toISOString()
+      // Mark card as skipped in game_decks table
+      const { error: updateError } = await supabase
+        .from('game_decks')
+        .update({
+          skipped: true,
+          played_at: new Date().toISOString()
         })
-        .eq('id', sessionId);
+        .eq('session_id', sessionId)
+        .eq('card_id', session.current_card_id);
 
-      console.log(`⏭️ Skipped card: ${session.current_card_id}`);
+      if (updateError) {
+        console.error('Failed to mark card as skipped:', updateError);
+        return false;
+      }
+
+      console.log('✅ Card skipped successfully in shuffled deck');
       return true;
 
     } catch (error) {
-      console.error('Failed to skip card:', error);
+      console.error('Error in skipCard:', error);
       return false;
+    }
+  }
+
+  async getCardStats(sessionId: string) {
+    try {
+      const { data: session, error } = await supabase
+        .from('card_deck_game_sessions')
+        .select('total_cards_played, deck_size')
+        .eq('id', sessionId)
+        .single();
+
+      if (error || !session) {
+        return {
+          totalCardsPlayed: 0,
+          cardsSkipped: 0,
+          cardsRemaining: 0
+        };
+      }
+
+      // Get deck statistics from game_decks table
+      const { data: deckStats } = await supabase
+        .from('game_decks')
+        .select('is_played, skipped')
+        .eq('session_id', sessionId);
+
+      if (!deckStats) {
+        return {
+          totalCardsPlayed: session.total_cards_played || 0,
+          cardsSkipped: 0,
+          cardsRemaining: session.deck_size || 60
+        };
+      }
+
+      const playedCards = deckStats.filter(card => card.is_played).length;
+      const skippedCards = deckStats.filter(card => card.skipped).length;
+      const totalDeckSize = session.deck_size || 60;
+      const usedCards = playedCards + skippedCards;
+      
+      return {
+        totalCardsPlayed: session.total_cards_played || 0,
+        cardsSkipped: skippedCards,
+        cardsRemaining: Math.max(0, totalDeckSize - usedCards)
+      };
+
+    } catch (error) {
+      console.error('Error getting card stats:', error);
+      return {
+        totalCardsPlayed: 0,
+        cardsSkipped: 0,
+        cardsRemaining: 0
+      };
     }
   }
 }

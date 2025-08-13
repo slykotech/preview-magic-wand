@@ -98,9 +98,16 @@ export const AnimatedGameCard: React.FC<AnimatedGameCardProps> = ({
   const responseAuthorName = 'Partner';
 
   const handleReveal = () => {
-    if (showResponsePopup) return;
+    console.log('🎯 Card reveal clicked:', { isMyTurn, isRevealed, showResponsePopup });
+    if (showResponsePopup) {
+      console.log('❌ Blocked by response popup');
+      return;
+    }
     if (isMyTurn && !isRevealed) {
+      console.log('✅ Revealing card...');
       onReveal();
+    } else {
+      console.log('❌ Cannot reveal:', { isMyTurn, isRevealed });
     }
   };
 
@@ -330,7 +337,9 @@ export const AnimatedGameCard: React.FC<AnimatedGameCardProps> = ({
                   ? 'Waiting for partner...'
                   : showResponsePopup 
                     ? 'Read the response first!'
-                    : 'Tap to Reveal'
+                    : isRevealed
+                      ? 'Card Revealed!'
+                      : 'Tap to Reveal'
                 }
               </div>
               
@@ -533,6 +542,15 @@ export const AnimatedGameCard: React.FC<AnimatedGameCardProps> = ({
                   >
                     Submit & End Turn
                   </Button>
+                ) : card.response_type === 'photo' ? (
+                  <Button
+                    onClick={() => handleComplete(false)}
+                    disabled={!hasPhotoSelected}
+                    className="flex-1 h-12 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
+                    size="lg"
+                  >
+                    Submit Photo & End Turn
+                  </Button>
                 ) : card.response_type === 'action' ? (
                   <Button
                     onClick={() => handleComplete(false)}
@@ -547,7 +565,11 @@ export const AnimatedGameCard: React.FC<AnimatedGameCardProps> = ({
                   <Button
                     variant="destructive"
                     className="flex-1 h-12 font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
-                    onClick={onSkip}
+                    onClick={() => {
+                      console.log('🔄 Skip button clicked');
+                      onSkip();
+                    }}
+                    disabled={false}
                   >
                     Skip ({skipsRemaining})
                   </Button>
@@ -559,7 +581,7 @@ export const AnimatedGameCard: React.FC<AnimatedGameCardProps> = ({
             {!isMyTurn && (
               <div className="text-center p-6 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-200 w-full">
                 <p className="text-purple-700 font-medium text-lg">
-                  ⏳ Waiting for partner...
+                   ⏳ Partner's Turn...
                 </p>
               </div>
             )}

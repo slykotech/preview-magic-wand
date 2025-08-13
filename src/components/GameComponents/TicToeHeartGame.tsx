@@ -4,10 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 import { Heart, Trophy, RotateCcw, MessageCircle, Sparkles, Crown } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useCoupleData } from '@/hooks/useCoupleData';
 import { usePresence } from '@/hooks/usePresence';
+import { useGameSession } from '@/hooks/useGameSession';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { DebugInfo } from '@/components/CardGame/DebugInfo';
@@ -104,11 +106,10 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
   const [winnerReward, setWinnerReward] = useState('');
   const [loveGrants, setLoveGrants] = useState<LoveGrant[]>([]);
   const [playfulMessage, setPlayfulMessage] = useState('');
+  const [grantResponseMessage, setGrantResponseMessage] = useState('');
   const [rejectionReason, setRejectionReason] = useState('');
-  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'error'>('connecting');
   const [moveHistory, setMoveHistory] = useState<GameMove[]>([]);
   const [isProcessingMove, setIsProcessingMove] = useState(false);
-  const [isPartnerConnected, setIsPartnerConnected] = useState(false);
   const loveGrantsChannelRef = useRef<any>(null);
   const gameChannelRef = useRef<any>(null);
 
@@ -123,6 +124,76 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
 
   const userSymbol = getUserSymbol(user?.id || '');
   const partnerSymbol = getUserSymbol(partnerId || '');
+
+  // Handle game state updates from unified session
+  function handleGameStateUpdate(newGameState: any) {
+    console.log('🎮 Tic Toe game state update:', newGameState);
+    
+    // Parse board if needed
+    let parsedBoard: Board;
+    try {
+      if (Array.isArray(newGameState.board)) {
+        parsedBoard = newGameState.board;
+      } else if (typeof newGameState.board === 'string') {
+        parsedBoard = JSON.parse(newGameState.board);
+      } else {
+        console.error('🎮 ❌ Unexpected board format:', newGameState.board);
+        return;
+      }
+    } catch (parseError) {
+      console.error('🎮 ❌ Board parsing failed:', parseError);
+      return;
+    }
+
+    const updatedGameState: TicToeGameState = {
+      id: newGameState.id,
+      session_id: newGameState.session_id,
+      board: parsedBoard,
+      current_player_id: newGameState.current_player_id,
+      game_status: newGameState.game_status as GameStatus,
+      winner_id: newGameState.winner_id,
+      moves_count: newGameState.moves_count,
+      last_move_at: newGameState.last_move_at || new Date().toISOString()
+    };
+    
+    setGameState(updatedGameState);
+    
+    // Update playful message
+    const isUserTurn = updatedGameState.current_player_id === user?.id;
+    const currentPlayerName = isUserTurn ? getUserDisplayName() : getPartnerDisplayName();
+    const currentSymbol = isUserTurn ? userSymbol : partnerSymbol;
+    setPlayfulMessage(getPlayfulMessage(isUserTurn, currentPlayerName || 'Player', currentSymbol));
+    
+      // Check for game end - immediate grant modal
+      if (updatedGameState.game_status !== 'playing') {
+        setShowCelebration(true);
+        if (updatedGameState.winner_id === user?.id) {
+          // Show love grant modal immediately after celebration
+          setTimeout(() => setShowLoveGrant(true), 500);
+        } else if (updatedGameState.winner_id && updatedGameState.winner_id !== user?.id) {
+          // Check for pending love grants immediately
+          setTimeout(() => checkForPendingGrants(), 500);
+        }
+      }
+  }
+
+  // Use unified game session management - no waiting logic
+  const { connectionStatus, sendBroadcast } = useGameSession({
+    sessionId,
+    gameType: 'tic-toe-heart', 
+    onGameStateUpdate: handleGameStateUpdate,
+    onPartnerJoin: () => {
+      console.log('🎮 Partner joined Tic Toe Heart game!');
+      // No toast needed as game starts immediately
+    },
+    onError: (error) => {
+      console.error('🎮 Tic Toe game session error:', error);
+      toast.error('Connection error in game');
+    }
+  });
+
+  // Partner is always considered connected - no waiting logic
+  const isPartnerConnected = true;
   
   // Debug current turn state
   const debugTurnState = () => {
@@ -178,7 +249,7 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
 
   // Polling fallback for when real-time fails
   useEffect(() => {
-    if (!sessionId || !user?.id || connectionStatus === 'connected') return;
+    if (!sessionId || !user?.id || connectionStatus.status === 'connected') return;
     
     const pollInterval = setInterval(async () => {
       try {
@@ -200,10 +271,7 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
             if (JSON.stringify(newState) !== JSON.stringify(gameState)) {
               setGameState(newState);
               
-            // Check if partner has now joined (game has moves, is actively being played, or both players exist)
-            if (newState.moves_count > 0 || newState.game_status === 'playing' || (user?.id && partnerId)) {
-              setIsPartnerConnected(true);
-            }
+              // Partner connection is handled by unified session
               
               console.log('🔄 Updated via polling fallback');
             }
@@ -214,17 +282,15 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
     }, 2000);
 
     return () => clearInterval(pollInterval);
-  }, [sessionId, user?.id, connectionStatus, gameState]);
+  }, [sessionId, user?.id, connectionStatus.status, gameState]);
 
-  // Real-time subscription for game updates with enhanced sync
+  // Additional real-time subscription for love grants (separate from unified session)
   useEffect(() => {
     if (!sessionId || !user?.id) {
-      setConnectionStatus('disconnected');
       return;
     }
 
     console.log('🎮 Setting up enhanced real-time subscription for session:', sessionId);
-    setConnectionStatus('connecting');
 
     const channel = supabase
       .channel(`tic-toe-game-${sessionId}`, { config: { broadcast: { ack: true }}})
@@ -289,12 +355,6 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
             
             // Force update game state immediately
             setGameState(newGameState as TicToeGameState);
-            setConnectionStatus('connected');
-            
-            // Check if partner has now joined (game has moves, is actively being played, or both players exist)
-            if (newGameState.moves_count > 0 || newGameState.game_status === 'playing' || (user?.id && partnerId)) {
-              setIsPartnerConnected(true);
-            }
             
             // Update playful message based on new turn
             const isUserTurn = newGameState.current_player_id === user?.id;
@@ -353,26 +413,11 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
           }, ...prev]);
         }
       })
-      .on('system', { event: 'CHANNEL_ERROR' }, (payload) => {
-        console.error('🎮 ❌ Channel error - connection failed', payload);
-        setConnectionStatus('error');
-      })
-      .subscribe((status) => {
-        console.log('🎮 Enhanced Subscription status:', status);
-        if (status === 'SUBSCRIBED') {
-          gameChannelRef.current = channel;
-          setConnectionStatus('connected');
-          console.log('🎮 ✅ Successfully subscribed to real-time updates');
-        } else if (status === 'CHANNEL_ERROR') {
-          console.error('🎮 ❌ Channel error - connection failed');
-          setConnectionStatus('error');
-        }
-      });
+      .subscribe();
 
     return () => {
       console.log('🎮 🧹 Cleaning up enhanced real-time subscription');
       supabase.removeChannel(channel);
-      setConnectionStatus('disconnected');
     };
   }, [sessionId, user?.id, userSymbol, partnerSymbol, getUserDisplayName, getPartnerDisplayName]);
 
@@ -450,384 +495,208 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
           });
         }
       })
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'love_grants',
-          filter: `couple_id=eq.${coupleData.id}`
-        },
-        (payload) => {
-          console.log('💌 Love grant updated:', payload);
-          const updatedGrant = payload.new as any;
-          
-          // Update local state
-          setLoveGrants(prev => prev.map(grant => 
-            grant.id === updatedGrant.id 
-              ? {
-                  ...updatedGrant,
-                  winner_symbol: updatedGrant.winner_symbol as CellValue,
-                  status: updatedGrant.status as 'pending' | 'acknowledged' | 'fulfilled'
-                }
-              : grant
-          ));
-          
-          // Notify the winner about the response
-          if (updatedGrant.winner_user_id === user?.id) {
-            if (updatedGrant.status === 'acknowledged') {
-              toast.success(`💚 Your Love Grant was accepted!`);
-            } else if (updatedGrant.status === 'fulfilled') {
-              toast.success(`💌 Love Grant completed!`);
-            } else if (updatedGrant.partner_response && updatedGrant.partner_response.includes('rejected')) {
-              toast.error(`💔 Your Love Grant was rejected. ${updatedGrant.rejection_reason || 'Try another request!'}`);
-              
-              // Automatically show grant creation popup for winner when rejected
-              setTimeout(() => {
-                setShowLoveGrant(true);
-                setWinnerReward('');
-              }, 2000); // Show after 2 seconds to let the user see the rejection message
-            }
-          }
-        }
-      )
-      .subscribe((status) => {
-        console.log('💌 Love grants subscription status:', status);
-      });
+      .subscribe();
 
-      // keep a reference for broadcasting from winner side
-      loveGrantsChannelRef.current = loveGrantsChannel;
+    loveGrantsChannelRef.current = loveGrantsChannel;
 
     return () => {
-      console.log('💌 Cleaning up love grants subscription');
-      supabase.removeChannel(loveGrantsChannel);
+      console.log('💌 🧹 Cleaning up love grants subscription');
+      if (loveGrantsChannelRef.current) {
+        supabase.removeChannel(loveGrantsChannelRef.current);
+      }
     };
-  }, [coupleData?.id, user?.id]);
+  }, [coupleData?.id, user?.id, showGrantResponse]);
 
-  // Enhanced polling fallback when real-time fails
+  // Auth change listener
   useEffect(() => {
-    if (connectionStatus !== 'connected' && sessionId && user?.id) {
-      console.log('🎮 🔄 Starting polling fallback due to connection status:', connectionStatus);
-      
-      const pollInterval = setInterval(async () => {
-        try {
-          const { data, error } = await supabase
-            .from('tic_toe_heart_games')
-            .select('*')
-            .eq('session_id', sessionId)
-            .single();
-
-          if (error) {
-            console.error('🎮 ❌ Polling error:', error);
-            return;
-          }
-
-          if (data) {
-            // Parse board properly
-            let parsedBoard: Board;
-            try {
-              if (Array.isArray(data.board)) {
-                parsedBoard = data.board as Board;
-              } else if (typeof data.board === 'string') {
-                parsedBoard = JSON.parse(data.board);
-              } else {
-                console.warn('🎮 ⚠️ Unknown board format in polling:', data.board);
-                return;
-              }
-            } catch (parseError) {
-              console.error('🎮 ❌ Board parsing error in polling:', parseError);
-              return;
-            }
-
-            const polledGameState = {
-              ...data,
-              board: parsedBoard,
-              game_status: data.game_status as GameStatus,
-              last_move_at: data.last_move_at || new Date().toISOString()
-            };
-            
-            // Only update if there's actually a change
-            if (!gameState || 
-                JSON.stringify(polledGameState.board) !== JSON.stringify(gameState.board) ||
-                polledGameState.current_player_id !== gameState.current_player_id ||
-                polledGameState.moves_count !== gameState.moves_count ||
-                polledGameState.game_status !== gameState.game_status) {
-              
-              console.log('🎮 📊 Polling detected changes, updating state');
-              setGameState(polledGameState);
-              
-              // Update UI accordingly
-              const isUserTurn = polledGameState.current_player_id === user?.id;
-              const currentPlayerName = isUserTurn ? getUserDisplayName() : getPartnerDisplayName();
-              const currentSymbol = isUserTurn ? userSymbol : partnerSymbol;
-              setPlayfulMessage(getPlayfulMessage(isUserTurn, currentPlayerName || 'Player', currentSymbol));
-            }
-          }
-        } catch (error) {
-          console.error('🎮 ❌ Polling error:', error);
-        }
-      }, 2000); // Poll every 2 seconds when real-time is not working
-
-      return () => {
-        console.log('🎮 🧹 Cleaning up polling fallback');
-        clearInterval(pollInterval);
-      };
-    }
-  }, [connectionStatus, sessionId, user?.id, gameState?.last_move_at]);
-
-  // Connection health monitoring
-  useEffect(() => {
-    const channels = supabase.getChannels();
-    console.log('🎮 📡 Active channels:', channels);
-    
-    // Monitor auth state for connection issues
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       console.log('🎮 🔐 Auth state changed:', event, !!session);
-      if (event === 'SIGNED_OUT') {
-        setConnectionStatus('disconnected');
-      }
+      // Connection status is now handled by unified session
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  // Update playful message when turn changes
-  useEffect(() => {
-    if (gameState && gameState.game_status === 'playing') {
-      const isUserTurn = gameState.current_player_id === user?.id;
-      const currentPlayerName = isUserTurn ? getUserDisplayName() : getPartnerDisplayName();
-      const currentSymbol = isUserTurn ? userSymbol : partnerSymbol;
-      setPlayfulMessage(getPlayfulMessage(isUserTurn, currentPlayerName || 'Player', currentSymbol));
-      
-      // Debug turn changes
-      debugTurnState();
-    }
-  }, [gameState?.current_player_id, gameState?.game_status]);
+  // Check for pending grants
+  const checkForPendingGrants = async () => {
+    if (!coupleData?.id || !user?.id) return;
 
+    try {
+      console.log('💌 Checking for pending grants for couple:', coupleData.id);
+      
+      const { data: pendingGrants, error } = await supabase
+        .from('love_grants')
+        .select('*')
+        .eq('couple_id', coupleData.id)
+        .eq('status', 'pending')
+        .neq('winner_user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (error) {
+        console.error('💌 ❌ Error checking for pending grants:', error);
+        return;
+      }
+
+      console.log('💌 Found pending grants:', pendingGrants);
+
+      if (pendingGrants && pendingGrants.length > 0) {
+        const latestGrant = pendingGrants[0];
+        console.log('💌 Showing pending grant to user:', latestGrant);
+        
+        setPendingGrant({
+          ...latestGrant,
+          winner_symbol: latestGrant.winner_symbol as CellValue,
+          status: latestGrant.status as 'pending' | 'acknowledged' | 'fulfilled'
+        });
+        setShowGrantResponse(true);
+      } else {
+        console.log('💌 No pending grants found');
+      }
+    } catch (error) {
+      console.error('💌 ❌ Error in checkForPendingGrants:', error);
+    }
+  };
+
+  // Initialize game state
   const initializeGame = async () => {
     try {
       setLoading(true);
-      console.log('🎮 Initializing game for session:', sessionId, 'with user:', user?.id);
-      
-      // Check if game already exists for this session
-      let { data: existingGame, error: fetchError } = await supabase
+      console.log('🎮 Initializing or fetching existing Tic Toe Heart game for session:', sessionId);
+
+      // First try to find existing game
+      const { data: existingGame, error: fetchError } = await supabase
         .from('tic_toe_heart_games')
         .select('*')
         .eq('session_id', sessionId)
-        .maybeSingle();
+        .single();
 
-      if (fetchError) {
-        console.error('❌ Fetch error:', fetchError);
-        throw fetchError;
-      }
-
-      if (existingGame) {
-        console.log('🎮 Loading existing game:', existingGame);
-        
-        // Parse board properly from database
-        let parsedBoard: Board;
-        try {
-          if (typeof existingGame.board === 'string') {
-            parsedBoard = JSON.parse(existingGame.board);
-          } else if (Array.isArray(existingGame.board)) {
-            parsedBoard = existingGame.board as Board;
-          } else {
-            // Fallback to empty board
-            parsedBoard = [
-              [null, null, null],
-              [null, null, null], 
-              [null, null, null]
-            ];
-          }
-        } catch (parseError) {
-          console.error('❌ Board parsing error:', parseError);
-          parsedBoard = [
-            [null, null, null],
-            [null, null, null], 
-            [null, null, null]
-          ];
-        }
-        
-        const loadedState = {
+      if (existingGame && !fetchError) {
+        console.log('🎮 Found existing game state:', existingGame);
+        const parsedBoard = Array.isArray(existingGame.board) ? existingGame.board : JSON.parse(String(existingGame.board));
+        const loadedState: TicToeGameState = {
           ...existingGame,
           board: parsedBoard,
-          game_status: existingGame.game_status as GameStatus,
-          last_move_at: existingGame.last_move_at || new Date().toISOString()
+          game_status: existingGame.game_status as GameStatus
         };
-        setGameState(loadedState);
-        console.log('🎮 Game state loaded:', loadedState);
         
-        // Improved partner connection detection - if we can load an existing game, both players are connected
-        // Also consider partner connected if game has progressed or both players are in couple data
+        setGameState(loadedState);
+        
+        // Update playful message
+        const isUserTurn = loadedState.current_player_id === user?.id;
+        const currentPlayerName = isUserTurn ? getUserDisplayName() : getPartnerDisplayName();
+        const currentSymbol = isUserTurn ? userSymbol : partnerSymbol;
+        setPlayfulMessage(getPlayfulMessage(isUserTurn, currentPlayerName || 'Player', currentSymbol));
+        
+        // Also consider partner connected if game has progressed
         const gameHasProgressed = loadedState.moves_count > 0;
         const bothPlayersPresent = user?.id && partnerId && coupleData;
-        const gameExists = !!existingGame;
-        setIsPartnerConnected(gameExists || gameHasProgressed || !!bothPlayersPresent);
+        // Partner connection is handled by unified session
         
         // Debug turn state after loading
         setTimeout(() => debugTurnState(), 100);
       } else {
         // For new games, partner hasn't joined yet
-        setIsPartnerConnected(false);
+        // Partner connection is handled by unified session
         
         // Ensure we have both user and partner before creating game
         if (!user?.id || !partnerId || !coupleData) {
-          console.error('❌ Cannot create game: missing data', { 
-            user: user?.id, 
-            partnerId, 
-            coupleData: !!coupleData 
-          });
-          toast.error('Partner connection required to start game');
+          console.error('🎮 ❌ Missing required data for game creation:', { user: !!user?.id, partnerId: !!partnerId, coupleData: !!coupleData });
+          setLoading(false);
           return;
         }
 
-        // Create new game with randomly selected first player
-        const players = [user.id, partnerId];
-        const randomFirstPlayer = players[Math.floor(Math.random() * players.length)];
+        console.log('🎮 No existing game found, creating new game...');
         
-        console.log('🎮 Creating new game with:', {
-          sessionId,
-          user: user.id,
-          partner: partnerId,
-          randomFirstPlayer: randomFirstPlayer,
-          playerName: randomFirstPlayer === user.id ? getUserDisplayName() : getPartnerDisplayName()
-        });
-        
-        const emptyBoard = [
+        // Create the initial board
+        const initialBoard: Board = [
           [null, null, null],
           [null, null, null],
           [null, null, null]
         ];
-        
-        // Use upsert to prevent duplicates if both players try to create simultaneously
+
+        // Create new game - user goes first
+        const newGameData = {
+          session_id: sessionId,
+          board: JSON.stringify(initialBoard),
+          current_player_id: user.id,
+          game_status: 'playing' as GameStatus,
+          winner_id: null,
+          moves_count: 0
+        };
+
+        console.log('🎮 Creating new game with data:', newGameData);
+
         const { data: newGame, error: createError } = await supabase
           .from('tic_toe_heart_games')
-          .upsert({
-            session_id: sessionId,
-            current_player_id: randomFirstPlayer,
-            board: emptyBoard,
-            game_status: 'playing',
-            winner_id: null,
-            moves_count: 0,
-            last_move_at: new Date().toISOString()
-          }, {
-            onConflict: 'session_id',
-            ignoreDuplicates: false
-          })
+          .insert(newGameData)
           .select()
           .single();
 
         if (createError) {
-          console.error('❌ Create game error:', createError);
-          
-          // If creation failed due to conflict, try to fetch the existing game
-          const { data: conflictGame, error: conflictError } = await supabase
-            .from('tic_toe_heart_games')
-            .select('*')
-            .eq('session_id', sessionId)
-            .single();
-          
-          if (conflictError) {
-            console.error('❌ Conflict fetch also failed:', conflictError);
-            throw createError; // Throw original error
-          }
-          
-          console.log('🎮 Game exists due to conflict, using existing:', conflictGame);
-          
-          // Parse board from conflict game
-          let conflictBoard: Board;
-          try {
-            if (typeof conflictGame.board === 'string') {
-              conflictBoard = JSON.parse(conflictGame.board);
-            } else if (Array.isArray(conflictGame.board)) {
-              conflictBoard = conflictGame.board as Board;
+          // Check if it's a conflict (another player created at same time)
+          if (createError.code === '23505') {
+            console.log('🎮 Detected conflict - fetching game created by other player');
+            const { data: conflictGame } = await supabase
+              .from('tic_toe_heart_games')
+              .select('*')
+              .eq('session_id', sessionId)
+              .single();
+              
+            if (conflictGame) {
+              const parsedBoard = Array.isArray(conflictGame.board) ? conflictGame.board : JSON.parse(String(conflictGame.board));
+              const conflictState: TicToeGameState = {
+                ...conflictGame,
+                board: parsedBoard,
+                game_status: conflictGame.game_status as GameStatus
+              };
+              setGameState(conflictState);
+              
+              console.log('🎮 Using conflict game state:', conflictState);
+              
+              // If conflict game exists, both players have joined
+              // Partner connection is handled by unified session
             } else {
-              conflictBoard = emptyBoard;
+              console.error('🎮 ❌ Failed to create game and no conflict game found:', createError);
             }
-          } catch (parseError) {
-            console.error('❌ Conflict board parsing error:', parseError);
-            conflictBoard = emptyBoard;
+          } else {
+            console.error('🎮 ❌ Failed to create game:', createError);
           }
-          
-          const conflictState = {
-            ...conflictGame,
-            board: conflictBoard,
-            game_status: conflictGame.game_status as GameStatus,
-            last_move_at: conflictGame.last_move_at || new Date().toISOString()
-          };
-          setGameState(conflictState);
-          console.log('🎮 Using conflict game state:', conflictState);
-          
-          // If conflict game exists, both players have joined
-          setIsPartnerConnected(true);
         } else {
           console.log('🎮 New game created successfully:', newGame);
           const newGameState = {
             ...newGame,
-            board: newGame.board as Board,
-            game_status: newGame.game_status as GameStatus,
-            last_move_at: newGame.last_move_at || new Date().toISOString()
+            board: initialBoard,
+            game_status: newGame.game_status as GameStatus
           };
           setGameState(newGameState);
-          console.log('🎮 New game state set:', newGameState);
           
-          // For new games, if we successfully created it and have couple data, partner will join soon
+          // Update playful message for new game
+          const currentPlayerName = getUserDisplayName();
+          setPlayfulMessage(getPlayfulMessage(true, currentPlayerName || 'Player', userSymbol));
+          
           // Set a timer to check for partner connection after a short delay
           setTimeout(() => {
             if (user?.id && partnerId && coupleData) {
-              setIsPartnerConnected(true);
+              // Partner connection is handled by unified session
             }
           }, 1000);
         }
-        
-        // Debug turn state after creating new game
-        setTimeout(() => debugTurnState(), 100);
       }
 
-      // Load love grants history
-      await loadLoveGrants();
-      
-      // Load move history after game state is set
-      if (existingGame?.id) {
-        await loadMoveHistory(existingGame.id);
-      }
-      
-    } catch (error) {
-      console.error('❌ Error initializing game:', error);
-      toast.error('Failed to initialize game');
-    } finally {
       setLoading(false);
-    }
-  };
-
-  const loadMoveHistory = async (gameId?: string) => {
-    try {
-      const currentGameId = gameId || gameState?.id;
-      if (!currentGameId) {
-        console.log('⚠️ No game ID available for loading move history');
-        return;
-      }
-      
-      const { data: moves, error } = await supabase
-        .from('tic_toe_moves')
-        .select('*')
-        .eq('game_id', currentGameId)
-        .order('move_number', { ascending: true });
-
-      if (error) throw error;
-      setMoveHistory((moves || []).map(move => ({
-        ...move,
-        symbol: move.symbol as CellValue
-      })));
     } catch (error) {
-      console.error('❌ Error loading move history:', error);
+      console.error('🎮 ❌ Failed to initialize game:', error);
+      setLoading(false);
+      toast.error('Failed to initialize game');
     }
   };
 
+  // Load existing love grants
   const loadLoveGrants = async () => {
+    if (!coupleData?.id) return;
+
     try {
-      if (!coupleData?.id) return;
-      
       const { data: grants, error } = await supabase
         .from('love_grants')
         .select('*')
@@ -835,1017 +704,678 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
         .order('created_at', { ascending: false })
         .limit(10);
 
-      if (error) throw error;
-      console.log('💌 Loaded love grants:', grants);
-      
-      const formattedGrants = (grants || []).map(g => ({
-        ...g,
-        winner_symbol: g.winner_symbol as CellValue,
-        status: g.status as 'pending' | 'acknowledged' | 'fulfilled'
-      }));
-      
-      setLoveGrants(formattedGrants);
-      
-    } catch (error) {
-      console.error('❌ Error loading love grants:', error);
-    }
-  };
-
-  const sendLoveGrantBroadcast = async (payload: any) => {
-    console.log('💌 Attempting to broadcast love grant:', payload);
-    const channels = [loveGrantsChannelRef.current, gameChannelRef.current].filter(Boolean);
-    
-    if (channels.length === 0) {
-      console.warn('💌 No realtime channels ready for broadcast yet. Waiting for connection...');
-      // Retry after a short delay if channels aren't ready
-      setTimeout(async () => {
-        const retryChannels = [loveGrantsChannelRef.current, gameChannelRef.current].filter(Boolean);
-        if (retryChannels.length > 0) {
-          await Promise.all(
-            retryChannels.map(async (ch: any) => {
-              try {
-                const res = await ch.send({ type: 'broadcast', event: 'love_grant_created', payload });
-                console.log('💌 Delayed broadcast send result:', res);
-              } catch (e) {
-                console.warn('💌 Delayed broadcast send error:', e);
-              }
-            })
-          );
-        } else {
-          console.error('💌 Still no channels available for broadcast after retry');
-        }
-      }, 1000);
-      return;
-    }
-
-    await Promise.all(
-      channels.map(async (ch: any) => {
-        try {
-          const res = await ch.send({ type: 'broadcast', event: 'love_grant_created', payload });
-          console.log('💌 Broadcast send result:', res, 'on channel:', ch.topic);
-        } catch (e) {
-          console.warn('💌 Broadcast send error:', e);
-        }
-      })
-    );
-  };
-
-  const saveLoveGrant = async (grant: Omit<LoveGrant, 'id' | 'created_at'>) => {
-    try {
-      if (!coupleData?.id || !user?.id) throw new Error('Missing required data');
-
-      const { data, error } = await supabase
-        .from('love_grants')
-        .insert({
-          couple_id: coupleData.id,
-          winner_user_id: grant.winner_user_id, // 🎯 FIX: Use the actual winner from grant
-          winner_name: grant.winner_name,
-          winner_symbol: grant.winner_symbol,
-          request_text: grant.request_text,
-          game_session_id: sessionId,
-          status: 'pending'
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      
-      // Add to local state immediately
-      setLoveGrants(prev => [{
-        ...data,
-        winner_symbol: data.winner_symbol as CellValue,
-        status: data.status as 'pending' | 'acknowledged' | 'fulfilled'
-      }, ...prev]);
-
-      // Broadcast instantly so partner sees the popup without relying on DB realtime lag
-      await sendLoveGrantBroadcast(data);
-      
-      // Force immediate notification for partner
-      setTimeout(async () => {
-        console.log('💌 Force triggering immediate grant notification...');
-        
-        // Check if partner should be notified immediately
-        if (partnerId && data.winner_user_id !== partnerId) {
-          // This grant is FOR the partner, show them the popup immediately
-          const partnerChannel = supabase.channel(`love-grant-alert-${partnerId}`);
-          await partnerChannel.send({
-            type: 'broadcast',
-            event: 'immediate_love_grant',
-            payload: data
-          });
-          
-          setTimeout(() => {
-            supabase.removeChannel(partnerChannel);
-          }, 1000);
-        }
-      }, 100);
-      
-      // Also reload grants to ensure sync
-      await loadLoveGrants();
-      
-      toast.success('💌 Love Grant sent to your partner!');
-    } catch (error) {
-      console.error('❌ Error saving love grant:', error);
-      toast.error('Failed to send Love Grant');
-    }
-  };
-
-  const checkWinner = (board: Board): string | null => {
-    // Check rows
-    for (let i = 0; i < 3; i++) {
-      if (board[i][0] && board[i][0] === board[i][1] && board[i][1] === board[i][2]) {
-        return board[i][0] === userSymbol ? user?.id || 'user' : partnerId || 'partner';
-      }
-    }
-
-    // Check columns
-    for (let i = 0; i < 3; i++) {
-      if (board[0][i] && board[0][i] === board[1][i] && board[1][i] === board[2][i]) {
-        return board[0][i] === userSymbol ? user?.id || 'user' : partnerId || 'partner';
-      }
-    }
-
-    // Check diagonals
-    if (board[0][0] && board[0][0] === board[1][1] && board[1][1] === board[2][2]) {
-      return board[0][0] === userSymbol ? user?.id || 'user' : partnerId || 'partner';
-    }
-    if (board[0][2] && board[0][2] === board[1][1] && board[1][1] === board[2][0]) {
-      return board[0][2] === userSymbol ? user?.id || 'user' : partnerId || 'partner';
-    }
-
-    return null;
-  };
-
-  const isBoardFull = (board: Board): boolean => {
-    return board.every(row => row.every(cell => cell !== null));
-  };
-
-  // Validate and fix board structure if needed
-  const validateBoard = (board: any): Board => {
-    // If board is null or undefined, create empty board
-    if (!board) {
-      return [
-        [null, null, null],
-        [null, null, null], 
-        [null, null, null]
-      ];
-    }
-    
-    // If board is a string (JSONB), parse it
-    if (typeof board === 'string') {
-      try {
-        const parsed = JSON.parse(board);
-        return validateBoard(parsed);
-      } catch {
-        return [
-          [null, null, null],
-          [null, null, null],
-          [null, null, null]
-        ];
-      }
-    }
-    
-    // If board is not an array, create empty board
-    if (!Array.isArray(board)) {
-      return [
-        [null, null, null],
-        [null, null, null],
-        [null, null, null]
-      ];
-    }
-    
-    // Ensure board is 3x3 and has valid values
-    const validBoard: Board = [];
-    for (let i = 0; i < 3; i++) {
-      validBoard[i] = [];
-      for (let j = 0; j < 3; j++) {
-        const cell = board[i]?.[j];
-        validBoard[i][j] = (cell === '💖' || cell === '💘') ? cell : null;
-      }
-    }
-    
-    return validBoard;
-  };
-
-  const handleCellClick = async (row: number, col: number) => {
-    if (isProcessingMove) {
-      console.log('❌ Move already in progress');
-      return;
-    }
-
-    console.group('🎮 Enhanced Move Processing');
-    console.log('Player:', user?.id);
-    console.log('Current Turn:', gameState?.current_player_id);
-    console.log('Position:', { row, col });
-    console.log('Session ID:', sessionId);
-    console.log('User Symbol:', userSymbol);
-    console.log('Partner ID:', partnerId);
-
-    if (!gameState || !user?.id) {
-      console.error('❌ No game state or user ID');
-      toast.error("Game not ready!");
-      console.groupEnd();
-      return;
-    }
-
-    if (gameState.current_player_id !== user.id) {
-      console.log('❌ Not user turn - Current player:', gameState.current_player_id, 'User:', user.id);
-      toast.error("🚫 It's not your turn!");
-      console.groupEnd();
-      return;
-    }
-
-    const validatedBoard = validateBoard(gameState.board);
-    if (validatedBoard[row][col] !== null) {
-      console.log('❌ Cell already occupied:', validatedBoard[row][col]);
-      toast.error("Cell already taken!");
-      console.groupEnd();
-      return;
-    }
-
-    if (gameState.game_status !== 'playing') {
-      console.log('❌ Game not in playing state:', gameState.game_status);
-      console.groupEnd();
-      return;
-    }
-
-    try {
-      setIsProcessingMove(true);
-      console.log('🎮 ✅ Processing valid move at:', row, col);
-
-      // Create optimistic board update using validated board
-      const validatedBoard = validateBoard(gameState.board);
-      const newBoard = validatedBoard.map((r, rowIndex) =>
-        r.map((c, colIndex) => 
-          rowIndex === row && colIndex === col ? userSymbol : c
-        )
-      );
-
-      // Check for winner
-      const winner = checkWinner(newBoard);
-      const isFull = isBoardFull(newBoard);
-      
-      let newStatus: GameStatus = 'playing';
-      let winnerId: string | null = null;
-
-      if (winner) {
-        newStatus = 'won';
-        winnerId = winner; // checkWinner already returns the correct player ID
-        console.log('🎮 🏆 Winner detected:', winnerId);
-      } else if (isFull) {
-        newStatus = 'draw';
-        console.log('🎮 🤝 Draw detected');
-      }
-
-      // Determine next player - switch turns if game is still playing
-      const nextPlayerId = newStatus === 'playing' ? partnerId : gameState.current_player_id;
-      
-      console.log('🎮 📤 Updating database with move...');
-      
-      // Update the database with comprehensive error handling
-      console.log('🎮 📤 Board being sent to DB:', newBoard);
-      console.log('🎮 📤 Board JSON:', JSON.stringify(newBoard));
-      
-      const { data: updatedGame, error: updateError } = await supabase
-        .from('tic_toe_heart_games')
-        .update({
-          board: newBoard, // Send array directly - Supabase will handle JSONB conversion
-          current_player_id: nextPlayerId,
-          game_status: newStatus,
-          winner_id: winnerId,
-          moves_count: gameState.moves_count + 1,
-          last_move_at: new Date().toISOString()
-        })
-        .eq('session_id', sessionId)
-        .select()
-        .single();
-
-      if (updateError) {
-        console.error('❌ Database update error:', updateError);
-        toast.error('Failed to make move');
-        console.groupEnd();
+      if (error) {
+        console.error('💌 ❌ Error loading love grants:', error);
         return;
       }
 
-      console.log('🎮 ✅ Database update successful:', updatedGame);
+      console.log('💌 Loaded existing love grants:', grants);
       
-      // Record move in history
-      if (gameState.id) {
-        const { error: moveError } = await supabase
-          .from('tic_toe_moves')
-          .insert({
-            game_id: gameState.id,
-            player_id: user.id,
-            position_row: row,
-            position_col: col,
-            symbol: userSymbol,
-            move_number: gameState.moves_count + 1
-          });
+      setLoveGrants(grants?.map(grant => ({
+        ...grant,
+        winner_symbol: grant.winner_symbol as CellValue,
+        status: grant.status as 'pending' | 'acknowledged' | 'fulfilled'
+      })) || []);
+    } catch (error) {
+      console.error('💌 ❌ Error in loadLoveGrants:', error);
+    }
+  };
 
-        if (moveError) {
-          console.warn('⚠️ Failed to record move in history:', moveError);
-          // Don't fail the move for history errors
-        } else {
-          console.log('📝 Move recorded in history');
-        }
+  // Handle cell click
+  const handleCellClick = async (row: number, col: number) => {
+    if (!gameState || !user?.id || !partnerId) {
+      console.log('🎮 ❌ Cannot make move - missing game state or user info');
+      return;
+    }
+
+    // Check if it's the user's turn
+    if (gameState.current_player_id !== user.id) {
+      console.log('🎮 ❌ Not your turn!');
+      toast.info("It's not your turn! Wait for your partner 💕");
+      return;
+    }
+
+    // Check if cell is already occupied
+    if (gameState.board[row][col] !== null) {
+      console.log('🎮 ❌ Cell already occupied');
+      toast.warning("That spot is already taken! Choose another 💖");
+      return;
+    }
+
+    // Check if game is still active
+    if (gameState.game_status !== 'playing') {
+      console.log('🎮 ❌ Game is not active');
+      toast.info("Game has ended! 🎉");
+      return;
+    }
+
+    if (isProcessingMove) {
+      console.log('🎮 ❌ Already processing a move');
+      return;
+    }
+
+    setIsProcessingMove(true);
+
+    try {
+      console.log(`🎮 Making move at [${row}, ${col}] with symbol ${userSymbol}`);
+
+      // Create optimistic update
+      const newBoard = gameState.board.map((boardRow, rowIndex) =>
+        boardRow.map((cell, colIndex) =>
+          rowIndex === row && colIndex === col ? userSymbol : cell
+        )
+      );
+
+      const newMoveCount = gameState.moves_count + 1;
+      
+      // Check for win condition with the new board
+      const winner = checkWinner(newBoard);
+      const isDraw = !winner && newBoard.flat().every(cell => cell !== null);
+      
+      const newStatus: GameStatus = winner ? 'won' : (isDraw ? 'draw' : 'playing');
+      const winnerId = winner ? user.id : null;
+      const nextPlayerId = newStatus === 'playing' ? partnerId : gameState.current_player_id;
+
+      console.log('🎮 Calculated move results:', {
+        winner,
+        isDraw,
+        newStatus,
+        winnerId,
+        nextPlayerId,
+        moveCount: newMoveCount
+      });
+
+      // Apply optimistic update immediately
+      setGameState(prev => prev ? {
+        ...prev,
+        board: newBoard,
+        current_player_id: nextPlayerId,
+        game_status: newStatus,
+        winner_id: winnerId,
+        moves_count: newMoveCount,
+        last_move_at: new Date().toISOString()
+      } : null);
+
+      // Update playful message immediately
+      if (newStatus === 'playing') {
+        const nextPlayerName = getPartnerDisplayName();
+        setPlayfulMessage(getPlayfulMessage(false, nextPlayerName || 'Partner', partnerSymbol));
       }
 
-      console.log('Move completed successfully');
-      console.groupEnd();
+      // Send move to database
+      const { error: moveError } = await supabase
+        .from('tic_toe_heart_games')
+        .update({
+          board: JSON.stringify(newBoard),
+          current_player_id: nextPlayerId,
+          game_status: newStatus,
+          winner_id: winnerId,
+          moves_count: newMoveCount,
+          last_move_at: new Date().toISOString()
+        })
+        .eq('session_id', sessionId);
 
-      // Real-time subscription will handle UI updates
-      toast.success("Move made successfully!");
+      if (moveError) {
+        console.error('🎮 ❌ Failed to save move to database:', moveError);
+        toast.error('Failed to save move. Please try again.');
+        
+        // Revert optimistic update on error
+        setGameState(gameState);
+        setIsProcessingMove(false);
+        return;
+      }
 
-      if (newStatus !== 'playing') {
-        if (winnerId === user.id) {
-          setTimeout(() => setShowLoveGrant(true), 2000);
-        }
+      // Move history tracking removed for now (table doesn't exist in types)
+
+      console.log('🎮 ✅ Move processed successfully');
+
+      // Handle game end
+      if (winner) {
+        console.log('🎮 🏆 Game won by:', user.id);
+        toast.success(`🎉 You won! Amazing job! 🏆`);
+        setShowCelebration(true);
+        
+        // Winner gets to create a love grant
+        setTimeout(() => {
+          setShowLoveGrant(true);
+        }, 2000);
+      } else if (isDraw) {
+        console.log('🎮 🤝 Game is a draw');
+        toast.info('🤝 It\'s a draw! Great game!');
+        setShowCelebration(true);
+      } else {
+        // Game continues
+        toast.success(`💕 Nice move! It's your partner's turn now.`);
       }
 
     } catch (error) {
-      console.error('❌ Error making move:', error);
-      toast.error(`Failed to make move: ${error.message}`);
-      console.groupEnd();
+      console.error('🎮 ❌ Error making move:', error);
+      toast.error('Failed to make move. Please try again.');
+      
+      // Revert optimistic update on error
+      setGameState(gameState);
     } finally {
       setIsProcessingMove(false);
     }
   };
 
-  const handleLoveGrantSubmit = async () => {
-    if (!winnerReward.trim() || !gameState || !user?.id || !coupleData?.id) return;
+  // Check for winner
+  const checkWinner = (board: Board): CellValue => {
+    // Check rows
+    for (let row = 0; row < 3; row++) {
+      if (board[row][0] && board[row][0] === board[row][1] && board[row][1] === board[row][2]) {
+        return board[row][0];
+      }
+    }
 
-    // 🎯 FIX: Use the actual winner_id from gameState, not always the current user
-    const actualWinnerId = gameState.winner_id;
-    const actualWinnerSymbol = getUserSymbol(actualWinnerId || '');
-    const actualWinnerName = actualWinnerId === user.id 
-      ? getUserDisplayName() || 'You'
-      : getPartnerDisplayName() || 'Your Partner';
+    // Check columns
+    for (let col = 0; col < 3; col++) {
+      if (board[0][col] && board[0][col] === board[1][col] && board[1][col] === board[2][col]) {
+        return board[0][col];
+      }
+    }
 
-    const loveGrant: Omit<LoveGrant, 'id' | 'created_at'> = {
-      couple_id: coupleData.id,
-      winner_user_id: actualWinnerId || user.id, // Use actual winner
-      winner_name: actualWinnerName,
-      winner_symbol: actualWinnerSymbol,
-      request_text: winnerReward.trim(),
-      game_session_id: sessionId,
-      status: 'pending'
-    };
+    // Check diagonals
+    if (board[0][0] && board[0][0] === board[1][1] && board[1][1] === board[2][2]) {
+      return board[0][0];
+    }
+    if (board[0][2] && board[0][2] === board[1][1] && board[1][1] === board[2][0]) {
+      return board[0][2];
+    }
 
-    console.log('🎯 Creating Love Grant for actual winner:', {
-      actualWinnerId,
-      currentUserId: user.id,
-      loveGrant
-    });
-
-    await saveLoveGrant(loveGrant);
-    setShowLoveGrant(false);
-    setWinnerReward('');
+    return null;
   };
 
-  const handleGrantResponse = async (accepted: boolean) => {
+  // Create love grant
+  const createLoveGrant = async () => {
+    if (!winnerReward.trim() || !gameState || !user?.id || !coupleData) {
+      toast.error('Please enter what you want from your partner! 💕');
+      return;
+    }
+
+    try {
+      console.log('💌 Creating love grant:', {
+        winnerReward,
+        gameState: gameState.id,
+        user: user.id,
+        couple: coupleData.id
+      });
+
+      const loveGrantData = {
+        couple_id: coupleData.id,
+        winner_user_id: user.id,
+        winner_name: getUserDisplayName() || user.email?.split('@')[0] || 'Winner',
+        winner_symbol: userSymbol,
+        request_text: winnerReward.trim(),
+        game_session_id: sessionId,
+        status: 'pending' as const
+      };
+
+      const { data: newGrant, error } = await supabase
+        .from('love_grants')
+        .insert(loveGrantData)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('💌 ❌ Failed to create love grant:', error);
+        toast.error('Failed to create love grant. Please try again.');
+        return;
+      }
+
+      console.log('💌 ✅ Love grant created successfully:', newGrant);
+      
+      // Add to local state immediately
+      setLoveGrants(prev => [{
+        ...newGrant,
+        winner_symbol: newGrant.winner_symbol as CellValue,
+        status: newGrant.status as 'pending' | 'acknowledged' | 'fulfilled'
+      }, ...prev]);
+
+      // Send broadcast to partner on both channels for maximum reliability
+      if (gameChannelRef.current) {
+        await gameChannelRef.current.send({
+          type: 'broadcast',
+          event: 'love_grant_created',
+          payload: {
+            ...newGrant,
+            winner_symbol: newGrant.winner_symbol as CellValue,
+            status: newGrant.status as 'pending' | 'acknowledged' | 'fulfilled'
+          }
+        });
+        console.log('💌 📡 Broadcast sent on game channel');
+      }
+
+      if (loveGrantsChannelRef.current) {
+        await loveGrantsChannelRef.current.send({
+          type: 'broadcast',
+          event: 'love_grant_created',
+          payload: {
+            ...newGrant,
+            winner_symbol: newGrant.winner_symbol as CellValue,
+            status: newGrant.status as 'pending' | 'acknowledged' | 'fulfilled'
+          }
+        });
+        console.log('💌 📡 Broadcast sent on love grants channel');
+      }
+
+      toast.success('💌 Love grant sent to your partner! 💕');
+      setShowLoveGrant(false);
+      setWinnerReward('');
+
+    } catch (error) {
+      console.error('💌 ❌ Error creating love grant:', error);
+      toast.error('Failed to create love grant. Please try again.');
+    }
+  };
+
+  // Respond to love grant
+  const respondToLoveGrant = async (accepted: boolean) => {
     if (!pendingGrant || !user?.id) return;
 
     try {
-      console.log('💌 Responding to grant:', pendingGrant.id, 'Accepted:', accepted);
-      
-      const updateData: any = {
-        responded_at: new Date().toISOString(),
-        status: accepted ? 'acknowledged' : 'pending'
-      };
+      console.log('💌 Responding to love grant:', { 
+        grantId: pendingGrant.id, 
+        accepted, 
+        grantResponseMessage: grantResponseMessage.trim(),
+        rejectionReason: rejectionReason.trim()
+      });
 
-      if (accepted) {
-        updateData.partner_response = 'accepted';
-        updateData.status = 'acknowledged';
-      } else {
-        updateData.partner_response = 'rejected';
-        updateData.rejection_reason = rejectionReason || 'The request was declined. Please try another approach.';
-        updateData.status = 'acknowledged';
-      }
+      const updateData = {
+        status: accepted ? 'acknowledged' : 'fulfilled',
+        responded_at: new Date().toISOString(),
+        partner_response: accepted ? grantResponseMessage.trim() || 'Accepted! 💕' : rejectionReason.trim() || 'Not right now 💔'
+      };
 
       const { error } = await supabase
         .from('love_grants')
         .update(updateData)
         .eq('id', pendingGrant.id);
 
-      if (error) throw error;
-
-      setShowGrantResponse(false);
-      setPendingGrant(null);
-      setRejectionReason('');
-
-      if (accepted) {
-        toast.success('💚 Love Grant accepted! Your partner has been notified.');
-      } else {
-        toast.success('💔 Love Grant declined. Your partner can try again.');
-      }
-
-      // Automatically start a new game after the grant is handled
-      await handleRematch();
-    } catch (error) {
-      console.error('❌ Error responding to grant:', error);
-      toast.error('Failed to respond to Love Grant');
-    }
-  };
-
-  const checkForPendingGrants = async () => {
-    if (!coupleData?.id || !user?.id) {
-      console.log('💌 Cannot check grants - missing data:', { coupleId: !!coupleData?.id, userId: !!user?.id });
-      return;
-    }
-
-    try {
-      console.log('💌 Checking for pending grants for couple:', coupleData.id, 'user:', user.id);
-      
-      // First check ALL pending grants for this couple for debugging
-      const { data: allGrants, error: allGrantsError } = await supabase
-        .from('love_grants')
-        .select('*')
-        .eq('couple_id', coupleData.id)
-        .order('created_at', { ascending: false });
-        
-      console.log('💌 ALL grants for couple:', allGrants);
-      
-      const { data: pendingGrants, error } = await supabase
-        .from('love_grants')
-        .select('*')
-        .eq('couple_id', coupleData.id)
-        .eq('status', 'pending')
-        .neq('winner_user_id', user.id) // Grants NOT created by current user
-        .order('created_at', { ascending: false })
-        .limit(1);
-
       if (error) {
-        console.error('💌 Error fetching pending grants:', error);
+        console.error('💌 ❌ Failed to respond to love grant:', error);
+        toast.error('Failed to respond. Please try again.');
         return;
       }
 
-      console.log('💌 Found pending grants for current user:', pendingGrants);
+      console.log('💌 ✅ Successfully responded to love grant');
+      
+      // Update local state
+      setLoveGrants(prev => prev.map(grant => 
+        grant.id === pendingGrant.id 
+          ? { ...grant, ...updateData, status: updateData.status as 'pending' | 'acknowledged' | 'fulfilled' }
+          : grant
+      ));
 
-      if (pendingGrants && pendingGrants.length > 0) {
-        const latestGrant = pendingGrants[0];
-        console.log('💌 Processing latest pending grant:', latestGrant);
-        
-        // Check if this grant is from the recent game
-        const grantTime = new Date(latestGrant.created_at).getTime();
-        const now = new Date().getTime();
-        const timeDiff = now - grantTime;
-        
-        console.log('💌 Grant time diff (minutes):', timeDiff / (1000 * 60));
-        console.log('💌 Current showGrantResponse state:', showGrantResponse);
-        console.log('💌 Current pendingGrant state:', pendingGrant);
-        
-        // Only show grants from the last 10 minutes and if popup isn't already shown
-        if (timeDiff < 10 * 60 * 1000 && !showGrantResponse) {
-          console.log('💌 ✅ Showing grant popup to user');
-          setPendingGrant({
-            ...latestGrant,
-            winner_symbol: latestGrant.winner_symbol as CellValue,
-            status: latestGrant.status as 'pending' | 'acknowledged' | 'fulfilled'
-          });
-          setShowGrantResponse(true);
-        } else {
-          if (timeDiff >= 10 * 60 * 1000) {
-            console.log('💌 ❌ Grant too old, not showing popup');
-          }
-          if (showGrantResponse) {
-            console.log('💌 ❌ Popup already shown, not showing again');
-          }
-        }
+      if (accepted) {
+        toast.success('💕 You accepted the love grant! Your partner will be thrilled!');
       } else {
-        console.log('💌 No pending grants found for this user');
+        toast.info('💔 Love grant declined. Maybe next time!');
       }
+
+      // Close modal and reset
+      setShowGrantResponse(false);
+      setPendingGrant(null);
+      setGrantResponseMessage('');
+      setRejectionReason('');
+
     } catch (error) {
-      console.error('💌 Error checking for pending grants:', error);
+      console.error('💌 ❌ Error responding to love grant:', error);
+      toast.error('Failed to respond. Please try again.');
     }
   };
 
-  const handleRematch = async () => {
-    if (!gameState || !user?.id) return;
+  // Get cell content
+  const getCellContent = (value: CellValue, row: number, col: number) => {
+    if (value) {
+      return (
+        <span className="text-4xl select-none animate-pulse">
+          {value}
+        </span>
+      );
+    }
+
+    // Empty cell - show if it's user's turn and game is active
+    const isUserTurn = gameState?.current_player_id === user?.id;
+    const canClick = isUserTurn && gameState?.game_status === 'playing' && !isProcessingMove;
+    
+    return (
+      <div
+        className={`w-full h-full flex items-center justify-center ${
+          canClick 
+            ? 'hover:bg-pink-100 cursor-pointer transition-colors duration-200' 
+            : ''
+        }`}
+        onClick={() => canClick && handleCellClick(row, col)}
+      >
+        {canClick && (
+          <span className="text-2xl opacity-30 hover:opacity-60 transition-opacity">
+            {userSymbol}
+          </span>
+        )}
+      </div>
+    );
+  };
+
+  // Reset game
+  const resetGame = async () => {
+    if (!gameState || !user?.id || !partnerId) return;
 
     try {
-      // Randomly select first player for rematch
-      const players = [user.id, partnerId];
-      const randomFirstPlayer = players[Math.floor(Math.random() * players.length)];
-      
-      console.log('🎮 Starting rematch with random first player:', {
-        user: user.id,
-        partner: partnerId,
-        randomFirstPlayer: randomFirstPlayer,
-        playerName: randomFirstPlayer === user.id ? getUserDisplayName() : getPartnerDisplayName()
-      });
-      
-      // Reset the game state
+      console.log('🔄 Resetting game...');
+
+      const initialBoard: Board = [
+        [null, null, null],
+        [null, null, null],
+        [null, null, null]
+      ];
+
       const { error } = await supabase
         .from('tic_toe_heart_games')
         .update({
-          board: [
-            [null, null, null],
-            [null, null, null],
-            [null, null, null]
-          ],
-          current_player_id: randomFirstPlayer,
-          game_status: 'playing' as GameStatus,
+          board: JSON.stringify(initialBoard),
+          current_player_id: user.id, // User who resets goes first
+          game_status: 'playing',
           winner_id: null,
           moves_count: 0,
           last_move_at: new Date().toISOString()
         })
-        .eq('id', gameState.id);
+        .eq('session_id', sessionId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('🔄 ❌ Failed to reset game:', error);
+        toast.error('Failed to reset game');
+        return;
+      }
+
+      console.log('🔄 ✅ Game reset successfully');
       
+      // Update local state
+      setGameState({
+        ...gameState,
+        board: initialBoard,
+        current_player_id: user.id,
+        game_status: 'playing',
+        winner_id: null,
+        moves_count: 0,
+        last_move_at: new Date().toISOString()
+      });
+
       setShowCelebration(false);
       setShowLoveGrant(false);
-      setWinnerReward('');
-      toast.success('🎮 New game started!');
-      onRematch();
+      setShowGrantResponse(false);
+      
+      // Update playful message
+      const currentPlayerName = getUserDisplayName();
+      setPlayfulMessage(getPlayfulMessage(true, currentPlayerName || 'Player', userSymbol));
+
+      toast.success('🔄 Game reset! Let\'s play again! 💕');
+
     } catch (error) {
-      console.error('❌ Error starting rematch:', error);
-      toast.error('Failed to start rematch');
+      console.error('🔄 ❌ Error resetting game:', error);
+      toast.error('Failed to reset game');
     }
   };
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <Card className="border-primary/20">
-          <CardContent className="p-4">
-            <div className="text-center">
-              <div className="animate-spin text-4xl mb-4">💝</div>
-              <p className="text-muted-foreground">Loading TikTok Toe Heart Game...</p>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin text-6xl mb-4">💕</div>
+          <p>Loading Tic Toe Heart...</p>
+        </div>
       </div>
     );
   }
-
 
   if (!gameState) {
     return (
-      <div className="space-y-6">
-        <Card className="border-primary/20">
-          <CardContent className="p-4">
-            <div className="text-center">
-              <p className="text-muted-foreground">Failed to load game</p>
-              <Button onClick={onExit} variant="outline" className="mt-2">
-                Exit Game
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <p className="text-xl mb-4">Failed to load game</p>
+          <Button onClick={() => window.location.reload()}>
+            Try Again
+          </Button>
+        </div>
       </div>
     );
   }
 
-  // Show waiting screen if partner hasn't joined yet
-  if (!loading && !isPartnerConnected && getPartnerDisplayName) {
+  // Show loading while initializing
+  if (loading) {
     return (
-      <div className="space-y-6">
-        <Card className="border-primary/20 bg-gradient-to-br from-pink-50 to-purple-50">
-          <CardContent className="p-8">
-            <div className="text-center space-y-6">
-              {/* Animated Hearts */}
-              <div className="flex justify-center items-center gap-2 mb-4">
-                <Heart className="h-8 w-8 text-pink-500 animate-pulse" />
-                <div className="text-3xl animate-bounce">💕</div>
-                <Heart className="h-8 w-8 text-pink-500 animate-pulse" style={{ animationDelay: '0.5s' }} />
-              </div>
-
-              {/* Main Message */}
-              <div className="space-y-3">
-                <h2 className="text-2xl font-bold text-gray-800">
-                  Waiting for {getPartnerDisplayName()}
-                </h2>
-                <p className="text-gray-600 leading-relaxed">
-                  Your Tic Toe Heart game is ready! We're just waiting for {getPartnerDisplayName()} to join the fun.
-                </p>
-              </div>
-
-              {/* Loading Animation */}
-              <div className="flex justify-center items-center gap-2 py-4">
-                <div className="flex gap-1">
-                  <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-pink-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                  <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                </div>
-                <span className="text-sm text-gray-500 ml-2">Connecting...</span>
-              </div>
-
-              {/* Instructions */}
-              <div className="bg-white/50 rounded-lg p-4 border border-pink-200">
-                <p className="text-sm text-gray-600">
-                  💡 <strong>Tip:</strong> Share the game link with {getPartnerDisplayName()} or let them know you've started a new game session!
-                </p>
-              </div>
-
-              {/* Action Button */}
-              <Button 
-                onClick={onExit}
-                variant="outline"
-                className="w-full mt-6 border-purple-200 hover:bg-purple-50"
-              >
-                Back to Games
-              </Button>
-            </div>
+      <div className="flex items-center justify-center min-h-screen p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <CardTitle className="flex items-center justify-center gap-2">
+              <Heart className="w-6 h-6 text-pink-500 animate-pulse" />
+              Loading Game
+              <Heart className="w-6 h-6 text-pink-500 animate-pulse" />
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="text-center space-y-4">
+            <div className="text-6xl animate-spin">💖</div>
+            <p className="text-lg">Setting up your romantic game...</p>
+            <p className="text-sm text-muted-foreground">
+              Loading game state...
+            </p>
           </CardContent>
         </Card>
       </div>
     );
   }
 
-  // Ensure board is valid before rendering
-  const validatedBoard = validateBoard(gameState.board);
-  const validatedGameState = { ...gameState, board: validatedBoard };
+  // Always render the game - no waiting screen needed
 
   const isUserTurn = gameState.current_player_id === user?.id;
-  const isGameOver = gameState.game_status !== 'playing';
-  
-  // Rematch gating: require Love Grant to be handled if there is a winner
-  const sessionGrant = loveGrants.find(g => g.game_session_id === sessionId && g.winner_user_id === gameState.winner_id);
-  const grantResolved = !!sessionGrant && (sessionGrant.status === 'acknowledged' || sessionGrant.status === 'fulfilled');
-  const grantRequired = isGameOver && !!gameState.winner_id; // not required on draw
-  const canRematch = !grantRequired || grantResolved;
+  const gameEnded = gameState.game_status !== 'playing';
+  const userIsWinner = gameState.winner_id === user?.id;
 
   return (
-    <div className="space-y-6">
-      {/* Winner Celebration Animation */}
+    <div className="max-w-2xl mx-auto p-4 space-y-6">
+      {/* Winner celebration background */}
       {showCelebration && gameState.winner_id && (
-        <WinnerCelebration 
-          winnerSymbol={getUserSymbol(gameState.winner_id)} 
-        />
+        <WinnerCelebration winnerSymbol={userIsWinner ? userSymbol : partnerSymbol} />
       )}
 
-      {/* Live Avatars & Status */}
-      <Card className="border-primary/20 animate-fade-in">
-        <CardContent className="p-4">
-          {/* Connection Status Indicator */}
-          <div className="flex justify-center mb-4">
-            <Badge variant={connectionStatus === 'connected' ? 'default' : connectionStatus === 'connecting' ? 'secondary' : 'destructive'}>
-              {connectionStatus === 'connected' && '🟢 Real-time Connected'}
-              {connectionStatus === 'connecting' && '🟡 Connecting...'}
-              {connectionStatus === 'disconnected' && '🔴 Offline Mode'}
-            </Badge>
-          </div>
-          
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <Avatar className="h-12 w-12">
-                  <AvatarFallback className="bg-pink-500 text-white">
-                    {user?.email?.charAt(0).toUpperCase()}
+      {/* Header */}
+      <Card>
+        <CardHeader className="text-center">
+          <CardTitle className="flex items-center justify-center gap-2">
+            <Heart className="w-6 h-6 text-pink-500" />
+            Tic Toe Heart
+            <Heart className="w-6 h-6 text-pink-500" />
+          </CardTitle>
+        </CardHeader>
+      </Card>
+
+      {/* Game Status */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="text-center space-y-4">
+            {/* Connection Status */}
+            <div className="flex justify-center items-center gap-2">
+              <Badge variant={connectionStatus.status === 'connected' ? 'default' : 'secondary'}>
+                {connectionStatus.status === 'connected' ? '🟢 Connected' : 
+                 connectionStatus.status === 'connecting' ? '🟡 Connecting...' : 
+                 connectionStatus.status === 'error' ? '🔴 Error' : '⚪ Disconnected'}
+              </Badge>
+              
+              {isPartnerOnline && (
+                <Badge variant="outline">
+                  👥 Partner Online
+                </Badge>
+              )}
+              
+              {isPartnerConnected && (
+                <Badge variant="outline">
+                  💕 Partner Joined
+                </Badge>
+              )}
+            </div>
+
+            {/* Players */}
+            <div className="flex justify-center items-center gap-8">
+              <div className="text-center">
+                <Avatar className="mx-auto mb-2">
+                  <AvatarFallback>
+                    {getUserDisplayName()?.charAt(0) || user?.email?.charAt(0) || 'U'}
                   </AvatarFallback>
                 </Avatar>
-                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
+                <p className="font-medium">{getUserDisplayName() || user?.email}</p>
+                <p className="text-2xl">{userSymbol}</p>
+                {isUserTurn && !gameEnded && (
+                  <Badge variant="default" className="mt-1">Your Turn</Badge>
+                )}
+                {userIsWinner && (
+                  <Badge variant="default" className="mt-1 bg-yellow-500">
+                    <Crown className="w-3 h-3 mr-1" />
+                    Winner!
+                  </Badge>
+                )}
               </div>
-              <div>
-                <p className="font-medium">{getUserDisplayName()} ({userSymbol})</p>
-                <p className={`text-sm font-medium ${
-                  isUserTurn && !isGameOver 
-                    ? 'text-green-600 animate-pulse' 
-                    : 'text-muted-foreground'
-                }`}>
-                  {isGameOver 
-                    ? 'Game Over' 
-                    : isUserTurn 
-                      ? '🟢 Your turn!' 
-                      : '⏳ Waiting...'
-                  }
-                </p>
+
+              <div className="text-4xl">vs</div>
+
+              <div className="text-center">
+                <Avatar className="mx-auto mb-2">
+                  <AvatarFallback>
+                    {getPartnerDisplayName()?.charAt(0) || 'P'}
+                  </AvatarFallback>
+                </Avatar>
+                <p className="font-medium">{getPartnerDisplayName() || 'Partner'}</p>
+                <p className="text-2xl">{partnerSymbol}</p>
+                {!isUserTurn && !gameEnded && (
+                  <Badge variant="secondary" className="mt-1">Their Turn</Badge>
+                )}
+                {gameState.winner_id === partnerId && (
+                  <Badge variant="default" className="mt-1 bg-yellow-500">
+                    <Crown className="w-3 h-3 mr-1" />
+                    Winner!
+                  </Badge>
+                )}
               </div>
             </div>
 
-            <div className="text-center">
-              <Trophy className="h-8 w-8 text-yellow-500 mx-auto mb-1" />
-              <p className="text-xs text-muted-foreground">TikTok Toe</p>
-              <p className="text-xs text-muted-foreground">Heart Game</p>
-            </div>
+            {/* Playful Message */}
+            {playfulMessage && (
+              <div className="bg-gradient-to-r from-pink-50 to-purple-50 p-4 rounded-lg">
+                <p className="text-lg font-medium text-center">{playfulMessage}</p>
+              </div>
+            )}
 
-            <div className="flex items-center gap-3">
-              <div className="text-right">
-                <p className="font-medium">{getPartnerDisplayName()} ({partnerSymbol})</p>
-                <p className={`text-sm font-medium ${
-                  !isUserTurn && !isGameOver 
-                    ? 'text-green-600 animate-pulse' 
-                    : 'text-muted-foreground'
-                }`}>
-                  {isGameOver 
-                    ? 'Game Over' 
-                    : !isUserTurn 
-                      ? '🟢 Their turn!' 
-                      : isPartnerOnline ? '💚 Online' : '💔 Offline'
-                  }
-                </p>
+            {/* Game End Message */}
+            {gameEnded && (
+              <div className="bg-gradient-to-r from-yellow-50 to-orange-50 p-4 rounded-lg">
+                {gameState.game_status === 'draw' ? (
+                  <p className="text-lg font-bold text-center">🤝 It's a draw! Great game!</p>
+                ) : userIsWinner ? (
+                  <p className="text-lg font-bold text-center">🎉 You won! Congratulations! 🏆</p>
+                ) : (
+                  <p className="text-lg font-bold text-center">💔 You lost, but great game! 💕</p>
+                )}
               </div>
-              <div className="relative">
-                <Avatar className="h-12 w-12">
-                  <AvatarFallback className="bg-purple-500 text-white">
-                    {getPartnerDisplayName()?.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${
-                  isPartnerOnline ? 'bg-green-500' : 'bg-gray-400'
-                }`}></div>
-              </div>
-            </div>
+            )}
           </div>
         </CardContent>
       </Card>
 
       {/* Game Board */}
-      <Card className="border-pink-200 bg-gradient-to-br from-pink-50 to-purple-50 dark:from-pink-950/20 dark:to-purple-950/20 animate-fade-in">
-        <CardHeader className="text-center">
-          <CardTitle className="text-4xl">
-            💕
-          </CardTitle>
-          
-          {gameState.game_status === 'won' && gameState.winner_id === user?.id && (
-            <Badge className="mx-auto bg-green-500 text-white animate-bounce">
-              🎉 You Won! 👑
-            </Badge>
-          )}
-          {gameState.game_status === 'won' && gameState.winner_id !== user?.id && (
-            <Badge className="mx-auto bg-blue-500 text-white">
-              💙 Your partner won! 🏆
-            </Badge>
-          )}
-          {gameState.game_status === 'draw' && (
-            <Badge className="mx-auto bg-yellow-500 text-white">
-              🤝 It's a Draw! Great match! 💕
-            </Badge>
-          )}
-        </CardHeader>
-        
-        <CardContent>
-          {/* Game Board Grid */}
-          <div className="grid grid-cols-3 gap-2 max-w-[300px] mx-auto mb-6">
-            {validatedBoard.map((row, rowIndex) =>
+      <Card>
+        <CardContent className="pt-6">
+          <div className="grid grid-cols-3 gap-2 max-w-xs mx-auto">
+            {gameState.board.map((row, rowIndex) =>
               row.map((cell, colIndex) => (
-                <button
+                <div
                   key={`${rowIndex}-${colIndex}`}
-                  className={`
-                    aspect-square bg-white dark:bg-gray-800 rounded-lg border-2 
-                    ${isUserTurn && !cell && gameState.game_status === 'playing'
-                      ? 'border-pink-300 hover:border-pink-500 hover:bg-pink-50 cursor-pointer hover-scale' 
-                      : 'border-gray-200 dark:border-gray-600'
-                    }
-                    flex items-center justify-center text-4xl
-                    transition-all duration-200 
-                    ${cell ? 'animate-scale-in' : ''}
-                  `}
-                  onClick={() => handleCellClick(rowIndex, colIndex)}
-                  disabled={!isUserTurn || !!cell || gameState.game_status !== 'playing'}
+                  className="aspect-square border-2 border-pink-200 rounded-lg flex items-center justify-center bg-white hover:bg-pink-50 transition-colors"
                 >
-                  {cell && (
-                    <span className="animate-scale-in">
-                      {cell}
-                    </span>
-                  )}
-                </button>
+                  {getCellContent(cell, rowIndex, colIndex)}
+                </div>
               ))
             )}
           </div>
 
-          {/* Playful Dialogue */}
-          {gameState.game_status === 'playing' && playfulMessage && (
-            <div className="text-center p-4 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 rounded-lg border border-pink-200 animate-fade-in">
-              <p className="text-purple-700 dark:text-purple-300 font-medium">
-                {playfulMessage}
-              </p>
-            </div>
-          )}
-
-          {/* Winner/Draw Celebration */}
-          {showCelebration && (
-            <div className="text-center p-6 bg-gradient-to-r from-pink-100 to-purple-100 dark:from-pink-900/30 dark:to-purple-900/30 rounded-lg border-2 border-pink-300 animate-scale-in">
-              {gameState.game_status === 'draw' ? (
-                <div className="space-y-3">
-                  <div className="flex justify-center items-center gap-2">
-                    <Heart className="h-6 w-6 text-yellow-500" />
-                    <Sparkles className="h-8 w-8 text-yellow-500" />
-                    <Heart className="h-6 w-6 text-yellow-500" />
-                  </div>
-                  <h3 className="text-xl font-bold text-yellow-700 dark:text-yellow-300">
-                    🤝 It's a Draw! 🤝
-                  </h3>
-                  <p className="text-yellow-600 dark:text-yellow-400">
-                    Great match! You're both equally strategic! 💕✨
-                  </p>
-                </div>
-              ) : gameState.winner_id === user?.id ? (
-                <div className="space-y-3">
-                  <div className="flex justify-center items-center gap-2">
-                    <Sparkles className="h-6 w-6 text-yellow-500 animate-spin" />
-                    <Crown className="h-8 w-8 text-yellow-500" />
-                    <Sparkles className="h-6 w-6 text-yellow-500 animate-spin" />
-                  </div>
-                  <h3 className="text-xl font-bold text-pink-700 dark:text-pink-300">
-                    🎉 Congratulations! You Won! 🎉
-                  </h3>
-                  <p className="text-pink-600 dark:text-pink-400">
-                    As the winner, you've earned a 💌 Love Grant! ✨
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <Heart className="h-8 w-8 text-pink-500 mx-auto" />
-                  <h3 className="text-xl font-bold text-purple-700 dark:text-purple-300">
-                    💜 Your partner won this round!
-                  </h3>
-                  <p className="text-purple-600 dark:text-purple-400">
-                    They've earned a 💌 Love Grant from you! 💝
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Game Controls */}
-          {isGameOver && (
-            <div className="flex gap-3 justify-center mt-6">
-              <Button 
-                onClick={handleRematch}
-                disabled={!canRematch}
-                className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 animate-fade-in disabled:opacity-60 disabled:cursor-not-allowed"
-                title={!canRematch ? 'Finish the Love Grant first' : undefined}
-              >
-                <RotateCcw className="w-4 h-4 mr-2" />
-                Rematch 💞
-              </Button>
-              <Button variant="outline" onClick={onExit} className="animate-fade-in">
-                Exit 💔
-              </Button>
-            </div>
-          )}
+          {/* Game Info */}
+          <div className="mt-6 text-center space-y-2">
+            <p className="text-sm text-muted-foreground">
+              Moves: {gameState.moves_count} | Status: {gameState.game_status}
+            </p>
+          </div>
         </CardContent>
       </Card>
 
-      {/* Love Grant Modal */}
-      <Dialog open={showLoveGrant} onOpenChange={setShowLoveGrant}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-center text-xl bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
-              💌 Your Love Grant! 👑
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="text-center p-4 bg-gradient-to-r from-yellow-100 to-pink-100 rounded-lg">
-              <Crown className="h-8 w-8 text-yellow-500 mx-auto mb-2" />
-              <p className="text-yellow-700 text-sm">
-                As the winner, you can ask your partner anything or make a sweet request!
-              </p>
-            </div>
+      {/* Game Controls */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex gap-2 justify-center">
+            <Button
+              onClick={resetGame}
+              variant="outline"
+              disabled={isProcessingMove}
+              className="flex items-center gap-2"
+            >
+              <RotateCcw className="w-4 h-4" />
+              Reset Game
+            </Button>
             
-            <textarea
-              value={winnerReward}
-              onChange={(e) => setWinnerReward(e.target.value)}
-              placeholder="Ask a meaningful question, make a request, or suggest something romantic..."
-              className="w-full p-3 rounded-lg border resize-none h-24"
-              maxLength={200}
-            />
-            <p className="text-xs text-muted-foreground text-right">
-              {winnerReward.length}/200 characters
-            </p>
+            <Button
+              onClick={onRematch}
+              variant="outline"
+              disabled={isProcessingMove}
+              className="flex items-center gap-2"
+            >
+              <Sparkles className="w-4 h-4" />
+              New Game
+            </Button>
             
-            <div className="flex gap-2">
-              <Button 
-                onClick={handleLoveGrantSubmit}
-                disabled={!winnerReward.trim()}
-                className="flex-1 bg-gradient-to-r from-pink-500 to-purple-500"
-              >
-                <MessageCircle className="w-4 h-4 mr-2" />
-                Send Love Grant 💌
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={() => setShowLoveGrant(false)}
-              >
-                Later
-              </Button>
-            </div>
+            <Button
+              onClick={onExit}
+              variant="outline"
+              disabled={isProcessingMove}
+            >
+              Exit
+            </Button>
           </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Grant Response Modal (for losing partner) */}
-      <Dialog open={showGrantResponse} onOpenChange={setShowGrantResponse}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-center text-xl bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-              💌 Love Grant Received! 💝
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="text-center p-4 bg-gradient-to-r from-purple-100 to-pink-100 rounded-lg">
-              <Crown className="h-8 w-8 text-purple-500 mx-auto mb-2" />
-              <p className="text-purple-700 text-sm font-medium">
-                {pendingGrant?.winner_name} has a request for you:
-              </p>
-            </div>
-            
-            <div className="p-4 bg-white rounded-lg border-2 border-purple-200">
-              <p className="text-gray-800 font-medium text-center">
-                "{pendingGrant?.request_text}"
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              <div className="text-center text-sm text-muted-foreground">
-                How would you like to respond?
-              </div>
-              
-              <div className="flex gap-2">
-                <Button 
-                  onClick={() => handleGrantResponse(true)}
-                  className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
-                >
-                  <Heart className="w-4 h-4 mr-2" />
-                  Accept 💚
-                </Button>
-                <Button 
-                  variant="outline"
-                  onClick={() => handleGrantResponse(false)}
-                  className="flex-1 border-red-300 text-red-600 hover:bg-red-50"
-                >
-                  💔 Decline
-                </Button>
-              </div>
-
-              {/* Optional rejection reason */}
-              <div className="space-y-2">
-                <label className="text-sm text-muted-foreground">
-                  Optional: Suggest something else (if declining)
-                </label>
-                <textarea
-                  value={rejectionReason}
-                  onChange={(e) => setRejectionReason(e.target.value)}
-                  placeholder="You could try asking for... (optional)"
-                  className="w-full p-2 rounded border text-sm h-16 resize-none"
-                  maxLength={100}
-                />
-                <p className="text-xs text-muted-foreground text-right">
-                  {rejectionReason.length}/100 characters
-                </p>
-              </div>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+        </CardContent>
+      </Card>
 
       {/* Love Grants History */}
       {loveGrants.length > 0 && (
-        <Card className="border-yellow-200 bg-gradient-to-r from-yellow-50 to-pink-50 dark:from-yellow-950/20 dark:to-pink-950/20 animate-fade-in">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-lg text-yellow-800 dark:text-yellow-200 flex items-center gap-2">
-              <Crown className="h-5 w-5" />
-              Recent Love Grants 💌
+            <CardTitle className="flex items-center gap-2">
+              <MessageCircle className="w-5 h-5" />
+              Love Grants History
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2 max-h-40 overflow-y-auto">
+            <div className="space-y-3 max-h-40 overflow-y-auto">
               {loveGrants.slice(0, 5).map((grant) => (
-                <div key={grant.id} className="p-3 bg-white/50 rounded-lg border space-y-2">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Crown className="h-4 w-4 text-yellow-500" />
-                    <span className="font-medium text-sm">
-                      {grant.winner_name} {grant.winner_symbol}
-                    </span>
-                    <span className="text-xs text-muted-foreground ml-auto">
-                      {new Date(grant.created_at).toLocaleDateString()}
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-700 dark:text-gray-300">
-                    "{grant.request_text}"
-                  </p>
-                  
-                  {/* Enhanced status display */}
-                  <div className="flex items-center gap-2">
-                    {grant.status === 'pending' && !grant.partner_response && (
-                      <Badge className="bg-yellow-100 text-yellow-800 text-xs">
-                        💌 Awaiting response
-                      </Badge>
-                    )}
-                    {grant.status === 'pending' && grant.partner_response?.includes('rejected') && (
-                      <Badge className="bg-red-100 text-red-800 text-xs">
-                        💔 Declined
-                      </Badge>
-                    )}
-                    {grant.status === 'acknowledged' && (
-                      <Badge className="bg-green-100 text-green-800 text-xs">
-                        💚 Accepted
-                      </Badge>
-                    )}
-                    {grant.status === 'fulfilled' && (
-                      <Badge className="bg-blue-100 text-blue-800 text-xs">
-                        ✨ Completed
-                      </Badge>
-                    )}
-                    
-                    {/* Show rejection reason if available */}
-                    {grant.rejection_reason && grant.winner_user_id === user?.id && (
-                      <span className="text-xs text-orange-600 italic">
-                        💡 {grant.rejection_reason}
-                      </span>
-                    )}
+                <div
+                  key={grant.id}
+                  className="p-3 bg-gradient-to-r from-pink-50 to-purple-50 rounded-lg"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <p className="font-medium">
+                        {grant.winner_symbol} {grant.winner_name}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        "{grant.request_text}"
+                      </p>
+                      {grant.partner_response && (
+                        <p className="text-sm text-green-600 mt-1">
+                          Response: "{grant.partner_response}"
+                        </p>
+                      )}
+                    </div>
+                    <Badge variant={
+                      grant.status === 'pending' ? 'secondary' : 
+                      grant.status === 'acknowledged' ? 'default' : 'outline'
+                    }>
+                      {grant.status}
+                    </Badge>
                   </div>
                 </div>
               ))}
@@ -1854,23 +1384,124 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
         </Card>
       )}
 
-      {/* Debug Info - Similar to Card Game */}
-      <DebugInfo 
-        gameState={{
-          id: sessionId,
-          session_id: sessionId,
-          game_id: gameState?.id,
-          user1_id: coupleData?.user1_id,
-          user2_id: coupleData?.user2_id,
-          current_turn: gameState?.current_player_id,
-          status: gameState?.game_status,
-          moves_count: gameState?.moves_count,
-          connection_status: connectionStatus,
-          partner_online: isPartnerOnline,
-          user_symbol: userSymbol,
-          partner_symbol: partnerSymbol,
-          partner_id: partnerId
-        }}
+      {/* Winner Love Grant Modal */}
+      <Dialog open={showLoveGrant} onOpenChange={setShowLoveGrant}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="text-center">
+              🎉 You Won! Create a Love Grant 💕
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-center text-muted-foreground">
+              As the winner, you get to ask your partner for something special!
+            </p>
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                What would you like from your partner? 💖
+              </label>
+              <textarea
+                value={winnerReward}
+                onChange={(e) => setWinnerReward(e.target.value)}
+                placeholder="A back massage, cooking dinner, choosing the next movie..."
+                className="w-full p-3 border rounded-lg resize-none"
+                rows={3}
+                maxLength={200}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                {winnerReward.length}/200 characters
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                onClick={createLoveGrant}
+                disabled={!winnerReward.trim()}
+                className="flex-1"
+              >
+                Send Love Grant 💌
+              </Button>
+              <Button
+                onClick={() => setShowLoveGrant(false)}
+                variant="outline"
+              >
+                Skip
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Partner Love Grant Response Modal */}
+      <Dialog open={showGrantResponse} onOpenChange={setShowGrantResponse}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="text-center">
+              💌 Love Grant from {pendingGrant?.winner_name}
+            </DialogTitle>
+          </DialogHeader>
+          {pendingGrant && (
+            <div className="space-y-4">
+              <div className="text-center">
+                <p className="text-6xl mb-2">{pendingGrant.winner_symbol}</p>
+                <p className="text-lg font-medium">
+                  {pendingGrant.winner_name} won and wants:
+                </p>
+                <div className="bg-gradient-to-r from-pink-50 to-purple-50 p-4 rounded-lg mt-3">
+                  <p className="text-lg italic">"{pendingGrant.request_text}"</p>
+                </div>
+              </div>
+              
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Your playful response (optional):
+                  </label>
+                  <input
+                    value={grantResponseMessage}
+                    onChange={(e) => setGrantResponseMessage(e.target.value)}
+                    placeholder="Of course! I'd love to... 💕"
+                    className="w-full p-2 border rounded-lg"
+                    maxLength={100}
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    If declining, why? (optional):
+                  </label>
+                  <input
+                    value={rejectionReason}
+                    onChange={(e) => setRejectionReason(e.target.value)}
+                    placeholder="Maybe later... I'm busy right now 💔"
+                    className="w-full p-2 border rounded-lg"
+                    maxLength={100}
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => respondToLoveGrant(true)}
+                  className="flex-1 bg-green-500 hover:bg-green-600"
+                >
+                  💕 Accept
+                </Button>
+                <Button
+                  onClick={() => respondToLoveGrant(false)}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  💔 Decline
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Debug Info */}
+      <DebugInfo
+        gameState={gameState}
         currentUserId={user?.id || ''}
         isMyTurn={isUserTurn}
       />

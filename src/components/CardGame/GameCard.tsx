@@ -427,7 +427,7 @@ export const GameCard: React.FC<GameCardProps> = ({
             {!isMyTurn && (
               <div className="text-center p-4 bg-purple-50 rounded-lg">
                 <p className="text-purple-700">
-                  ⏳ Waiting for partner...
+                   ⏳ Partner's Turn...
                 </p>
               </div>
             )}
