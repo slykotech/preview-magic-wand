@@ -375,10 +375,14 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
         }
       )
       .on('broadcast', { event: 'love_grant_created' }, (payload) => {
-        console.log('💌 IMMEDIATE: Love grant broadcast received on game channel:', payload);
+        console.log('💌 🎯 GAME CHANNEL: Love grant broadcast received:', payload);
+        console.log('💌 🎯 Current user ID:', user?.id);
         const newGrant = (payload as any).payload;
+        console.log('💌 🎯 Grant details:', newGrant);
+        
         if (newGrant && newGrant.winner_user_id !== user?.id && newGrant.status === 'pending') {
-          console.log('💌 IMMEDIATE: Showing love grant popup to loser via broadcast:', newGrant);
+          console.log('💌 🎯 GAME CHANNEL: Showing love grant popup to loser!');
+          toast.success('💌 You received a love grant from your partner!');
           setPendingGrant({
             ...newGrant,
             winner_symbol: newGrant.winner_symbol as CellValue,
@@ -392,6 +396,8 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
             winner_symbol: newGrant.winner_symbol as CellValue,
             status: newGrant.status as 'pending' | 'acknowledged' | 'fulfilled'
           }, ...prev]);
+        } else {
+          console.log('💌 🎯 GAME CHANNEL: Grant not for current user or not pending');
         }
       })
       .subscribe();
@@ -423,10 +429,10 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
           filter: `couple_id=eq.${coupleData.id}`
         },
         (payload) => {
-          console.log('💌 New love grant created:', payload);
+          console.log('💌 🎯 DB SUBSCRIPTION: New love grant created:', payload);
           const newGrant = payload.new as any;
           
-          console.log('💌 Checking if grant is for current user:', {
+          console.log('💌 🎯 DB SUBSCRIPTION: Checking grant recipient:', {
             newGrantWinnerId: newGrant.winner_user_id,
             currentUserId: user?.id,
             isForCurrentUser: newGrant.winner_user_id !== user?.id,
@@ -435,13 +441,16 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
           
           // Check if this grant is for the current user to respond to (not the winner)
           if (newGrant.winner_user_id !== user?.id && newGrant.status === 'pending') {
-            console.log('💌 Showing new love grant popup to recipient:', newGrant);
+            console.log('💌 🎯 DB SUBSCRIPTION: Showing love grant popup to recipient!');
+            toast.success('💌 You received a love grant from your partner!');
             setPendingGrant({
               ...newGrant,
               winner_symbol: newGrant.winner_symbol as CellValue,
               status: newGrant.status as 'pending' | 'acknowledged' | 'fulfilled'
             });
             setShowGrantResponse(true);
+          } else {
+            console.log('💌 🎯 DB SUBSCRIPTION: Grant not for current user or not pending');
           }
           
           // Add to local state
@@ -452,10 +461,14 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
           }, ...prev]);
         })
       .on('broadcast', { event: 'love_grant_created' }, (payload) => {
-        console.log('💌 BROADCAST: Love grant broadcast received on dedicated channel:', payload);
+        console.log('💌 🎯 LOVE GRANTS CHANNEL: Broadcast received:', payload);
+        console.log('💌 🎯 Current user ID:', user?.id);
         const newGrant = (payload as any).payload;
+        console.log('💌 🎯 Grant details:', newGrant);
+        
         if (newGrant && newGrant.winner_user_id !== user?.id && newGrant.status === 'pending') {
-          console.log('💌 BROADCAST: Showing love grant popup to loser via broadcast:', newGrant);
+          console.log('💌 🎯 LOVE GRANTS CHANNEL: Showing love grant popup to loser!');
+          toast.success('💌 You received a love grant from your partner!');
           setPendingGrant({
             ...newGrant,
             winner_symbol: newGrant.winner_symbol as CellValue,
