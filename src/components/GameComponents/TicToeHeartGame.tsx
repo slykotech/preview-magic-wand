@@ -856,11 +856,17 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
       // Handle game end
       if (winner) {
         console.log('🎮 🏆 Game won by:', user.id);
+        console.log('🎮 🏆 Creating automatic love grants...');
         toast.success(`🎉 You won! Amazing job! 🏆`);
         setShowCelebration(true);
         
         // Automatically create love grant for winner
-        await handleGameEnd(newStatus, user.id);
+        try {
+          await handleGameEnd(newStatus, user.id);
+          console.log('🎮 🏆 ✅ Automatic love grants created successfully');
+        } catch (error) {
+          console.error('🎮 🏆 ❌ Failed to create automatic love grants:', error);
+        }
         
         // Winner gets to create a custom love grant
         setTimeout(() => {
@@ -872,7 +878,12 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
         setShowCelebration(true);
         
         // Handle draw scenario
-        await handleGameEnd(newStatus, null);
+        try {
+          await handleGameEnd(newStatus, null);
+          console.log('🎮 🤝 ✅ Draw love grants created successfully');
+        } catch (error) {
+          console.error('🎮 🤝 ❌ Failed to create draw love grants:', error);
+        }
       } else {
         // Game continues
         toast.success(`💕 Nice move! It's your partner's turn now.`);
@@ -918,7 +929,12 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
 
   // Handle game end logic with automatic love grants
   const handleGameEnd = async (gameStatus: GameStatus, winnerId: string | null) => {
-    if (!coupleData || !user?.id) return;
+    console.log('💌 🎯 HANDLE GAME END STARTED:', { gameStatus, winnerId, coupleId: coupleData?.id, userId: user?.id });
+    
+    if (!coupleData || !user?.id) {
+      console.error('💌 ❌ Missing coupleData or user.id:', { coupleData: !!coupleData, userId: user?.id });
+      return;
+    }
 
     try {
       console.log('🎮 🏆 Handling game end:', { gameStatus, winnerId, coupleId: coupleData.id });
@@ -955,6 +971,17 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
             status: winnerGrant.status as 'pending' | 'acknowledged' | 'fulfilled'
           }, ...prev]);
 
+          // If this grant is for current user, show popup immediately
+          if (winnerGrant.winner_user_id === user.id) {
+            console.log('💌 🎯 IMMEDIATE: Showing winner grant popup to current user');
+            setPendingGrant({
+              ...winnerGrant,
+              winner_symbol: winnerGrant.winner_symbol as CellValue,
+              status: winnerGrant.status as 'pending' | 'acknowledged' | 'fulfilled'
+            });
+            setShowGrantResponse(true);
+          }
+
           // Broadcast to both players
           await broadcastLoveGrant(winnerGrant);
         }
@@ -990,6 +1017,17 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
             winner_symbol: loserGrant.winner_symbol as CellValue,
             status: loserGrant.status as 'pending' | 'acknowledged' | 'fulfilled'
           }, ...prev]);
+
+          // If this grant is for current user, show popup immediately
+          if (loserGrant.winner_user_id === user.id) {
+            console.log('💌 🎯 IMMEDIATE: Showing loser grant popup to current user');
+            setPendingGrant({
+              ...loserGrant,
+              winner_symbol: loserGrant.winner_symbol as CellValue,
+              status: loserGrant.status as 'pending' | 'acknowledged' | 'fulfilled'
+            });
+            setShowGrantResponse(true);
+          }
 
           // Broadcast to both players
           await broadcastLoveGrant(loserGrant);
