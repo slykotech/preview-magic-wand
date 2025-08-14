@@ -239,11 +239,8 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
       // Load love grants when component mounts
       loadLoveGrants();
       
-      // Check for any existing pending love grants when component mounts
-      setTimeout(() => {
-        console.log('🎮 Component mounted - checking for existing pending grants');
-        checkForPendingGrants();
-      }, 1000);
+      // Don't check for pending grants on mount - only during game flow
+      // This prevents old grants from previous games showing up
     }
   }, [sessionId, user?.id, partnerId]);
 
@@ -671,7 +668,7 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
     }
   };
 
-  // Load existing love grants
+  // Load existing love grants - show all couple's grants in history
   const loadLoveGrants = async () => {
     if (!coupleData?.id) return;
 
@@ -688,7 +685,7 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
         return;
       }
 
-      console.log('💌 Loaded existing love grants:', grants);
+      console.log('💌 Loaded existing love grants for history:', grants);
       
       setLoveGrants(grants?.map(grant => ({
         ...grant,
