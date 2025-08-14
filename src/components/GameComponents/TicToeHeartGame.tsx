@@ -284,15 +284,16 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
     return () => clearInterval(pollInterval);
   }, [sessionId, user?.id, connectionStatus.status, gameState]);
 
-  // Additional real-time subscription for love grants (separate from unified session)
+  // Set up real-time channels with proper refs for broadcasting
   useEffect(() => {
-    if (!sessionId || !user?.id) {
+    if (!sessionId || !user?.id || !coupleData?.id) {
       return;
     }
 
     console.log('🎮 Setting up enhanced real-time subscription for session:', sessionId);
 
-    const channel = supabase
+    // Game state channel
+    const gameChannel = supabase
       .channel(`tic-toe-game-${sessionId}`, { config: { broadcast: { ack: true }}})
       .on(
         'postgres_changes',
@@ -362,31 +363,14 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
             const currentSymbol = isUserTurn ? userSymbol : partnerSymbol;
             setPlayfulMessage(getPlayfulMessage(isUserTurn, currentPlayerName || 'Player', currentSymbol));
             
-            // Check for game end
+            // Check for game end - NO LOVE GRANT LOGIC HERE
             if (newGameState.game_status !== 'playing') {
               setShowCelebration(true);
               if (newGameState.winner_id === user?.id) {
-                setTimeout(() => setShowLoveGrant(true), 2000);
-              } else if (newGameState.winner_id && newGameState.winner_id !== user?.id) {
-                // For the loser: check for pending love grants with multiple attempts
-                console.log('🎮 Game ended, user is loser. Setting up grant detection...');
-                
-                // Check immediately and then retry a few times
-                setTimeout(() => {
-                  console.log('🎮 First attempt - checking for grants');
-                  checkForPendingGrants();
-                }, 1000);
-                
-                setTimeout(() => {
-                  console.log('🎮 Second attempt - checking for grants');
-                  checkForPendingGrants();
-                }, 3000);
-                
-                setTimeout(() => {
-                  console.log('🎮 Third attempt - checking for grants');
-                  checkForPendingGrants();
-                }, 5000);
+                // Winner gets immediate love grant modal
+                setTimeout(() => setShowLoveGrant(true), 1500);
               }
+              // Loser receives love grants via real-time broadcast - no polling needed
             }
  
             console.log('🎮 State updated successfully at:', new Date().toISOString());
@@ -394,10 +378,10 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
         }
       )
       .on('broadcast', { event: 'love_grant_created' }, (payload) => {
-        console.log('💌 Broadcast received on game channel:', payload);
+        console.log('💌 IMMEDIATE: Love grant broadcast received on game channel:', payload);
         const newGrant = (payload as any).payload;
         if (newGrant && newGrant.winner_user_id !== user?.id && newGrant.status === 'pending') {
-          console.log('💌 Showing immediate love grant popup via broadcast:', newGrant);
+          console.log('💌 IMMEDIATE: Showing love grant popup to loser via broadcast:', newGrant);
           setPendingGrant({
             ...newGrant,
             winner_symbol: newGrant.winner_symbol as CellValue,
@@ -415,11 +399,15 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
       })
       .subscribe();
 
+    // Store channel ref for broadcasting
+    gameChannelRef.current = gameChannel;
+
     return () => {
       console.log('🎮 🧹 Cleaning up enhanced real-time subscription');
-      supabase.removeChannel(channel);
+      supabase.removeChannel(gameChannel);
+      gameChannelRef.current = null;
     };
-  }, [sessionId, user?.id, userSymbol, partnerSymbol, getUserDisplayName, getPartnerDisplayName]);
+  }, [sessionId, user?.id, coupleData?.id, userSymbol, partnerSymbol, getUserDisplayName, getPartnerDisplayName]);
 
   // Real-time subscription for love grants
   useEffect(() => {
@@ -467,32 +455,23 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
           }, ...prev]);
         })
       .on('broadcast', { event: 'love_grant_created' }, (payload) => {
-        console.log('💌 Broadcast received on love grants channel:', payload);
+        console.log('💌 BROADCAST: Love grant broadcast received on dedicated channel:', payload);
         const newGrant = (payload as any).payload;
         if (newGrant && newGrant.winner_user_id !== user?.id && newGrant.status === 'pending') {
-          console.log('💌 Showing immediate love grant popup via love grants channel broadcast:', newGrant);
-          
-          // Only show if not already showing to prevent duplicates
-          if (!showGrantResponse) {
-            setPendingGrant({
-              ...newGrant,
-              winner_symbol: newGrant.winner_symbol as CellValue,
-              status: newGrant.status as 'pending' | 'acknowledged' | 'fulfilled'
-            });
-            setShowGrantResponse(true);
-          }
-          
-          // Add to local list for immediate visibility (avoid duplicates)
-          setLoveGrants(prev => {
-            const exists = prev.some(grant => grant.id === newGrant.id);
-            if (exists) return prev;
-            
-            return [{
-              ...newGrant,
-              winner_symbol: newGrant.winner_symbol as CellValue,
-              status: newGrant.status as 'pending' | 'acknowledged' | 'fulfilled'
-            }, ...prev];
+          console.log('💌 BROADCAST: Showing love grant popup to loser via broadcast:', newGrant);
+          setPendingGrant({
+            ...newGrant,
+            winner_symbol: newGrant.winner_symbol as CellValue,
+            status: newGrant.status as 'pending' | 'acknowledged' | 'fulfilled'
           });
+          setShowGrantResponse(true);
+          
+          // Add to local state
+          setLoveGrants(prev => [{
+            ...newGrant,
+            winner_symbol: newGrant.winner_symbol as CellValue,
+            status: newGrant.status as 'pending' | 'acknowledged' | 'fulfilled'
+          }, ...prev]);
         }
       })
       .subscribe();
@@ -932,31 +911,53 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
         status: newGrant.status as 'pending' | 'acknowledged' | 'fulfilled'
       }, ...prev]);
 
-      // Send broadcast to partner on both channels for maximum reliability
+      // IMMEDIATE broadcast to partner on BOTH channels for maximum reliability
+      const broadcastPayload = {
+        ...newGrant,
+        winner_symbol: newGrant.winner_symbol as CellValue,
+        status: newGrant.status as 'pending' | 'acknowledged' | 'fulfilled'
+      };
+
+      // Send on game channel
       if (gameChannelRef.current) {
-        await gameChannelRef.current.send({
-          type: 'broadcast',
-          event: 'love_grant_created',
-          payload: {
-            ...newGrant,
-            winner_symbol: newGrant.winner_symbol as CellValue,
-            status: newGrant.status as 'pending' | 'acknowledged' | 'fulfilled'
-          }
-        });
-        console.log('💌 📡 Broadcast sent on game channel');
+        try {
+          await gameChannelRef.current.send({
+            type: 'broadcast',
+            event: 'love_grant_created',
+            payload: broadcastPayload
+          });
+          console.log('💌 📡 SUCCESS: Broadcast sent on game channel');
+        } catch (error) {
+          console.error('💌 ❌ Failed to broadcast on game channel:', error);
+        }
+      } else {
+        console.warn('💌 ⚠️ Game channel ref not available for broadcasting');
       }
 
+      // Send on dedicated love grants channel
       if (loveGrantsChannelRef.current) {
-        await loveGrantsChannelRef.current.send({
-          type: 'broadcast',
-          event: 'love_grant_created',
-          payload: {
-            ...newGrant,
-            winner_symbol: newGrant.winner_symbol as CellValue,
-            status: newGrant.status as 'pending' | 'acknowledged' | 'fulfilled'
-          }
-        });
-        console.log('💌 📡 Broadcast sent on love grants channel');
+        try {
+          await loveGrantsChannelRef.current.send({
+            type: 'broadcast',
+            event: 'love_grant_created',
+            payload: broadcastPayload
+          });
+          console.log('💌 📡 SUCCESS: Broadcast sent on dedicated love grants channel');
+        } catch (error) {
+          console.error('💌 ❌ Failed to broadcast on love grants channel:', error);
+        }
+      } else {
+        console.warn('💌 ⚠️ Love grants channel ref not available for broadcasting');
+      }
+
+      // Triple redundancy: Also use sendBroadcast from unified session
+      if (sendBroadcast) {
+        try {
+          await sendBroadcast('love_grant_created', broadcastPayload);
+          console.log('💌 📡 SUCCESS: Broadcast sent via unified session');
+        } catch (error) {
+          console.error('💌 ❌ Failed to broadcast via unified session:', error);
+        }
       }
 
       toast.success('💌 Love grant sent to your partner! 💕');
