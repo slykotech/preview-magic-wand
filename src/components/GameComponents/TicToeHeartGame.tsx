@@ -380,8 +380,14 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
         const newGrant = (payload as any).payload;
         console.log('💌 🎯 Grant details:', newGrant);
         
-        if (newGrant && newGrant.winner_user_id !== user?.id && newGrant.status === 'pending') {
-          console.log('💌 🎯 GAME CHANNEL: Showing love grant popup to loser!');
+        if (newGrant && newGrant.winner_user_id === user?.id && newGrant.status === 'pending') {
+          console.log('💌 🎯 GAME CHANNEL: Showing love grant popup to recipient!');
+          console.log('💌 🎯 Grant details:', { 
+            grantId: newGrant.id, 
+            recipientId: newGrant.winner_user_id, 
+            currentUserId: user?.id,
+            message: newGrant.request_text 
+          });
           toast.success('💌 You received a love grant from your partner!');
           setPendingGrant({
             ...newGrant,
@@ -397,7 +403,12 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
             status: newGrant.status as 'pending' | 'acknowledged' | 'fulfilled'
           }, ...prev]);
         } else {
-          console.log('💌 🎯 GAME CHANNEL: Grant not for current user or not pending');
+          console.log('💌 🎯 GAME CHANNEL: Grant not for current user or not pending', {
+            grantWinnerId: newGrant?.winner_user_id,
+            currentUserId: user?.id,
+            status: newGrant?.status,
+            isForCurrentUser: newGrant?.winner_user_id === user?.id
+          });
         }
       })
       .subscribe();
@@ -439,9 +450,15 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
             grantStatus: newGrant.status
           });
           
-          // Check if this grant is for the current user to respond to (not the winner)
-          if (newGrant.winner_user_id !== user?.id && newGrant.status === 'pending') {
+          // Check if this grant is for the current user (they are the recipient)
+          if (newGrant.winner_user_id === user?.id && newGrant.status === 'pending') {
             console.log('💌 🎯 DB SUBSCRIPTION: Showing love grant popup to recipient!');
+            console.log('💌 🎯 Grant details:', { 
+              grantId: newGrant.id, 
+              recipientId: newGrant.winner_user_id, 
+              currentUserId: user?.id,
+              message: newGrant.request_text 
+            });
             toast.success('💌 You received a love grant from your partner!');
             setPendingGrant({
               ...newGrant,
@@ -450,7 +467,12 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
             });
             setShowGrantResponse(true);
           } else {
-            console.log('💌 🎯 DB SUBSCRIPTION: Grant not for current user or not pending');
+            console.log('💌 🎯 DB SUBSCRIPTION: Grant not for current user or not pending', {
+              grantWinnerId: newGrant.winner_user_id,
+              currentUserId: user?.id,
+              status: newGrant.status,
+              isForCurrentUser: newGrant.winner_user_id === user?.id
+            });
           }
           
           // Add to local state
@@ -466,8 +488,14 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
         const newGrant = (payload as any).payload;
         console.log('💌 🎯 Grant details:', newGrant);
         
-        if (newGrant && newGrant.winner_user_id !== user?.id && newGrant.status === 'pending') {
-          console.log('💌 🎯 LOVE GRANTS CHANNEL: Showing love grant popup to loser!');
+        if (newGrant && newGrant.winner_user_id === user?.id && newGrant.status === 'pending') {
+          console.log('💌 🎯 LOVE GRANTS CHANNEL: Showing love grant popup to recipient!');
+          console.log('💌 🎯 Grant details:', { 
+            grantId: newGrant.id, 
+            recipientId: newGrant.winner_user_id, 
+            currentUserId: user?.id,
+            message: newGrant.request_text 
+          });
           toast.success('💌 You received a love grant from your partner!');
           setPendingGrant({
             ...newGrant,
@@ -482,6 +510,13 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
             winner_symbol: newGrant.winner_symbol as CellValue,
             status: newGrant.status as 'pending' | 'acknowledged' | 'fulfilled'
           }, ...prev]);
+        } else {
+          console.log('💌 🎯 LOVE GRANTS CHANNEL: Grant not for current user or not pending', {
+            grantWinnerId: newGrant?.winner_user_id,
+            currentUserId: user?.id,
+            status: newGrant?.status,
+            isForCurrentUser: newGrant?.winner_user_id === user?.id
+          });
         }
       })
       .subscribe();
