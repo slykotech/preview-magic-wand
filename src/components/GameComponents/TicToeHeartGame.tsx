@@ -824,7 +824,10 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
         toast.success(`🎉 You won! Amazing job! 🏆`);
         setShowCelebration(true);
         
-        // Winner gets to create a love grant
+        // Automatically create love grant for winner
+        await handleGameEnd(newStatus, user.id);
+        
+        // Winner gets to create a custom love grant
         setTimeout(() => {
           setShowLoveGrant(true);
         }, 2000);
@@ -832,6 +835,9 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
         console.log('🎮 🤝 Game is a draw');
         toast.info('🤝 It\'s a draw! Great game!');
         setShowCelebration(true);
+        
+        // Handle draw scenario
+        await handleGameEnd(newStatus, null);
       } else {
         // Game continues
         toast.success(`💕 Nice move! It's your partner's turn now.`);
@@ -873,6 +879,181 @@ export const TicToeHeartGame: React.FC<TicToeHeartGameProps> = ({
     }
 
     return null;
+  };
+
+  // Handle game end logic with automatic love grants
+  const handleGameEnd = async (gameStatus: GameStatus, winnerId: string | null) => {
+    if (!coupleData || !user?.id) return;
+
+    try {
+      console.log('🎮 🏆 Handling game end:', { gameStatus, winnerId, coupleId: coupleData.id });
+
+      if (gameStatus === 'won' && winnerId) {
+        // Winner gets reward
+        const winnerGrantData = {
+          couple_id: coupleData.id,
+          winner_user_id: winnerId,
+          winner_name: winnerId === user.id 
+            ? (getUserDisplayName() || user.email?.split('@')[0] || 'Winner')
+            : (getPartnerDisplayName() || 'Partner'),
+          winner_symbol: winnerId === user.id ? userSymbol : partnerSymbol,
+          request_text: 'Victory in Tic Toe Heart! 💖 Ask for something special from your partner!',
+          game_session_id: sessionId,
+          status: 'pending' as const
+        };
+
+        const { data: winnerGrant, error: winnerError } = await supabase
+          .from('love_grants')
+          .insert(winnerGrantData)
+          .select()
+          .single();
+
+        if (winnerError) {
+          console.error('💌 ❌ Failed to create winner grant:', winnerError);
+        } else {
+          console.log('💌 ✅ Winner grant created:', winnerGrant);
+          
+          // Add to local state
+          setLoveGrants(prev => [{
+            ...winnerGrant,
+            winner_symbol: winnerGrant.winner_symbol as CellValue,
+            status: winnerGrant.status as 'pending' | 'acknowledged' | 'fulfilled'
+          }, ...prev]);
+
+          // Broadcast to both players
+          await broadcastLoveGrant(winnerGrant);
+        }
+
+        // Loser gets good sport points
+        const loserId = winnerId === user.id ? partnerId : user.id;
+        const loserGrantData = {
+          couple_id: coupleData.id,
+          winner_user_id: loserId,
+          winner_name: loserId === user.id 
+            ? (getUserDisplayName() || user.email?.split('@')[0] || 'Player')
+            : (getPartnerDisplayName() || 'Partner'),
+          winner_symbol: loserId === user.id ? userSymbol : partnerSymbol,
+          request_text: 'Good sport! Better luck next time 💘',
+          game_session_id: sessionId,
+          status: 'pending' as const
+        };
+
+        const { data: loserGrant, error: loserError } = await supabase
+          .from('love_grants')
+          .insert(loserGrantData)
+          .select()
+          .single();
+
+        if (loserError) {
+          console.error('💌 ❌ Failed to create loser grant:', loserError);
+        } else {
+          console.log('💌 ✅ Loser grant created:', loserGrant);
+          
+          // Add to local state
+          setLoveGrants(prev => [{
+            ...loserGrant,
+            winner_symbol: loserGrant.winner_symbol as CellValue,
+            status: loserGrant.status as 'pending' | 'acknowledged' | 'fulfilled'
+          }, ...prev]);
+
+          // Broadcast to both players
+          await broadcastLoveGrant(loserGrant);
+        }
+
+      } else if (gameStatus === 'draw') {
+        // Both players get participation points
+        const participants = [
+          { id: user.id, name: getUserDisplayName() || user.email?.split('@')[0] || 'Player', symbol: userSymbol },
+          { id: partnerId, name: getPartnerDisplayName() || 'Partner', symbol: partnerSymbol }
+        ];
+
+        for (const participant of participants) {
+          const participantGrantData = {
+            couple_id: coupleData.id,
+            winner_user_id: participant.id,
+            winner_name: participant.name,
+            winner_symbol: participant.symbol,
+            request_text: 'Great match! It\'s a draw 💝',
+            game_session_id: sessionId,
+            status: 'pending' as const
+          };
+
+          const { data: participantGrant, error: participantError } = await supabase
+            .from('love_grants')
+            .insert(participantGrantData)
+            .select()
+            .single();
+
+          if (participantError) {
+            console.error('💌 ❌ Failed to create participant grant:', participantError);
+          } else {
+            console.log('💌 ✅ Participant grant created:', participantGrant);
+            
+            // Add to local state
+            setLoveGrants(prev => [{
+              ...participantGrant,
+              winner_symbol: participantGrant.winner_symbol as CellValue,
+              status: participantGrant.status as 'pending' | 'acknowledged' | 'fulfilled'
+            }, ...prev]);
+
+            // Broadcast to both players
+            await broadcastLoveGrant(participantGrant);
+          }
+        }
+      }
+
+    } catch (error) {
+      console.error('💌 ❌ Error handling game end:', error);
+    }
+  };
+
+  // Broadcast love grant to all channels
+  const broadcastLoveGrant = async (grant: any) => {
+    const broadcastPayload = {
+      ...grant,
+      winner_symbol: grant.winner_symbol as CellValue,
+      status: grant.status as 'pending' | 'acknowledged' | 'fulfilled'
+    };
+
+    console.log('💌 📡 Broadcasting love grant:', broadcastPayload);
+
+    // Send on game channel
+    if (gameChannelRef.current) {
+      try {
+        await gameChannelRef.current.send({
+          type: 'broadcast',
+          event: 'love_grant_created',
+          payload: broadcastPayload
+        });
+        console.log('💌 📡 SUCCESS: Auto-grant broadcast sent on game channel');
+      } catch (error) {
+        console.error('💌 ❌ Failed to broadcast auto-grant on game channel:', error);
+      }
+    }
+
+    // Send on dedicated love grants channel
+    if (loveGrantsChannelRef.current) {
+      try {
+        await loveGrantsChannelRef.current.send({
+          type: 'broadcast',
+          event: 'love_grant_created',
+          payload: broadcastPayload
+        });
+        console.log('💌 📡 SUCCESS: Auto-grant broadcast sent on dedicated love grants channel');
+      } catch (error) {
+        console.error('💌 ❌ Failed to broadcast auto-grant on love grants channel:', error);
+      }
+    }
+
+    // Send via unified session
+    if (sendBroadcast) {
+      try {
+        await sendBroadcast('love_grant_created', broadcastPayload);
+        console.log('💌 📡 SUCCESS: Auto-grant broadcast sent via unified session');
+      } catch (error) {
+        console.error('💌 ❌ Failed to broadcast auto-grant via unified session:', error);
+      }
+    }
   };
 
   // Create love grant
